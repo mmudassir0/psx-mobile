@@ -1,0 +1,69 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Parser and engine tests
+        run: |
+          npx tsx scripts/test-parsers.ts
+          npx tsx scripts/test-engine.ts
+
+      - name: Live PSX check
+        continue-on-error: true
+        run: npx tsx scripts/smoke-live.ts
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Collect APK
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          cp android/app/build/outputs/apk/release/app-release.apk Sahm-$VERSION-${{ github.run_number }}.apk
+          ls -la *.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}-build.${{ github.run_number }}
+          name: Sahm ${{ env.VERSION }} (build ${{ github.run_number }})
+          make_latest: true
+          body: Paper-trading build with live PSX data. Install the APK on Android.
+          files: Sahm-*.apk
