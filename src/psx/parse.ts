@@ -7,6 +7,7 @@ import { decodeEntities, num, readRows, stripTags } from './html';
 import type {
   Announcement,
   BoardQuote,
+  Candle,
   CompanyInfo,
   IndexQuote,
   ScreenerRow,
@@ -281,4 +282,108 @@ export function parseCompany(symbol: string, html: string): CompanyInfo {
     description,
     announcements: parseAnnouncements(html),
   };
+}
+
+// POST /historical (symbol only) — DATE | OPEN | HIGH | LOW | CLOSE | VOLUME,
+// newest first, unadjusted for splits/bonus. Returned oldest first.
+export function parseHistorical(html: string): Candle[] {
+  const out: Candle[] = [];
+  for (const row of readRows(html)) {
+    const c = row.cells;
+    if (c.length < 6) continue;
+    const ts = Number(c[0].attrs['data-order']);
+    if (!Number.isFinite(ts) || ts <= 0) continue;
+    const o = num(c[1].text);
+    const h = num(c[2].text);
+    const l = num(c[3].text);
+    const cl = num(c[4].text);
+    if (o == null || h == null || l == null || cl == null || cl <= 0) continue;
+    out.push({ t: ts * 1000, o, h, l, c: cl, v: num(c[5].text) ?? 0 });
+  }
+  out.sort((a, b) => a.t - b.t);
+  return out;
+}
+
+/**
+ * PSX's /historical prices are raw: a 5:1 split shows as an 80% crash. The
+ * /timeseries/eod closes are adjusted, and both use the same day timestamps,
+ * so each day's factor is eodClose / rawClose. Days before the EOD series
+ * starts reuse its earliest factor.
+ */
+export function adjustCandles(raw: Candle[], eod: SeriesPoint[]): Candle[] {
+  if (!raw.length || !eod.length) return raw;
+  const adjClose = new Map(eod.map((p) => [p.t, p.v]));
+  const factors: (number | null)[] = raw.map((c) => {
+    const a = adjClose.get(c.t);
+    if (a == null || !(c.c > 0)) return null;
+    const f = a / c.c;
+    return Number.isFinite(f) && f > 0 ? f : null;
+  });
+  // Fill gaps: carry the next known factor backwards, then the last known forwards.
+  let next: number | null = null;
+  for (let i = factors.length - 1; i >= 0; i--) {
+    if (factors[i] != null) next = factors[i];
+    else factors[i] = next;
+  }
+  let prev: number | null = null;
+  for (let i = 0; i < factors.length; i++) {
+    if (factors[i] != null) prev = factors[i];
+    else factors[i] = prev ?? 1;
+  }
+  const r = (v: number) => Math.round(v * 100) / 100;
+  return raw.map((c, i) => {
+    const f = factors[i] as number;
+    if (Math.abs(f - 1) < 0.002) return c;
+    return { t: c.t, o: r(c.o * f), h: r(c.h * f), l: r(c.l * f), c: r(c.c * f), v: Math.round(c.v / f) };
+  });
+}
+
+/** Group a series of ticks [price, cumulative-trade volume] into fixed bars. */
+export function ticksToCandles(ticks: SeriesPoint[], minutes: number): Candle[] {
+  const size = minutes * 60_000;
+  const out: Candle[] = [];
+  let cur: Candle | null = null;
+  for (const p of ticks) {
+    const start = Math.floor(p.t / size) * size;
+    if (!cur || cur.t !== start) {
+      if (cur) out.push(cur);
+      cur = { t: start, o: p.v, h: p.v, l: p.v, c: p.v, v: p.vol };
+    } else {
+      cur.h = Math.max(cur.h, p.v);
+      cur.l = Math.min(cur.l, p.v);
+      cur.c = p.v;
+      cur.v += p.vol;
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+/** Merge daily bars into weekly (Mon-start, PKT) or monthly bars. */
+export function groupCandles(daily: Candle[], by: 'week' | 'month'): Candle[] {
+  const out: Candle[] = [];
+  let key = '';
+  let cur: Candle | null = null;
+  for (const d of daily) {
+    const pk = new Date(d.t + 5 * 3600_000);
+    let k: string;
+    if (by === 'month') k = `${pk.getUTCFullYear()}-${pk.getUTCMonth()}`;
+    else {
+      const day = (pk.getUTCDay() + 6) % 7;
+      const monday = Date.UTC(pk.getUTCFullYear(), pk.getUTCMonth(), pk.getUTCDate() - day);
+      k = String(monday);
+    }
+    if (k !== key || !cur) {
+      if (cur) out.push(cur);
+      key = k;
+      cur = { ...d };
+    } else {
+      cur.h = Math.max(cur.h, d.h);
+      cur.l = Math.min(cur.l, d.l);
+      cur.c = d.c;
+      cur.v += d.v;
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
 }

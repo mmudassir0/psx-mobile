@@ -83,7 +83,7 @@ export default function AIScreen() {
             <T v="title" style={{ fontSize: 15 }}>
               Ask anything about PSX
             </T>
-            <Badge label="NEXT UPDATE" tone="gold" />
+            <Badge label="Coming next" tone="gold" />
           </View>
           <T v="body" style={{ color: colors.text2 }}>
             Chat that answers questions like “why did LUCK fall today?” or “Shariah banks with dividend yield above 8%”,
@@ -103,7 +103,7 @@ export default function AIScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  content: { padding: 16, gap: 16, paddingBottom: 32 },
+  content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 36 },
   mark: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' },
   breadth: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surface2 },
 });

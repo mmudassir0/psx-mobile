@@ -11,21 +11,21 @@ import {
   ViewStyle,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { changeColor, colors, fonts } from '../theme';
+import { changeColor, changeSoft, colors, fonts, tabular } from '../theme';
 import { arrowPct } from '../format';
 
 type Variant = 'body' | 'caption' | 'label' | 'title' | 'h1' | 'display' | 'mono' | 'monoLg' | 'monoXl';
 
 const variants: Record<Variant, TextStyle> = {
-  body: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21, color: colors.text },
-  caption: { fontFamily: fonts.medium, fontSize: 12, color: colors.faint },
-  label: { fontFamily: fonts.bold, fontSize: 12, color: colors.muted },
-  title: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text },
-  h1: { fontFamily: fonts.heavy, fontSize: 24, letterSpacing: -0.4, color: colors.text },
-  display: { fontFamily: fonts.heavy, fontSize: 32, letterSpacing: -0.8, color: colors.text },
-  mono: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text },
-  monoLg: { fontFamily: fonts.monoBold, fontSize: 20, color: colors.text },
-  monoXl: { fontFamily: fonts.monoBold, fontSize: 30, letterSpacing: -0.6, color: colors.text },
+  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, color: colors.text },
+  caption: { fontFamily: fonts.medium, fontSize: 12.5, lineHeight: 17, color: colors.faint },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.muted },
+  title: { fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2, color: colors.text },
+  h1: { fontFamily: fonts.heavy, fontSize: 28, letterSpacing: -0.6, color: colors.text },
+  display: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text },
+  mono: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text, ...tabular },
+  monoLg: { fontFamily: fonts.monoBold, fontSize: 20, letterSpacing: -0.3, color: colors.text, ...tabular },
+  monoXl: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text, ...tabular },
 };
 
 export function T({ v = 'body', style, ...rest }: TextProps & { v?: Variant }) {
@@ -36,12 +36,34 @@ export function Card({ style, children }: { style?: StyleProp<ViewStyle>; childr
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-export function Change({ pct, style }: { pct: number | null | undefined; style?: StyleProp<TextStyle> }) {
+export function Change({
+  pct,
+  style,
+  pill,
+}: {
+  pct: number | null | undefined;
+  style?: StyleProp<TextStyle>;
+  pill?: boolean;
+}) {
+  if (pill) {
+    return (
+      <View style={[styles.pill, { backgroundColor: changeSoft(pct) }]}>
+        <T v="mono" style={[{ fontSize: 13, color: changeColor(pct) }, style]}>
+          {pctText(pct)}
+        </T>
+      </View>
+    );
+  }
   return (
-    <T v="mono" style={[{ fontSize: 12, color: changeColor(pct) }, style]}>
+    <T v="mono" style={[{ fontSize: 13, color: changeColor(pct) }, style]}>
       {arrowPct(pct)}
     </T>
   );
+}
+
+function pctText(v: number | null | undefined) {
+  if (v == null || !Number.isFinite(v)) return '—';
+  return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%';
 }
 
 export function Badge({ label, tone = 'shariah' }: { label: string; tone?: 'shariah' | 'gold' | 'up' | 'down' | 'muted' }) {
@@ -172,6 +194,33 @@ export function Empty({ title, body }: { title: string; body?: string }) {
   );
 }
 
+/** Section heading with an optional action on the right. */
+export function Section({
+  title,
+  action,
+  onAction,
+  children,
+}: {
+  title: string;
+  action?: string;
+  onAction?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <T v="title">{title}</T>
+        {action ? (
+          <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10}>
+            <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>{action}</T>
+          </Pressable>
+        ) : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+
 export function Divider() {
   return <View style={{ height: 1, backgroundColor: colors.surface2 }} />;
 }
@@ -279,12 +328,13 @@ export function IconButton({
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: 18, padding: 16 },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'center' },
-  badgeText: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.3 },
+  card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18 },
+  badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, alignSelf: 'center' },
+  badgeText: { fontFamily: fonts.bold, fontSize: 11 },
+  pill: { minWidth: 76, paddingHorizontal: 8, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   button: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  segment: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, gap: 4 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  segment: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3, gap: 3 },
+  segmentItem: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   chip: {
     height: 38,
     paddingHorizontal: 14,

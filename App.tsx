@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useFonts,
   Manrope_400Regular,
@@ -55,14 +55,21 @@ const TAB_ICONS: Record<keyof TabParams, IconName> = {
 };
 
 function Tabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.faint,
-        tabBarStyle: { backgroundColor: colors.nav, borderTopColor: colors.navLine, paddingTop: 4 },
-        tabBarLabelStyle: { fontFamily: fonts.bold, fontSize: 11 },
+        tabBarStyle: {
+          backgroundColor: colors.nav,
+          borderTopColor: colors.navLine,
+          height: 68 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
+        tabBarLabelStyle: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14 },
         tabBarIcon: ({ color }) => <Icon name={TAB_ICONS[route.name]} color={color} />,
       })}
     >

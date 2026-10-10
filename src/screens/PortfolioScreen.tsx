@@ -8,9 +8,10 @@ import { fmtNum, fmtPct, fmtPkr, fmtPrice, fmtSigned } from '../format';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
 import { valuePortfolio } from '../paper/engine';
+import { shortSector } from '../sectors';
 import { Badge, Button, Card, Empty, T } from '../ui/kit';
 
-const PALETTE = ['#F5B83D', '#5B9BFF', '#4FD1C5', '#B28DFF', '#FF8A65', '#8B98A9'];
+const PALETTE = ['#E8B04B', '#6EA8FE', '#3DC6C0', '#B69CFF', '#F59E72', '#7B8797'];
 
 function Donut({ parts }: { parts: { pct: number; color: string }[] }) {
   const r = 44;
@@ -66,7 +67,7 @@ export default function PortfolioScreen() {
             price,
             value,
             pnl: value - p.avgCost * p.qty,
-            pnlPct: ((price - p.avgCost) / p.avgCost) * 100,
+            pnlPct: p.avgCost > 0 ? ((price - p.avgCost) / p.avgCost) * 100 : 0,
           };
         })
         .sort((a, b) => b.value - a.value),
@@ -81,7 +82,7 @@ export default function PortfolioScreen() {
     const top = sorted.slice(0, 5);
     const rest = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
     if (rest > 0) top.push(['Other', rest]);
-    return top.map(([name, v], i) => ({ name, pct: (v / total) * 100, color: PALETTE[i % PALETTE.length] }));
+    return top.map(([name, v], i) => ({ name: shortSector(name), pct: (v / total) * 100, color: PALETTE[i % PALETTE.length] }));
   }, [holdings, val.holdingsValue]);
 
   const shariahPct = val.holdingsValue > 0 ? (holdings.filter((h) => h.shariah).reduce((s, h) => s + h.value, 0) / val.holdingsValue) * 100 : 0;
@@ -97,7 +98,7 @@ export default function PortfolioScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.between}>
           <T v="h1">Portfolio</T>
-          <Badge label="PAPER ACCOUNT" tone="gold" />
+          <Badge label="Paper account" tone="gold" />
         </View>
 
         <Card style={styles.summary}>
@@ -155,9 +156,9 @@ export default function PortfolioScreen() {
             </View>
 
             <View>
-              <View style={[styles.between, { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: colors.surface2 }]}>
-                <T v="label">HOLDING</T>
-                <T v="label">VALUE · P&L</T>
+              <View style={[styles.between, { paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: colors.hairline }]}>
+                <T v="label">Holding</T>
+                <T v="label">Value and P&L</T>
               </View>
               {holdings.map((h) => (
                 <Pressable
@@ -171,7 +172,7 @@ export default function PortfolioScreen() {
                       {h.symbol}
                     </T>
                     <T v="caption" style={{ fontFamily: fonts.mono }}>
-                      {fmtNum(h.qty, 0)} @ {fmtPrice(h.avg)}
+                      {fmtNum(h.qty, 0)} shares, avg {fmtPrice(h.avg)}
                     </T>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -209,10 +210,10 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  content: { padding: 16, gap: 18, paddingBottom: 32 },
+  content: { paddingHorizontal: 20, paddingTop: 8, gap: 22, paddingBottom: 36 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summary: { flexDirection: 'row', flexWrap: 'wrap' },
   bar: { height: 8, borderRadius: 4, backgroundColor: colors.surface2, overflow: 'hidden' },
   barFill: { height: 8, backgroundColor: colors.shariah },
-  holding: { flexDirection: 'row', alignItems: 'center', minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.surface2 },
+  holding: { flexDirection: 'row', alignItems: 'center', minHeight: 64, borderBottomWidth: 1, borderBottomColor: colors.hairline },
 });

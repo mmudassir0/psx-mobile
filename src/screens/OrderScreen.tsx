@@ -109,7 +109,7 @@ export default function OrderScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16 }}>
-          <Badge label={filled ? 'FILLED' : placed.status === 'open' ? 'ORDER OPEN' : placed.status.toUpperCase()} tone={filled ? 'up' : 'gold'} />
+          <Badge label={filled ? 'Filled' : placed.status === 'open' ? 'Waiting for price' : placed.status} tone={filled ? 'up' : 'gold'} />
           <T v="h1" style={{ textAlign: 'center' }}>
             {filled
               ? `${placed.side === 'buy' ? 'Bought' : 'Sold'} ${fmtNum(placed.qty, 0)} ${symbol}`
@@ -259,7 +259,7 @@ export default function OrderScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 4 },
-  content: { padding: 16, gap: 16, paddingBottom: 24 },
+  content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 24 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   stepper: {
     flexDirection: 'row',
@@ -281,5 +281,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  footer: { padding: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
+  footer: { paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
 });

@@ -87,7 +87,7 @@ export default function TradeScreen() {
                 <Card key={o.id} style={styles.orderCard}>
                   <View style={{ flex: 1, gap: 4 }}>
                     <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                      <Badge label={o.side.toUpperCase()} tone={o.side === 'buy' ? 'up' : 'down'} />
+                      <Badge label={o.side === 'buy' ? 'Buy' : 'Sell'} tone={o.side === 'buy' ? 'up' : 'down'} />
                       <T v="title" style={{ fontSize: 15 }}>
                         {o.symbol}
                       </T>
@@ -146,7 +146,7 @@ export default function TradeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
-  content: { padding: 16, gap: 18, paddingBottom: 32 },
+  content: { paddingHorizontal: 20, paddingTop: 8, gap: 22, paddingBottom: 36 },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 15, paddingVertical: 0 },
   match: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: colors.surface2 },
+  border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
   orderCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   cancel: { height: 40, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.line, justifyContent: 'center' },
   hist: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },

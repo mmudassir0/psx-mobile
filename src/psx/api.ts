@@ -8,7 +8,9 @@
  * Keep requests few: we are a guest on PSX's server.
  */
 import {
+  adjustCandles,
   extractToken,
+  parseHistorical,
   parseCompany,
   parseIndices,
   parseScreener,
@@ -16,9 +18,9 @@ import {
   parseTimeseries,
   parseTradingBoard,
 } from './parse';
-import type { BoardQuote, CompanyInfo, IndexQuote, ScreenerRow, SeriesPoint, SymbolInfo } from './types';
+import type { BoardQuote, Candle, CompanyInfo, IndexQuote, ScreenerRow, SeriesPoint, SymbolInfo } from './types';
 
-export const PSX_BASE = 'https://dps.psx.com.pk';
+export const PSX_BASE = process.env.EXPO_PUBLIC_PSX_BASE || 'https://dps.psx.com.pk';
 const UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Mobile Safari/537.36';
 const TOKEN_TTL = 20 * 60_000;
@@ -34,7 +36,10 @@ export class PsxError extends Error {
   }
 }
 
-async function request(path: string, opts: { xhr?: boolean; timeoutMs?: number } = {}): Promise<string> {
+async function request(
+  path: string,
+  opts: { xhr?: boolean; timeoutMs?: number; form?: Record<string, string> } = {},
+): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 20_000);
   try {
@@ -48,7 +53,14 @@ async function request(path: string, opts: { xhr?: boolean; timeoutMs?: number }
       headers['Referer'] = `${PSX_BASE}/`;
       if (token) headers['X-Req-Id'] = token;
     }
-    const res = await fetch(PSX_BASE + path, { headers, signal: controller.signal });
+    let body: string | undefined;
+    if (opts.form) {
+      body = Object.entries(opts.form)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+      headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+    }
+    const res = await fetch(PSX_BASE + path, { method: body ? 'POST' : 'GET', headers, body, signal: controller.signal });
     if (!res.ok) throw new PsxError(`PSX returned ${res.status} for ${path}`, res.status);
     return await res.text();
   } catch (e) {
@@ -81,14 +93,14 @@ async function ensureToken(force = false) {
 }
 
 /** A JSON/fragment call that needs the token; refreshes it once on 403/404. */
-async function xhr(path: string): Promise<string> {
+async function xhr(path: string, form?: Record<string, string>, timeoutMs?: number): Promise<string> {
   await ensureToken();
   try {
-    return await request(path, { xhr: true });
+    return await request(path, { xhr: true, form, timeoutMs });
   } catch (e) {
     if (e instanceof PsxError && (e.status === 403 || e.status === 404)) {
       await ensureToken(true);
-      return request(path, { xhr: true });
+      return request(path, { xhr: true, form, timeoutMs });
     }
     throw e;
   }
@@ -122,6 +134,15 @@ export async function fetchCompany(symbol: string): Promise<CompanyInfo> {
   const html = await request(`/company/${encodeURIComponent(symbol)}`);
   remember(html);
   return parseCompany(symbol, html);
+}
+
+/** Full daily OHLC history (about 10 years), adjusted for splits and bonus issues. */
+export async function fetchDailyCandles(symbol: string): Promise<Candle[]> {
+  const [html, eod] = await Promise.all([
+    xhr('/historical', { month: '0', year: '0', symbol }, 40_000),
+    fetchSeries('eod', symbol).catch(() => [] as SeriesPoint[]),
+  ]);
+  return adjustCandles(parseHistorical(html), eod);
 }
 
 /** Index codes the app knows display names for. */

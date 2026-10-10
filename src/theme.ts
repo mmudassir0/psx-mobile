@@ -1,23 +1,31 @@
+import type { TextStyle } from 'react-native';
+
+/**
+ * Sahm design tokens.
+ * Deep slate ground, a brass accent used only for actions and selection,
+ * green and red reserved for price moves, teal only for Shariah status.
+ */
 export const colors = {
-  ground: '#0B0F14',
-  surface: '#131A22',
-  surface2: '#1B2430',
-  line: '#2A3646',
-  nav: '#0E141B',
-  navLine: '#1E2733',
-  text: '#E8EDF3',
-  text2: '#C9D2DD',
-  muted: '#A3AFBF',
-  faint: '#8B98A9',
-  gold: '#F5B83D',
-  goldSoft: 'rgba(245,184,61,0.14)',
-  up: '#3DDC97',
-  upSoft: 'rgba(61,220,151,0.12)',
-  down: '#FF5A5F',
-  downText: '#FF8A8E',
-  downSoft: 'rgba(255,90,95,0.12)',
-  shariah: '#4FD1C5',
-  shariahSoft: 'rgba(79,209,197,0.12)',
+  ground: '#0E141C',
+  surface: '#161E29',
+  surface2: '#1D2733',
+  line: '#283444',
+  hairline: '#1F2935',
+  nav: '#111821',
+  navLine: '#1F2935',
+  text: '#EDF1F5',
+  text2: '#C3CCD6',
+  muted: '#97A3B2',
+  faint: '#7B8797',
+  gold: '#E8B04B',
+  goldSoft: 'rgba(232,176,75,0.14)',
+  up: '#22C38E',
+  upSoft: 'rgba(34,195,142,0.14)',
+  down: '#F25C6A',
+  downText: '#FF8590',
+  downSoft: 'rgba(242,92,106,0.14)',
+  shariah: '#3DC6C0',
+  shariahSoft: 'rgba(61,198,192,0.13)',
 } as const;
 
 export const fonts = {
@@ -26,14 +34,22 @@ export const fonts = {
   semibold: 'Manrope_600SemiBold',
   bold: 'Manrope_700Bold',
   heavy: 'Manrope_800ExtraBold',
-  mono: 'IBMPlexMono_400Regular',
-  monoMedium: 'IBMPlexMono_500Medium',
-  monoBold: 'IBMPlexMono_600SemiBold',
+  // Figures use Manrope with tabular digits so columns line up.
+  mono: 'Manrope_500Medium',
+  monoMedium: 'Manrope_600SemiBold',
+  monoBold: 'Manrope_700Bold',
 } as const;
 
-export const radius = { chip: 6, control: 12, card: 18 } as const;
+export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
+
+export const space = { gutter: 20, section: 28 } as const;
 
 export function changeColor(v: number | null | undefined): string {
   if (v == null || v === 0) return colors.muted;
   return v > 0 ? colors.up : colors.down;
+}
+
+export function changeSoft(v: number | null | undefined): string {
+  if (v == null || v === 0) return colors.surface2;
+  return v > 0 ? colors.upSoft : colors.downSoft;
 }

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
+  adjustCandles, groupCandles, parseHistorical, ticksToCandles,
   extractToken, parseCompany, parseIndices, parseScreener, parseSymbols, parseTimeseries, parseTradingBoard,
 } from '../src/psx/parse';
 
@@ -51,6 +52,25 @@ check('sector', co.sector === 'CEMENT', co.sector);
 check('asOf', !!co.asOf && co.asOf.includes('2026'), co.asOf);
 
 check('token', extractToken(f('company_LUCK.html')) === 'Aw_AcY4Fsk0YAsCSq3nhOQZt0tqHWXNRwM15r5qV_yM');
+
+const raw = parseHistorical(f('historical_LUCK.html'));
+check('historical rows', raw.length > 2000 && raw[0].t < raw[1].t, raw.length);
+const lastRaw = raw[raw.length - 1];
+check('historical last bar OHLC', lastRaw.o === 408 && lastRaw.h === 409.9 && lastRaw.l === 404.58 && lastRaw.c === 405.38 && lastRaw.v === 738899, lastRaw);
+const adj = adjustCandles(raw, eod);
+let maxJump = 0;
+for (let i = 1; i < adj.length; i++) maxJump = Math.max(maxJump, Math.abs(adj[i].c / adj[i - 1].c - 1));
+check('split removed (no >25% day jump)', maxJump < 0.25, maxJump.toFixed(3));
+check('adjusted bars stay ordered h>=o,c>=l', adj.every((c) => c.h >= Math.max(c.o, c.c) - 0.02 && c.l <= Math.min(c.o, c.c) + 0.02));
+check('recent bars unchanged', adj[adj.length - 1].c === 405.38 && adj[adj.length - 1].h === 409.9);
+const apr2025 = adj.find((c) => c.t >= Date.UTC(2025, 3, 1));
+check('pre-split bar rescaled', !!apr2025 && apr2025.c < 500, apr2025);
+const weeks = groupCandles(adj.slice(-30), 'week');
+check('weekly grouping', weeks.length >= 6 && weeks.length <= 8 && weeks[weeks.length - 1].c === 405.38, weeks.length);
+const months = groupCandles(adj, 'month');
+check('monthly grouping', months.length > 100 && months.length < 130, months.length);
+const bars = ticksToCandles(intra.filter((p) => p.t > intra[intra.length - 1].t - 8 * 3600_000), 5);
+check('5-min intraday candles', bars.length > 20 && bars.length < 120 && bars.every((b) => b.h >= b.l), bars.length);
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall parser checks passed');

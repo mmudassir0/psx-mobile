@@ -105,3 +105,13 @@ export interface Stock {
   divYield: number | null;
   change1y: number | null;
 }
+
+/** One OHLC bar. `t` is epoch ms at the start of the bar. */
+export interface Candle {
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}

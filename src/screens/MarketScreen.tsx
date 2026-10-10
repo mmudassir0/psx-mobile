@@ -3,6 +3,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts } from '../theme';
+import { shortSector } from '../sectors';
 import { fmtPct } from '../format';
 import { useMarket } from '../store/market';
 import type { Stock } from '../psx/types';
@@ -32,17 +33,6 @@ function sectorTiles(stocks: Stock[]): SectorTile[] {
     .map(([name, a]) => ({ name, pct: a.weighted / a.cap }));
 }
 
-function shortSector(name: string) {
-  return name
-    .replace('Commercial Banks', 'Banks')
-    .replace('Oil & Gas Exploration Companies', 'Oil & Gas E&P')
-    .replace('Oil & Gas Marketing Companies', 'Oil Marketing')
-    .replace('Power Generation & Distribution', 'Power')
-    .replace('Technology & Communication', 'Technology')
-    .replace('Inv. Banks / Inv. Cos. / Securities Cos.', 'Investment Cos.')
-    .replace('Pharmaceuticals', 'Pharma');
-}
-
 export default function MarketScreen() {
   const nav = useNavigation();
   const { ready, stocks, refresh, refreshing } = useMarket();
@@ -69,7 +59,7 @@ export default function MarketScreen() {
   }, [stocks, mode, shariahOnly, query]);
 
   const header = (
-    <View style={{ gap: 14, paddingBottom: 8 }}>
+    <View style={{ gap: 16, paddingBottom: 6 }}>
       <View style={styles.between}>
         <T v="h1">Market</T>
       </View>
@@ -99,7 +89,7 @@ export default function MarketScreen() {
             const bg = t.pct >= 0 ? `rgba(61,220,151,${0.1 + strength * 0.3})` : `rgba(255,90,95,${0.1 + strength * 0.3})`;
             return (
               <View key={t.name} style={[styles.tile, { backgroundColor: bg }]}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 12 }} numberOfLines={1}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: colors.text }} numberOfLines={1}>
                   {shortSector(t.name)}
                 </T>
                 <T v="mono" style={{ fontSize: 13 }}>
@@ -128,6 +118,10 @@ export default function MarketScreen() {
         </View>
         <Chip label="Shariah" on={shariahOnly} onPress={() => setShariahOnly((v) => !v)} />
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.shariah }} />
+        <T v="caption">Shariah-compliant (KMI All-Share index)</T>
+      </View>
     </View>
   );
 
@@ -137,7 +131,7 @@ export default function MarketScreen() {
         data={ready ? list : []}
         keyExtractor={(s) => s.symbol}
         ListHeaderComponent={header}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 36 }}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={20}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
@@ -173,5 +167,5 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 15, paddingVertical: 0 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tile: { width: '32%', flexGrow: 1, height: 58, borderRadius: 12, padding: 10, justifyContent: 'space-between' },
+  tile: { width: '32%', flexGrow: 1, height: 64, borderRadius: 14, padding: 11, justifyContent: 'space-between' },
 });
