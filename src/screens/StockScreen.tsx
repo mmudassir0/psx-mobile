@@ -101,6 +101,7 @@ export default function StockScreen() {
   const [ticks, setTicks] = useState<SeriesPoint[] | null>(null);
   const [chartErr, setChartErr] = useState<string | null>(null);
   const [activeBar, setActiveBar] = useState<Candle | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
   const [showAllNews, setShowAllNews] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
 
@@ -166,7 +167,7 @@ export default function StockScreen() {
           onPress={() => toggleWatch(symbol)}
         />
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!scrubbing}>
         <View style={{ gap: 6, paddingHorizontal: space.gutter }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <T v="body" style={{ fontFamily: fonts.semibold, color: colors.text2 }} numberOfLines={1}>
@@ -214,7 +215,7 @@ export default function StockScreen() {
                 <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
               </View>
             ) : (
-              <Chart candles={bars} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} onActive={onActive} />
+              <Chart candles={bars} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} onActive={onActive} onScrubChange={setScrubbing} />
             )}
           </View>
           <View style={styles.rangeRow}>
