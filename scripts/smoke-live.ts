@@ -1,5 +1,5 @@
 /** Hits the real PSX portal through the app's own client. Run in CI. */
-import { fetchBoard, fetchCompany, fetchIndices, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
+import { fetchBoard, fetchCompany, fetchDailyCandles, fetchIndexConstituents, fetchIndices, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
 
 async function step<T>(label: string, fn: () => Promise<T>, describe: (v: T) => string) {
   const t = Date.now();
@@ -21,6 +21,8 @@ async function step<T>(label: string, fn: () => Promise<T>, describe: (v: T) => 
     await step('eod LUCK', () => fetchSeries('eod', 'LUCK'), (v) => `${v.length} points, last ${v[v.length - 1]?.v}`),
     await step('intraday LUCK', () => fetchSeries('int', 'LUCK'), (v) => `${v.length} points`),
     await step('company LUCK', () => fetchCompany('LUCK'), (v) => `${v.name}, close ${v.close}, ${v.announcements.length} announcements`),
+    await step('daily candles LUCK', () => fetchDailyCandles('LUCK'), (v) => `${v.length} bars, last close ${v[v.length - 1]?.c}`),
+    await step('KMI30 constituents', () => fetchIndexConstituents('KMI30'), (v) => `${v.length} stocks, points sum ${v.reduce((a, c) => a + (c.points ?? 0), 0).toFixed(2)}`),
     await step('screener', fetchScreener, (v) => `${v.length} rows, ${v.filter((s) => s.shariah).length} Shariah`),
   ];
   const failed = results.filter((r) => !r).length;

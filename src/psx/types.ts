@@ -115,3 +115,20 @@ export interface Candle {
   c: number;
   v: number;
 }
+
+/** One stock's line in an index's constituents table (/indices/{CODE}). */
+export interface Constituent {
+  symbol: string;
+  name: string;
+  ldcp: number | null;
+  price: number | null;
+  change: number | null;
+  changePct: number | null;
+  /** weight in the index, % */
+  weight: number | null;
+  /** index points this stock added or removed today */
+  points: number | null;
+  volume: number | null;
+  freeFloatM: number | null;
+  marketCap: number | null;
+}

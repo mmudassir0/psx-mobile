@@ -100,7 +100,6 @@ export default function StockScreen() {
   const [daily, setDaily] = useState<Candle[] | null>(null);
   const [ticks, setTicks] = useState<SeriesPoint[] | null>(null);
   const [chartErr, setChartErr] = useState<string | null>(null);
-  const [activeBar, setActiveBar] = useState<Candle | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
   const [showAllNews, setShowAllNews] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -139,7 +138,6 @@ export default function StockScreen() {
   const pos = account.positions[symbol];
   const watched = isWatched(symbol);
 
-  const onActive = useCallback((c: Candle | null) => setActiveBar(c), []);
   const news = company?.announcements ?? [];
   const shownNews = showAllNews ? news.slice(0, 20) : news.slice(0, 4);
   const rangeWord: Record<Range, string> = {
@@ -151,6 +149,33 @@ export default function StockScreen() {
     '5Y': 'past 5 years',
     Max: 'since 2016',
   };
+
+  const subline = (
+    <T v="caption" style={{ color: changeColor(change), fontSize: 13, marginLeft: 4 }} numberOfLines={1}>
+      {fmtSigned(change)} today
+      {rangePct != null && range !== '1D' ? (
+        <T v="caption" style={{ color: colors.faint, fontSize: 13 }}>
+          {'   '}
+          <T v="caption" style={{ color: changeColor(rangePct), fontSize: 13 }}>
+            {fmtPct(rangePct)}
+          </T>{' '}
+          {rangeWord[range]}
+        </T>
+      ) : null}
+    </T>
+  );
+  const chartHeader = useCallback(
+    (bar: Candle | null) =>
+      bar ? (
+        <View style={{ marginLeft: 4 }}>
+          <Ohlc c={bar} unit={unit} />
+        </View>
+      ) : (
+        subline
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [unit, change, rangePct, range],
+  );
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -181,28 +206,11 @@ export default function StockScreen() {
             </T>
             <Change pct={changePct} pill />
           </View>
-          <View style={{ height: 22, justifyContent: 'center' }}>
-            {activeBar ? (
-              <Ohlc c={activeBar} unit={unit} />
-            ) : (
-              <T v="caption" style={{ color: changeColor(change), fontSize: 13 }} numberOfLines={1}>
-                {fmtSigned(change)} today
-                {rangePct != null && range !== '1D' ? (
-                  <T v="caption" style={{ color: colors.faint, fontSize: 13 }}>
-                    {'   '}
-                    <T v="caption" style={{ color: changeColor(rangePct), fontSize: 13 }}>
-                      {fmtPct(rangePct)}
-                    </T>{' '}
-                    {rangeWord[range]}
-                  </T>
-                ) : null}
-              </T>
-            )}
-          </View>
         </View>
 
         <View style={{ gap: 12 }}>
           <View style={{ paddingLeft: space.gutter - 4, paddingRight: 4 }}>
+            {loadingChart || bars.length < 2 ? <View style={{ minHeight: 24, marginBottom: 12, justifyContent: 'center' }}>{subline}</View> : null}
             {loadingChart ? (
               <View style={{ height: 316, justifyContent: 'center' }}>
                 <Loading />
@@ -215,7 +223,7 @@ export default function StockScreen() {
                 <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
               </View>
             ) : (
-              <Chart candles={bars} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} onActive={onActive} onScrubChange={setScrubbing} />
+              <Chart candles={bars} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} />
             )}
           </View>
           <View style={styles.rangeRow}>

@@ -9,6 +9,7 @@ import type {
   BoardQuote,
   Candle,
   CompanyInfo,
+  Constituent,
   IndexQuote,
   ScreenerRow,
   SeriesPoint,
@@ -385,5 +386,37 @@ export function groupCandles(daily: Candle[], by: 'week' | 'month'): Candle[] {
     }
   }
   if (cur) out.push(cur);
+  return out;
+}
+
+// /indices/{CODE} — SYMBOL | NAME | LDCP | CURRENT | CHANGE | CHANGE % |
+// IDX WTG % | IDX POINT | VOLUME | FREEFLOAT (M) | MARKET CAP (M)
+export function parseIndexConstituents(html: string): Constituent[] {
+  const out: Constituent[] = [];
+  const seen = new Set<string>();
+  for (const row of readRows(html)) {
+    const c = row.cells;
+    if (c.length < 11) continue;
+    const raw = c[0].attrs['data-order'] || c[0].text;
+    if (!raw || !/^[A-Z0-9][A-Z0-9 .-]{1,24}$/i.test(raw.trim())) continue;
+    const symbol = normalizeSymbol(raw);
+    if (seen.has(symbol)) continue;
+    seen.add(symbol);
+    const mcapRaw = num(c[10].attrs['data-order']);
+    out.push({
+      symbol,
+      name: c[1].text,
+      ldcp: cellNum(c[2]),
+      price: cellNum(c[3]),
+      change: cellNum(c[4]),
+      changePct: cellNum(c[5]),
+      weight: num(c[6].text),
+      points: cellNum(c[7]),
+      volume: cellNum(c[8]),
+      freeFloatM: num(c[9].text),
+      // data-order holds full PKR; the text is in millions
+      marketCap: mcapRaw ?? (num(c[10].text) != null ? (num(c[10].text) as number) * 1e6 : null),
+    });
+  }
   return out;
 }

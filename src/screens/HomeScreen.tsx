@@ -91,7 +91,13 @@ export default function HomeScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
           {homeIdx.length === 0 && !ready ? <Loading /> : null}
           {homeIdx.map((i) => (
-            <View key={i.code} style={styles.index} accessible accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}>
+            <Pressable
+              key={i.code}
+              style={({ pressed }) => [styles.index, pressed && { opacity: 0.8 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}
+              onPress={() => nav.navigate('Index', { code: i.code })}
+            >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text2 }}>{INDEX_NAMES[i.code] ?? i.code}</T>
                 <Change pct={i.changePct} style={{ fontSize: 12.5 }} />
@@ -101,7 +107,7 @@ export default function HomeScreen() {
               <T v="caption" style={{ color: changeColor(i.change) }}>
                 {fmtSigned(i.change)} pts
               </T>
-            </View>
+            </Pressable>
           ))}
         </ScrollView>
 

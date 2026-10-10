@@ -13,6 +13,7 @@ export type RootParams = {
   Welcome: undefined;
   Tabs: NavigatorScreenParams<TabParams> | undefined;
   Stock: { symbol: string };
+  Index: { code: string };
   Order: { symbol: string; side?: Side };
 };
 

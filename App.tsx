@@ -27,6 +27,7 @@ import TradeScreen from './src/screens/TradeScreen';
 import PortfolioScreen from './src/screens/PortfolioScreen';
 import AIScreen from './src/screens/AIScreen';
 import StockScreen from './src/screens/StockScreen';
+import IndexScreen from './src/screens/IndexScreen';
 import OrderScreen from './src/screens/OrderScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -93,6 +94,7 @@ function Root() {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="Stock" component={StockScreen} />
+      <Stack.Screen name="Index" component={IndexScreen} />
       <Stack.Screen name="Order" component={OrderScreen} options={{ animation: 'slide_from_bottom' }} />
     </Stack.Navigator>
   );

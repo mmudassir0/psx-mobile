@@ -1,17 +1,19 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, View } from 'react-native';
+import { Animated, PanResponder, Platform, StyleSheet, View } from 'react-native';
 import Svg, { Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import type { Candle } from '../psx/types';
 import { colors, fonts } from '../theme';
 import { fmtNum, pkDate } from '../format';
 
-const tagLabel = (v: number) => fmtNum(v, v >= 10_000 ? 0 : 2);
-
 export type ChartMode = 'candle' | 'line';
+export type ChartUnit = 'intraday' | 'day' | 'week' | 'month';
 
 const AXIS_W = 58;
 const X_LABEL_H = 20;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const tagLabel = (v: number) => fmtNum(v, v >= 10_000 ? 0 : 2);
 
 function niceStep(span: number, count: number) {
   const raw = span / count;
@@ -22,12 +24,10 @@ function niceStep(span: number, count: number) {
 }
 
 function priceLabel(v: number, step: number) {
-  const decimals = step < 0.1 ? 2 : step < 1 ? 1 : 0;
-  return fmtNum(v, decimals);
+  return fmtNum(v, step < 0.1 ? 2 : step < 1 ? 1 : 0);
 }
 
-/** Bar time label: clock for intraday, day + month for daily, month + year for long ranges. */
-export function timeLabel(t: number, unit: 'intraday' | 'day' | 'week' | 'month') {
+export function timeLabel(t: number, unit: ChartUnit) {
   const d = pkDate(t);
   if (unit === 'intraday') return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
   if (unit === 'day') return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
@@ -37,9 +37,13 @@ export function timeLabel(t: number, unit: 'intraday' | 'day' | 'week' | 'month'
 let gradientSeq = 0;
 
 /**
- * Price chart with candles or a line, a volume strip, a right-hand price
- * axis with the latest price tagged, and a crosshair. Drag across it to
- * read any bar; `onActive` reports the bar under the finger.
+ * Price chart: candles or a line, volume strip, right-hand price axis with the
+ * latest price tagged, and a crosshair you drag with one finger.
+ *
+ * Smoothness: the vertical crosshair is an Animated view moved straight from
+ * the gesture (no React render per touch event). React re-renders only the
+ * small overlay and the header when the finger crosses into a new bar, and
+ * the bars themselves are drawn once per data change.
  */
 export function Chart({
   candles,
@@ -48,22 +52,24 @@ export function Chart({
   prevClose,
   height = 250,
   volumeHeight = 46,
-  onActive,
+  header,
   onScrubChange,
 }: {
   candles: Candle[];
   mode: ChartMode;
-  unit: 'intraday' | 'day' | 'week' | 'month';
+  unit: ChartUnit;
   prevClose?: number | null;
   height?: number;
   volumeHeight?: number;
-  onActive?: (c: Candle | null) => void;
-  /** true while a finger is on the chart (lets the page stop scrolling) */
+  /** Rendered above the chart; receives the bar under the finger, or null. */
+  header?: (active: Candle | null) => React.ReactNode;
   onScrubChange?: (scrubbing: boolean) => void;
 }) {
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
   const gradId = useRef(`g${++gradientSeq}`).current;
+  const lineX = useRef(new Animated.Value(0)).current;
+  const lineOpacity = useRef(new Animated.Value(0)).current;
   const plotW = Math.max(0, width - AXIS_W);
   const n = candles.length;
   const total = height + volumeHeight + X_LABEL_H;
@@ -109,30 +115,39 @@ export function Chart({
 
   const last = candles[n - 1];
   const ref = unit === 'intraday' && prevClose != null ? prevClose : candles[0]?.o ?? candles[0]?.c;
-  const lastUp = last && ref != null ? last.c >= ref : true;
-  const lineColor = lastUp ? colors.up : colors.down;
+  const lineColor = last && ref != null && last.c < ref ? colors.down : colors.up;
+  const bodyW = geo ? Math.max(1, Math.min(14, geo.slot * 0.64)) : 1;
 
+  // --- gesture -------------------------------------------------------------
+  const geoRef = useRef(geo);
+  geoRef.current = geo;
+  const nRef = useRef(n);
+  nRef.current = n;
+  const cb = useRef({ onScrubChange });
+  cb.current = { onScrubChange };
   const startX = useRef(0);
-  const lastIdx = useRef<number | null>(null);
-  const setFromX = (xPos: number) => {
-    if (!geo) return;
-    const i = Math.max(0, Math.min(n - 1, Math.floor(xPos / geo.slot)));
-    if (i === lastIdx.current) return;
-    lastIdx.current = i;
+  const idx = useRef<number | null>(null);
+
+  const track = (xPos: number) => {
+    const g = geoRef.current;
+    if (!g) return;
+    const i = Math.max(0, Math.min(nRef.current - 1, Math.floor(xPos / g.slot)));
+    if (i === idx.current) return;
+    idx.current = i;
+    lineX.setValue(g.x(i));
+    lineOpacity.setValue(0.8);
     setActive(i);
-    onActive?.(candles[i]);
+    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
   };
-  const setRef = useRef(setFromX);
-  setRef.current = setFromX;
-  const cbRef = useRef({ onActive, onScrubChange });
-  cbRef.current = { onActive, onScrubChange };
+  const trackRef = useRef(track);
+  trackRef.current = track;
 
   const responder = useMemo(() => {
     const end = () => {
-      lastIdx.current = null;
+      idx.current = null;
+      lineOpacity.setValue(0);
       setActive(null);
-      cbRef.current.onActive?.(null);
-      cbRef.current.onScrubChange?.(false);
+      cb.current.onScrubChange?.(false);
     };
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -142,133 +157,128 @@ export function Chart({
       onPanResponderTerminationRequest: () => false,
       onShouldBlockNativeResponder: () => true,
       onPanResponderGrant: (e) => {
-        // Android reports locationX relative to whatever is under the finger once it moves,
-        // so remember where the touch started and follow the gesture's horizontal distance.
+        // Android measures locationX against whatever is under the finger once it moves,
+        // so follow the start point plus the gesture's horizontal distance instead.
         startX.current = e.nativeEvent.locationX;
-        cbRef.current.onScrubChange?.(true);
-        setRef.current(startX.current);
+        cb.current.onScrubChange?.(true);
+        trackRef.current(startX.current);
       },
-      onPanResponderMove: (_e, g) => setRef.current(startX.current + g.dx),
+      onPanResponderMove: (_e, g) => trackRef.current(startX.current + g.dx),
       onPanResponderRelease: end,
       onPanResponderTerminate: end,
     });
-  }, []);
+  }, [lineOpacity]);
+
+  // --- static layer: drawn once per data/size change ------------------------
+  const base = useMemo(() => {
+    if (!geo || width <= 0) return null;
+    return (
+      <Svg width={width} height={total} pointerEvents="none">
+        <Defs>
+          <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={lineColor} stopOpacity={0.24} />
+            <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
+          </LinearGradient>
+        </Defs>
+        {geo.ticks.map((v) => (
+          <G key={v}>
+            <Line x1={0} x2={plotW} y1={geo.y(v)} y2={geo.y(v)} stroke={colors.hairline} strokeWidth={1} />
+            <SvgText x={plotW + 8} y={geo.y(v) + 4} fill={colors.faint} fontSize={11} fontFamily={fonts.medium}>
+              {priceLabel(v, geo.step)}
+            </SvgText>
+          </G>
+        ))}
+        {prevClose != null && unit === 'intraday' ? (
+          <Line x1={0} x2={plotW} y1={geo.y(prevClose)} y2={geo.y(prevClose)} stroke={colors.faint} strokeDasharray="2 4" strokeWidth={1} />
+        ) : null}
+        {candles.map((c, i) => (
+          <Rect
+            key={`v${c.t}`}
+            x={geo.x(i) - bodyW / 2}
+            y={geo.vy(c.v)}
+            width={bodyW}
+            height={Math.max(0, height + volumeHeight - geo.vy(c.v))}
+            fill={c.c >= c.o ? colors.up : colors.down}
+            opacity={0.28}
+          />
+        ))}
+        {mode === 'line' ? (
+          <>
+            <Path d={geo.area} fill={`url(#${gradId})`} />
+            <Path d={geo.line} stroke={lineColor} strokeWidth={2} fill="none" strokeLinejoin="round" />
+          </>
+        ) : (
+          candles.map((c, i) => {
+            const col = c.c >= c.o ? colors.up : colors.down;
+            const top = geo.y(Math.max(c.o, c.c));
+            const bot = geo.y(Math.min(c.o, c.c));
+            return (
+              <G key={c.t}>
+                <Line x1={geo.x(i)} x2={geo.x(i)} y1={geo.y(c.h)} y2={geo.y(c.l)} stroke={col} strokeWidth={1} />
+                <Rect x={geo.x(i) - bodyW / 2} y={top} width={bodyW} height={Math.max(1, bot - top)} fill={col} rx={bodyW > 4 ? 1 : 0} />
+              </G>
+            );
+          })
+        )}
+        {last ? (
+          <G>
+            <Line x1={0} x2={plotW} y1={geo.y(last.c)} y2={geo.y(last.c)} stroke={lineColor} strokeDasharray="1 3" strokeWidth={1} />
+            <Rect x={plotW + 2} y={geo.y(last.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={lineColor} />
+            <SvgText x={plotW + 8} y={geo.y(last.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
+              {tagLabel(last.c)}
+            </SvgText>
+          </G>
+        ) : null}
+        {geo.labelIdx.map((i, k) => (
+          <SvgText
+            key={`x${i}`}
+            x={k === 0 ? 0 : k === geo.labelIdx.length - 1 ? plotW : geo.x(i)}
+            y={total - 4}
+            fill={colors.faint}
+            fontSize={11}
+            fontFamily={fonts.medium}
+            textAnchor={k === 0 ? 'start' : k === geo.labelIdx.length - 1 ? 'end' : 'middle'}
+          >
+            {timeLabel(candles[i].t, unit)}
+          </SvgText>
+        ))}
+      </Svg>
+    );
+  }, [geo, width, total, gradId, lineColor, plotW, prevClose, unit, candles, bodyW, height, volumeHeight, mode, last]);
 
   const ac = active != null ? candles[active] : null;
-  const bodyW = geo ? Math.max(1, Math.min(14, geo.slot * 0.64)) : 1;
-
-  // Everything except the crosshair: drawn once per data/size change, not on every finger move.
-  const base = useMemo(
-    () =>
-      geo && width > 0 ? (
-              <Svg width={width} height={total} pointerEvents="none">
-                <Defs>
-                  <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={lineColor} stopOpacity={0.24} />
-                    <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
-                  </LinearGradient>
-                </Defs>
-
-                {geo.ticks.map((v) => (
-                  <G key={v}>
-                    <Line x1={0} x2={plotW} y1={geo.y(v)} y2={geo.y(v)} stroke={colors.hairline} strokeWidth={1} />
-                    <SvgText x={plotW + 8} y={geo.y(v) + 4} fill={colors.faint} fontSize={11} fontFamily={fonts.medium}>
-                      {priceLabel(v, geo.step)}
-                    </SvgText>
-                  </G>
-                ))}
-
-                {prevClose != null && unit === 'intraday' ? (
-                  <Line x1={0} x2={plotW} y1={geo.y(prevClose)} y2={geo.y(prevClose)} stroke={colors.faint} strokeDasharray="2 4" strokeWidth={1} />
-                ) : null}
-
-                {candles.map((c, i) => (
-                  <Rect
-                    key={`v${c.t}`}
-                    x={geo.x(i) - bodyW / 2}
-                    y={geo.vy(c.v)}
-                    width={bodyW}
-                    height={Math.max(0, height + volumeHeight - geo.vy(c.v))}
-                    fill={c.c >= c.o ? colors.up : colors.down}
-                    opacity={0.28}
-                  />
-                ))}
-
-                {mode === 'line' ? (
-                  <>
-                    <Path d={geo.area} fill={`url(#${gradId})`} />
-                    <Path d={geo.line} stroke={lineColor} strokeWidth={2} fill="none" strokeLinejoin="round" />
-                  </>
-                ) : (
-                  candles.map((c, i) => {
-                    const up = c.c >= c.o;
-                    const col = up ? colors.up : colors.down;
-                    const top = geo.y(Math.max(c.o, c.c));
-                    const bot = geo.y(Math.min(c.o, c.c));
-                    return (
-                      <G key={c.t}>
-                        <Line x1={geo.x(i)} x2={geo.x(i)} y1={geo.y(c.h)} y2={geo.y(c.l)} stroke={col} strokeWidth={1} />
-                        <Rect x={geo.x(i) - bodyW / 2} y={top} width={bodyW} height={Math.max(1, bot - top)} fill={col} rx={bodyW > 4 ? 1 : 0} />
-                      </G>
-                    );
-                  })
-                )}
-
-                {last ? (
-                  <G>
-                    <Line x1={0} x2={plotW} y1={geo.y(last.c)} y2={geo.y(last.c)} stroke={lineColor} strokeDasharray="1 3" strokeWidth={1} />
-                    <Rect x={plotW + 2} y={geo.y(last.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={lineColor} />
-                    <SvgText x={plotW + 8} y={geo.y(last.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
-                      {tagLabel(last.c)}
-                    </SvgText>
-                  </G>
-                ) : null}
-
-
-                {geo.labelIdx.map((i, k) => (
-                  <SvgText
-                    key={`x${i}`}
-                    x={k === 0 ? 0 : k === geo.labelIdx.length - 1 ? plotW : geo.x(i)}
-                    y={total - 4}
-                    fill={colors.faint}
-                    fontSize={11}
-                    fontFamily={fonts.medium}
-                    textAnchor={k === 0 ? 'start' : k === geo.labelIdx.length - 1 ? 'end' : 'middle'}
-                  >
-                    {timeLabel(candles[i].t, unit)}
-                  </SvgText>
-                ))}
-              </Svg>
-      ) : null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [geo, width, candles, mode, unit, prevClose, lineColor, bodyW, plotW, total, height, volumeHeight],
-  );
 
   return (
-    <View
-      style={{ height: total }}
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      {...responder.panHandlers}
-      accessible
-      accessibilityLabel={last ? `Price chart, last ${fmtNum(last.c)}` : 'Price chart'}
-    >
-      {geo && width > 0 ? (
-        <>
-          {base}
-          <Svg width={width} height={total} pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0 }}>
-          {ac && active != null && geo ? (
-            <G>
-              <Line x1={geo.x(active)} x2={geo.x(active)} y1={0} y2={height + volumeHeight} stroke={colors.muted} strokeWidth={1} strokeDasharray="3 3" />
-              <Line x1={0} x2={plotW} y1={geo.y(ac.c)} y2={geo.y(ac.c)} stroke={colors.muted} strokeWidth={1} strokeDasharray="3 3" />
-              <Rect x={plotW + 2} y={geo.y(ac.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={colors.text} />
-              <SvgText x={plotW + 8} y={geo.y(ac.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
-                {tagLabel(ac.c)}
-              </SvgText>
-            </G>
-          ) : null}
-        </Svg>
-        </>
-      ) : null}
+    <View>
+      {header ? <View style={styles.header}>{header(ac)}</View> : null}
+      <View
+        style={{ height: total }}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        {...responder.panHandlers}
+        accessible
+        accessibilityLabel={last ? `Price chart, last ${fmtNum(last.c)}. Drag to read values.` : 'Price chart'}
+      >
+        {base}
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.vline, { height: height + volumeHeight, opacity: lineOpacity, transform: [{ translateX: lineX }] }]}
+        />
+        {geo && ac && active != null ? (
+          <Svg width={width} height={total} pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Rect x={geo.x(active) - geo.slot / 2} y={0} width={geo.slot} height={height + volumeHeight} fill={colors.text} opacity={0.05} />
+            <Line x1={0} x2={plotW} y1={geo.y(ac.c)} y2={geo.y(ac.c)} stroke={colors.muted} strokeWidth={1} strokeDasharray="3 3" />
+            <Rect x={plotW + 2} y={geo.y(ac.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={colors.text} />
+            <SvgText x={plotW + 8} y={geo.y(ac.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
+              {tagLabel(ac.c)}
+            </SvgText>
+          </Svg>
+        ) : null}
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
+  vline: { position: 'absolute', left: 0, top: 0, width: 1, backgroundColor: colors.muted },
+});

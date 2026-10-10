@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
-  adjustCandles, groupCandles, parseHistorical, ticksToCandles,
+  adjustCandles, groupCandles, parseHistorical, parseIndexConstituents, ticksToCandles,
   extractToken, parseCompany, parseIndices, parseScreener, parseSymbols, parseTimeseries, parseTradingBoard,
 } from '../src/psx/parse';
 
@@ -71,6 +71,13 @@ const months = groupCandles(adj, 'month');
 check('monthly grouping', months.length > 100 && months.length < 130, months.length);
 const bars = ticksToCandles(intra.filter((p) => p.t > intra[intra.length - 1].t - 8 * 3600_000), 5);
 check('5-min intraday candles', bars.length > 20 && bars.length < 120 && bars.every((b) => b.h >= b.l), bars.length);
+
+const cons = parseIndexConstituents(f('index_KSE100.html'));
+const abl = cons.find((x) => x.symbol === 'ABL');
+check('KSE100 constituents', cons.length === 100, cons.length);
+check('ABL row', !!abl && abl.price === 172.75 && abl.points === 6.0437 && abl.weight === 0.42 && abl.volume === 58118, abl);
+const pts = cons.reduce((s, x) => s + (x.points ?? 0), 0);
+check('points sum ~ index change (-352.63)', Math.abs(pts - -352.63) < 3, pts.toFixed(2));
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall parser checks passed');
