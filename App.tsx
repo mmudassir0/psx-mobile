@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -120,6 +121,7 @@ export default function App() {
   if (!ready) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ground }}>
     <SafeAreaProvider>
       <MarketProvider>
         <UserProvider>
@@ -130,5 +132,6 @@ export default function App() {
         </UserProvider>
       </MarketProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

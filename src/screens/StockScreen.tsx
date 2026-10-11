@@ -11,7 +11,7 @@ import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
 import { useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
-import { Chart, ChartMode } from '../ui/Chart';
+import { SkiaChart, ChartMode } from '../ui/SkiaChart';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -34,24 +34,27 @@ function lastSession(ticks: SeriesPoint[]): SeriesPoint[] {
   return ticks.filter((p) => dayOf(p.t) === d);
 }
 
-function barsFor(range: Range, daily: Candle[], intraday: Candle[]): { bars: Candle[]; unit: 'intraday' | 'day' | 'week' | 'month' } {
-  if (range === '1D') return { bars: intraday, unit: 'intraday' };
-  if (!daily.length) return { bars: [], unit: 'day' };
-  const lastT = daily[daily.length - 1].t;
-  const since = (days: number) => daily.filter((c) => c.t > lastT - days * DAY);
+function barsFor(range: Range, daily: Candle[], intraday: Candle[]): { bars: Candle[]; unit: 'intraday' | 'day' | 'week' | 'month'; visible: number } {
+  // pass the whole history; `visible` is how much shows first, the rest is a swipe away
+  if (range === '1D') return { bars: intraday, unit: 'intraday', visible: intraday.length };
+  if (!daily.length) return { bars: [], unit: 'day', visible: 0 };
   switch (range) {
     case '1W':
-      return { bars: since(7), unit: 'day' };
+      return { bars: daily, unit: 'day', visible: 5 };
     case '1M':
-      return { bars: since(31), unit: 'day' };
+      return { bars: daily, unit: 'day', visible: 22 };
     case '3M':
-      return { bars: since(92), unit: 'day' };
+      return { bars: daily, unit: 'day', visible: 63 };
     case '1Y':
-      return { bars: since(366), unit: 'day' };
-    case '5Y':
-      return { bars: groupCandles(since(5 * 366), 'week'), unit: 'week' };
-    default:
-      return { bars: groupCandles(daily, 'month'), unit: 'month' };
+      return { bars: daily, unit: 'day', visible: 248 };
+    case '5Y': {
+      const w = groupCandles(daily, 'week');
+      return { bars: w, unit: 'week', visible: 261 };
+    }
+    default: {
+      const m = groupCandles(daily, 'month');
+      return { bars: m, unit: 'month', visible: m.length };
+    }
   }
 }
 
@@ -125,14 +128,15 @@ export default function StockScreen() {
   }, [symbol]);
 
   const intradayBars = useMemo(() => ticksToCandles(lastSession(ticks ?? []), 5), [ticks]);
-  const { bars, unit } = useMemo(() => barsFor(range, daily ?? [], intradayBars), [range, daily, intradayBars]);
+  const { bars, unit, visible } = useMemo(() => barsFor(range, daily ?? [], intradayBars), [range, daily, intradayBars]);
   const loadingChart = range === '1D' ? ticks == null : daily == null;
 
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
   const changePct = stock?.changePct ?? company?.changePct ?? null;
   const ldcp = stock?.ldcp ?? company?.ldcp ?? null;
-  const rangeFrom = bars.length ? (range === '1D' && ldcp ? ldcp : bars[0].o) : null;
+  const firstVis = bars[Math.max(0, bars.length - visible)];
+  const rangeFrom = bars.length ? (range === '1D' && ldcp ? ldcp : firstVis.o) : null;
   const rangeTo = bars.length ? bars[bars.length - 1].c : null;
   const rangePct = rangeFrom && rangeTo ? ((rangeTo - rangeFrom) / rangeFrom) * 100 : null;
   const pos = account.positions[symbol];
@@ -223,7 +227,7 @@ export default function StockScreen() {
                 <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
               </View>
             ) : (
-              <Chart candles={bars} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} />
+              <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} />
             )}
           </View>
           <View style={styles.rangeRow}>

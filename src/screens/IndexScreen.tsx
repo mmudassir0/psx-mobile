@@ -10,7 +10,7 @@ import { ticksToCandles } from '../psx/parse';
 import type { Candle, Constituent, SeriesPoint } from '../psx/types';
 import { useMarket } from '../store/market';
 import { Change, Empty, IconButton, Loading, Section, T } from '../ui/kit';
-import { Chart, ChartMode, ChartUnit } from '../ui/Chart';
+import { SkiaChart, ChartMode, ChartUnit } from '../ui/SkiaChart';
 
 type Range = '1D' | '1M' | '3M' | '1Y' | '5Y';
 const RANGES: Range[] = ['1D', '1M', '3M', '1Y', '5Y'];
@@ -41,12 +41,11 @@ function lastSession(ticks: SeriesPoint[]) {
 }
 
 /** EOD index closes as line-chart bars (PSX publishes no daily high/low for indices). */
-function eodBars(eod: SeriesPoint[], days: number): Candle[] {
+function eodBars(eod: SeriesPoint[], weekly: boolean): Candle[] {
   if (!eod.length) return [];
-  const from = eod[eod.length - 1].t - days * DAY;
-  const pts = eod.filter((p) => p.t > from);
+  const pts = eod;
   // Weekly sampling for long ranges keeps the line readable.
-  const step = days > 2 * 366 ? 5 : 1;
+  const step = weekly ? 5 : 1;
   return pts
     .filter((_, i) => i % step === 0 || i === pts.length - 1)
     .map((p) => ({ t: p.t, o: p.open ?? p.v, h: p.v, l: p.v, c: p.v, v: p.vol }));
@@ -135,10 +134,13 @@ export default function IndexScreen() {
     setRefreshing(false);
   };
 
-  const { bars, unit } = useMemo((): { bars: Candle[]; unit: ChartUnit } => {
-    if (range === '1D') return { bars: ticksToCandles(lastSession(ticks ?? []), 5), unit: 'intraday' };
-    const days = { '1M': 31, '3M': 92, '1Y': 366, '5Y': 5 * 366 }[range];
-    return { bars: eodBars(eod ?? [], days), unit: range === '5Y' ? 'month' : 'day' };
+  const { bars, unit, visible } = useMemo((): { bars: Candle[]; unit: ChartUnit; visible: number } => {
+    if (range === '1D') {
+      const b = ticksToCandles(lastSession(ticks ?? []), 5);
+      return { bars: b, unit: 'intraday', visible: b.length };
+    }
+    const visible = { '1M': 22, '3M': 63, '1Y': 248, '5Y': 261 }[range];
+    return { bars: eodBars(eod ?? [], range === '5Y'), unit: range === '5Y' ? 'month' : 'day', visible };
   }, [range, ticks, eod]);
   const loadingChart = range === '1D' ? ticks == null : eod == null;
   const chartMode: ChartMode = range === '1D' ? mode : 'line';
@@ -171,8 +173,8 @@ export default function IndexScreen() {
   }, [cons, tab]);
   const shown = showAll ? list : list.slice(0, 10);
 
-  const rangeChange = bars.length > 1 ? (range === '1D' && prevClose ? bars[bars.length - 1].c - prevClose : bars[bars.length - 1].c - bars[0].c) : null;
-  const rangeBase = range === '1D' ? prevClose : bars[0]?.c;
+  const rangeChange = bars.length > 1 ? (range === '1D' && prevClose ? bars[bars.length - 1].c - prevClose : bars[bars.length - 1].c - bars[Math.max(0, bars.length - visible)].c) : null;
+  const rangeBase = range === '1D' ? prevClose : bars[Math.max(0, bars.length - visible)]?.c;
   const rangePct = rangeChange != null && rangeBase ? (rangeChange / rangeBase) * 100 : null;
 
   const header = useCallback(
@@ -234,7 +236,7 @@ export default function IndexScreen() {
               <T v="caption">No chart data for this range yet.</T>
             </View>
           ) : (
-            <Chart candles={bars} mode={chartMode} unit={unit} prevClose={range === '1D' ? prevClose : null} header={header} onScrubChange={setScrubbing} />
+            <SkiaChart candles={bars} visible={visible} mode={chartMode} unit={unit} prevClose={range === '1D' ? prevClose : null} header={header} onScrubChange={setScrubbing} />
           )}
         </View>
 
