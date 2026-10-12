@@ -46,11 +46,16 @@ jobs:
         continue-on-error: true
         run: npx tsx scripts/smoke-live.ts
 
+      - name: Stamp build number
+        run: node -e "const f='app.json',a=require('./'+f);a.expo.android.versionCode=100+${{ github.run_number }};require('fs').writeFileSync(f,JSON.stringify(a,null,2))"
+
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
 
       - name: Build release APK
         working-directory: android
+        env:
+          EXPO_PUBLIC_BUILD: ${{ github.run_number }}
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: Collect APK
@@ -65,5 +70,5 @@ jobs:
           tag_name: v${{ env.VERSION }}-build.${{ github.run_number }}
           name: Sahm ${{ env.VERSION }} (build ${{ github.run_number }})
           make_latest: true
-          body: Paper-trading build with live PSX data. Install the APK on Android.
+          body: ${{ github.event.head_commit.message || 'Sahm build' }}
           files: Sahm-*.apk

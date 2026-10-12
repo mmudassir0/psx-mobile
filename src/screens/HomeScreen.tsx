@@ -13,6 +13,7 @@ import { Change, Empty, IconButton, Loading, Section, Segmented, T } from '../ui
 import { StockRow, volumeLabel } from '../ui/StockRow';
 import { Sparkline } from '../ui/PriceChart';
 import { pkNow } from '../market-hours';
+import { UpdateBanner, VersionRow } from '../ui/UpdateBanner';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 
@@ -87,6 +88,8 @@ export default function HomeScreen() {
         <View style={styles.pad}>
           <MarketStatus />
         </View>
+
+        <UpdateBanner />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
           {homeIdx.length === 0 && !ready ? <Loading /> : null}
@@ -177,6 +180,8 @@ export default function HomeScreen() {
             {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
           </Section>
         </View>
+
+        <VersionRow />
       </ScrollView>
     </SafeAreaView>
   );

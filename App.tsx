@@ -20,6 +20,7 @@ import { colors, fonts } from './src/theme';
 import type { RootParams, TabParams } from './src/nav/types';
 import { MarketProvider } from './src/store/market';
 import { UserProvider, useUser } from './src/store/user';
+import { UpdateProvider } from './src/store/update';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -125,10 +126,12 @@ export default function App() {
     <SafeAreaProvider>
       <MarketProvider>
         <UserProvider>
-          <NavigationContainer theme={navTheme}>
-            <StatusBar style="light" />
-            <Root />
-          </NavigationContainer>
+          <UpdateProvider>
+            <NavigationContainer theme={navTheme}>
+              <StatusBar style="light" />
+              <Root />
+            </NavigationContainer>
+          </UpdateProvider>
         </UserProvider>
       </MarketProvider>
     </SafeAreaProvider>
