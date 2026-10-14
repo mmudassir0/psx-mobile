@@ -3,6 +3,8 @@ name: Sample reports
 on:
   push:
     branches: [fundamentals-dev]
+permissions:
+  contents: write
 jobs:
   sample:
     runs-on: ubuntu-latest
@@ -29,9 +31,21 @@ jobs:
             sleep 1
           done < list.txt
           ls -la pdfs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: samples
-          path: |
-            reports.json
-            pdfs/
+      - name: Convert to text and push to a side branch
+        run: |
+          sudo apt-get install -y -qq poppler-utils >/dev/null
+          mkdir -p out
+          cp reports.json out/
+          for f in pdfs/*.pdf; do
+            n=$(basename "$f" .pdf)
+            pdfinfo "$f" > "out/$n.info.txt" 2>&1 || true
+            pdftotext -layout "$f" "out/$n.txt" 2>/dev/null || echo "no text" > "out/$n.txt"
+          done
+          ls -la out
+          git config user.name "sample-bot"
+          git config user.email "sample-bot@users.noreply.github.com"
+          git checkout --orphan fundamentals-samples
+          git rm -rq --cached .
+          git add out
+          git commit -qm "Sample report text"
+          git push -f origin fundamentals-samples
