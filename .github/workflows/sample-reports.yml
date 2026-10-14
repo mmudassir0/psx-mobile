@@ -23,6 +23,7 @@ jobs:
           mkdir -p /tmp/out
           (curl -sS -o /dev/null -w "curl company: %{http_code} %{time_total}s\n" -A "Mozilla/5.0" https://dps.psx.com.pk/company/LUCK;
            curl -sS -o /dev/null -w "curl indices: %{http_code} %{time_total}s\n" -A "Mozilla/5.0" https://dps.psx.com.pk/indices;
+           curl -sS -o /tmp/out/model-probe.txt -w "model POST: %{http_code} redirect=%{redirect_url}\n" -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://models.github.ai/inference/chat/completions -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hi"}]}';
            node -e 'fetch("https://dps.psx.com.pk/company/LUCK").then(r=>console.log("node fetch",r.status)).catch(e=>console.log("node fetch error",e.message,e.cause&&e.cause.code,e.cause&&e.cause.message))') > /tmp/out/diag.txt 2>&1 || true
           python3 scripts/fundamentals/trial.py /tmp/out/trial.json 2>&1 | tee /tmp/out/log.txt || true
       - name: Push result to a side branch
