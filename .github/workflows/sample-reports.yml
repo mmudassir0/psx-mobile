@@ -1,10 +1,11 @@
-# Temporary: fetches sample report PDFs so the extractor can be developed offline.
+# Temporary: runs the extractor on sample companies and pushes the result to a side branch.
 name: Sample reports
 on:
   push:
     branches: [fundamentals-dev]
 permissions:
   contents: write
+  models: read
 jobs:
   sample:
     runs-on: ubuntu-latest
@@ -13,40 +14,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - name: Find reports
-        run: npx tsx scripts/fundamentals/find-reports.ts LUCK MEBL HBL OGDC HUBC EFERT SYS PPL > reports.json
-      - name: Download latest of each kind
+      - name: Tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr >/dev/null
+      - name: Find and extract
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p pdfs
-          node -e '
-          const r = require("./reports.json");
-          const lines = [];
-          for (const c of r) for (const kind of ["annual","quarterly","results"]) {
-            const x = c.reports.find(p => p.kind === kind);
-            if (x) lines.push(`${c.symbol}_${kind} ${x.url}`);
-          }
-          require("fs").writeFileSync("list.txt", lines.join("\n") + "\n");'
-          while read name url; do
-            curl -sSL --max-time 180 -A "Mozilla/5.0" -o "pdfs/$name.pdf" "$url" || echo "fail $name"
-            sleep 1
-          done < list.txt
-          ls -la pdfs
-      - name: Convert to text and push to a side branch
+          mkdir -p /tmp/out
+          npx tsx scripts/fundamentals/find-reports.ts LUCK MEBL HBL OGDC HUBC EFERT SYS PPL > /tmp/out/reports.json
+          python3 scripts/fundamentals/extract.py /tmp/out/reports.json /tmp/out/fundamentals.json 2>&1 | tee /tmp/out/log.txt || true
+      - name: Push result to a side branch
+        if: always()
         run: |
-          mkdir -p out
-          exec > >(tee out/log.txt) 2>&1
-          set -x
-          (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils) || echo "apt failed"
-          cp reports.json list.txt out/ || true
-          ls -la pdfs || true
-          for f in pdfs/*.pdf; do
-            n=$(basename "$f" .pdf)
-            file "$f" > "out/$n.info.txt" 2>&1 || true
-            pdfinfo "$f" >> "out/$n.info.txt" 2>&1 || true
-            pdftotext -layout "$f" "out/$n.txt" 2>>out/log.txt || echo "no text" > "out/$n.txt"
-          done
-          set +x
-          mv out /tmp/out
           git config user.name "sample-bot"
           git config user.email "sample-bot@users.noreply.github.com"
           git checkout --orphan fundamentals-samples
@@ -54,5 +33,5 @@ jobs:
           rm -rf ./* || true
           cp -r /tmp/out ./out
           git add out
-          git commit -qm "Sample report text"
+          git commit -qm "Extraction trial"
           git push -f origin fundamentals-samples
