@@ -34,6 +34,13 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Bundle latest fundamentals
+        run: |
+          if git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/f.json 2>/dev/null; then
+            cp /tmp/f.json assets/fundamentals.json
+            echo "Bundled fundamentals from the data branch"
+          fi
+
       - name: Type check
         run: npx tsc --noEmit
 
@@ -42,6 +49,8 @@ jobs:
           npx tsx scripts/test-parsers.ts
           npx tsx scripts/test-engine.ts
           npx tsx scripts/test-indicators.ts
+          npx tsx scripts/test-ratios.ts
+          python3 scripts/fundamentals/test_extract.py
 
       - name: Live PSX check
         continue-on-error: true

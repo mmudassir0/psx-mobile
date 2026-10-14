@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, space, tabular, themed } from '../../theme';
-import { fmtCompact, fmtNum, fmtPct } from '../../format';
+import { fmtCompact, fmtDay, fmtNum, fmtPct } from '../../format';
 import type { CompanyInfo, FinTable, Stock } from '../../psx/types';
 import { KV, Panel } from '../../ui/bits';
+import { balanceSheetFor, computeRatios } from '../../analysis/ratios';
 import { Loading, Section, Segmented, T } from '../../ui/kit';
 
 /** PSX reports money in thousands of rupees, EPS and ratios as-is. */
@@ -85,8 +86,14 @@ function EpsBars({ t }: { t: FinTable }) {
   );
 }
 
+const pct = (v: number | null) => (v == null ? '—' : fmtPct(v * 100, false));
+const x = (v: number | null, suffix = '×') => (v == null ? '—' : fmtNum(v, 2) + suffix);
+const rs = (v: number | null) => (v == null ? '—' : `Rs. ${fmtCompact(v)}`);
+
 export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo | null; stock?: Stock; err: string | null }) {
   const [period, setPeriod] = useState<'annual' | 'quarterly'>('annual');
+  const bs = useMemo(() => balanceSheetFor(company?.symbol ?? stock?.symbol ?? ''), [company?.symbol, stock?.symbol]);
+  const r = useMemo(() => computeRatios(bs, company, stock), [bs, company, stock]);
   if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Loading />;
 
   const fin = period === 'annual' ? company.financialsAnnual : company.financialsQuarterly;
@@ -108,7 +115,10 @@ export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo 
             label="Earnings yield"
             value={annualEps != null && price ? fmtPct((annualEps / price) * 100, false) : '—'}
           />
+          <KV label="Price to book" sub={r.bookValuePerShare != null ? `Book value Rs. ${fmtNum(r.bookValuePerShare)} a share` : undefined} value={x(r.priceToBook)} />
+          <KV label="Price to sales" value={x(r.priceToSales)} />
           <KV label="Dividend yield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
+          <KV label="Payout ratio" sub={r.dividendCover != null ? `Dividend covered ${fmtNum(r.dividendCover, 1)}× by earnings` : undefined} value={pct(r.payoutRatio)} />
           <KV label="Market cap" value={company.marketCap != null ? `Rs. ${fmtCompact(company.marketCap)}` : '—'} />
           <KV label="1-year change" value={fmtPct(company.change1y)} color={(company.change1y ?? 0) < 0 ? colors.downText : undefined} />
           <KV label="Year to date" value={fmtPct(company.ytd)} color={(company.ytd ?? 0) < 0 ? colors.downText : undefined} last />
@@ -141,6 +151,45 @@ export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo 
           <T v="caption">Margins and growth in %. PEG = P/E divided by EPS growth; below 1 can mean growth is cheap.</T>
         </Section>
       ) : null}
+
+      <Section title="Returns and balance sheet">
+        {bs ? (
+          <>
+            <Panel>
+              <KV label="Return on equity (ROE)" sub={r.profitBasis === 'ttm' ? 'Trailing 12-month profit ÷ equity' : 'Fiscal-year profit ÷ equity'} value={pct(r.roe)} />
+              <KV label="Return on assets (ROA)" value={pct(r.roa)} />
+              {!bs.isBank ? <KV label="Current ratio" sub="Current assets ÷ current liabilities" value={x(r.currentRatio, ' : 1')} /> : null}
+              <KV label="Debt to equity" sub="Interest-bearing borrowings ÷ equity" value={pct(r.debtToEquity)} />
+              <KV label="Liabilities to equity" value={pct(r.liabilitiesToEquity)} />
+              <KV label="Equity to assets" value={pct(r.equityToAssets)} last />
+            </Panel>
+            <Panel>
+              <KV label="Total assets" value={rs(bs.assets)} />
+              <KV label="Shareholders' equity" value={rs(bs.equity)} />
+              <KV label="Total liabilities" value={rs(bs.liabilities)} />
+              {bs.borrowings != null ? <KV label="Borrowings" value={rs(bs.borrowings)} /> : null}
+              {bs.cash != null ? <KV label="Cash and bank" value={rs(bs.cash)} /> : null}
+              {!bs.isBank && bs.currentAssets != null ? <KV label="Current assets" value={rs(bs.currentAssets)} /> : null}
+              {!bs.isBank && bs.currentLiabilities != null ? <KV label="Current liabilities" value={rs(bs.currentLiabilities)} last /> : null}
+            </Panel>
+            <Pressable accessibilityRole="link" onPress={() => Linking.openURL(bs.source.url)}>
+              <T v="caption" style={{ lineHeight: 18 }}>
+                {bs.statement === 'consolidated' ? 'Consolidated' : 'Standalone'} balance sheet
+                {bs.periodEnd ? ` as at ${fmtDay(Date.parse(bs.periodEnd + 'T12:00:00Z'))}` : ''}, from the company's report
+                filed {fmtDay(Date.parse(bs.source.date + 'T12:00:00Z'))} (page {bs.source.pages.join(', ')}).{' '}
+                <T v="caption" style={{ color: colors.gold }}>
+                  Open report
+                </T>
+              </T>
+            </Pressable>
+          </>
+        ) : (
+          <T v="caption" style={{ lineHeight: 18 }}>
+            ROE, ROA, book value, current ratio and debt ratios need the balance sheet from this company's latest report. It
+            hasn't been read yet; it arrives with a future update.
+          </T>
+        )}
+      </Section>
 
       <Section title="Shares">
         <Panel>

@@ -19,6 +19,9 @@ The portal's own scripts send an `X-Req-Id` header taken from `window.__ps._k` o
 ## Stock page
 Six tabs: Overview (chart, day and 52-week range, bid/ask, circuit breakers), Technicals (oscillators, moving averages and pivot points with Buy/Sell readings, plus the signal score), Fundamentals (annual and quarterly sales, profit, EPS, margins, PEG from the PSX company page), Announcements (filterable by category, PDF links), Profile (key people, auditor, registrar, website) and Peers (same-sector companies).
 
+## Balance-sheet ratios
+ROE, ROA, book value, P/B, current ratio and debt ratios need figures PSX doesn't publish, so they come from each company's own report. The `Fundamentals` workflow (Mon and Thu, or run it by hand) finds each KSE-100 company's latest report on PSX, locates the standalone balance sheet (OCR where the page is scanned), has a model on Groq's free tier read it, and then checks every figure in code: it must appear on the page in the current-period column, assets must equal equity + liabilities, and borrowings are summed from verified lines. Failures are logged, never published. Results go to `fundamentals.json` on the `data` branch and every APK build bundles them; the app computes the ratios with live prices and links to the source report. Needs the `GROQ_API_KEY` repository secret. Code: `scripts/fundamentals/`, `src/analysis/ratios.ts`.
+
 ## Themes
 White by default; Dark or "follow the phone" in Settings (gear on Home). Colors live in `src/theme.ts`; stylesheets that use them are wrapped in `themed()` so they rebuild when the theme changes.
 
