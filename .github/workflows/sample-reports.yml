@@ -19,6 +19,7 @@ jobs:
       - name: Find and extract
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           mkdir -p /tmp/out
           (curl -sS -o /dev/null -w "curl company: %{http_code} %{time_total}s\n" -A "Mozilla/5.0" https://dps.psx.com.pk/company/LUCK;
@@ -30,6 +31,8 @@ jobs:
            echo "token length: ${#GITHUB_TOKEN}";
            node -e 'fetch("https://dps.psx.com.pk/company/LUCK").then(r=>console.log("node fetch",r.status)).catch(e=>console.log("node fetch error",e.message,e.cause&&e.cause.code,e.cause&&e.cause.message))') > /tmp/out/diag.txt 2>&1 || true
           python3 scripts/fundamentals/trial.py /tmp/out/trial.json 2>&1 | tee /tmp/out/log.txt || true
+          npx tsx scripts/fundamentals/find-reports.ts LUCK HUBC PPL EFERT > /tmp/out/reports.json || true
+          python3 scripts/fundamentals/extract.py /tmp/out/reports.json /tmp/out/fundamentals.json 2>&1 | tee /tmp/out/extract-log.txt || true
       - name: Push result to a side branch
         if: always()
         run: |

@@ -3,7 +3,7 @@ import glob, json, os, sys, time
 sys.path.insert(0, os.path.dirname(__file__))
 import extract as X
 
-token = os.environ["GITHUB_TOKEN"]
+token = os.environ["LLM_API_KEY"]
 out = {}
 for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), "fixtures", "*.json"))):
     fx = json.load(open(f))
@@ -16,5 +16,5 @@ for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), "fixtures", "*
     except Exception as e:
         out[fx["name"]] = {"error": str(e)}
         print(fx["name"], "ERROR", e, flush=True)
-    time.sleep(4)
+    time.sleep(12)
 json.dump(out, open(sys.argv[1], "w"), indent=1)

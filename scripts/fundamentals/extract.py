@@ -14,8 +14,9 @@ Anything that fails a check is recorded as a failure, never published.
 Usage:
   python extract.py reports.json out.json [--limit N] [--only SYM,SYM]
 Environment:
-  GITHUB_TOKEN   token with `models: read` (GitHub Models)
-  MODEL          model id, default openai/gpt-4.1-mini
+  LLM_API_KEY    API key for an OpenAI-compatible chat endpoint (Groq's free tier by default)
+  LLM_URL        endpoint, default https://api.groq.com/openai/v1/chat/completions
+  MODEL          model id, default openai/gpt-oss-120b
 """
 from __future__ import annotations
 
@@ -30,9 +31,9 @@ import urllib.request
 from datetime import datetime, timezone
 
 UA = "Mozilla/5.0 (compatible; sahm-fundamentals/1.0)"
-MODEL = os.environ.get("MODEL", "openai/gpt-4.1-mini")
-ENDPOINT = "https://models.github.ai/inference/chat/completions"
-FIELDS = ["total_equity", "total_assets", "total_liabilities", "current_assets", "current_liabilities", "borrowings", "cash"]
+MODEL = os.environ.get("MODEL") or "openai/gpt-oss-120b"
+ENDPOINT = os.environ.get("LLM_URL") or "https://api.groq.com/openai/v1/chat/completions"
+FIELDS = ["total_equity", "total_assets", "total_liabilities", "current_assets", "current_liabilities", "cash"]
 
 HEADING = re.compile(r"statement\s+of\s+financial\s+position|balance\s+sheet", re.I)
 BIGNUM = re.compile(r"\(?\d{1,3}(?:,\d{3})+\)?|\(?\d{5,}\)?")
@@ -162,21 +163,28 @@ Return JSON only, no prose, with this shape:
  "total_liabilities": "<number exactly as printed or null>",
  "current_assets": "<number exactly as printed or null>",       // null for banks
  "current_liabilities": "<number exactly as printed or null>",  // null for banks
- "borrowings": "<one printed line or subtotal of interest-bearing borrowings / long-term financing, or null; never add lines together>",
+ "borrowing_lines": ["<each interest-bearing borrowing line as printed: long-term financing, its current maturity, short-term borrowings, running finance, TFCs/sukuk, loans. NOT lease liabilities, NOT trade payables, NOT deposits. Empty list if none. For banks use borrowings only, not customer deposits>"],
  "cash": "<cash and bank balances as printed or null>"
 }
 Rules: copy every number character-for-character from the CURRENT period column (keep commas, keep brackets for negatives).
 Never add numbers up yourself. If a total is not printed, use null. Do not guess."""
 
 
+def compact(text: str) -> str:
+    """Layout text is mostly padding; keep column breaks but drop the runs of spaces."""
+    lines = [re.sub(r" {2,}", "  ", l.rstrip()) for l in text.splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
+
+
 def ask_model(text: str, token: str) -> dict:
+    text = compact(text)
     body = json.dumps({
         "model": MODEL,
         "temperature": 0,
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": PROMPT},
-            {"role": "user", "content": text[:24000]},
+            {"role": "user", "content": text[:16000]},
         ],
     }).encode()
     for attempt in range(4):
@@ -184,6 +192,7 @@ def ask_model(text: str, token: str) -> dict:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
+            "User-Agent": UA,
         })
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
@@ -198,8 +207,8 @@ def ask_model(text: str, token: str) -> dict:
             return json.loads(m.group(0))
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < 3:
-                wait = int(e.headers.get("Retry-After") or 30)
-                time.sleep(min(wait, 120))
+                wait = float(e.headers.get("Retry-After") or 60)
+                time.sleep(min(wait, 120) + 2)
                 continue
             raise RuntimeError(f"model HTTP {e.code}: {e.read()[:300]!r}")
     raise RuntimeError("model rate limited")
@@ -226,7 +235,6 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
     unit = ans.get("unit") if ans.get("unit") in (1, 1000, 1000000) else None
     if unit is None:
         return None, ["unknown unit"]
-    hay = normalize_number(page_text.replace("\n", " "))
     hay_tokens = {normalize_number(t) for t in BIGNUM.findall(page_text)}
     vals: dict[str, float | None] = {}
     for f in FIELDS:
@@ -240,6 +248,18 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
             vals[f] = None
             continue
         vals[f] = to_value(raw, unit)
+    # Borrowings: each line verified on its own, summed here (the model never adds numbers).
+    lines = ans.get("borrowing_lines") or []
+    if not isinstance(lines, list):
+        lines = []
+    total_b, bad = 0.0, False
+    for raw in lines:
+        if normalize_number(str(raw)) not in hay_tokens:
+            problems.append(f"borrowing line {raw} not found in the statement")
+            bad = True
+            continue
+        total_b += abs(to_value(raw, unit) or 0)
+    vals["borrowings"] = None if bad or not lines else total_b
     eq, ta, tl = vals["total_equity"], vals["total_assets"], vals["total_liabilities"]
     if eq is None or ta is None:
         return None, problems + ["missing equity or total assets"]
@@ -256,6 +276,9 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
     if vals["current_liabilities"] is not None and vals["current_liabilities"] > vals["total_liabilities"] * 1.001:
         problems.append("current liabilities larger than total liabilities")
         vals["current_liabilities"] = None
+    if vals["borrowings"] is not None and vals["borrowings"] > (vals["total_liabilities"] or 0) * 1.001:
+        problems.append("borrowings larger than total liabilities")
+        vals["borrowings"] = None
     if eq <= 0:
         problems.append("negative equity")
     return vals, problems
@@ -312,7 +335,7 @@ def main():
     args = sys.argv[3:]
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
     only = set(args[args.index("--only") + 1].split(",")) if "--only" in args else None
-    token = os.environ["GITHUB_TOKEN"]
+    token = os.environ["LLM_API_KEY"]
     companies = json.load(open(src))
     if only:
         companies = [c for c in companies if c["symbol"] in only]
@@ -345,7 +368,7 @@ def main():
             else:
                 failures[sym] = r
                 print(f"{sym}: FAILED {r.get('reason')}", flush=True)
-            time.sleep(4)  # stay well inside the free model rate limit
+            time.sleep(12)  # free tier allows ~8K tokens a minute; one statement is ~2K with the prompt
 
     json.dump({
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),

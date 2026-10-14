@@ -1,0 +1,76 @@
+# Reads each KSE-100 company's latest report from PSX, extracts its balance
+# sheet, verifies it, and stores the result in assets/fundamentals.json on the
+# `data` branch. When anything changed, it starts a new APK build so the app
+# ships with the fresh numbers. Companies whose report hasn't changed are
+# skipped, so a run after the results season costs almost nothing.
+name: Fundamentals
+on:
+  schedule:
+    - cron: '17 1 * * 1,4'   # Mon and Thu 06:17 PKT
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Comma-separated symbols (blank = all KSE-100)'
+        required: false
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: fundamentals
+  cancel-in-progress: false
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr >/dev/null
+      - name: Previous data
+        run: |
+          mkdir -p /tmp/data
+          if git fetch -q origin data 2>/dev/null; then
+            git show origin/data:fundamentals.json > /tmp/data/fundamentals.json 2>/dev/null || true
+          fi
+      - name: Find reports
+        run: |
+          ONLY="${{ github.event.inputs.only }}"
+          npx tsx scripts/fundamentals/find-reports.ts ${ONLY//,/ } > /tmp/data/reports.json
+      - name: Extract and verify
+        env:
+          LLM_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -z "$LLM_API_KEY" ]; then echo "::error::Add the GROQ_API_KEY repository secret"; exit 1; fi
+          python3 scripts/fundamentals/extract.py /tmp/data/reports.json /tmp/data/fundamentals.json | tee /tmp/data/log.txt
+      - name: Publish to the data branch
+        id: publish
+        run: |
+          python3 - <<'PY'
+          import json
+          d = json.load(open('/tmp/data/fundamentals.json'))
+          print(f"{len(d['companies'])} companies ok, {len(d['failures'])} failed")
+          PY
+          cp /tmp/data/fundamentals.json /tmp/fundamentals.json
+          git config user.name "sahm-data"
+          git config user.email "sahm-data@users.noreply.github.com"
+          if git ls-remote --exit-code origin data >/dev/null; then
+            git checkout -q -B data origin/data
+          else
+            git checkout -q --orphan data && git rm -rqf --cached . && rm -rf ./* .github
+          fi
+          OLD=$(python3 -c "import json;d=json.load(open('fundamentals.json'));d.pop('generatedAt',None);print(json.dumps(d,sort_keys=True))" 2>/dev/null || echo none)
+          NEW=$(python3 -c "import json;d=json.load(open('/tmp/fundamentals.json'));d.pop('generatedAt',None);print(json.dumps(d,sort_keys=True))")
+          if [ "$OLD" = "$NEW" ]; then echo "No changes"; echo "changed=no" >> $GITHUB_OUTPUT; exit 0; fi
+          cp /tmp/fundamentals.json fundamentals.json
+          git add fundamentals.json
+          git commit -qm "Fundamentals $(date -u +%F)"
+          git push -q origin data
+          echo "changed=yes" >> $GITHUB_OUTPUT
+      - name: Build a new APK with the data
+        if: steps.publish.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run android.yml --ref main
