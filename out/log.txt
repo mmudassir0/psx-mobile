@@ -1,0 +1,7 @@
+HBL_quarterly OK ['cash 5,543,921,714 not found in the statement']
+LUCK_annual OK []
+MEBL_quarterly OK []
+OGDC_annual REJECTED ['assets 1231837880000 != equity 1519550164000 + liabilities 333278025000']
+OGDC_quarterly OK []
+PPL_annual OK []
+SYS_quarterly OK []

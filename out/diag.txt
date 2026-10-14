@@ -1,0 +1,8 @@
+curl company: 200 2.408449s
+curl indices: 200 1.971623s
+model POST: 200 redirect=
+catalog: 200
+curl: (6) Could not resolve host: models.inference.ai.azure.com
+azure POST: 000
+token length: 377
+node fetch 200

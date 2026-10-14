@@ -1,0 +1,96 @@
+{
+ "generatedAt": "2026-10-14T17:28:02+00:00",
+ "model": "openai/gpt-oss-120b",
+ "companies": {
+  "EFERT": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 42950012000,
+   "assets": 218250616000,
+   "liabilities": 175300604000,
+   "currentAssets": 106788328000,
+   "currentLiabilities": 130502869000,
+   "borrowings": 103144987000.0,
+   "cash": 1739057000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/281833.pdf",
+    "date": "2026-08-28",
+    "pages": [
+     34,
+     35
+    ],
+    "method": "ocr"
+   }
+  },
+  "HUBC": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 67226032000,
+   "assets": 90654386000,
+   "liabilities": 23428354000,
+   "currentAssets": 21917586000,
+   "currentLiabilities": 22239057000,
+   "borrowings": 5370762000.0,
+   "cash": 604912000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026 - The Hub Power Company Limited",
+    "url": "https://dps.psx.com.pk/download/document/283369.pdf",
+    "date": "2026-09-24",
+    "pages": [
+     223
+    ],
+    "method": "ocr"
+   }
+  },
+  "LUCK": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 216641607000,
+   "assets": 301409878000,
+   "liabilities": 84768271000,
+   "currentAssets": 127042576000,
+   "currentLiabilities": 53105221000,
+   "borrowings": 18772011000.0,
+   "cash": 1530592000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the year ended - June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/282262.pdf",
+    "date": "2026-09-04",
+    "pages": [
+     236
+    ],
+    "method": "text"
+   }
+  },
+  "PPL": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 779535509000,
+   "assets": 1024629695000,
+   "liabilities": 245094186000,
+   "currentAssets": 745745293000,
+   "currentLiabilities": 164491814000,
+   "borrowings": 1469140000.0,
+   "cash": 7166285000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended 30 June 2026",
+    "url": "https://dps.psx.com.pk/download/document/284662.pdf",
+    "date": "2026-10-06",
+    "pages": [
+     139
+    ],
+    "method": "text"
+   }
+  }
+ },
+ "failures": {}
+}

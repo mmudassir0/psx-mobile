@@ -1,0 +1,114 @@
+[
+ {
+  "symbol": "LUCK",
+  "sector": "CEMENT",
+  "shares": 1465000000,
+  "reports": [
+   {
+    "kind": "annual",
+    "date": "2026-09-04",
+    "title": "Transmission of Annual Report for the year ended - June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/282262.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-08-10",
+    "title": "Financial Results for the year ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/280930.pdf"
+   },
+   {
+    "kind": "quarterly",
+    "date": "2026-04-30",
+    "title": "Transmission of Quarterly Report for the period ended - Marach 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/276255.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-04-30",
+    "title": "Financial Results for the Quarter Ended - March 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/275898.pdf"
+   },
+   {
+    "kind": "quarterly",
+    "date": "2026-02-26",
+    "title": "Transmission of Quarterly Report for the period ended - December 31, 2025",
+    "url": "https://dps.psx.com.pk/download/document/271222.pdf"
+   }
+  ]
+ },
+ {
+  "symbol": "HUBC",
+  "sector": "POWER GENERATION & DISTRIBUTION",
+  "shares": 1297154400,
+  "reports": [
+   {
+    "kind": "annual",
+    "date": "2026-09-24",
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026 - The Hub Power Company Limited",
+    "url": "https://dps.psx.com.pk/download/document/283369.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-08-27",
+    "title": "Financial Results for the Year Ended June 30, 2026 - The Hub Power Company Limited",
+    "url": "https://dps.psx.com.pk/download/document/281728.pdf"
+   }
+  ]
+ },
+ {
+  "symbol": "PPL",
+  "sector": "OIL & GAS EXPLORATION COMPANIES",
+  "shares": 2720967548,
+  "reports": [
+   {
+    "kind": "annual",
+    "date": "2026-10-06",
+    "title": "Transmission of Annual Report for the Year Ended 30 June 2026",
+    "url": "https://dps.psx.com.pk/download/document/284662.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-09-14",
+    "title": "Financial Results for the Year Ended 30 June 2026",
+    "url": "https://dps.psx.com.pk/download/document/282658.pdf"
+   },
+   {
+    "kind": "quarterly",
+    "date": "2026-04-30",
+    "title": "Transmission of Quarterly Report for the Period Ended 31 March 2026",
+    "url": "https://dps.psx.com.pk/download/document/276156.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-04-29",
+    "title": "Financial Results for the Quarter Ended 31 March 2026",
+    "url": "https://dps.psx.com.pk/download/document/275641.pdf"
+   },
+   {
+    "kind": "quarterly",
+    "date": "2026-02-19",
+    "title": "Transmission of Quarterly Report for the Period Ended 31 December 2025",
+    "url": "https://dps.psx.com.pk/download/document/270567.pdf"
+   }
+  ]
+ },
+ {
+  "symbol": "EFERT",
+  "sector": "FERTILIZER",
+  "shares": 1335299375,
+  "reports": [
+   {
+    "kind": "quarterly",
+    "date": "2026-08-28",
+    "title": "Transmission of Quarterly Report for the Period Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/281833.pdf"
+   },
+   {
+    "kind": "results",
+    "date": "2026-07-30",
+    "title": "Financial Results for the Six Months Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/280512.pdf"
+   }
+  ]
+ }
+]

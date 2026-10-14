@@ -1,0 +1,219 @@
+{
+ "HBL_quarterly": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1000,
+   "is_bank": true,
+   "total_equity": "443,822,445",
+   "total_assets": "7,601,774,671",
+   "total_liabilities": "7,157,952,226",
+   "current_assets": null,
+   "current_liabilities": null,
+   "borrowing_lines": [
+    {
+     "label": "Borrowings",
+     "amount": "1,122,719,254"
+    },
+    {
+     "label": "Subordinated debt",
+     "amount": "18,874,000"
+    }
+   ],
+   "cash": "5,543,921,714"
+  },
+  "values": {
+   "total_equity": 443822445000,
+   "total_assets": 7601774671000,
+   "total_liabilities": 7157952226000,
+   "current_assets": null,
+   "current_liabilities": null,
+   "cash": null,
+   "borrowings": 1141593254000.0
+  },
+  "problems": [
+   "cash 5,543,921,714 not found in the statement"
+  ]
+ },
+ "LUCK_annual": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1000,
+   "is_bank": false,
+   "total_equity": "216,641,607",
+   "total_assets": "301,409,878",
+   "total_liabilities": "84,768,271",
+   "current_assets": "127,042,576",
+   "current_liabilities": "53,105,221",
+   "borrowing_lines": [
+    {
+     "label": "Current maturity of long\u2013term financing",
+     "amount": "1,822,195"
+    },
+    {
+     "label": "Short term borrowings",
+     "amount": "9,610,000"
+    }
+   ],
+   "cash": "1,530,592"
+  },
+  "values": {
+   "total_equity": 216641607000,
+   "total_assets": 301409878000,
+   "total_liabilities": 84768271000,
+   "current_assets": 127042576000,
+   "current_liabilities": 53105221000,
+   "cash": 1530592000,
+   "borrowings": 11432195000.0
+  },
+  "problems": []
+ },
+ "MEBL_quarterly": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1000,
+   "is_bank": false,
+   "total_equity": "288,656,485",
+   "total_assets": "5,142,014,249",
+   "total_liabilities": "4,853,357,764",
+   "current_assets": null,
+   "current_liabilities": null,
+   "borrowing_lines": [
+    {
+     "label": "Due to financial institutions",
+     "amount": "743,259,516"
+    },
+    {
+     "label": "Sub-ordinated sukuks",
+     "amount": "16,990,000"
+    }
+   ],
+   "cash": "326,087,709"
+  },
+  "values": {
+   "total_equity": 288656485000,
+   "total_assets": 5142014249000,
+   "total_liabilities": 4853357764000,
+   "current_assets": null,
+   "current_liabilities": null,
+   "cash": 326087709000,
+   "borrowings": 760249516000.0
+  },
+  "problems": []
+ },
+ "OGDC_annual": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1000,
+   "is_bank": false,
+   "total_equity": "1,519,550,164",
+   "total_assets": "1,231,837,880",
+   "total_liabilities": "333,278,025",
+   "current_assets": null,
+   "current_liabilities": null,
+   "borrowing_lines": [
+    {
+     "label": "Long term loans- secured",
+     "amount": "7,071,626"
+    }
+   ],
+   "cash": "62,143,448"
+  },
+  "values": null,
+  "problems": [
+   "assets 1231837880000 != equity 1519550164000 + liabilities 333278025000"
+  ]
+ },
+ "OGDC_quarterly": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-03-31",
+   "unit": 1000,
+   "is_bank": false,
+   "total_equity": "1,407,294,379",
+   "total_assets": "1,719,450,657",
+   "total_liabilities": "312,156,278",
+   "current_assets": "1,119,755,969",
+   "current_liabilities": "121,992,885",
+   "borrowing_lines": [],
+   "cash": "57,388,339"
+  },
+  "values": {
+   "total_equity": 1407294379000,
+   "total_assets": 1719450657000,
+   "total_liabilities": 312156278000,
+   "current_assets": 1119755969000,
+   "current_liabilities": 121992885000,
+   "cash": 57388339000,
+   "borrowings": null
+  },
+  "problems": []
+ },
+ "PPL_annual": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1000,
+   "is_bank": false,
+   "total_equity": "779,535,509",
+   "total_assets": "1,024,629,695",
+   "total_liabilities": "245,094,186",
+   "current_assets": "745,745,293",
+   "current_liabilities": "164,491,814",
+   "borrowing_lines": [
+    {
+     "label": "Long - term financing",
+     "amount": "1,177,255"
+    },
+    {
+     "label": "Current maturity of long - term financing",
+     "amount": "291,885"
+    }
+   ],
+   "cash": "7,166,285"
+  },
+  "values": {
+   "total_equity": 779535509000,
+   "total_assets": 1024629695000,
+   "total_liabilities": 245094186000,
+   "current_assets": 745745293000,
+   "current_liabilities": 164491814000,
+   "cash": 7166285000,
+   "borrowings": 1469140000.0
+  },
+  "problems": []
+ },
+ "SYS_quarterly": {
+  "model": {
+   "statement": "standalone",
+   "period_end": "2026-06-30",
+   "unit": 1,
+   "is_bank": false,
+   "total_equity": "50,632,847,155",
+   "total_assets": "68,018,033,259",
+   "total_liabilities": null,
+   "current_assets": "42,253,837,848",
+   "current_liabilities": "16,971,683,414",
+   "borrowing_lines": [
+    {
+     "label": "Short term borrowings",
+     "amount": "6,807,375,093"
+    }
+   ],
+   "cash": "2,138,299,140"
+  },
+  "values": {
+   "total_equity": 50632847155,
+   "total_assets": 68018033259,
+   "total_liabilities": 17385186104,
+   "current_assets": 42253837848,
+   "current_liabilities": 16971683414,
+   "cash": 2138299140,
+   "borrowings": 6807375093.0
+  },
+  "problems": []
+ }
+}
