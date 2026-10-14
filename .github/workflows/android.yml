@@ -50,6 +50,7 @@ jobs:
           npx tsx scripts/test-engine.ts
           npx tsx scripts/test-indicators.ts
           npx tsx scripts/test-ratios.ts
+          npx tsx scripts/test-ai.ts
           python3 scripts/fundamentals/test_extract.py
 
       - name: Live PSX check

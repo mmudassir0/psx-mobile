@@ -23,6 +23,7 @@ import { UserProvider, useUser } from './src/store/user';
 import { UpdateProvider } from './src/store/update';
 import { ThemeProvider, useTheme } from './src/store/theme';
 import SettingsScreen from './src/screens/SettingsScreen';
+import AiSetupScreen from './src/screens/AiSetupScreen';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -105,6 +106,7 @@ function Root() {
       <Stack.Screen name="Index" component={IndexScreen} />
       <Stack.Screen name="Order" component={OrderScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="AiSetup" component={AiSetupScreen} />
     </Stack.Navigator>
   );
 }

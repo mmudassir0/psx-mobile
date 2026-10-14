@@ -12,10 +12,13 @@ import { FundamentalsTab } from './stock/FundamentalsTab';
 import { NewsTab } from './stock/NewsTab';
 import { ProfileTab } from './stock/ProfileTab';
 import { PeersTab } from './stock/PeersTab';
+import { AiTab } from './stock/AiTab';
+import { balanceSheetFor, computeRatios } from '../analysis/ratios';
+import type { StockPack } from '../ai/context';
 import { fetchCompany, fetchDailyCandles, fetchSeries } from '../psx/api';
 import { groupCandles, ticksToCandles } from '../psx/parse';
 import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
-import { useStock } from '../store/market';
+import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode } from '../ui/SkiaChart';
@@ -104,9 +107,10 @@ function Ohlc({ c, unit }: { c: Candle; unit: string }) {
   );
 }
 
-type Tab = 'overview' | 'technicals' | 'fundamentals' | 'news' | 'profile' | 'peers';
+type Tab = 'overview' | 'ai' | 'technicals' | 'fundamentals' | 'news' | 'profile' | 'peers';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
+  { key: 'ai', label: 'AI' },
   { key: 'technicals', label: 'Technicals' },
   { key: 'fundamentals', label: 'Fundamentals' },
   { key: 'news', label: 'Announcements' },
@@ -162,6 +166,22 @@ export default function StockScreen() {
   const loadingChart = range === '1D' ? ticks == null : daily == null;
   const analysis = useMemo(() => (daily && daily.length ? analyze(daily) : null), [daily]);
   const tech = useMemo(() => (daily && daily.length ? technicals(daily) : null), [daily]);
+  const { stocks } = useMarket();
+  const pack = useMemo<StockPack>(() => {
+    const balance = balanceSheetFor(symbol);
+    return {
+      stock,
+      company,
+      analysis,
+      tech,
+      ratios: computeRatios(balance, company, stock),
+      balance,
+      peers: stock
+        ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
+        : [],
+      today: new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10),
+    };
+  }, [symbol, stock, company, analysis, tech, stocks]);
 
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
@@ -367,6 +387,7 @@ export default function StockScreen() {
   const pad = { paddingHorizontal: space.gutter };
   let content: React.ReactNode;
   if (tab === 'overview') content = overview;
+  else if (tab === 'ai') content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
   else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab analysis={analysis} tech={tech} loading={daily == null} /></View>;
   else if (tab === 'fundamentals') content = <View style={pad}><FundamentalsTab company={company} stock={stock} err={companyErr} /></View>;
   else if (tab === 'news') content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;

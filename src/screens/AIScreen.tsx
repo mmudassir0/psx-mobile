@@ -1,17 +1,40 @@
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, themed } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
-import { Badge, Card, Icon, T } from '../ui/kit';
+import { chatContext } from '../ai/chat';
+import { CHAT_SYSTEM } from '../ai/context';
+import { ChatMessage, streamChat, StreamHandle } from '../ai/ollama';
+import { useEngine } from '../ai/useEngine';
+import { EngineCard } from '../ui/EngineCard';
+import { Md } from '../ui/Md';
+import { Card, Icon, T } from '../ui/kit';
 
-/**
- * Phase 1 shows a computed market snapshot. The AI chat (answers grounded in
- * PSX filings) needs an API key and arrives in Phase 2.
- */
+const SUGGESTIONS = [
+  'How is the market doing today?',
+  'Compare LUCK and DGKC',
+  'Shariah banks with the best dividend yield',
+  'Which cement stock looks cheapest?',
+];
+
+interface Turn {
+  q: string;
+  a: string;
+  status: 'reading' | 'writing' | 'done' | 'error';
+  note?: string;
+}
+
+/** Market snapshot plus "Ask Sahm": questions answered by the on-phone model from live PSX data. */
 export default function AIScreen() {
   const { stocks, indices } = useMarket();
+  const engine = useEngine();
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [input, setInput] = useState('');
+  const handle = useRef<StreamHandle | null>(null);
+  const scroll = useRef<ScrollView>(null);
+  const busy = turns.some((t) => t.status === 'reading' || t.status === 'writing');
 
   const snap = useMemo(() => {
     const traded = stocks.filter((s) => (s.volume ?? 0) > 0 && s.changePct != null);
@@ -30,80 +53,183 @@ export default function AIScreen() {
   const kmi = indices.find((i) => i.code === 'KMI30');
   const breadth = snap.traded ? (snap.up / snap.traded) * 100 : 0;
 
+  const patch = (i: number, p: Partial<Turn>) => setTurns((ts) => ts.map((t, k) => (k === i ? { ...t, ...p } : t)));
+
+  const ask = async (question: string) => {
+    const q = question.trim();
+    if (!q || busy || engine.state.status !== 'ready') return;
+    const model = engine.state.model;
+    const idx = turns.length;
+    const history = turns.filter((t) => t.status === 'done').slice(-2);
+    setTurns((ts) => [...ts, { q, a: '', status: 'reading' }]);
+    setInput('');
+    setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
+    try {
+      const { text, symbols } = await chatContext(q, stocks, indices);
+      patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
+      const messages: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` }];
+      for (const h of history) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
+      messages.push({ role: 'user', content: q });
+      const h = streamChat(engine.settings!.url, model, messages, (a) => patch(idx, { a }), { numCtx: 6144 });
+      handle.current = h;
+      const a = await h.done;
+      patch(idx, { a, status: 'done' });
+    } catch (e) {
+      patch(idx, { status: 'error', note: (e as Error).message });
+    } finally {
+      handle.current = null;
+      setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
+    }
+  };
+
+  const ready = engine.state.status === 'ready';
+
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View style={styles.mark}>
-            <Icon name="ai" size={20} color={colors.gold} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="h1" style={{ fontSize: 20 }}>
-              Sahm AI
-            </T>
-            <T v="caption">Market snapshot from today's PSX data</T>
-          </View>
-        </View>
-
-        <Card style={{ gap: 12 }}>
-          <T v="title" style={{ fontSize: 15 }}>
-            Today at a glance
-          </T>
-          <T v="body" style={{ color: colors.text2 }}>
-            {kse
-              ? `KSE-100 is ${kse.changePct != null && kse.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kse.changePct ?? 0), false)}`
-              : 'Index data is loading'}
-            {kmi ? `, KMI-30 ${kmi.changePct != null && kmi.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kmi.changePct ?? 0), false)}.` : '.'}{' '}
-            {snap.traded
-              ? `${snap.up} of ${snap.traded} traded stocks rose, ${snap.down} fell. ${fmtCompact(snap.volume)} shares changed hands.`
-              : ''}
-          </T>
-          {snap.traded ? (
-            <View style={{ gap: 6 }}>
-              <View style={styles.breadth}>
-                <View style={{ flex: snap.up, backgroundColor: colors.up }} />
-                <View style={{ flex: snap.flat, backgroundColor: colors.faint }} />
-                <View style={{ flex: snap.down, backgroundColor: colors.down }} />
-              </View>
-              <T v="caption">
-                ▲ {snap.up} advancing · {snap.flat} unchanged · ▼ {snap.down} declining ({breadth.toFixed(0)}% up)
-              </T>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.mark}>
+              <Icon name="ai" size={20} color={colors.gold} />
             </View>
-          ) : null}
-          {snap.best ? (
-            <T v="caption" style={{ lineHeight: 18 }}>
-              Biggest liquid gainer: {snap.best.symbol} {fmtPct(snap.best.changePct)}. Most traded: {snap.busiest?.symbol} (
-              {fmtCompact(snap.busiest?.volume)} shares). Shariah stocks: {snap.shUp} of {snap.shariah} up.
-            </T>
-          ) : null}
-        </Card>
-
-        <Card style={{ gap: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <T v="title" style={{ fontSize: 15 }}>
-              Ask anything about PSX
-            </T>
-            <Badge label="Coming next" tone="gold" />
+            <View style={{ flex: 1 }}>
+              <T v="h1" style={{ fontSize: 20 }}>
+                Sahm AI
+              </T>
+              <T v="caption">Answers from live PSX data, written on your phone</T>
+            </View>
           </View>
-          <T v="body" style={{ color: colors.text2 }}>
-            Chat that answers questions like “why did LUCK fall today?” or “Shariah banks with dividend yield above 8%”,
-            using PSX announcements and prices, with sources.
-          </T>
+
+          <EngineCard state={engine.state} onCheck={engine.check} />
+
+          {turns.length === 0 ? (
+            <>
+              <Card style={{ gap: 12 }}>
+                <T v="title" style={{ fontSize: 15 }}>
+                  Today at a glance
+                </T>
+                <T v="body" style={{ color: colors.text2 }}>
+                  {kse
+                    ? `KSE-100 is ${kse.changePct != null && kse.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kse.changePct ?? 0), false)}`
+                    : 'Index data is loading'}
+                  {kmi ? `, KMI-30 ${kmi.changePct != null && kmi.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kmi.changePct ?? 0), false)}.` : '.'}{' '}
+                  {snap.traded
+                    ? `${snap.up} of ${snap.traded} traded stocks rose, ${snap.down} fell. ${fmtCompact(snap.volume)} shares changed hands.`
+                    : ''}
+                </T>
+                {snap.traded ? (
+                  <View style={{ gap: 6 }}>
+                    <View style={styles.breadth}>
+                      <View style={{ flex: snap.up, backgroundColor: colors.up }} />
+                      <View style={{ flex: snap.flat, backgroundColor: colors.faint }} />
+                      <View style={{ flex: snap.down, backgroundColor: colors.down }} />
+                    </View>
+                    <T v="caption">
+                      ▲ {snap.up} advancing · {snap.flat} unchanged · ▼ {snap.down} declining ({breadth.toFixed(0)}% up)
+                    </T>
+                  </View>
+                ) : null}
+                {snap.best ? (
+                  <T v="caption" style={{ lineHeight: 18 }}>
+                    Biggest liquid gainer: {snap.best.symbol} {fmtPct(snap.best.changePct)}. Most traded: {snap.busiest?.symbol} (
+                    {fmtCompact(snap.busiest?.volume)} shares). Shariah stocks: {snap.shUp} of {snap.shariah} up.
+                  </T>
+                ) : null}
+              </Card>
+
+              <View style={{ gap: 10 }}>
+                <T v="title" style={{ fontSize: 15 }}>
+                  Ask Sahm
+                </T>
+                {SUGGESTIONS.map((sug) => (
+                  <Pressable
+                    key={sug}
+                    accessibilityRole="button"
+                    disabled={!ready}
+                    onPress={() => ask(sug)}
+                    style={({ pressed }) => [styles.suggestion, (!ready || pressed) && { opacity: 0.55 }]}
+                  >
+                    <T v="body" style={{ fontSize: 14.5, flex: 1 }}>
+                      {sug}
+                    </T>
+                    <Icon name="chevron" size={16} color={colors.faint} />
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : (
+            turns.map((t, i) => (
+              <View key={i} style={{ gap: 10 }}>
+                <View style={styles.userBubble}>
+                  <T v="body" style={{ fontSize: 14.5, color: colors.text }}>
+                    {t.q}
+                  </T>
+                </View>
+                <View style={styles.answer}>
+                  {t.status === 'reading' ? (
+                    <T v="caption">Reading the market data…</T>
+                  ) : t.a ? (
+                    <Md text={t.a + (t.status === 'writing' ? ' ▍' : '')} size={14.5} />
+                  ) : t.status === 'writing' ? (
+                    <T v="caption">Thinking…</T>
+                  ) : null}
+                  {t.note ? (
+                    <T v="caption" style={{ color: t.status === 'error' ? colors.downText : colors.faint }}>
+                      {t.status === 'error' ? `Stopped: ${t.note}` : t.note}
+                    </T>
+                  ) : null}
+                </View>
+              </View>
+            ))
+          )}
           <T v="caption" style={{ lineHeight: 18 }}>
-            This needs an AI API key on a small backend, which comes in Phase 2.
+            Answers use only the data Sahm sends with each question. Information, not investment advice.
           </T>
-        </Card>
-        <T v="caption" style={{ lineHeight: 18 }}>
-          Information, not investment advice.
-        </T>
-      </ScrollView>
+        </ScrollView>
+
+        <View style={styles.inputBar}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder={ready ? 'Ask about a stock, sector or the market' : 'Start the on-phone AI to ask questions'}
+            placeholderTextColor={colors.faint}
+            editable={ready && !busy}
+            onSubmitEditing={() => ask(input)}
+            returnKeyType="send"
+            style={styles.input}
+          />
+          {busy ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={() => handle.current?.cancel()} style={styles.send}>
+              <View style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: colors.onGold }} />
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send"
+              disabled={!ready || !input.trim()}
+              onPress={() => ask(input)}
+              style={[styles.send, (!ready || !input.trim()) && { opacity: 0.4 }]}
+            >
+              <Icon name="chevron" size={20} color={colors.onGold} />
+            </Pressable>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 36 },
-  mark: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' },
-  breadth: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surface2 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 24 },
+    mark: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' },
+    breadth: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surface2 },
+    suggestion: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14 },
+    userBubble: { alignSelf: 'flex-end', maxWidth: '85%', backgroundColor: colors.goldSoft, borderRadius: 16, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
+    answer: { gap: 8, paddingRight: 8 },
+    inputBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
+    input: { flex: 1, height: 46, borderRadius: 23, backgroundColor: colors.surface, paddingHorizontal: 18, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
+    send: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  }),
+);
