@@ -3,7 +3,7 @@ import { Animated, PanResponder, Platform, StyleSheet, View } from 'react-native
 import Svg, { Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import type { Candle } from '../psx/types';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtNum, pkDate } from '../format';
 
 export type ChartMode = 'candle' | 'line';
@@ -224,7 +224,7 @@ export function Chart({
           <G>
             <Line x1={0} x2={plotW} y1={geo.y(last.c)} y2={geo.y(last.c)} stroke={lineColor} strokeDasharray="1 3" strokeWidth={1} />
             <Rect x={plotW + 2} y={geo.y(last.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={lineColor} />
-            <SvgText x={plotW + 8} y={geo.y(last.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
+            <SvgText x={plotW + 8} y={geo.y(last.c) + 4} fill={colors.onGold} fontSize={11} fontFamily={fonts.bold}>
               {tagLabel(last.c)}
             </SvgText>
           </G>
@@ -268,7 +268,7 @@ export function Chart({
             <Rect x={geo.x(active) - geo.slot / 2} y={0} width={geo.slot} height={height + volumeHeight} fill={colors.text} opacity={0.05} />
             <Line x1={0} x2={plotW} y1={geo.y(ac.c)} y2={geo.y(ac.c)} stroke={colors.muted} strokeWidth={1} strokeDasharray="3 3" />
             <Rect x={plotW + 2} y={geo.y(ac.c) - 10} width={AXIS_W - 4} height={20} rx={5} fill={colors.text} />
-            <SvgText x={plotW + 8} y={geo.y(ac.c) + 4} fill={colors.ground} fontSize={11} fontFamily={fonts.bold}>
+            <SvgText x={plotW + 8} y={geo.y(ac.c) + 4} fill={colors.onGold} fontSize={11} fontFamily={fonts.bold}>
               {tagLabel(ac.c)}
             </SvgText>
           </Svg>
@@ -278,7 +278,7 @@ export function Chart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
   vline: { position: 'absolute', left: 0, top: 0, width: 1, backgroundColor: colors.muted },
-});
+}));

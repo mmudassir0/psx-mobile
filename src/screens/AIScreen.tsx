@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme';
+import { colors, themed } from '../theme';
 import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
 import { Badge, Card, Icon, T } from '../ui/kit';
@@ -101,9 +101,9 @@ export default function AIScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 36 },
   mark: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' },
   breadth: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surface2 },
-});
+}));

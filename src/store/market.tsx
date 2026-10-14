@@ -61,6 +61,10 @@ export function mergeStocks(symbols: SymbolInfo[], screener: ScreenerRow[], boar
       pe: s?.pe ?? null,
       divYield: s?.divYield ?? null,
       change1y: s?.change1y ?? null,
+      bid: b?.bid ?? null,
+      bidVol: b?.bidVol ?? null,
+      ask: b?.ask ?? null,
+      askVol: b?.askVol ?? null,
     });
   }
   out.sort((a, b) => a.symbol.localeCompare(b.symbol));

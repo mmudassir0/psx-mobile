@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtNum, fmtPkr, fmtPrice } from '../format';
 import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
@@ -256,7 +256,7 @@ export default function OrderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 4 },
   content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 24 },
@@ -282,4 +282,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footer: { paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
-});
+}));

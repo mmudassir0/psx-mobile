@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { changeColor, colors, fonts } from '../theme';
+import { changeColor, colors, fonts, themed } from '../theme';
 import { fmtNum, fmtPct, fmtPkr, fmtPrice, fmtSigned } from '../format';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
@@ -208,7 +208,7 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingHorizontal: 20, paddingTop: 8, gap: 22, paddingBottom: 36 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -216,4 +216,4 @@ const styles = StyleSheet.create({
   bar: { height: 8, borderRadius: 4, backgroundColor: colors.surface2, overflow: 'hidden' },
   barFill: { height: 8, backgroundColor: colors.shariah },
   holding: { flexDirection: 'row', alignItems: 'center', minHeight: 64, borderBottomWidth: 1, borderBottomColor: colors.hairline },
-});
+}));

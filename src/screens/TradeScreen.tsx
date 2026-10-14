@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtDateTime, fmtNum, fmtPrice } from '../format';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
@@ -144,7 +144,7 @@ export default function TradeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingHorizontal: 20, paddingTop: 8, gap: 22, paddingBottom: 36 },
   search: {
@@ -164,4 +164,4 @@ const styles = StyleSheet.create({
   orderCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   cancel: { height: 40, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.line, justifyContent: 'center' },
   hist: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-});
+}));

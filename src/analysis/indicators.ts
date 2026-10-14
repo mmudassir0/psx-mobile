@@ -134,3 +134,73 @@ export function last(s: Series, back = 0): number | null {
   const i = s.length - 1 - back;
   return i >= 0 ? s[i] : null;
 }
+
+/** SMA over a series that may start with nulls; a window containing any null stays null. */
+export function smaSeries(values: Series, n: number): Series {
+  const out: Series = new Array(values.length).fill(null);
+  for (let i = n - 1; i < values.length; i++) {
+    let sum = 0;
+    let ok = true;
+    for (let j = i - n + 1; j <= i; j++) {
+      const v = values[j];
+      if (v == null) {
+        ok = false;
+        break;
+      }
+      sum += v;
+    }
+    if (ok) out[i] = sum / n;
+  }
+  return out;
+}
+
+export interface Stoch {
+  k: Series;
+  d: Series;
+}
+
+/** Slow stochastic (n, kSmooth, dSmooth), e.g. (14, 3, 3). */
+export function stochastic(c: Candle[], n = 14, kSmooth = 3, dSmooth = 3): Stoch {
+  const fast: Series = new Array(c.length).fill(null);
+  for (let i = n - 1; i < c.length; i++) {
+    let hh = -Infinity;
+    let ll = Infinity;
+    for (let j = i - n + 1; j <= i; j++) {
+      hh = Math.max(hh, c[j].h);
+      ll = Math.min(ll, c[j].l);
+    }
+    fast[i] = hh === ll ? 50 : (100 * (c[i].c - ll)) / (hh - ll);
+  }
+  const k = smaSeries(fast, kSmooth);
+  return { k, d: smaSeries(k, dSmooth) };
+}
+
+/** Williams %R, from 0 (at the high) to -100 (at the low). */
+export function williamsR(c: Candle[], n = 14): Series {
+  const out: Series = new Array(c.length).fill(null);
+  for (let i = n - 1; i < c.length; i++) {
+    let hh = -Infinity;
+    let ll = Infinity;
+    for (let j = i - n + 1; j <= i; j++) {
+      hh = Math.max(hh, c[j].h);
+      ll = Math.min(ll, c[j].l);
+    }
+    out[i] = hh === ll ? -50 : (-100 * (hh - c[i].c)) / (hh - ll);
+  }
+  return out;
+}
+
+/** Commodity Channel Index. */
+export function cci(c: Candle[], n = 20): Series {
+  const tp = c.map((b) => (b.h + b.l + b.c) / 3);
+  const avg = sma(tp, n);
+  const out: Series = new Array(c.length).fill(null);
+  for (let i = n - 1; i < c.length; i++) {
+    const m = avg[i] as number;
+    let dev = 0;
+    for (let j = i - n + 1; j <= i; j++) dev += Math.abs(tp[j] - m);
+    dev /= n;
+    out[i] = dev === 0 ? 0 : (tp[i] - m) / (0.015 * dev);
+  }
+  return out;
+}

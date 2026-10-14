@@ -61,6 +61,17 @@ export interface Announcement {
   category: string;
 }
 
+/** A PSX financials table: one column per period, newest first. Money in PKR thousands except EPS. */
+export interface FinTable {
+  periods: string[];
+  rows: { label: string; values: (number | null)[] }[];
+}
+
+export interface Person {
+  name: string;
+  role: string;
+}
+
 export interface CompanyInfo {
   symbol: string;
   name: string | null;
@@ -86,6 +97,15 @@ export interface CompanyInfo {
   freeFloatPct: number | null;
   description: string | null;
   announcements: Announcement[];
+  financialsAnnual: FinTable | null;
+  financialsQuarterly: FinTable | null;
+  ratios: FinTable | null;
+  people: Person[];
+  address: string | null;
+  website: string | null;
+  registrar: string | null;
+  auditor: string | null;
+  fiscalYearEnd: string | null;
 }
 
 /** Everything the UI needs for one stock, merged from the sources above. */
@@ -104,6 +124,10 @@ export interface Stock {
   pe: number | null;
   divYield: number | null;
   change1y: number | null;
+  bid: number | null;
+  bidVol: number | null;
+  ask: number | null;
+  askVol: number | null;
 }
 
 /** One OHLC bar. `t` is epoch ms at the start of the bar. */

@@ -50,6 +50,16 @@ check('description', !!co.description && co.description.startsWith('Lucky Cement
 check('announcements', co.announcements.length >= 5 && !!co.announcements[0].url, co.announcements.slice(0, 2));
 check('sector', co.sector === 'CEMENT', co.sector);
 check('asOf', !!co.asOf && co.asOf.includes('2026'), co.asOf);
+check('annual financials', co.financialsAnnual?.periods[0] === '2026' && co.financialsAnnual.rows.find((r) => r.label === 'EPS')?.values[0] === 31.83, co.financialsAnnual?.periods);
+check('annual sales', co.financialsAnnual?.rows[0].label === 'Sales' && co.financialsAnnual.rows[0].values[3] === 95832147);
+check('quarterly financials', co.financialsQuarterly?.periods[0] === 'Q3 2026' && co.financialsQuarterly.rows.find((r) => r.label === 'EPS')?.values[1] === 5.89, co.financialsQuarterly?.periods);
+check('ratios with negatives', co.ratios?.rows.find((r) => r.label === 'EPS Growth (%)')?.values[2] === -56.08, co.ratios?.rows.map((r) => r.label));
+check('key people', co.people.length === 3 && co.people[0].name === 'Muhammad Ali Tabba' && co.people[0].role === 'CEO', co.people);
+check('website', co.website === 'http://www.lucky-cement.com', co.website);
+check('address', !!co.address?.startsWith('Main Indus Highway'), co.address);
+check('registrar', !!co.registrar?.includes('CDC Share Registrar'), co.registrar);
+check('auditor', co.auditor === 'M/s A.F. Ferguson & Co. Chartered Accountants', co.auditor);
+check('fiscal year end', co.fiscalYearEnd === 'June', co.fiscalYearEnd);
 
 check('token', extractToken(f('company_LUCK.html')) === 'Aw_AcY4Fsk0YAsCSq3nhOQZt0tqHWXNRwM15r5qV_yM');
 

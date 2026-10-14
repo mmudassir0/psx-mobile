@@ -6,6 +6,8 @@
 import { decodeEntities, num, readRows, stripTags } from './html';
 import type {
   Announcement,
+  FinTable,
+  Person,
   BoardQuote,
   Candle,
   CompanyInfo,
@@ -237,6 +239,43 @@ function parseAnnouncements(html: string): Announcement[] {
   return out.sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/** First <table> after `marker` (optionally limited to the panel named `panel`) as a FinTable. */
+function finTable(html: string, marker: string, panel?: string): FinTable | null {
+  let start = html.indexOf(marker);
+  if (start < 0) return null;
+  if (panel) {
+    const p = html.indexOf(`class="tabs__panel" data-name="${panel}"`, start);
+    if (p < 0) return null;
+    start = p;
+  }
+  const t0 = html.indexOf('<table', start);
+  const t1 = html.indexOf('</table>', t0);
+  if (t0 < 0 || t1 < 0) return null;
+  const table = html.slice(t0, t1);
+  const head = readRows(table, 'th')[0];
+  const periods = head ? head.cells.slice(1).map((c) => c.text) : [];
+  const rows = readRows(table, 'td')
+    .filter((r) => r.cells.length > 1)
+    .map((r) => ({ label: r.cells[0].text, values: r.cells.slice(1).map((c) => num(c.text)) }));
+  return periods.length && rows.length ? { periods, rows } : null;
+}
+
+/** Text of the <p> following an `item__head` label in the profile section. */
+function profileItem(html: string, head: string): { text: string; html: string } | null {
+  const re = new RegExp(`class="item__head">\\s*${head}\\s*<\\/div>\\s*<p[^>]*>([\\s\\S]*?)<\\/p>`, 'i');
+  const m = html.match(re);
+  return m ? { text: stripTags(m[1]), html: m[1] } : null;
+}
+
+function parsePeople(html: string): Person[] {
+  const i = html.indexOf('KEY PEOPLE');
+  if (i < 0) return [];
+  const end = html.indexOf('</table>', i);
+  return readRows(html.slice(i, end > i ? end : undefined))
+    .filter((r) => r.cells.length >= 2 && r.cells[0].text)
+    .map((r) => ({ name: r.cells[0].text, role: r.cells[1].text }));
+}
+
 export function parseCompany(symbol: string, html: string): CompanyInfo {
   const stats = statsMap(html);
   const first = (label: string) => stats.get(label.toLowerCase())?.[0];
@@ -282,6 +321,19 @@ export function parseCompany(symbol: string, html: string): CompanyInfo {
     freeFloatPct: num(ff.find((v) => v.includes('%'))),
     description,
     announcements: parseAnnouncements(html),
+    financialsAnnual: finTable(html, 'id="financials"', 'Annual'),
+    financialsQuarterly: finTable(html, 'id="financials"', 'Quarterly'),
+    ratios: finTable(html, 'id="ratios"'),
+    people: parsePeople(html),
+    address: profileItem(html, 'ADDRESS')?.text || null,
+    website: (() => {
+      const w = profileItem(html, 'WEBSITE');
+      const href = w?.html.match(/href="([^"]+)"/)?.[1];
+      return href || w?.text || null;
+    })(),
+    registrar: profileItem(html, 'REGISTRAR')?.text || null,
+    auditor: profileItem(html, 'AUDITOR')?.text || null,
+    fiscalYearEnd: profileItem(html, 'Fiscal Year End')?.text || null,
   };
 }
 

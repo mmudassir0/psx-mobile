@@ -11,12 +11,12 @@ import {
   ViewStyle,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { changeColor, changeSoft, colors, fonts, tabular } from '../theme';
+import { changeColor, changeSoft, colors, fonts, tabular, themed } from '../theme';
 import { arrowPct } from '../format';
 
 type Variant = 'body' | 'caption' | 'label' | 'title' | 'h1' | 'display' | 'mono' | 'monoLg' | 'monoXl';
 
-const variants: Record<Variant, TextStyle> = {
+const variants: Record<Variant, TextStyle> = themed(() => ({
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, color: colors.text },
   caption: { fontFamily: fonts.medium, fontSize: 12.5, lineHeight: 17, color: colors.faint },
   label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.muted },
@@ -26,7 +26,7 @@ const variants: Record<Variant, TextStyle> = {
   mono: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text, ...tabular },
   monoLg: { fontFamily: fonts.monoBold, fontSize: 20, letterSpacing: -0.3, color: colors.text, ...tabular },
   monoXl: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text, ...tabular },
-};
+}));
 
 export function T({ v = 'body', style, ...rest }: TextProps & { v?: Variant }) {
   return <RNText {...rest} style={[variants[v], style]} />;
@@ -100,7 +100,7 @@ export function Button({
   small?: boolean;
 }) {
   const bg = tone === 'gold' ? colors.gold : tone === 'up' ? colors.up : tone === 'down' ? colors.down : 'transparent';
-  const fg = tone === 'ghost' ? colors.text : colors.ground;
+  const fg = tone === 'ghost' ? colors.text : colors.onGold;
   return (
     <Pressable
       accessibilityRole="button"
@@ -151,7 +151,7 @@ export function Segmented<K extends string>({
               style={{
                 fontFamily: fonts.bold,
                 fontSize: 13,
-                color: on ? (colorFor ? colors.ground : colors.text) : colors.faint,
+                color: on ? (colorFor ? colors.onGold : colors.text) : colors.faint,
               }}
             >
               {o.label}
@@ -282,6 +282,22 @@ export function Icon({ name, size = 22, color = colors.text }: { name: IconName;
         </>
       )}
       {name === 'chevron' && <Path {...p} d="m9 5 7 7-7 7" />}
+      {name === 'settings' && (
+        <>
+          <Circle {...p} cx={12} cy={12} r={3} />
+          <Path
+            {...p}
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+          />
+        </>
+      )}
+      {name === 'link' && (
+        <>
+          <Path {...p} d="M14 4h6v6" />
+          <Path {...p} d="M20 4 11 13" />
+          <Path {...p} d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </>
+      )}
     </Svg>
   );
 }
@@ -298,6 +314,8 @@ export type IconName =
   | 'star'
   | 'starFilled'
   | 'refresh'
+  | 'settings'
+  | 'link'
   | 'doc'
   | 'chevron';
 
@@ -327,7 +345,7 @@ export function IconButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18 },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, alignSelf: 'center' },
   badgeText: { fontFamily: fonts.bold, fontSize: 11 },
@@ -353,4 +371,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

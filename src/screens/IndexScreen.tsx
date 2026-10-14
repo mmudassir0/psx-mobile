@@ -3,7 +3,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
-import { changeColor, colors, fonts, space } from '../theme';
+import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtSigned } from '../format';
 import { fetchIndexConstituents, fetchSeries, INDEX_ABOUT, INDEX_NAMES } from '../psx/api';
 import { ticksToCandles } from '../psx/parse';
@@ -307,7 +307,7 @@ export default function IndexScreen() {
                   }}
                   style={[styles.chip, t.key === tab && styles.chipOn]}
                 >
-                  <T style={{ fontFamily: fonts.bold, fontSize: 13, color: t.key === tab ? colors.ground : colors.text2 }}>{t.label}</T>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 13, color: t.key === tab ? colors.onGold : colors.text2 }}>{t.label}</T>
                 </Pressable>
               ))}
             </ScrollView>
@@ -352,7 +352,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
   content: { paddingTop: 4, paddingBottom: 40, gap: 22 },
@@ -369,4 +369,4 @@ const styles = StyleSheet.create({
   border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
   symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
   more: { paddingVertical: 12, alignItems: 'center' },
-});
+}));

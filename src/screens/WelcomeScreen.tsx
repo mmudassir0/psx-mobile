@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { Button, T } from '../ui/kit';
 import { useUser } from '../store/user';
 
@@ -11,7 +11,7 @@ export function Logo({ size = 36 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36">
       <Rect width={36} height={36} rx={10} fill={colors.gold} />
-      <Path d="M11 24V14M18 27V9M25 22V12" stroke={colors.ground} strokeWidth={3} strokeLinecap="round" />
+      <Path d="M11 24V14M18 27V9M25 22V12" stroke={colors.onGold} strokeWidth={3} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -67,7 +67,7 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   inner: { flex: 1, padding: 24, paddingTop: 32 },
   input: {
@@ -81,4 +81,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 16,
   },
-});
+}));

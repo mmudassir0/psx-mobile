@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { colors, fonts, space, tabular, themed } from '../../theme';
+import { fmtCompact, fmtNum, fmtPct } from '../../format';
+import type { CompanyInfo, FinTable, Stock } from '../../psx/types';
+import { KV, Panel } from '../../ui/bits';
+import { Loading, Section, Segmented, T } from '../../ui/kit';
+
+/** PSX reports money in thousands of rupees, EPS and ratios as-is. */
+function cell(label: string, v: number | null): string {
+  if (v == null) return '—';
+  if (/EPS$/i.test(label)) return fmtNum(v, 2);
+  if (/%|PEG/i.test(label)) return fmtNum(v, 2);
+  return fmtCompact(v * 1000);
+}
+
+function shortLabel(label: string): string {
+  return label
+    .replace('Profit after Taxation', 'Profit after tax')
+    .replace('Gross Profit Margin (%)', 'Gross margin')
+    .replace('Net Profit Margin (%)', 'Net margin')
+    .replace('EPS Growth (%)', 'EPS growth');
+}
+
+function Table({ t }: { t: FinTable }) {
+  return (
+    <Panel style={{ paddingVertical: 8 }}>
+      <View style={[styles.tr, styles.border]}>
+        <T v="caption" style={styles.th0}>
+          {' '}
+        </T>
+        {t.periods.map((p) => (
+          <T key={p} v="caption" style={styles.th}>
+            {p}
+          </T>
+        ))}
+      </View>
+      {t.rows.map((r, i) => (
+        <View key={r.label} style={[styles.tr, i < t.rows.length - 1 && styles.border]}>
+          <T v="body" style={styles.td0} numberOfLines={2}>
+            {shortLabel(r.label)}
+          </T>
+          {r.values.map((v, j) => (
+            <T key={j} style={[styles.td, { color: v != null && v < 0 ? colors.downText : colors.text }]}>
+              {cell(r.label, v)}
+            </T>
+          ))}
+        </View>
+      ))}
+    </Panel>
+  );
+}
+
+/** EPS per period as bars, oldest on the left. */
+function EpsBars({ t }: { t: FinTable }) {
+  const row = t.rows.find((r) => /^EPS$/i.test(r.label));
+  if (!row) return null;
+  const pts = t.periods.map((p, i) => ({ p, v: row.values[i] })).reverse();
+  const max = Math.max(...pts.map((x) => Math.abs(x.v ?? 0)), 0.01);
+  return (
+    <Panel style={{ paddingVertical: 16, gap: 10 }}>
+      <T v="label">Earnings per share (Rs.)</T>
+      <View style={styles.bars}>
+        {pts.map((x) => (
+          <View key={x.p} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+            <T v="mono" style={{ fontSize: 13, color: x.v != null && x.v < 0 ? colors.downText : colors.text }}>
+              {x.v == null ? '—' : fmtNum(x.v, 2)}
+            </T>
+            <View style={styles.barWell}>
+              <View
+                style={{
+                  height: `${(Math.abs(x.v ?? 0) / max) * 100}%`,
+                  backgroundColor: x.v != null && x.v < 0 ? colors.down : colors.gold,
+                  borderRadius: 6,
+                }}
+              />
+            </View>
+            <T v="caption" numberOfLines={1}>
+              {x.p}
+            </T>
+          </View>
+        ))}
+      </View>
+    </Panel>
+  );
+}
+
+export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo | null; stock?: Stock; err: string | null }) {
+  const [period, setPeriod] = useState<'annual' | 'quarterly'>('annual');
+  if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Loading />;
+
+  const fin = period === 'annual' ? company.financialsAnnual : company.financialsQuarterly;
+  const annualEps = company.financialsAnnual?.rows.find((r) => /^EPS$/i.test(r.label))?.values[0] ?? null;
+  const price = stock?.price ?? company.close;
+  const floatShares = company.shares != null && company.freeFloatPct != null ? (company.shares * company.freeFloatPct) / 100 : null;
+
+  return (
+    <View style={{ gap: space.section }}>
+      <Section title="Valuation">
+        <Panel>
+          <KV label="P/E ratio" sub="Trailing 12 months" value={company.pe != null ? fmtNum(company.pe) : '—'} />
+          <KV
+            label="Earnings per share"
+            sub={company.financialsAnnual ? `Fiscal ${company.financialsAnnual.periods[0]}` : undefined}
+            value={annualEps != null ? `Rs. ${fmtNum(annualEps)}` : '—'}
+          />
+          <KV
+            label="Earnings yield"
+            value={annualEps != null && price ? fmtPct((annualEps / price) * 100, false) : '—'}
+          />
+          <KV label="Dividend yield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
+          <KV label="Market cap" value={company.marketCap != null ? `Rs. ${fmtCompact(company.marketCap)}` : '—'} />
+          <KV label="1-year change" value={fmtPct(company.change1y)} color={(company.change1y ?? 0) < 0 ? colors.downText : undefined} />
+          <KV label="Year to date" value={fmtPct(company.ytd)} color={(company.ytd ?? 0) < 0 ? colors.downText : undefined} last />
+        </Panel>
+      </Section>
+
+      <Section title="Results">
+        <Segmented
+          options={[
+            { key: 'annual', label: 'Annual' },
+            { key: 'quarterly', label: 'Quarterly' },
+          ]}
+          value={period}
+          onChange={setPeriod}
+        />
+        {fin ? (
+          <>
+            <EpsBars t={fin} />
+            <Table t={fin} />
+            <T v="caption">Sales and profit in rupees. Fiscal year ends in {company.fiscalYearEnd ?? '—'}.</T>
+          </>
+        ) : (
+          <T v="caption">PSX has no {period} results for this company.</T>
+        )}
+      </Section>
+
+      {company.ratios ? (
+        <Section title="Ratios">
+          <Table t={company.ratios} />
+          <T v="caption">Margins and growth in %. PEG = P/E divided by EPS growth; below 1 can mean growth is cheap.</T>
+        </Section>
+      ) : null}
+
+      <Section title="Shares">
+        <Panel>
+          <KV label="Total shares" value={fmtCompact(company.shares)} />
+          <KV label="Free float" value={floatShares != null ? fmtCompact(floatShares) : '—'} />
+          <KV label="Free float %" value={company.freeFloatPct != null ? fmtPct(company.freeFloatPct, false) : '—'} last />
+        </Panel>
+      </Section>
+    </View>
+  );
+}
+
+const styles = themed(() =>
+  StyleSheet.create({
+    tr: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 6 },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    th0: { flex: 1.35 },
+    th: { flex: 1, textAlign: 'right', fontFamily: fonts.semibold },
+    td0: { flex: 1.35, fontSize: 13.5, lineHeight: 18, color: colors.text2 },
+    td: { flex: 1, textAlign: 'right', fontSize: 13.5, fontFamily: fonts.monoMedium, ...tabular },
+    bars: { flexDirection: 'row', gap: 12, alignItems: 'flex-end' },
+    barWell: { height: 90, width: '70%', justifyContent: 'flex-end' },
+  }),
+);

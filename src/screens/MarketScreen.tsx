@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { changeColor, colors, fonts, space } from '../theme';
+import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtNum, fmtPct } from '../format';
 import { INDEX_NAMES, MAIN_INDICES } from '../psx/api';
 import { useMarket } from '../store/market';
@@ -235,7 +235,7 @@ export default function MarketScreen() {
                       }}
                       style={[styles.chip, m.key === mode && styles.chipOn]}
                     >
-                      <T style={{ fontFamily: fonts.bold, fontSize: 13, color: m.key === mode ? colors.ground : colors.text2 }}>{m.label}</T>
+                      <T style={{ fontFamily: fonts.bold, fontSize: 13, color: m.key === mode ? colors.onGold : colors.text2 }}>{m.label}</T>
                     </Pressable>
                   ))}
                   <Pressable
@@ -291,7 +291,7 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingTop: 8, paddingBottom: 40, gap: 26 },
   pad: { paddingHorizontal: space.gutter },
@@ -317,4 +317,4 @@ const styles = StyleSheet.create({
   chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: colors.gold },
   more: { paddingVertical: 12, alignItems: 'center' },
-});
+}));

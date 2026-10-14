@@ -7,8 +7,9 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { adjustCandles, parseHistorical, parseTimeseries } from '../src/psx/parse';
 import type { Candle } from '../src/psx/types';
-import { atr, bollinger, closes, ema, last, macd, obv, rsi, sma } from '../src/analysis/indicators';
-import { findLevels } from '../src/analysis/levels';
+import { atr, bollinger, cci, closes, ema, last, macd, obv, rsi, sma, stochastic, williamsR } from '../src/analysis/indicators';
+import { findLevels, pivots } from '../src/analysis/levels';
+import { technicals } from '../src/analysis/technicals';
 import { analyze, stanceFor, MIN_BARS } from '../src/analysis/signals';
 
 let failed = 0;
@@ -44,6 +45,24 @@ const m = macd(cl);
 check('LUCK macd', near(last(m.macd), -5.595146) && near(last(m.signal), -5.653524), [last(m.macd), last(m.signal)]);
 check('LUCK atr14', near(last(atr(luck)), 8.277023), last(atr(luck)));
 check('LUCK bollinger upper', near(last(bollinger(cl).upper), 423.853163), last(bollinger(cl).upper));
+
+const st = stochastic(luck);
+check('LUCK stochastic %K/%D', near(last(st.k), 7.939697) && near(last(st.d), 16.574856), [last(st.k), last(st.d)]);
+check('LUCK williams %R', near(last(williamsR(luck)), -96.713229), last(williamsR(luck)));
+check('LUCK CCI', near(last(cci(luck)), -107.999305), last(cci(luck)));
+const pv = pivots({ h: 110, l: 90, c: 100 });
+check('pivots', pv.pp === 100 && pv.r1 === 110 && pv.s1 === 90 && pv.r2 === 120 && pv.s2 === 80 && pv.r3 === 130 && pv.s3 === 70, pv);
+
+// --- technicals summary ---
+const tech = technicals(luck);
+check('technicals returned', !!tech);
+if (tech) {
+  check('oscillators listed', tech.oscillators.map((o) => o.id).join() === 'rsi,stoch,macd,cci,wr', tech.oscillators.map((o) => o.id));
+  check('12 moving averages', tech.averages.length === 12, tech.averages.length);
+  check('MA action follows price', tech.averages.every((m) => m.value == null || m.action === (tech.price > m.value ? 'Buy' : 'Sell')));
+  check('summary counts add up', tech.summary.buy + tech.summary.sell + tech.summary.neutral === tech.oscillators.length + tech.averages.length, tech.summary);
+  check('stochastic oversold reads Buy', tech.oscillators.find((o) => o.id === 'stoch')?.action === 'Buy');
+}
 
 // --- levels ---
 const lv = findLevels(luck);

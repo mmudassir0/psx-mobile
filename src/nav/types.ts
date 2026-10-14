@@ -15,6 +15,7 @@ export type RootParams = {
   Stock: { symbol: string };
   Index: { code: string };
   Order: { symbol: string; side?: Side };
+  Settings: undefined;
 };
 
 declare global {

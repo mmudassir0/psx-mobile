@@ -2,11 +2,11 @@
   "expo": {
     "name": "Sahm",
     "slug": "sahm-app",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0F14",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FFFFFF",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
@@ -33,7 +33,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#0B0F14"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       [

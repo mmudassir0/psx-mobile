@@ -1,16 +1,16 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Stock } from '../psx/types';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtCompact, fmtPrice } from '../format';
 import { Change, T } from './kit';
 
 /** A stable, quiet tint per sector so the list has some rhythm. */
-const TINTS = ['#2A3A52', '#2E3B33', '#3B3326', '#35304A', '#3A2E33', '#263B3D'];
+const tints = () => [colors.avatar0, colors.avatar1, colors.avatar2, colors.avatar3, colors.avatar4, colors.avatar5];
 function tint(key: string) {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return TINTS[h % TINTS.length];
+  return tints()[h % tints().length];
 }
 
 export function StockRow({
@@ -58,11 +58,11 @@ export function volumeLabel(s: Stock) {
   return s.volume != null ? `${fmtCompact(s.volume)} shares traded` : s.name;
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingVertical: 8 },
   border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 12, fontFamily: fonts.heavy, color: colors.text2 },
   symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.shariah },
-});
+}));

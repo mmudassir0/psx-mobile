@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, fonts, space } from '../theme';
+import { colors, fonts, space, themed } from '../theme';
 import { BUILD, VERSION, updatesSupported, useUpdate } from '../store/update';
 import { Button, T } from './kit';
 
@@ -76,7 +76,7 @@ export function VersionRow() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: {
     marginHorizontal: space.gutter,
     backgroundColor: colors.surface,
@@ -89,4 +89,4 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3, backgroundColor: colors.gold },
   version: { alignItems: 'center', gap: 2, paddingVertical: 8 },
-});
+}));

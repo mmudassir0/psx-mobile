@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,8 @@ import type { RootParams, TabParams } from './src/nav/types';
 import { MarketProvider } from './src/store/market';
 import { UserProvider, useUser } from './src/store/user';
 import { UpdateProvider } from './src/store/update';
+import { ThemeProvider, useTheme } from './src/store/theme';
+import SettingsScreen from './src/screens/SettingsScreen';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -37,17 +39,21 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const Stack = createNativeStackNavigator<RootParams>();
 const Tab = createBottomTabNavigator<TabParams>();
 
-const navTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.ground,
-    card: colors.nav,
-    border: colors.navLine,
-    primary: colors.gold,
-    text: colors.text,
-  },
-};
+function navThemeFor(dark: boolean) {
+  const base = dark ? DarkTheme : DefaultTheme;
+  return {
+    ...base,
+    dark,
+    colors: {
+      ...base.colors,
+      background: colors.ground,
+      card: colors.nav,
+      border: colors.navLine,
+      primary: colors.gold,
+      text: colors.text,
+    },
+  };
+}
 
 const TAB_ICONS: Record<keyof TabParams, IconName> = {
   Home: 'home',
@@ -98,6 +104,7 @@ function Root() {
       <Stack.Screen name="Stock" component={StockScreen} />
       <Stack.Screen name="Index" component={IndexScreen} />
       <Stack.Screen name="Order" component={OrderScreen} options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -122,19 +129,28 @@ export default function App() {
   if (!ready) return null;
 
   return (
+    <MarketProvider>
+      <UserProvider>
+        <UpdateProvider>
+          <ThemeProvider>
+            <Themed />
+          </ThemeProvider>
+        </UpdateProvider>
+      </UserProvider>
+    </MarketProvider>
+  );
+}
+
+function Themed() {
+  const { name } = useTheme();
+  return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ground }}>
-    <SafeAreaProvider>
-      <MarketProvider>
-        <UserProvider>
-          <UpdateProvider>
-            <NavigationContainer theme={navTheme}>
-              <StatusBar style="light" />
-              <Root />
-            </NavigationContainer>
-          </UpdateProvider>
-        </UserProvider>
-      </MarketProvider>
-    </SafeAreaProvider>
+      <SafeAreaProvider>
+        <NavigationContainer theme={navThemeFor(name === 'dark')}>
+          <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
+          <Root />
+        </NavigationContainer>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

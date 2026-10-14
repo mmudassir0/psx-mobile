@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, fonts } from '../theme';
+import { colors, fonts, themed } from '../theme';
 import { fmtDay, fmtPrice } from '../format';
 import type { Analysis, Stance } from '../analysis/signals';
 import { Section, T } from './kit';
 
-const STANCE_COLOR: Record<Stance, string> = {
-  'Strong bullish': colors.up,
-  Bullish: colors.up,
-  Neutral: colors.muted,
-  Bearish: colors.downText,
-  'Strong bearish': colors.downText,
-};
+const stanceColor = (s: Stance): string =>
+  s === 'Strong bullish' || s === 'Bullish' ? colors.up : s === 'Neutral' ? colors.muted : colors.downText;
 
 const VOTE_GLYPH = { '1': '▲', '0': '•', '-1': '▼' } as const;
 const voteColor = (v: number) => (v > 0 ? colors.up : v < 0 ? colors.downText : colors.faint);
@@ -52,7 +47,7 @@ export function SignalsCard({ analysis, loading }: { analysis: Analysis | null; 
   }
 
   const a = analysis;
-  const tint = STANCE_COLOR[a.stance];
+  const tint = stanceColor(a.stance);
   // strongest evidence first: weighted, non-neutral votes on top
   const ranked = [...a.rules].sort((x, y) => Math.abs(y.vote) * y.weight - Math.abs(x.vote) * x.weight);
   const shown = open ? ranked : ranked.slice(0, 4);
@@ -119,10 +114,10 @@ export function SignalsCard({ analysis, loading }: { analysis: Analysis | null; 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 12 },
   track: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
   zone: { height: 8 },
   marker: { position: 'absolute', top: -4, width: 4, height: 16, borderRadius: 2, marginLeft: -2 },
   levels: { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 12, marginTop: 4 },
-});
+}));

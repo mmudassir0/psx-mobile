@@ -68,3 +68,28 @@ export function findLevels(c: Candle[], price?: number, lookback = 250, k = 3, t
   const above = levels.filter((l) => l.price > p * 1.005).sort((a, b) => a.price - b.price);
   return { support: below[0] ?? null, resistance: above[0] ?? null, all: levels };
 }
+
+export interface Pivots {
+  pp: number;
+  r1: number;
+  r2: number;
+  r3: number;
+  s1: number;
+  s2: number;
+  s3: number;
+}
+
+/** Classic floor pivots from one session's high, low and close (use the last completed day). */
+export function pivots(bar: Pick<Candle, 'h' | 'l' | 'c'>): Pivots {
+  const { h, l, c } = bar;
+  const pp = (h + l + c) / 3;
+  return {
+    pp,
+    r1: 2 * pp - l,
+    s1: 2 * pp - h,
+    r2: pp + (h - l),
+    s2: pp - (h - l),
+    r3: h + 2 * (pp - l),
+    s3: l - 2 * (h - pp),
+  };
+}

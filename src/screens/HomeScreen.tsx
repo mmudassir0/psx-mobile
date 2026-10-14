@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { colors, changeColor, fonts, space } from '../theme';
+import { colors, changeColor, fonts, space, themed } from '../theme';
 import { fmtNum, fmtPkr, fmtSigned, fmtTime, fmtPct } from '../format';
 import { INDEX_NAMES } from '../psx/api';
 import { useMarket } from '../store/market';
@@ -82,7 +82,10 @@ export default function HomeScreen() {
               {name || 'Investor'}
             </T>
           </View>
-          <IconButton name="search" label="Search stocks" onPress={() => nav.navigate('Tabs', { screen: 'Market' })} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <IconButton name="search" label="Search stocks" onPress={() => nav.navigate('Tabs', { screen: 'Market' })} />
+            <IconButton name="settings" label="Settings" onPress={() => nav.navigate('Settings')} />
+          </View>
         </View>
 
         <View style={styles.pad}>
@@ -187,7 +190,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingTop: 8, paddingBottom: 36, gap: 22 },
   pad: { paddingHorizontal: space.gutter },
@@ -204,4 +207,4 @@ const styles = StyleSheet.create({
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
   error: { backgroundColor: colors.downSoft, borderRadius: 12, padding: 12 },
-});
+}));

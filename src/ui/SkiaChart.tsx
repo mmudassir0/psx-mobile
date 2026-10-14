@@ -6,7 +6,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import type { Candle } from '../psx/types';
-import { colors } from '../theme';
+import { colors, themed } from '../theme';
 import { T } from './kit';
 
 export type ChartMode = 'candle' | 'line';
@@ -17,8 +17,6 @@ const X_LABEL_H = 22;
 const TICKS = 6;
 const MIN_BARS = 8;
 
-const UP = colors.up;
-const DOWN = colors.down;
 
 // ---------------------------------------------------------------------------
 // Worklet helpers (run on the UI thread, so no Intl / regex-heavy code)
@@ -258,7 +256,7 @@ export function SkiaChart({
     const ref = prev.value > 0 && unit === 'intraday' ? prev.value : d.c[firstI];
     return d.c[lastI] >= ref ? 1 : 0;
   });
-  const trendColor = useDerivedValue(() => (trendUp.value === 1 ? UP : DOWN));
+  const trendColor = useDerivedValue(() => (trendUp.value === 1 ? colors.up : colors.down));
   const upOpacity = useDerivedValue(() => trendUp.value);
   const dnOpacity = useDerivedValue(() => 1 - trendUp.value);
   const plotClip = useDerivedValue(() => Skia.XYWHRect(0, 0, geo.value.plotW, height + volumeHeight));
@@ -443,24 +441,24 @@ export function SkiaChart({
               <Path path={gridPath} style="stroke" strokeWidth={1} color={colors.hairline} />
               <Line p1={prevP1} p2={prevP2} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.7} />
               <Group clip={plotClip}>
-              <Path path={volUp} color={UP} opacity={0.28} />
-              <Path path={volDn} color={DOWN} opacity={0.28} />
+              <Path path={volUp} color={colors.up} opacity={0.28} />
+              <Path path={volDn} color={colors.down} opacity={0.28} />
               {mode === 'line' ? (
                 <Group>
                   <Path path={area} opacity={upOpacity}>
-                    <LinearGradient start={gradStart} end={gradEnd} colors={['rgba(34,195,142,0.26)', 'rgba(34,195,142,0)']} />
+                    <LinearGradient start={gradStart} end={gradEnd} colors={[colors.upFill0, colors.fillEnd]} />
                   </Path>
                   <Path path={area} opacity={dnOpacity}>
-                    <LinearGradient start={gradStart} end={gradEnd} colors={['rgba(242,92,106,0.26)', 'rgba(242,92,106,0)']} />
+                    <LinearGradient start={gradStart} end={gradEnd} colors={[colors.downFill0, colors.fillEnd]} />
                   </Path>
                   <Path path={linePath} style="stroke" strokeWidth={2} color={trendColor} strokeJoin="round" />
                 </Group>
               ) : (
                 <Group>
-                  <Path path={upWick} style="stroke" strokeWidth={1} color={UP} />
-                  <Path path={dnWick} style="stroke" strokeWidth={1} color={DOWN} />
-                  <Path path={upBody} color={UP} />
-                  <Path path={dnBody} color={DOWN} />
+                  <Path path={upWick} style="stroke" strokeWidth={1} color={colors.up} />
+                  <Path path={dnWick} style="stroke" strokeWidth={1} color={colors.down} />
+                  <Path path={upBody} color={colors.up} />
+                  <Path path={dnBody} color={colors.down} />
                 </Group>
               )}
               </Group>
@@ -471,7 +469,7 @@ export function SkiaChart({
               {/* latest price */}
               <Line p1={lastP1} p2={lastP2} color={trendColor} strokeWidth={1} style="stroke" opacity={0.6} />
               <RoundedRect x={tagX} y={lastTagY} width={AXIS_W - 4} height={20} r={5} color={trendColor} />
-              {fontBold ? <Text x={tagTextX} y={lastTextY} text={lastText} font={fontBold} color={colors.ground} /> : null}
+              {fontBold ? <Text x={tagTextX} y={lastTextY} text={lastText} font={fontBold} color={colors.onGold} /> : null}
               {/* time labels */}
               {font ? (
                 <Group>
@@ -485,7 +483,7 @@ export function SkiaChart({
                 <Line p1={crossV1} p2={crossV2} color={colors.muted} strokeWidth={1} style="stroke" />
                 <Line p1={crossH1} p2={crossH2} color={colors.muted} strokeWidth={1} style="stroke" />
                 <RoundedRect x={tagX} y={crossTagY} width={AXIS_W - 4} height={20} r={5} color={colors.text} />
-                {fontBold ? <Text x={tagTextX} y={crossTextY} text={crossText} font={fontBold} color={colors.ground} /> : null}
+                {fontBold ? <Text x={tagTextX} y={crossTextY} text={crossText} font={fontBold} color={colors.onGold} /> : null}
               </Group>
             </Canvas>
           ) : null}
@@ -498,9 +496,9 @@ export function SkiaChart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
   hint: { fontSize: 11.5, color: colors.faint, textAlign: 'center', marginTop: 6, marginRight: AXIS_W / 2 },
-});
+}));
 
 export type { SkPath };
