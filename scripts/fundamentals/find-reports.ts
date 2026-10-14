@@ -16,13 +16,27 @@ export function classify(title: string): ReportKind | null {
   return null;
 }
 
+/** PSX sometimes drops connections from cloud runners; retry with backoff. */
+async function retry<T>(f: () => Promise<T>, tries = 4): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await f();
+    } catch (e) {
+      last = e;
+      await new Promise((r) => setTimeout(r, 3000 * (i + 1)));
+    }
+  }
+  throw last;
+}
+
 async function main() {
   let symbols = process.argv.slice(2);
-  if (!symbols.length) symbols = (await fetchIndexConstituents('KSE100')).map((c) => c.symbol);
+  if (!symbols.length) symbols = (await retry(() => fetchIndexConstituents('KSE100'))).map((c) => c.symbol);
   const out = [];
   for (const symbol of symbols) {
     try {
-      const co = await fetchCompany(symbol);
+      const co = await retry(() => fetchCompany(symbol));
       const reports = co.announcements
         .filter((a) => a.url && a.category === 'Financial Results')
         .map((a) => ({ kind: classify(a.title), date: a.date, title: a.title, url: a.url as string }))
@@ -31,7 +45,7 @@ async function main() {
     } catch (e) {
       out.push({ symbol, error: (e as Error).message, reports: [] });
     }
-    await new Promise((r) => setTimeout(r, 400)); // be gentle with PSX
+    await new Promise((r) => setTimeout(r, 1000)); // be gentle with PSX
   }
   console.log(JSON.stringify(out, null, 1));
 }
