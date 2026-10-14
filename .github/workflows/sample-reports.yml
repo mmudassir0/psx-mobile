@@ -1,0 +1,37 @@
+# Temporary: fetches sample report PDFs so the extractor can be developed offline.
+name: Sample reports
+on:
+  push:
+    branches: [fundamentals-dev]
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Find reports
+        run: npx tsx scripts/fundamentals/find-reports.ts LUCK MEBL HBL OGDC HUBC EFERT SYS PPL > reports.json
+      - name: Download latest of each kind
+        run: |
+          mkdir -p pdfs
+          node -e '
+          const r = require("./reports.json");
+          const lines = [];
+          for (const c of r) for (const kind of ["annual","quarterly","results"]) {
+            const x = c.reports.find(p => p.kind === kind);
+            if (x) lines.push(`${c.symbol}_${kind} ${x.url}`);
+          }
+          require("fs").writeFileSync("list.txt", lines.join("\n") + "\n");'
+          while read name url; do
+            curl -sSL --max-time 180 -A "Mozilla/5.0" -o "pdfs/$name.pdf" "$url" || echo "fail $name"
+            sleep 1
+          done < list.txt
+          ls -la pdfs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: samples
+          path: |
+            reports.json
+            pdfs/
