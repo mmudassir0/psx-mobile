@@ -12,6 +12,8 @@ import { useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode } from '../ui/SkiaChart';
+import { SignalsCard } from '../ui/SignalsCard';
+import { analyze } from '../analysis/signals';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -130,6 +132,7 @@ export default function StockScreen() {
   const intradayBars = useMemo(() => ticksToCandles(lastSession(ticks ?? []), 5), [ticks]);
   const { bars, unit, visible } = useMemo(() => barsFor(range, daily ?? [], intradayBars), [range, daily, intradayBars]);
   const loadingChart = range === '1D' ? ticks == null : daily == null;
+  const analysis = useMemo(() => (daily && daily.length ? analyze(daily) : null), [daily]);
 
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
@@ -274,6 +277,8 @@ export default function StockScreen() {
               </View>
             </View>
           ) : null}
+
+          <SignalsCard analysis={analysis} loading={daily == null} />
 
           <Section title="Key figures">
             {company ? (

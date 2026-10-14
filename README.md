@@ -16,6 +16,9 @@ The public PSX data portal, `dps.psx.com.pk`, read directly from the phone:
 
 The portal's own scripts send an `X-Req-Id` header taken from `window.__ps._k` on every page; the app does the same (`src/psx/api.ts`). Parsers live in `src/psx/parse.ts` and are tested against captured pages in `scripts/fixtures`.
 
+## Technical signals
+Each stock page shows a technical score (0–10) built from eight rules on daily candles: 200/20-day trend, 50/200-day cross, MACD, RSI, Bollinger bands, volume and on-balance volume, plus support, resistance and a 2× ATR stop. The math lives in `src/analysis/` and is tested in `scripts/test-indicators.ts`, with LUCK values cross-checked against pandas.
+
 ## Develop
 ```bash
 npm install

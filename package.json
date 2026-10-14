@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-parsers.ts && tsx scripts/test-engine.ts",
+    "test": "tsx scripts/test-parsers.ts && tsx scripts/test-engine.ts && tsx scripts/test-indicators.ts",
     "smoke": "tsx scripts/smoke-live.ts"
   },
   "dependencies": {

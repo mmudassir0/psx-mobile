@@ -37,10 +37,11 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Parser and engine tests
+      - name: Parser, engine and indicator tests
         run: |
           npx tsx scripts/test-parsers.ts
           npx tsx scripts/test-engine.ts
+          npx tsx scripts/test-indicators.ts
 
       - name: Live PSX check
         continue-on-error: true
