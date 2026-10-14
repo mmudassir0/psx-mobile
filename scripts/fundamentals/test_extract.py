@@ -33,6 +33,10 @@ v, p = X.verify(dict(good, borrowing_lines=[{"label": "Long-term financing"}]), 
 check("drops borrowings given as labels only", v is not None and v["borrowings"] is None, p)
 v, p = X.verify(dict(good, borrowing_lines=good["borrowing_lines"] + [{"label": "Long term loan to subsidiary", "amount": "199,261"}]), text)
 check("ignores loans made to others", v is not None and v["borrowings"] == (7_339_816 + 1_822_195 + 9_610_000) * 1000, v and v["borrowings"])
+v, p = X.verify(dict(good, total_equity="175,910,400", total_assets="266,748,030", total_liabilities="90,837,630"), text)
+check("rejects last year's column even though it balances", v is None, p)
+side = "Share capital  43,009,284  43,009,284    Property  133,556,515  97,861,516\nTotal  1,519,550,164  1,348,237,696   Total assets  1,852,828,189  1,654,606,070"
+check("current column works in side-by-side layouts", X.in_current_column("1,852,828,189", side) and not X.in_current_column("1,654,606,070", side))
 v, p = X.verify(dict(good, unit=7), text)
 check("rejects unknown units", v is None)
 v, p = X.verify(dict(good, total_liabilities=None), text)

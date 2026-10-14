@@ -3,6 +3,9 @@ name: Sample reports
 on:
   push:
     branches: [fundamentals-dev]
+concurrency:
+  group: sample
+  cancel-in-progress: true
 permissions:
   contents: write
   models: read

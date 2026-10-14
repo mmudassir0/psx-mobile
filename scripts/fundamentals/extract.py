@@ -190,8 +190,8 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
         messages += [
             {"role": "assistant", "content": json.dumps(prev)},
             {"role": "user", "content": "Your answer failed these checks: " + "; ".join(problems)
-             + ". The page may print two statements side by side; read each figure from its own column. "
-               "Return the corrected JSON."},
+             + ". Use the CURRENT period column (the first figure of each pair, the later date). The page may "
+               "print two statements side by side; read each figure from its own column. Return the corrected JSON."},
         ]
     body = json.dumps({
         "model": MODEL,
@@ -199,7 +199,7 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
         "response_format": {"type": "json_object"},
         "messages": messages,
     }).encode()
-    for attempt in range(4):
+    for attempt in range(7):
         req = urllib.request.Request(ENDPOINT, data=body, headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -218,7 +218,7 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
                 raise RuntimeError(f"no JSON in model reply: {content[:300]!r}")
             return json.loads(m.group(0))
         except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 3:
+            if e.code == 429 and attempt < 6:
                 wait = float(e.headers.get("Retry-After") or 60)
                 time.sleep(min(wait, 120) + 2)
                 continue
@@ -242,6 +242,20 @@ def to_value(raw, unit: int) -> float | None:
     return -v if neg else v
 
 
+def in_current_column(raw: str, page_text: str) -> bool:
+    """Statements print (current, comparative) pairs left to right, sometimes two statements side by side.
+    A current-period figure is therefore the 1st, 3rd, ... large number on its line. True if any occurrence is."""
+    want = normalize_number(raw)
+    for line in page_text.splitlines():
+        nums = [normalize_number(t) for t in BIGNUM.findall(line)]
+        for k, d in enumerate(nums):
+            if d == want and k % 2 == 0:
+                return True
+            if d == want and len(nums) == 1:
+                return True
+    return False
+
+
 # Lines a model sometimes mistakes for debt: money lent out, leases, payables, deposits taken.
 NOT_DEBT = re.compile(r"\bto\s+(subsidiar|associat|related|employees)|receivable|investment|advance|prepay|lease|payable|deposit", re.I)
 
@@ -261,6 +275,10 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
         d = normalize_number(str(raw))
         if d not in hay_tokens:
             problems.append(f"{f} {raw} not found in the statement")
+            vals[f] = None
+            continue
+        if f in ("total_equity", "total_assets") and not in_current_column(str(raw), page_text):
+            problems.append(f"{f} {raw} is in the comparative (prior period) column")
             vals[f] = None
             continue
         vals[f] = to_value(raw, unit)
