@@ -21,6 +21,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/out
+          (curl -sS -o /dev/null -w "curl company: %{http_code} %{time_total}s\n" -A "Mozilla/5.0" https://dps.psx.com.pk/company/LUCK;
+           curl -sS -o /dev/null -w "curl indices: %{http_code} %{time_total}s\n" -A "Mozilla/5.0" https://dps.psx.com.pk/indices;
+           node -e 'fetch("https://dps.psx.com.pk/company/LUCK").then(r=>console.log("node fetch",r.status)).catch(e=>console.log("node fetch error",e.message,e.cause&&e.cause.code,e.cause&&e.cause.message))') > /tmp/out/diag.txt 2>&1 || true
           npx tsx scripts/fundamentals/find-reports.ts LUCK MEBL HBL OGDC HUBC EFERT SYS PPL > /tmp/out/reports.json
           python3 scripts/fundamentals/extract.py /tmp/out/reports.json /tmp/out/fundamentals.json 2>&1 | tee /tmp/out/log.txt || true
       - name: Push result to a side branch
