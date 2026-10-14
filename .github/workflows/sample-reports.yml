@@ -33,19 +33,26 @@ jobs:
           ls -la pdfs
       - name: Convert to text and push to a side branch
         run: |
-          sudo apt-get install -y -qq poppler-utils >/dev/null
           mkdir -p out
-          cp reports.json out/
+          exec > >(tee out/log.txt) 2>&1
+          set -x
+          (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils) || echo "apt failed"
+          cp reports.json list.txt out/ || true
+          ls -la pdfs || true
           for f in pdfs/*.pdf; do
             n=$(basename "$f" .pdf)
-            pdfinfo "$f" > "out/$n.info.txt" 2>&1 || true
-            pdftotext -layout "$f" "out/$n.txt" 2>/dev/null || echo "no text" > "out/$n.txt"
+            file "$f" > "out/$n.info.txt" 2>&1 || true
+            pdfinfo "$f" >> "out/$n.info.txt" 2>&1 || true
+            pdftotext -layout "$f" "out/$n.txt" 2>>out/log.txt || echo "no text" > "out/$n.txt"
           done
-          ls -la out
+          set +x
+          mv out /tmp/out
           git config user.name "sample-bot"
           git config user.email "sample-bot@users.noreply.github.com"
           git checkout --orphan fundamentals-samples
-          git rm -rq --cached .
+          git rm -rqf --cached . || true
+          rm -rf ./* || true
+          cp -r /tmp/out ./out
           git add out
           git commit -qm "Sample report text"
           git push -f origin fundamentals-samples
