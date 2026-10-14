@@ -187,8 +187,15 @@ def ask_model(text: str, token: str) -> dict:
         })
         try:
             with urllib.request.urlopen(req, timeout=120) as r:
-                data = json.load(r)
-            return json.loads(data["choices"][0]["message"]["content"])
+                raw = r.read().decode("utf-8", "replace")
+            try:
+                content = json.loads(raw)["choices"][0]["message"]["content"]
+            except Exception:
+                raise RuntimeError(f"unexpected model response: {raw[:300]!r}")
+            m = re.search(r"\{.*\}", content, re.S)
+            if not m:
+                raise RuntimeError(f"no JSON in model reply: {content[:300]!r}")
+            return json.loads(m.group(0))
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < 3:
                 wait = int(e.headers.get("Retry-After") or 30)
