@@ -31,6 +31,8 @@ v, p = X.verify(dict(good, borrowing_lines=[{"label": "a", "amount": "7,339,816"
 check("drops borrowings with an invented line", v is not None and v["borrowings"] is None, p)
 v, p = X.verify(dict(good, borrowing_lines=[{"label": "Long-term financing"}]), text)
 check("drops borrowings given as labels only", v is not None and v["borrowings"] is None, p)
+v, p = X.verify(dict(good, borrowing_lines=good["borrowing_lines"] + [{"label": "Long term loan to subsidiary", "amount": "199,261"}]), text)
+check("ignores loans made to others", v is not None and v["borrowings"] == (7_339_816 + 1_822_195 + 9_610_000) * 1000, v and v["borrowings"])
 v, p = X.verify(dict(good, unit=7), text)
 check("rejects unknown units", v is None)
 v, p = X.verify(dict(good, total_liabilities=None), text)

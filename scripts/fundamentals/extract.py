@@ -242,6 +242,10 @@ def to_value(raw, unit: int) -> float | None:
     return -v if neg else v
 
 
+# Lines a model sometimes mistakes for debt: money lent out, leases, payables, deposits taken.
+NOT_DEBT = re.compile(r"\bto\s+(subsidiar|associat|related|employees)|receivable|investment|advance|prepay|lease|payable|deposit", re.I)
+
+
 def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
     problems: list[str] = []
     unit = ans.get("unit") if ans.get("unit") in (1, 1000, 1000000) else None
@@ -267,6 +271,10 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
     total_b, bad = 0.0, False
     for item in lines:
         raw = item.get("amount") if isinstance(item, dict) else item
+        label = str(item.get("label", "")) if isinstance(item, dict) else ""
+        if NOT_DEBT.search(label):
+            problems.append(f"ignored non-borrowing line '{label}'")
+            continue
         if raw is None or normalize_number(str(raw)) not in hay_tokens:
             problems.append(f"borrowing line {raw} not found in the statement")
             bad = True
