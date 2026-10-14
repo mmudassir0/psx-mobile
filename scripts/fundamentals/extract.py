@@ -163,7 +163,10 @@ Return JSON only, no prose, with this shape:
  "total_liabilities": "<number exactly as printed or null>",
  "current_assets": "<number exactly as printed or null>",       // null for banks
  "current_liabilities": "<number exactly as printed or null>",  // null for banks
- "borrowing_lines": ["<each interest-bearing borrowing line as printed: long-term financing, its current maturity, short-term borrowings, running finance, TFCs/sukuk, loans. NOT lease liabilities, NOT trade payables, NOT deposits. Empty list if none. For banks use borrowings only, not customer deposits>"],
+ "borrowing_lines": [{"label": "<line label>", "amount": "<number exactly as printed>"}],
+      // every interest-bearing borrowing line in the CURRENT column: long-term financing, its current maturity,
+      // short-term borrowings, running finance, TFCs/sukuk, loans. NOT leases, NOT payables, NOT customer deposits.
+      // Empty list if there are none.
  "cash": "<cash and bank balances as printed or null>"
 }
 Rules: copy every number character-for-character from the CURRENT period column (keep commas, keep brackets for negatives).
@@ -176,16 +179,25 @@ def compact(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
 
 
-def ask_model(text: str, token: str) -> dict:
+def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = None) -> dict:
     text = compact(text)
+    messages = [
+        {"role": "system", "content": PROMPT},
+        {"role": "user", "content": text[:16000]},
+    ]
+    if feedback:
+        prev, problems = feedback
+        messages += [
+            {"role": "assistant", "content": json.dumps(prev)},
+            {"role": "user", "content": "Your answer failed these checks: " + "; ".join(problems)
+             + ". The page may print two statements side by side; read each figure from its own column. "
+               "Return the corrected JSON."},
+        ]
     body = json.dumps({
         "model": MODEL,
         "temperature": 0,
         "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": PROMPT},
-            {"role": "user", "content": text[:16000]},
-        ],
+        "messages": messages,
     }).encode()
     for attempt in range(4):
         req = urllib.request.Request(ENDPOINT, data=body, headers={
@@ -253,8 +265,9 @@ def verify(ans: dict, page_text: str) -> tuple[dict | None, list[str]]:
     if not isinstance(lines, list):
         lines = []
     total_b, bad = 0.0, False
-    for raw in lines:
-        if normalize_number(str(raw)) not in hay_tokens:
+    for item in lines:
+        raw = item.get("amount") if isinstance(item, dict) else item
+        if raw is None or normalize_number(str(raw)) not in hay_tokens:
             problems.append(f"borrowing line {raw} not found in the statement")
             bad = True
             continue
@@ -311,6 +324,11 @@ def process(company: dict, token: str, workdir: str) -> dict:
     text = "\n\n".join(pages[i] for i in idx)
     ans = ask_model(text, token)
     vals, problems = verify(ans, text)
+    if vals is None:
+        # One second look, told exactly which check failed. The new answer is verified the same way.
+        time.sleep(12)
+        ans = ask_model(text, token, (ans, problems))
+        vals, problems = verify(ans, text)
     if vals is None:
         return {"ok": False, "reason": "; ".join(problems), "report": rep, "pages": [i + 1 for i in idx], "model": ans}
     return {

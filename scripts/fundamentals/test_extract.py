@@ -15,7 +15,8 @@ text = "\n\n".join(fx["text"])
 good = {
     "unit": 1000, "total_equity": "216,641,607", "total_assets": "301,409,878", "total_liabilities": "84,768,271",
     "current_assets": "127,042,576", "current_liabilities": "53,105,221", "cash": "1,530,592",
-    "borrowing_lines": ["7,339,816", "1,822,195", "9,610,000"],
+    "borrowing_lines": [{"label": "Long-term financing", "amount": "7,339,816"}, {"label": "Current maturity", "amount": "1,822,195"},
+                        {"label": "Short term borrowings", "amount": "9,610,000"}],
 }
 v, p = X.verify(good, text)
 check("accepts a correct reading", v is not None and not p, p)
@@ -26,8 +27,10 @@ v, p = X.verify(dict(good, total_equity="216,641,600"), text)
 check("rejects a number not on the page", v is None, p)
 v, p = X.verify(dict(good, total_liabilities="53,105,221"), text)
 check("rejects totals that don't balance", v is None, p)
-v, p = X.verify(dict(good, borrowing_lines=["7,339,816", "99,999,999"]), text)
+v, p = X.verify(dict(good, borrowing_lines=[{"label": "a", "amount": "7,339,816"}, {"label": "b", "amount": "99,999,999"}]), text)
 check("drops borrowings with an invented line", v is not None and v["borrowings"] is None, p)
+v, p = X.verify(dict(good, borrowing_lines=[{"label": "Long-term financing"}]), text)
+check("drops borrowings given as labels only", v is not None and v["borrowings"] is None, p)
 v, p = X.verify(dict(good, unit=7), text)
 check("rejects unknown units", v is None)
 v, p = X.verify(dict(good, total_liabilities=None), text)
