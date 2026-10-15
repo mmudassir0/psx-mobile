@@ -7,7 +7,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import * as SecureStore from 'expo-secure-store';
 import * as Engine from '../ai/engine';
 import { ChatMessage, Generation, LocalModel, MODELS, modelById } from '../ai/models';
-import { CLOUD_LABEL, cloudGenerate, CloudError } from '../ai/cloud';
+import { Attempt, chain, groqAttempts } from '../ai/cloud';
+import { FLASH, geminiModel, geminiStream, GeminiModel } from '../ai/gemini';
 import type { Tier } from '../ai/context';
 import { load as loadKey, save } from '../storage';
 
@@ -36,8 +37,14 @@ interface AiState {
   run: (build: (tier: Tier) => ChatMessage[], onText: (t: string) => void, maxTokens?: number) => Promise<Run>;
   mode: AiMode;
   setMode: (m: AiMode) => void;
+  /** any online key */
   hasKey: boolean;
+  hasGroq: boolean;
+  hasGemini: boolean;
   setKey: (k: string | null) => Promise<void>;
+  setGeminiKey: (k: string | null) => Promise<void>;
+  gemini: GeminiModel;
+  setGemini: (key: GeminiModel['key']) => void;
   /** true when at least one engine can answer */
   available: boolean;
 }
@@ -47,12 +54,22 @@ const K_MODEL = 'ai.model';
 const K_RESUME = 'ai.resume';
 const K_MODE = 'ai.mode';
 const K_KEY = 'groq_api_key';
+const K_GEMINI = 'gemini_api_key';
+const K_GEMINI_MODEL = 'ai.geminiModel';
 
-async function readKey(): Promise<string | null> {
+async function readSecret(name: string): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(K_KEY);
+    return await SecureStore.getItemAsync(name);
   } catch {
     return null; // web preview
+  }
+}
+async function writeSecret(name: string, v: string | null): Promise<void> {
+  try {
+    if (v) await SecureStore.setItemAsync(name, v.trim());
+    else await SecureStore.deleteItemAsync(name);
+  } catch {
+    // web preview has no secure store
   }
 }
 
@@ -65,10 +82,14 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
   const dl = useRef<Engine.Download | null>(null);
   const [mode, setModeState] = useState<AiMode>('auto');
   const [hasKey, setHasKey] = useState(false);
+  const [hasGemini, setHasGemini] = useState(false);
+  const [gemini, setGeminiState] = useState<GeminiModel>(FLASH);
 
   useEffect(() => {
     loadKey<AiMode>(K_MODE, 'auto').then(setModeState);
-    readKey().then((k) => setHasKey(!!k));
+    readSecret(K_KEY).then((k) => setHasKey(!!k));
+    readSecret(K_GEMINI).then((k) => setHasGemini(!!k));
+    loadKey<string | null>(K_GEMINI_MODEL, 'flash').then((k) => setGeminiState(geminiModel(k)));
   }, []);
 
   const setMode = useCallback((m: AiMode) => {
@@ -77,13 +98,18 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setKey = useCallback(async (k: string | null) => {
-    try {
-      if (k) await SecureStore.setItemAsync(K_KEY, k.trim());
-      else await SecureStore.deleteItemAsync(K_KEY);
-    } catch {
-      // web preview has no secure store
-    }
+    await writeSecret(K_KEY, k);
     setHasKey(!!k);
+  }, []);
+
+  const setGeminiKey = useCallback(async (k: string | null) => {
+    await writeSecret(K_GEMINI, k);
+    setHasGemini(!!k);
+  }, []);
+
+  const setGemini = useCallback((key: GeminiModel['key']) => {
+    setGeminiState(geminiModel(key));
+    save(K_GEMINI_MODEL, key);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -214,37 +240,38 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
 
   const run = useCallback(
     async (build: (tier: Tier) => ChatMessage[], onText: (t: string) => void, maxTokens?: number): Promise<Run> => {
-      const key = mode !== 'phone' ? await readKey() : null;
-      if (!key) {
-        if (mode === 'online') throw new Error('Add your free Groq key in Settings → AI to use online AI');
+      const [groq, gem] = mode !== 'phone' ? await Promise.all([readSecret(K_KEY), readSecret(K_GEMINI)]) : [null, null];
+      if (!groq && !gem) {
+        if (mode === 'online') throw new Error('Add a Gemini or Groq key in Settings → AI to use online AI');
         return runPhone(build('small'), onText, maxTokens);
       }
-      // Online first. If it fails before writing anything (offline, limits), fall back to the phone model.
-      let label = 'online';
-      let wrote = false;
-      const cloud = cloudGenerate(
-        key,
-        build('large'),
-        (t) => {
-          wrote = true;
-          onText(t);
-        },
-        Math.max(maxTokens ?? 700, 700),
-        (m) => (label = CLOUD_LABEL[m] ?? m),
-      );
-      let fallback: Run | null = null;
-      const done = cloud.done.catch(async (e) => {
-        const offline = e instanceof CloudError && (e.status === 0 || e.status === 429 || e.status >= 500);
-        if (wrote || mode === 'online' || !offline || !phoneReady) throw e;
-        fallback = await runPhone(build('small'), onText, maxTokens);
-        return fallback.gen.done;
-      });
-      return {
-        gen: { done, stop: () => (fallback ? fallback.gen.stop() : cloud.stop()) },
-        engine: () => (fallback ? fallback.engine() : label),
-      };
+      // Online providers in order: chosen Gemini model, Gemini Flash, Groq; then the phone model in Auto mode.
+      const large = build('large');
+      const max = Math.max(maxTokens ?? 700, 700);
+      const attempts: Attempt[] = [];
+      if (gem) {
+        const models = gemini.id === FLASH.id ? [FLASH] : [gemini, FLASH];
+        for (const m of models) attempts.push({ label: `${m.label} (online)`, start: (cb) => geminiStream(gem, m.id, large, cb, max) });
+      }
+      if (groq) attempts.push(...groqAttempts(groq, large, max));
+      if (mode === 'auto' && phoneReady) {
+        attempts.push({
+          label: `${modelById(modelId)?.name ?? 'Phone model'} (on phone)`,
+          start: (cb) => {
+            let inner: Generation | null = null;
+            const done = runPhone(build('small'), cb, maxTokens).then((r) => {
+              inner = r.gen;
+              return r.gen.done;
+            });
+            return { done, stop: () => inner?.stop() };
+          },
+        });
+      }
+      let label = attempts[0].label;
+      const gen = chain(attempts, onText, (l) => (label = l));
+      return { gen, engine: () => label };
     },
-    [mode, runPhone, phoneReady],
+    [mode, runPhone, phoneReady, gemini, modelId],
   );
 
   return (
@@ -264,9 +291,14 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
         run,
         mode,
         setMode,
-        hasKey,
+        hasKey: hasKey || hasGemini,
+        hasGroq: hasKey,
+        hasGemini,
         setKey,
-        available: (mode !== 'phone' && hasKey) || phoneReady,
+        setGeminiKey,
+        gemini,
+        setGemini,
+        available: (mode !== 'phone' && (hasKey || hasGemini)) || phoneReady,
       }}
     >
       {children}

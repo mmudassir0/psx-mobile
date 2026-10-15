@@ -25,9 +25,12 @@ ROE, ROA, book value, P/B, current ratio and debt ratios need figures PSX doesn'
 ## AI
 Every stock's AI tab starts with **Sahm's verdict**, decided in code (`src/ai/verdict.ts`): technical score plus a fundamental score (valuation vs sector, EPS growth, quarter vs a year earlier, ROE, debt, current ratio, dividend), combined into Bullish/Neutral/Bearish with a confidence and levels (buy zone, stop, target, reward/risk; or "wait" with a holders' stop and trigger when bearish). The AI then explains that verdict; it never decides it. In the "Ask Sahm" chat, rankings ("cheapest cement", "best dividend") and side-by-side comparisons are computed in code (`src/ai/chat.ts`) and handed to the model.
 
-Two engines, chosen in Settings → AI (Auto / Online / On phone):
-- **Online:** Groq's free tier (GPT-OSS 120B, falling back to 20B on rate limits) with the user's own key, stored with `expo-secure-store` (`src/ai/cloud.ts`).
+Engines, chosen in Settings → AI (Auto / Online / On phone), tried in this order:
+- **Gemini** with the user's own key (Google's Interactions API, `src/ai/gemini.ts`): their choice of 3.8 Flash (free tier), 3.1 Pro or 4 Argon (billing or Developer Program credits), falling back to Flash.
+- **Groq** free tier: GPT-OSS 120B, then 20B (`src/ai/cloud.ts`). Keys are stored with `expo-secure-store`; `chain()` moves to the next provider only on offline, rate-limit or availability errors.
 - **On phone:** llama.cpp via `llama.rn` with a downloaded model: Qwen3 4B (recommended, 2.5 GB) or Qwen2.5 1.5B (1.1 GB), with pause/resume and a size check (`src/ai/engine.ts`, `src/store/ai.tsx`). Phone models get a compact data pack to cut the wait before the first word.
+
+**Ask in another app:** each stock's AI tab and each chat answer can send the full prompt (instructions, verdict, data) to the Gemini, Claude or ChatGPT app through Android's share sheet (`src/ai/share.ts`), so the answer comes from the user's own account there.
 
 `.github/workflows/ai-eval.yml` runs the real prompts on live PSX data with each model (llama.cpp built from source, same engine as the app) and Groq, saving answers and speeds to the `ai-eval-results` branch.
 

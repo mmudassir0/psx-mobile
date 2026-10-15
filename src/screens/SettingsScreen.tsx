@@ -6,6 +6,7 @@ import { colors, fonts, space, themed, ThemePref } from '../theme';
 import { gb, MODELS } from '../ai/models';
 import { AiMode, useAi } from '../store/ai';
 import { testKey } from '../ai/cloud';
+import { GEMINI_MODELS, testGeminiKey } from '../ai/gemini';
 import { ModelCard } from '../ui/ModelCard';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
@@ -18,7 +19,7 @@ const MODES: { key: AiMode; label: string }[] = [
 ];
 const MODE_NOTE: Record<AiMode, string> = {
   auto: 'Uses the online AI when you are connected and have a key, otherwise the on-phone model.',
-  online: 'Always uses the online AI. Needs internet and a Groq key.',
+  online: 'Always uses the online AI. Needs internet and a Gemini or Groq key.',
   phone: 'Always uses the downloaded model. Works offline; nothing leaves the phone.',
 };
 
@@ -37,6 +38,25 @@ export default function SettingsScreen() {
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [gemInput, setGemInput] = useState('');
+  const [gemMsg, setGemMsg] = useState<string | null>(null);
+  const [gemTesting, setGemTesting] = useState(false);
+  const saveGemini = async () => {
+    const k = gemInput.trim();
+    if (!k) return;
+    setGemTesting(true);
+    setGemMsg(null);
+    try {
+      await testGeminiKey(k);
+      await ai.setGeminiKey(k);
+      setGemInput('');
+      setGemMsg('Key saved and working.');
+    } catch (e) {
+      setGemMsg((e as Error).message);
+    } finally {
+      setGemTesting(false);
+    }
+  };
   const saveKey = async () => {
     const k = keyInput.trim();
     if (!k) return;
@@ -93,16 +113,58 @@ export default function SettingsScreen() {
 
           <View style={styles.card}>
             <T v="body" style={{ fontFamily: fonts.semibold }}>
-              Online AI (free)
+              Gemini (Google)
             </T>
             <T v="caption" style={{ lineHeight: 18 }}>
-              Much smarter answers from large models on Groq's free tier. Sign in at console.groq.com, open API Keys, create a key and
-              paste it here. The key stays encrypted on this phone; questions and stock data are sent to Groq.
+              Used first when added. Create a key at aistudio.google.com (Get API key). Flash works on the free tier; Pro and Argon
+              need billing on the key's Google Cloud project, which your Developer Program credits can cover.
+            </T>
+            <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}>
+              <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open aistudio.google.com ›</T>
+            </Pressable>
+            {ai.hasGemini ? (
+              <>
+                <View style={styles.row}>
+                  <T v="body">Key added</T>
+                  <Button label="Remove" small tone="ghost" onPress={() => ai.setGeminiKey(null)} />
+                </View>
+                <Segmented
+                  options={GEMINI_MODELS.map((m) => ({ key: m.key, label: m.label.replace('Gemini ', '') }))}
+                  value={ai.gemini.key}
+                  onChange={ai.setGemini}
+                />
+                <T v="caption">{ai.gemini.note} If it isn't available, Sahm uses Flash, then Groq.</T>
+              </>
+            ) : (
+              <View style={{ gap: 10 }}>
+                <TextInput
+                  value={gemInput}
+                  onChangeText={setGemInput}
+                  placeholder="AIza…"
+                  placeholderTextColor={colors.faint}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <Button label={gemTesting ? 'Checking…' : 'Save key'} disabled={!gemInput.trim() || gemTesting} onPress={saveGemini} />
+              </View>
+            )}
+            {gemMsg ? <T v="caption" style={{ color: gemMsg.startsWith('Key saved') ? colors.up : colors.downText }}>{gemMsg}</T> : null}
+          </View>
+
+          <View style={styles.card}>
+            <T v="body" style={{ fontFamily: fonts.semibold }}>
+              Groq (free)
+            </T>
+            <T v="caption" style={{ lineHeight: 18 }}>
+              GPT-OSS 120B on Groq's free tier, used after Gemini. Sign in at console.groq.com, open API Keys, create a key and paste
+              it here. Keys stay encrypted on this phone; questions and stock data are sent to the provider that answers.
             </T>
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://console.groq.com/keys')}>
               <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open console.groq.com ›</T>
             </Pressable>
-            {ai.hasKey ? (
+            {ai.hasGroq ? (
               <View style={styles.row}>
                 <T v="body">Key added</T>
                 <Button label="Remove" small tone="ghost" onPress={() => ai.setKey(null)} />

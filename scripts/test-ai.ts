@@ -9,7 +9,9 @@ import { analysisMessages, median, stockContext } from '../src/ai/context';
 import { comparison, mentionedSector, mentionedSymbols, ranking, screeningTable } from '../src/ai/chat';
 import { MODELS, modelById } from '../src/ai/models';
 import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
-import { parseSse } from '../src/ai/cloud';
+import { chain, parseSse, CloudError } from '../src/ai/cloud';
+import { parseInteractionSse, toInteraction } from '../src/ai/gemini';
+import { sharePrompt } from '../src/ai/sharePrompt';
 import { BalanceSheet } from '../src/analysis/ratios';
 
 let failed = 0;
@@ -104,10 +106,28 @@ check('compact pack is much smaller and keeps the essentials', compactCtx.length
 check('model catalog points at Qwen GGUF files on Hugging Face', MODELS.every((m) => /^https:\/\/huggingface.co\/(Qwen|unsloth)\/Qwen/.test(m.url) && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
 check('model ids are unique and resolvable', new Set(MODELS.map((m) => m.id)).size === MODELS.length && modelById(MODELS[0].id) === MODELS[0] && modelById('nope') === null);
 
-if (failed) {
-  console.log(`\n${failed} AI check(s) failed`);
-  console.log(ctx);
-  process.exit(1);
-}
+const g = parseInteractionSse('event: step.delta\ndata: {"index":0,"delta":{"type":"text","text":"Hel"},"event_type":"step.delta"}\n\nevent: step.delta\ndata: {"index":0,"delta":{"type":"thought_summary","text":"x"},"event_type":"step.delta"}\ndata: {"index":0,"delta":{"type":"text","text":"lo"},"event_type":"step.delta"}\ndata: {"interaction":{"status":"completed"},"event_type":"interaction.completed"}\ndata: [DONE]\ndata: {"inde');
+check('Gemini stream: text deltas only, no thoughts, keeps partial line', g.text === 'Hello' && g.done && g.rest === 'data: {"inde' && !g.error, g);
+check('Gemini stream reports errors', parseInteractionSse('data: {"error":{"message":"quota","code":"x"},"event_type":"error"}\n').error === 'quota');
+const ti = toInteraction([{ role: 'system', content: 'S' }, { role: 'user', content: 'q1' }, { role: 'assistant', content: 'a1' }, { role: 'user', content: 'q2' }]);
+check('Gemini input folds earlier turns', ti.system === 'S' && ti.input.includes('Earlier question: q1') && ti.input.includes('Your earlier answer: a1') && ti.input.endsWith('New question: q2'), ti);
+const sp = sharePrompt(analysisMessages(ctx, vt, v.call, 'large'));
+check('share prompt is self-contained', sp.includes('INSTRUCTIONS') && sp.includes('SAHM VERDICT') && sp.includes('STOCK LUCK') && sp.length < 12000, sp.length);
+
+// Fallback chain: first provider rate-limited, second answers.
+const fake = (out: string | Error) => ({ label: String(out), start: (cb: (t: string) => void) => ({ done: out instanceof Error ? Promise.reject(out) : Promise.resolve(out).then((t) => (cb(t), t)), stop: () => {} }) });
+const labels: string[] = [];
+chain([fake(new CloudError('limit', 429)), fake('second')], () => {}, (l) => labels.push(l)).done.then((t) => {
+  check('chain falls back on rate limit', t === 'second' && labels.length === 2, { t, labels });
+  return chain([fake(new CloudError('bad key', 401)), fake('never')], () => {}).done.then(
+    () => check('chain stops on a bad key', false),
+    (e) => check('chain stops on a bad key', (e as Error).message === 'bad key'),
+  );
+}).then(() => {
+  if (failed) {
+    console.log(`\n${failed} AI check(s) failed`);
+    process.exit(1);
+  }
+  console.log('\nall AI checks passed');
+});
 if (process.env.SHOW) console.log(ctx);
-console.log('\nall AI checks passed');

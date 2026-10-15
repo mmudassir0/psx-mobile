@@ -4,6 +4,11 @@
 name: AI eval
 on:
   workflow_dispatch:
+    inputs:
+      only_gemini:
+        description: 'Only run the Gemini check (skip the slow local models)'
+        type: boolean
+        default: true
 permissions:
   contents: write
 jobs:
@@ -21,6 +26,7 @@ jobs:
             cp /tmp/f.json assets/fundamentals.json
           fi
       - name: llama.cpp (build from source)
+        if: ${{ !inputs.only_gemini }}
         run: |
           mkdir -p /tmp/out
           git clone -q --depth 1 https://github.com/ggml-org/llama.cpp /tmp/llama.cpp
@@ -30,12 +36,14 @@ jobs:
           echo "LLAMA_SERVER=/tmp/llama.cpp/build/bin/llama-server" >> $GITHUB_ENV
           git log -1 --format='llama.cpp %h %cd' >> /tmp/out/log.txt
       - name: Models
+        if: ${{ !inputs.only_gemini }}
         run: |
           mkdir -p /tmp/models && cd /tmp/models
           curl -sSL -o fast.gguf https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf
           curl -sSL -o best.gguf https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
           ls -la
       - name: Evaluate
+        if: ${{ !inputs.only_gemini }}
         env:
           GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
@@ -51,6 +59,11 @@ jobs:
           done
           EVAL_TARGETS="[{\"name\":\"gpt-oss-120b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-120b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"},{\"name\":\"gpt-oss-20b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-20b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"}]" \
             npx tsx scripts/ai-eval.ts /tmp/out/online.json 2>&1 | tee -a /tmp/out/log.txt || true
+      - name: Gemini check
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: mkdir -p /tmp/out && (npx tsx scripts/gemini-check.ts > /tmp/out/gemini.txt 2>&1 || true)
+
       - name: Save results
         if: always()
         run: |

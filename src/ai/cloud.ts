@@ -100,31 +100,42 @@ function streamOnce(key: string, model: string, messages: ChatMessage[], onText:
   return { done, stop: () => xhr.abort() };
 }
 
-/** Streams from the first model, falling back to the next on rate limits or outages. Reports which model answered. */
-export function cloudGenerate(
-  key: string,
-  messages: ChatMessage[],
-  onText: (t: string) => void,
-  maxTokens = 900,
-  onModel?: (model: string) => void,
-): Generation {
+export interface Attempt {
+  label: string;
+  start: (onText: (t: string) => void) => Generation;
+}
+
+/** True for failures worth trying the next provider on: offline, rate limits, model unavailable, server errors. */
+export const retryable = (e: unknown) => {
+  const st = e instanceof CloudError ? e.status : -1;
+  return st === 0 || st === 429 || st >= 500;
+};
+
+/**
+ * Runs attempts in order until one answers. Moves on only when an attempt
+ * fails before writing anything and the failure is retryable; otherwise the
+ * error is shown. `onLabel` reports which attempt is writing.
+ */
+export function chain(attempts: Attempt[], onText: (t: string) => void, onLabel?: (label: string) => void): Generation {
   let current: Generation | null = null;
   let stopped = false;
   const done = (async () => {
-    let last: unknown;
-    for (const model of CLOUD_MODELS) {
-      if (stopped) break;
-      onModel?.(model);
-      current = streamOnce(key, model, messages, onText, maxTokens);
+    let last: unknown = new Error('No AI provider is set up');
+    for (const a of attempts) {
+      if (stopped) return '';
+      onLabel?.(a.label);
+      let wrote = false;
+      current = a.start((t) => {
+        wrote = true;
+        onText(t);
+      });
       try {
         return await current.done;
       } catch (e) {
         last = e;
-        const st = e instanceof CloudError ? e.status : 0;
-        if (st !== 429 && st < 500) throw e; // bad key, bad request or offline: don't retry
+        if (wrote || !retryable(e)) throw e;
       }
     }
-    if (stopped) return '';
     throw last;
   })();
   return {
@@ -134,6 +145,25 @@ export function cloudGenerate(
       current?.stop();
     },
   };
+}
+
+/** Groq attempts: GPT-OSS 120B, then 20B. */
+export function groqAttempts(key: string, messages: ChatMessage[], maxTokens: number): Attempt[] {
+  return CLOUD_MODELS.map((model) => ({
+    label: CLOUD_LABEL[model] ?? model,
+    start: (onText: (t: string) => void) => streamOnce(key, model, messages, onText, maxTokens),
+  }));
+}
+
+/** Streams from Groq, falling back from 120B to 20B. */
+export function cloudGenerate(
+  key: string,
+  messages: ChatMessage[],
+  onText: (t: string) => void,
+  maxTokens = 900,
+  onModel?: (label: string) => void,
+): Generation {
+  return chain(groqAttempts(key, messages, maxTokens), onText, onModel);
 }
 
 /** Quick key check with a one-word reply. */

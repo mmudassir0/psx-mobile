@@ -6,6 +6,7 @@ import { analysisMessages, StockPack, stockContext } from '../../ai/context';
 import { decide, verdictText } from '../../ai/verdict';
 import type { Generation } from '../../ai/models';
 import { useAi } from '../../store/ai';
+import { shareToApp } from '../../ai/share';
 import { load, save } from '../../storage';
 import { ModelCard } from '../../ui/ModelCard';
 import { Md } from '../../ui/Md';
@@ -110,6 +111,23 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
           <T v="caption" style={{ lineHeight: 18 }}>
             Not investment advice.
           </T>
+        </Section>
+      ) : null}
+
+      {verdict ? (
+        <Section title="Ask in another app">
+          <Panel style={{ paddingVertical: 16, gap: 10 }}>
+            <T v="body" style={{ color: colors.text2, fontSize: 14.5 }}>
+              Send this stock's full data and the verdict to your Gemini, Claude or ChatGPT app, and get an answer from your own
+              account there. You can ask follow-up questions in that app.
+            </T>
+            <Button
+              label="Ask Gemini, Claude or ChatGPT"
+              tone="ghost"
+              onPress={() => shareToApp(analysisMessages(context, verdictText(verdict), verdict.call, 'large'), `${symbol} analysis`)}
+            />
+          </Panel>
+          <T v="caption">Pick the app in the share sheet, then press send there.</T>
         </Section>
       ) : null}
 

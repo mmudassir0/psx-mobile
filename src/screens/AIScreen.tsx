@@ -9,6 +9,7 @@ import { CHAT_SYSTEM } from '../ai/context';
 import type { ChatMessage, Generation } from '../ai/models';
 import { useAi } from '../store/ai';
 import { ModelCard } from '../ui/ModelCard';
+import { shareToApp } from '../ai/share';
 import { Md } from '../ui/Md';
 import { Card, Icon, T } from '../ui/kit';
 
@@ -24,6 +25,8 @@ interface Turn {
   a: string;
   status: 'reading' | 'writing' | 'done' | 'error';
   note?: string;
+  /** the full prompt, for "Ask in another app" */
+  prompt?: ChatMessage[];
 }
 
 /** Market snapshot plus "Ask Sahm": questions answered by the on-phone model from live PSX data. */
@@ -72,6 +75,7 @@ export default function AIScreen() {
         m.push({ role: 'user', content: q });
         return m;
       };
+      patch(idx, { prompt: build('large') });
       const r = await ai.run(build, (a) => patch(idx, { a }), 500);
       handle.current = r.gen;
       const a = await r.gen.done;
@@ -179,6 +183,11 @@ export default function AIScreen() {
                     <T v="caption" style={{ color: t.status === 'error' ? colors.downText : colors.faint }}>
                       {t.status === 'error' ? `Stopped: ${t.note}` : t.note}
                     </T>
+                  ) : null}
+                  {t.prompt && (t.status === 'done' || t.status === 'error') ? (
+                    <Pressable accessibilityRole="button" onPress={() => shareToApp(t.prompt!, t.q)} hitSlop={8}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Ask in Gemini, Claude or ChatGPT ›</T>
+                    </Pressable>
                   ) : null}
                 </View>
               </View>
