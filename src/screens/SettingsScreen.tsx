@@ -130,11 +130,11 @@ export default function SettingsScreen() {
           </T>
           <ModelCard inSettings />
           <View style={styles.card}>
-            {MODELS.map((m, i) => {
+            {MODELS.filter((m) => m.id !== 'qwen2.5-3b' || ai.installed[m.id]).map((m, i, list) => {
               const have = ai.installed[m.id];
               const active = ai.model?.id === m.id && have;
               return (
-                <View key={m.id} style={[styles.modelRow, i < MODELS.length - 1 && styles.border]}>
+                <View key={m.id} style={[styles.modelRow, i < list.length - 1 && styles.border]}>
                   <View style={{ flex: 1, gap: 2 }}>
                     <T v="body" style={{ fontFamily: active ? fonts.bold : fonts.semibold, fontSize: 14.5 }}>
                       {m.name}
@@ -152,7 +152,7 @@ export default function SettingsScreen() {
             })}
           </View>
           <T v="caption" style={{ lineHeight: 18 }}>
-            Models come from Qwen's official releases on Hugging Face and run fully on the phone; your questions never leave it.
+            Qwen models from Hugging Face. They run fully on the phone; in On phone mode your questions never leave it.
           </T>
         </Section>
 

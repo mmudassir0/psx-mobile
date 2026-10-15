@@ -20,18 +20,15 @@ jobs:
           if git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/f.json 2>/dev/null; then
             cp /tmp/f.json assets/fundamentals.json
           fi
-      - name: llama.cpp
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: llama.cpp (build from source)
         run: |
-          mkdir -p /tmp/llama && cd /tmp/llama
-          URL=$(gh api repos/ggml-org/llama.cpp/releases/latest -q '.assets[] | select(.name | test("bin-ubuntu-x64.(zip|tar.gz)$")) | .browser_download_url' | head -1)
-          echo "$URL"
-          curl -sSL -o pkg "$URL"
-          (unzip -q pkg || tar xzf pkg) 2>/dev/null
-          BIN=$(find . -name llama-server -type f | head -1)
-          echo "LLAMA_SERVER=/tmp/llama/$BIN" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$(dirname /tmp/llama/$BIN)" >> $GITHUB_ENV
+          mkdir -p /tmp/out
+          git clone -q --depth 1 https://github.com/ggml-org/llama.cpp /tmp/llama.cpp
+          cd /tmp/llama.cpp
+          cmake -B build -DLLAMA_CURL=OFF -DGGML_NATIVE=ON -DCMAKE_BUILD_TYPE=Release > /tmp/out/cmake.log 2>&1
+          cmake --build build --target llama-server -j 4 >> /tmp/out/cmake.log 2>&1 || (tail -50 /tmp/out/cmake.log; exit 1)
+          echo "LLAMA_SERVER=/tmp/llama.cpp/build/bin/llama-server" >> $GITHUB_ENV
+          git log -1 --format='llama.cpp %h %cd' >> /tmp/out/log.txt
       - name: Models
         run: |
           mkdir -p /tmp/models && cd /tmp/models
@@ -57,7 +54,7 @@ jobs:
       - name: Save results
         if: always()
         run: |
-          cd /tmp/out
+          mkdir -p /tmp/out && cd /tmp/out
           git init -q && git checkout -q -b ai-eval-results
           git config user.name "ai-eval" && git config user.email "ai-eval@users.noreply.github.com"
           git add . && git commit -qm "AI eval ${{ github.run_number }}"

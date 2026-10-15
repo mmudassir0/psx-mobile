@@ -20,6 +20,8 @@ export function ModelCard({ inSettings }: { inSettings?: boolean } = {}) {
   const ai = useAi();
   const nav = useNavigation();
   const m = ai.model;
+  // In Settings the model list sits right below; only show progress and errors there.
+  if (inSettings && !['downloading', 'paused', 'loading', 'error'].includes(ai.phase)) return null;
 
   if (ai.phase === 'checking') {
     return (
