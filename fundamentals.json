@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-15T04:34:03+00:00",
+ "generatedAt": "2026-10-15T09:32:43+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -174,6 +174,29 @@
     "date": "2026-07-30",
     "pages": [
      10
+    ],
+    "method": "text"
+   }
+  },
+  "ATRL": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 172804028000,
+   "assets": 277786809000,
+   "liabilities": 104982781000,
+   "currentAssets": 191432935000,
+   "currentLiabilities": 104982781000,
+   "borrowings": null,
+   "cash": 56302894000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the year ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/283523.pdf",
+    "date": "2026-09-28",
+    "pages": [
+     166,
+     167
     ],
     "method": "text"
    }
@@ -494,6 +517,32 @@
     "method": "text"
    }
   },
+  "FATIMA": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 163839724000,
+   "assets": 289096953000,
+   "liabilities": 125257229000,
+   "currentAssets": 128077582000,
+   "currentLiabilities": 101212710000,
+   "borrowings": 51257246000.0,
+   "cash": 4497340000,
+   "warnings": [
+    "ignored non-borrowing line 'Short term loans to related parties'",
+    "ignored non-borrowing line 'Long term loans to related parties'"
+   ],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/281821.pdf",
+    "date": "2026-08-28",
+    "pages": [
+     14,
+     15
+    ],
+    "method": "text"
+   }
+  },
   "FCCL": {
    "periodEnd": "2026-06-30",
    "statement": "standalone",
@@ -538,6 +587,296 @@
     ],
     "method": "text"
    }
+  },
+  "GADT": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 26731805000,
+   "assets": 72721381000,
+   "liabilities": 45989576000,
+   "currentAssets": null,
+   "currentLiabilities": null,
+   "borrowings": 27379082000.0,
+   "cash": 503750000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/282287.pdf",
+    "date": "2026-09-04",
+    "pages": [
+     110
+    ],
+    "method": "text"
+   }
+  },
+  "GAL": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 13265883000,
+   "assets": 21222537000,
+   "liabilities": 7956654000,
+   "currentAssets": null,
+   "currentLiabilities": 6596499000,
+   "borrowings": 468697000.0,
+   "cash": null,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended 30-06-2026",
+    "url": "https://dps.psx.com.pk/download/document/283777.pdf",
+    "date": "2026-09-29",
+    "pages": [
+     100
+    ],
+    "method": "text"
+   }
+  },
+  "GHNI": {
+   "periodEnd": "2026-03-31",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 18391315000,
+   "assets": 36275319000,
+   "liabilities": 17884004000,
+   "currentAssets": 28529912000,
+   "currentLiabilities": 17810560000,
+   "borrowings": null,
+   "cash": 1009372000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/275012.pdf",
+    "date": "2026-04-23",
+    "pages": [
+     5
+    ],
+    "method": "text"
+   }
+  },
+  "GLAXO": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 34433670000,
+   "assets": 52580933000,
+   "liabilities": 18147263000,
+   "currentAssets": 37143258000,
+   "currentLiabilities": 16286975000,
+   "borrowings": null,
+   "cash": 8425602000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/281865.pdf",
+    "date": "2026-08-28",
+    "pages": [
+     7
+    ],
+    "method": "text"
+   }
+  },
+  "HALEON": {
+   "periodEnd": "2026-03-31",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 14565984000,
+   "assets": 29932345000,
+   "liabilities": 15366361000,
+   "currentAssets": 20415806000,
+   "currentLiabilities": 14390220000,
+   "borrowings": null,
+   "cash": 4358036000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period Ended 31 March 2026",
+    "url": "https://dps.psx.com.pk/download/document/276423.pdf",
+    "date": "2026-04-30",
+    "pages": [
+     9
+    ],
+    "method": "ocr"
+   }
+  },
+  "HBL": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": true,
+   "equity": 443822445000,
+   "assets": 7601774671000,
+   "liabilities": 7157952226000,
+   "currentAssets": null,
+   "currentLiabilities": null,
+   "borrowings": 1141593254000.0,
+   "cash": null,
+   "warnings": [
+    "cash 5,543,921,714 not found in the statement"
+   ],
+   "source": {
+    "title": "Transmission of Half Yearly Report for the Period Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/280977.pdf",
+    "date": "2026-08-10",
+    "pages": [
+     57
+    ],
+    "method": "text"
+   }
+  },
+  "HMB": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": true,
+   "equity": 125207379000,
+   "assets": 1813756444000,
+   "liabilities": 1688549065000,
+   "currentAssets": null,
+   "currentLiabilities": null,
+   "borrowings": 281299405000.0,
+   "cash": 86971023000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Financial Statements for the Period Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/281854.pdf",
+    "date": "2026-08-28",
+    "pages": [
+     16
+    ],
+    "method": "text"
+   }
+  },
+  "HUBC": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 67226032000,
+   "assets": 90654386000,
+   "liabilities": 23428354000,
+   "currentAssets": 21917586000,
+   "currentLiabilities": 22239057000,
+   "borrowings": 5370762000.0,
+   "cash": 604912000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026 - The Hub Power Company Limited",
+    "url": "https://dps.psx.com.pk/download/document/283369.pdf",
+    "date": "2026-09-24",
+    "pages": [
+     223
+    ],
+    "method": "ocr"
+   }
+  },
+  "IMAGE": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 4165825203,
+   "assets": 7078891979,
+   "liabilities": 2913066776,
+   "currentAssets": 4067092648,
+   "currentLiabilities": null,
+   "borrowings": 862578395.0,
+   "cash": 231505545,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended 2026-06-30",
+    "url": "https://dps.psx.com.pk/download/document/285216.pdf",
+    "date": "2026-10-07",
+    "pages": [
+     30
+    ],
+    "method": "text"
+   }
+  },
+  "INIL": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 20599383000,
+   "assets": 29913865000,
+   "liabilities": 9314481000,
+   "currentAssets": 13941786000,
+   "currentLiabilities": 8710013000,
+   "borrowings": 4201094000.0,
+   "cash": 1219227000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended 30-06-2026",
+    "url": "https://dps.psx.com.pk/download/document/282774.pdf",
+    "date": "2026-09-16",
+    "pages": [
+     220
+    ],
+    "method": "text"
+   }
+  },
+  "JDWS": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 34574860126,
+   "assets": 129332514733,
+   "liabilities": 94757654607,
+   "currentAssets": 78198664757,
+   "currentLiabilities": null,
+   "borrowings": 77418389016.0,
+   "cash": 795895152,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Quarterly Report for the Period Ended 30-Jun-2026",
+    "url": "https://dps.psx.com.pk/download/document/280538.pdf",
+    "date": "2026-07-30",
+    "pages": [
+     18
+    ],
+    "method": "text"
+   }
+  },
+  "KAPCO": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 56233913000,
+   "assets": 83423108000,
+   "liabilities": 27189195000,
+   "currentAssets": 49575713000,
+   "currentLiabilities": 18199920000,
+   "borrowings": 21216162000.0,
+   "cash": 12386587000,
+   "warnings": [],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/284500.pdf",
+    "date": "2026-10-05",
+    "pages": [
+     62,
+     63
+    ],
+    "method": "text"
+   }
+  },
+  "KOHC": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 58654344702,
+   "assets": 80016078548,
+   "liabilities": 21361733846,
+   "currentAssets": 48156441556,
+   "currentLiabilities": 12828723808,
+   "borrowings": 6314059694.0,
+   "cash": 1716473750,
+   "warnings": [],
+   "source": {
+    "title": "TRANSMISSION OF ANNUAL REPORT FOR THE YEAR ENDED JUNE 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/284063.pdf",
+    "date": "2026-10-01",
+    "pages": [
+     72,
+     73
+    ],
+    "method": "text"
+   }
   }
  },
  "failures": {
@@ -566,9 +905,6 @@
     "cash": "205,776,104"
    }
   },
-  "ATRL": {
-   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198484, Requested 1552. Please try again in 15.552s. Need more tokens? Upgrade to Dev Tier today at https://co'"
-  },
   "DCR": {
    "reason": "balance sheet page not found",
    "report": {
@@ -578,8 +914,56 @@
     "url": "https://dps.psx.com.pk/download/document/276153.pdf"
    }
   },
-  "FATIMA": {
-   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198277, Requested 2043. Please try again in 2m18.24s. Need more tokens? Upgrade to Dev Tier today at https://c'"
+  "FFL": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198272, Requested 1789. Please try again in 26.352s. Need more tokens? Upgrade to Dev Tier today at https://co'"
+  },
+  "FHAM": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198277, Requested 2018. Please try again in 2m7.44s. Need more tokens? Upgrade to Dev Tier today at https://co'"
+  },
+  "GHGL": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198388, Requested 2431. Please try again in 5m53.808s. Need more tokens? Upgrade to Dev Tier today at https://'"
+  },
+  "HCAR": {
+   "reason": "balance sheet page not found",
+   "report": {
+    "kind": "annual",
+    "date": "2026-06-08",
+    "title": "Transmission of Annual Report for the Year Ended March 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/278279.pdf"
+   }
+  },
+  "HGFA": {
+   "reason": "no full report listed on PSX"
+  },
+  "HINOON": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198156, Requested 2035. Please try again in 1m22.512s. Need more tokens? Upgrade to Dev Tier today at https://'"
+  },
+  "IBFL": {
+   "reason": "balance sheet page not found",
+   "report": {
+    "kind": "quarterly",
+    "date": "2026-04-30",
+    "title": "Placement of Quarterly Report for the period ended March 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/276418.pdf"
+   }
+  },
+  "ILP": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198172, Requested 2009. Please try again in 1m18.192s. Need more tokens? Upgrade to Dev Tier today at https://'"
+  },
+  "INDU": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198263, Requested 2108. Please try again in 2m40.272s. Need more tokens? Upgrade to Dev Tier today at https://'"
+  },
+  "ISL": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198399, Requested 1622. Please try again in 9.072s. Need more tokens? Upgrade to Dev Tier today at https://con'"
+  },
+  "JVDC": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198404, Requested 2077. Please try again in 3m27.792s. Need more tokens? Upgrade to Dev Tier today at https://'"
+  },
+  "KEL": {
+   "reason": "no full report listed on PSX"
+  },
+  "KTML": {
+   "reason": "error: model HTTP 429: b'{\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01jsf7w2yre7pvbhaz277dq61d` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198264, Requested 1888. Please try again in 1m5.664s. Need more tokens? Upgrade to Dev Tier today at https://c'"
   }
  }
 }
