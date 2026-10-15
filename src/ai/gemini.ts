@@ -6,6 +6,9 @@
 import type { ChatMessage, Generation } from './models';
 import { CloudError } from './cloud';
 
+/** Give up when Gemini sends nothing for this long. */
+export const IDLE_MS = 90_000;
+
 export const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse';
 
 export interface GeminiModel {
@@ -99,8 +102,20 @@ export function geminiStream(
   let seen = 0;
   let pending = '';
   let text = '';
+  // Gemini can think for a while before the first words, so instead of a cap on
+  // the whole answer, give up only when nothing has arrived for IDLE_MS.
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
+  const kick = () => {
+    if (idle) clearTimeout(idle);
+    idle = setTimeout(() => {
+      timedOut = true;
+      xhr.abort();
+    }, IDLE_MS);
+  };
   const done = new Promise<string>((resolve, reject) => {
     const consume = () => {
+      kick();
       if (xhr.status && xhr.status >= 400) return;
       const chunk = xhr.responseText.slice(seen);
       seen = xhr.responseText.length;
@@ -114,15 +129,22 @@ export function geminiStream(
     };
     xhr.onprogress = consume;
     xhr.onload = () => {
+      if (idle) clearTimeout(idle);
       if (xhr.status >= 400) return reject(new CloudError(friendly(xhr.status, xhr.responseText), xhr.status === 404 || xhr.status === 403 ? 429 : xhr.status));
       consume();
       resolve(text);
     };
-    xhr.onerror = () => reject(new CloudError('No internet connection to Gemini', 0));
-    xhr.ontimeout = () => reject(new CloudError('Gemini took too long to answer', 0));
-    xhr.onabort = () => resolve(text);
+    xhr.onerror = () => {
+      if (idle) clearTimeout(idle);
+      reject(new CloudError('No internet connection to Gemini', 0));
+    };
+    xhr.onabort = () => {
+      if (idle) clearTimeout(idle);
+      if (timedOut && !text) reject(new CloudError('Gemini took too long to answer', 0));
+      else resolve(text);
+    };
     xhr.open('POST', GEMINI_URL);
-    xhr.timeout = 120_000;
+    kick();
     xhr.setRequestHeader('x-goog-api-key', key);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(interactionBody(model, messages, maxTokens)));

@@ -1,0 +1,29 @@
+# Downloads daily price history for the market-wide backtest study and saves
+# it to the history branch. Manual only.
+name: Price history
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Fetch
+        env:
+          BUDGET_MIN: '150'
+        run: npx tsx scripts/fetch-history.ts /tmp/history 2>&1 | tee /tmp/fetch.log
+      - name: Save
+        if: always()
+        run: |
+          mkdir -p /tmp/history && cp /tmp/fetch.log /tmp/history/ || true
+          cd /tmp/history
+          git init -q && git checkout -q -b history
+          git config user.name "history" && git config user.email "history@users.noreply.github.com"
+          git add . && git commit -qm "Price history ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" history
