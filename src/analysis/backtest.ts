@@ -172,3 +172,24 @@ export function trackRecord(bt: Backtest, stance: Stance, h: Horizon = 10): Trac
   const edge = g === 'neutral' ? 'similar' : diff > 0.005 ? 'better' : diff < -0.005 ? 'worse' : 'similar';
   return { group: g, days: o.days, rate, baseRate, avg: o.avg, baseAvg: b.avg, edge, years: (bt.to - bt.from) / (365.25 * 864e5) };
 }
+
+const pct1 = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+const pct0 = (x: number) => `${(x * 100).toFixed(0)}%`;
+
+/** One plain sentence on the record, plus a short judgement. Shared by the verdict card and the AI. */
+export function recordText(r: TrackRecord, symbol: string): { text: string; judgement: string } {
+  const yrs = Math.max(1, Math.round(r.years));
+  const text =
+    r.group === 'neutral'
+      ? `Over ${yrs} years on ${symbol}, neutral technical readings were followed by an average ${pct1(r.avg)} over 10 trading days, against ${pct1(r.baseAvg)} for all days.`
+      : `Over ${yrs} years on ${symbol}, a ${r.group} technical reading was followed by a ${r.group === 'bullish' ? 'higher' : 'lower'} price 10 trading days later ${pct0(r.rate)} of the time, against ${pct0(r.baseRate)} for all days (average ${pct1(r.avg)} vs ${pct1(r.baseAvg)}).`;
+  const judgement =
+    r.group === 'neutral'
+      ? 'Neutral readings carry no direction.'
+      : r.edge === 'better'
+        ? 'The signal has had an edge on this stock.'
+        : r.edge === 'similar'
+          ? 'No clear edge on this stock, so lean on it less.'
+          : 'On this stock the signal has done worse than simply holding.';
+  return { text, judgement };
+}

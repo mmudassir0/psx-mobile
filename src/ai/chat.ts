@@ -8,7 +8,8 @@
  */
 import type { IndexQuote, Stock } from '../psx/types';
 import { fetchCompany, fetchDailyCandles } from '../psx/api';
-import { analyze } from '../analysis/signals';
+import { analyze, computeSeries } from '../analysis/signals';
+import { backtest } from '../analysis/backtest';
 import { technicals } from '../analysis/technicals';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { StockPack, stockContext } from './context';
@@ -205,11 +206,13 @@ export async function packOf(symbol: string, stocks: Stock[]): Promise<StockPack
   ]);
   const balance = balanceSheetFor(symbol);
   const peers = stock ? stocks.filter((s) => s.sector === stock.sector && s.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)) : [];
+  const series = daily.length ? computeSeries(daily) : null;
   return {
     stock,
     company,
-    analysis: daily.length ? analyze(daily) : null,
+    analysis: series ? analyze(daily, series) : null,
     tech: daily.length ? technicals(daily) : null,
+    backtest: series ? backtest(daily, series) : null,
     ratios: computeRatios(balance, company, stock),
     balance,
     peers,

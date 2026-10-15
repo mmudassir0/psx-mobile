@@ -6,6 +6,7 @@
  * from fixed, testable rules. The model is then asked to explain this
  * verdict, not to invent one.
  */
+import { recordText, TrackRecord, trackRecord } from '../analysis/backtest';
 import type { StockPack } from './context';
 import { median } from './context';
 
@@ -39,6 +40,8 @@ export interface Verdict {
   bull: Point[];
   bear: Point[];
   headline: string;
+  /** how the technical score has done on this stock before, when backtested */
+  record: TrackRecord | null;
 }
 
 const f2 = (v: number) => v.toFixed(2);
@@ -124,6 +127,11 @@ export function decide(x: StockPack): Verdict | null {
   let confidence: Confidence = strength >= 2 ? 'High' : strength >= 1 ? 'Medium' : 'Low';
   if (conflict) confidence = 'Low';
   else if (!confirmed && confidence === 'High') confidence = 'Medium'; // strong call without fundamental confirmation
+  // A technical signal that has not worked on this stock before earns less trust (a good record never adds any).
+  const record = x.backtest ? trackRecord(x.backtest, a.stance) : null;
+  if (record && record.group !== 'neutral' && record.edge === 'worse' && dir(t) !== 0 && dir(t) === dir(combined)) {
+    confidence = confidence === 'High' ? 'Medium' : 'Low';
+  }
 
   // Levels for a long position. Stop sits half an ATR under support (or 2 ATR under the price).
   const sup = a.support?.price ?? null;
@@ -152,7 +160,7 @@ export function decide(x: StockPack): Verdict | null {
         ? `Technicals are ${tWord} but fundamentals look ${ft.label.toLowerCase()}, so the signals conflict.`
         : `Technicals are ${tWord} and fundamentals look ${ft.label.toLowerCase()}${confirmed ? '; both point the same way' : ''}.`;
 
-  return { call, confidence, technical: { score: t, stance: a.stance }, fundamental: ft, combined, levels, bull, bear, headline };
+  return { call, confidence, technical: { score: t, stance: a.stance }, fundamental: ft, combined, levels, bull, bear, headline, record };
 }
 
 /** The verdict as text for the model to explain. */
@@ -161,6 +169,10 @@ export function verdictText(v: Verdict): string {
   L.push(`SAHM VERDICT (decided by rules, already shown to the user): ${v.call}, confidence ${v.confidence}.`);
   L.push(`Technical score ${v.technical?.score.toFixed(1)}/10; fundamental score ${v.fundamental ? `${v.fundamental.score.toFixed(1)}/10 (${v.fundamental.label})` : 'not available'}; combined ${v.combined.toFixed(1)}/10.`);
   L.push(v.headline);
+  if (v.record) {
+    const r = recordText(v.record, 'this stock');
+    L.push(`Track record: ${r.text} ${r.judgement}`);
+  }
   const lv = v.levels;
   if (lv?.kind === 'buy') L.push(`Levels: buy zone Rs ${f2(lv.entryLow!)}–${f2(lv.entryHigh!)}, stop Rs ${f2(lv.stop!)}, target Rs ${f2(lv.target!)}, reward/risk ${lv.rr ?? 'n/a'}.`);
   if (lv?.kind === 'avoid') L.push(`Levels: no new buying; holders' stop Rs ${f2(lv.stop!)}${lv.trigger ? `; a close above Rs ${f2(lv.trigger)} would improve the picture` : ''}.`);

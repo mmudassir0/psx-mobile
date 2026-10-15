@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtPrice } from '../format';
 import type { Verdict } from '../ai/verdict';
+import { recordText } from '../analysis/backtest';
 import { Panel } from './bits';
 import { T } from './kit';
 
@@ -21,7 +22,26 @@ function Level({ label, value, tone }: { label: string; value: string; tone?: st
   );
 }
 
-export function VerdictCard({ v }: { v: Verdict }) {
+function Record({ v, symbol }: { v: Verdict; symbol: string }) {
+  const r = v.record!;
+  const t = recordText(r, symbol);
+  const tone = r.group === 'neutral' || r.edge === 'similar' ? colors.text2 : r.edge === 'better' ? colors.up : colors.downText;
+  return (
+    <View style={styles.record}>
+      <T v="caption" style={{ fontFamily: fonts.semibold }}>
+        Track record
+      </T>
+      <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
+        {t.text}
+      </T>
+      <T v="body" style={{ fontSize: 13.5, lineHeight: 19, fontFamily: fonts.semibold, color: tone }}>
+        {t.judgement}
+      </T>
+    </View>
+  );
+}
+
+export function VerdictCard({ v, symbol }: { v: Verdict; symbol: string }) {
   const [all, setAll] = useState(false);
   const n = all ? 6 : 3;
   const lv = v.levels;
@@ -43,6 +63,7 @@ export function VerdictCard({ v }: { v: Verdict }) {
       <T v="body" style={{ color: colors.text2, fontSize: 14.5 }}>
         {v.headline}
       </T>
+      {v.record ? <Record v={v} symbol={symbol} /> : null}
 
       {lv?.kind === 'buy' ? (
         <View style={styles.levels}>
@@ -95,6 +116,7 @@ const styles = themed(() =>
     call: { paddingHorizontal: 14, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     levels: { flexDirection: 'row', gap: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.hairline, paddingVertical: 12 },
     point: { flexDirection: 'row', gap: 8 },
+    record: { backgroundColor: colors.surface2, borderRadius: 12, padding: 12, gap: 4 },
     pointText: { flex: 1, fontSize: 14, lineHeight: 20 },
   }),
 );

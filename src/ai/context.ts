@@ -6,6 +6,7 @@
  * reading ("above", "oversold") where one helps. The model's job is to explain
  * and weigh this evidence, never to calculate.
  */
+import { Backtest, recordText, trackRecord } from '../analysis/backtest';
 import type { CompanyInfo, Stock } from '../psx/types';
 import type { Analysis } from '../analysis/signals';
 import type { Technicals } from '../analysis/technicals';
@@ -38,6 +39,8 @@ export interface StockPack {
   balance: BalanceSheet | null;
   peers: Stock[];
   today: string; // YYYY-MM-DD
+  /** the technical score tested on this stock's own history, when computed */
+  backtest?: Backtest | null;
 }
 
 /**
@@ -66,6 +69,17 @@ export function stockContext(x: StockPack, compact = false): string {
     L.push(`TECHNICAL SCORE ${a.score.toFixed(1)}/10 (${a.stance}), from daily closes to ${new Date(a.asOf).toISOString().slice(0, 10)}.`);
     if (!compact) for (const rule of a.rules) L.push(`- ${rule.vote > 0 ? 'bullish' : rule.vote < 0 ? 'bearish' : 'neutral'}: ${rule.reason}`);
     L.push(`Support Rs ${n(a.support?.price)}, resistance Rs ${n(a.resistance?.price)}, volatility stop (close - 2×ATR) Rs ${n(a.stop)}, ATR Rs ${n(a.ind.atr14)}.`);
+    const rec = x.backtest ? trackRecord(x.backtest, a.stance) : null;
+    if (rec) {
+      const t = recordText(rec, sym);
+      L.push(`TRACK RECORD (backtest of this same score on ${sym}'s own past prices, no hindsight): ${t.text} ${t.judgement}`);
+      if (!compact && x.backtest) {
+        const rules = x.backtest.rules
+          .filter((r) => r.bull.days >= 40 && r.bear.days >= 40)
+          .map((r) => `${r.name} ${(r.bull.avg - r.bear.avg) * 100 >= 0 ? '+' : ''}${((r.bull.avg - r.bear.avg) * 100).toFixed(1)}pts`);
+        if (rules.length) L.push(`Each rule's past edge on ${sym} (10-day average when bullish minus when bearish): ${rules.join(', ')}.`);
+      }
+    }
   }
   if (x.tech && !compact) {
     const t = x.tech;
@@ -162,7 +176,7 @@ Rules:
 - Use only facts and numbers that appear in the message. Copy numbers exactly. Do not calculate.
 - Do not change the verdict, the confidence or the levels.
 - Keep it short. Write exactly these four parts and nothing else:
-**Why ${'${call}'}:** 2 or 3 sentences connecting the most important reasons.
+**Why ${'${call}'}:** 2 or 3 sentences connecting the most important reasons. If there is a Track record line, end with one sentence saying how this signal has done on this stock before.
 **What to watch:** 1 or 2 sentences naming the price levels that would change the picture.
 **Risks:** 2 short bullet points.
 **News:** 1 sentence about the announcement titles, or "Nothing notable."`;
@@ -175,7 +189,7 @@ Rules:
 - Announcement titles are all you know about news; say what a title implies, not what it might contain.
 - Plain English, no jargon without a short explanation, no hedging boilerplate.
 Write exactly these parts:
-**Why ${'${call}'}:** 3 or 4 sentences.
+**Why ${'${call}'}:** 3 or 4 sentences. If there is a Track record line, say in one sentence how much that history should be trusted.
 **What to watch:** 1 or 2 sentences on the levels or results that would change the view.
 **Risks:** 2 or 3 bullet points.
 **News:** 1 or 2 sentences.
@@ -194,6 +208,7 @@ Answer the question using ONLY the data below the line. Every number there is co
 - Copy numbers exactly; do not calculate new ones; do not invent prices, news or companies.
 - Answer the question directly in the first sentence, then give the 2–4 facts that support it.
 - If the data has a RANKING or COMPARISON block, base your answer on it: it is already sorted and correct.
+- A TRACK RECORD line is a backtest of the technical score on that stock's past prices; quote it when asked whether the signals work.
 - "Cheap" or "expensive" means valuation (P/E, price to book), never the share price.
 - A '-' means the value is not available; never treat it as zero.
 - If the data does not contain the answer, say what is missing in one sentence.

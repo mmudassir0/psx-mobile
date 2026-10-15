@@ -22,7 +22,8 @@ import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode } from '../ui/SkiaChart';
-import { analyze } from '../analysis/signals';
+import { analyze, computeSeries } from '../analysis/signals';
+import { Backtest, backtest } from '../analysis/backtest';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -164,7 +165,16 @@ export default function StockScreen() {
   const intradayBars = useMemo(() => ticksToCandles(lastSession(ticks ?? []), 5), [ticks]);
   const { bars, unit, visible } = useMemo(() => barsFor(range, daily ?? [], intradayBars), [range, daily, intradayBars]);
   const loadingChart = range === '1D' ? ticks == null : daily == null;
-  const analysis = useMemo(() => (daily && daily.length ? analyze(daily) : null), [daily]);
+  const series = useMemo(() => (daily && daily.length ? computeSeries(daily) : null), [daily]);
+  const analysis = useMemo(() => (daily && series ? analyze(daily, series) : null), [daily, series]);
+  // Ten years of day-by-day scoring: run it just after the page has drawn.
+  const [bt, setBt] = useState<Backtest | null>(null);
+  useEffect(() => {
+    setBt(null);
+    if (!daily || !series) return;
+    const id = setTimeout(() => setBt(backtest(daily, series)), 50);
+    return () => clearTimeout(id);
+  }, [daily, series]);
   const tech = useMemo(() => (daily && daily.length ? technicals(daily) : null), [daily]);
   const { stocks } = useMarket();
   const pack = useMemo<StockPack>(() => {
@@ -180,8 +190,9 @@ export default function StockScreen() {
         ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
         : [],
       today: new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10),
+      backtest: bt,
     };
-  }, [symbol, stock, company, analysis, tech, stocks]);
+  }, [symbol, stock, company, analysis, tech, stocks, bt]);
 
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
@@ -388,7 +399,7 @@ export default function StockScreen() {
   let content: React.ReactNode;
   if (tab === 'overview') content = overview;
   else if (tab === 'ai') content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
-  else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab analysis={analysis} tech={tech} loading={daily == null} /></View>;
+  else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} /></View>;
   else if (tab === 'fundamentals') content = <View style={pad}><FundamentalsTab company={company} stock={stock} err={companyErr} /></View>;
   else if (tab === 'news') content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;
   else if (tab === 'profile') content = <View style={pad}><ProfileTab company={company} err={companyErr} /></View>;

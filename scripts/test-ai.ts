@@ -12,6 +12,7 @@ import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
 import { chain, parseSse, CloudError } from '../src/ai/cloud';
 import { geminiWithRetry, parseInteractionSse, testGeminiKey, toInteraction } from '../src/ai/gemini';
 import { sharePrompt } from '../src/ai/sharePrompt';
+import { backtest, Backtest } from '../src/analysis/backtest';
 import { BalanceSheet } from '../src/analysis/ratios';
 
 let failed = 0;
@@ -46,6 +47,19 @@ check('pack has no NaN or undefined', !/NaN|undefined|Infinity/.test(ctx), ctx.m
 check('pack fits a small model (< 6,000 chars)', ctx.length < 6000, ctx.length);
 const pack = { stock: luck, company, analysis: analyze(daily), tech: technicals(daily), ratios: computeRatios(null, company, luck), balance: null, peers, today: '2026-10-14' };
 const v = decide(pack)!;
+
+// Track record: LUCK's bearish technical reading has had an edge, so it is shown and passed to the AI.
+const bt = backtest(daily)!;
+const withBt = { ...pack, backtest: bt };
+const vb = decide(withBt)!;
+check('verdict carries the track record', vb.record?.group === 'bearish' && vb.record.days > 100, vb.record);
+check('track record reaches the AI', stockContext(withBt).includes('TRACK RECORD') && stockContext(withBt, true).includes('TRACK RECORD') && verdictText(vb).includes('Track record:'));
+check('a good record never raises confidence', vb.confidence === v.confidence, [vb.confidence, v.confidence]);
+// Same stock with a record where bearish readings were followed by rises: confidence drops.
+const flipped: Backtest = { ...bt, groups: { ...bt.groups, bearish: { ...bt.groups.bearish, 10: { days: 500, up: 0.62, avg: 0.02 } } } };
+const vw = decide({ ...pack, backtest: flipped })!;
+const order = ['Low', 'Medium', 'High'];
+check('a poor record lowers confidence', v.confidence === 'Low' ? vw.confidence === 'Low' : order.indexOf(vw.confidence) === order.indexOf(v.confidence) - 1, [v.confidence, vw.confidence, vw.record?.edge]);
 check('verdict decided', !!v && ['Bullish', 'Neutral', 'Bearish'].includes(v.call), v && { call: v.call, conf: v.confidence, combined: v.combined });
 check('LUCK is bearish: strong bearish technicals outweigh fundamentals', v.call === 'Bearish' && v.combined <= 4, v.combined);
 check('bearish verdict avoids new buys and gives a holders stop below price', v.levels?.kind === 'avoid' && (v.levels.stop as number) < 405.38 && v.levels.trigger === v.levels.trigger, v.levels);

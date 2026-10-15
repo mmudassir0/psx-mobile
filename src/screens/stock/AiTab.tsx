@@ -75,7 +75,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
   return (
     <View style={{ gap: space.section }}>
       <Section title="Sahm verdict">
-        {verdict ? <VerdictCard v={verdict} /> : <T v="caption">Not enough trading history for a verdict yet.</T>}
+        {verdict ? <VerdictCard v={verdict} symbol={symbol} /> : <T v="caption">Not enough trading history for a verdict yet.</T>}
         <T v="caption" style={{ lineHeight: 18 }}>
           Decided by fixed rules from the technicals and the company's results; the same data always gives the same verdict.
         </T>

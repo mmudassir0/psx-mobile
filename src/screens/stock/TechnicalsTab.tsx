@@ -5,6 +5,8 @@ import { fmtDay, fmtNum, fmtPrice } from '../../format';
 import type { Analysis } from '../../analysis/signals';
 import type { Reading, Technicals } from '../../analysis/technicals';
 import { SignalsCard } from '../../ui/SignalsCard';
+import { BacktestCard } from '../../ui/BacktestCard';
+import type { Backtest } from '../../analysis/backtest';
 import { ActionChip, Panel } from '../../ui/bits';
 import { Loading, Section, T } from '../../ui/kit';
 
@@ -34,7 +36,19 @@ const PIVOT_ROWS: { key: 'r3' | 'r2' | 'r1' | 'pp' | 's1' | 's2' | 's3'; label: 
   { key: 's3', label: 'S3', sub: '3rd support' },
 ];
 
-export function TechnicalsTab({ analysis, tech, loading }: { analysis: Analysis | null; tech: Technicals | null; loading: boolean }) {
+export function TechnicalsTab({
+  symbol,
+  analysis,
+  tech,
+  backtest,
+  loading,
+}: {
+  symbol: string;
+  analysis: Analysis | null;
+  tech: Technicals | null;
+  backtest: Backtest | null;
+  loading: boolean;
+}) {
   if (loading) return <Loading />;
   if (!tech) return <T v="caption">Not enough trading history for technical indicators yet.</T>;
   const s = tech.summary;
@@ -67,6 +81,12 @@ export function TechnicalsTab({ analysis, tech, loading }: { analysis: Analysis 
       </Section>
 
       <SignalsCard analysis={analysis} />
+
+      {backtest ? (
+        <Section title="Track record">
+          <BacktestCard symbol={symbol} bt={backtest} analysis={analysis} />
+        </Section>
+      ) : null}
 
       <Section title="Oscillators">
         <Panel>
