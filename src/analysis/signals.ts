@@ -7,7 +7,7 @@
  * numbers later, it never computes them.
  */
 import type { Candle } from '../psx/types';
-import { atr, bollinger, closes, ema, last, macd, obv, rsi, sma, volumes } from './indicators';
+import { atr, bollinger, closes, ema, macd, obv, rsi, Series, sma, volumes } from './indicators';
 import { findLevels, Level } from './levels';
 
 export type Vote = 1 | 0 | -1;
@@ -64,39 +64,71 @@ export function stanceFor(score: number): Stance {
 const pct = (a: number, b: number) => ((a - b) / b) * 100;
 const f1 = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1));
 
-/** Analyse daily candles (oldest first). Returns null when there is too little history. */
-export function analyze(candles: Candle[]): Analysis | null {
-  const c = candles.filter((b) => b.c > 0);
-  if (c.length < MIN_BARS) return null;
-  const cl = closes(c);
-  const n = c.length - 1;
-  const close = cl[n];
+/** Indicator series for a whole history, computed once. */
+export interface SeriesSet {
+  c: Candle[];
+  cl: number[];
+  e20: Series;
+  e50: Series;
+  e200: Series;
+  rsi: Series;
+  macd: Series;
+  signal: Series;
+  hist: Series;
+  bbUpper: Series;
+  bbLower: Series;
+  atr: Series;
+  volAvg: Series;
+  obv: number[];
+  obvAvg: Series;
+}
 
-  const e20 = ema(cl, 20);
-  const e50 = ema(cl, 50);
-  const e200 = ema(cl, 200);
-  const r = rsi(cl, 14);
+export function computeSeries(candles: Candle[]): SeriesSet {
+  const c = candles.filter((b) => b.c > 0);
+  const cl = closes(c);
   const m = macd(cl);
   const bb = bollinger(cl, 20, 2);
-  const a = atr(c, 14);
-  const vAvg = sma(volumes(c), 20);
   const ob = obv(c);
-  const obAvg = sma(ob, 20);
+  return {
+    c,
+    cl,
+    e20: ema(cl, 20),
+    e50: ema(cl, 50),
+    e200: ema(cl, 200),
+    rsi: rsi(cl, 14),
+    macd: m.macd,
+    signal: m.signal,
+    hist: m.hist,
+    bbUpper: bb.upper,
+    bbLower: bb.lower,
+    atr: atr(c, 14),
+    volAvg: sma(volumes(c), 20),
+    obv: ob,
+    obvAvg: sma(ob, 20),
+  };
+}
 
+/** The rules as of day `n`, using only data up to and including that day. */
+export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicators; score: number } {
+  const { c, cl, e50, e200 } = S;
+  const close = cl[n];
+  const at = (x: Series) => x[n] ?? null;
   const ind: Indicators = {
     close,
-    ema20: last(e20),
-    ema50: last(e50),
-    ema200: last(e200),
-    rsi14: last(r),
-    macd: last(m.macd),
-    macdSignal: last(m.signal),
-    bbUpper: last(bb.upper),
-    bbLower: last(bb.lower),
-    atr14: last(a),
-    volRatio: last(vAvg) ? c[n].v / (last(vAvg) as number) : null,
+    ema20: at(S.e20),
+    ema50: at(S.e50),
+    ema200: at(S.e200),
+    rsi14: at(S.rsi),
+    macd: at(S.macd),
+    macdSignal: at(S.signal),
+    bbUpper: at(S.bbUpper),
+    bbLower: at(S.bbLower),
+    atr14: at(S.atr),
+    volRatio: at(S.volAvg) ? c[n].v / (at(S.volAvg) as number) : null,
   };
-
+  const m = { hist: S.hist };
+  const ob = S.obv;
+  const obA = at(S.obvAvg);
   const rules: Rule[] = [];
   const add = (id: string, name: string, weight: number, vote: Vote, reason: string) => rules.push({ id, name, weight, vote, reason });
 
@@ -171,7 +203,6 @@ export function analyze(candles: Candle[]): Analysis | null {
     else add('volume', 'Volume', 0.5, 0, `Volume ${x.toFixed(1)}× the 20-day average`);
   }
   // 8. On-balance volume: is money flowing in or out?
-  const obA = last(obAvg);
   if (obA != null) {
     const up = ob[n] > obA;
     add('obv', 'Money flow (OBV)', 0.5, up ? 1 : -1, up ? 'On-balance volume rising: accumulation' : 'On-balance volume falling: distribution');
@@ -180,6 +211,17 @@ export function analyze(candles: Candle[]): Analysis | null {
   const total = rules.reduce((s, x) => s + x.weight, 0);
   const net = rules.reduce((s, x) => s + x.weight * x.vote, 0);
   const score = total ? Math.round((5 + (5 * net) / total) * 10) / 10 : 5;
+  return { rules, ind, score };
+}
+
+/** Analyse daily candles (oldest first). Returns null when there is too little history. */
+export function analyze(candles: Candle[], series?: SeriesSet): Analysis | null {
+  const S = series ?? computeSeries(candles);
+  const c = S.c;
+  if (c.length < MIN_BARS) return null;
+  const n = c.length - 1;
+  const close = S.cl[n];
+  const { rules, ind, score } = rulesAt(S, n);
   const lv = findLevels(c, close);
 
   return {
