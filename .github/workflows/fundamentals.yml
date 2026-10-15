@@ -40,13 +40,15 @@ jobs:
           ONLY="${{ github.event.inputs.only }}"
           npx tsx scripts/fundamentals/find-reports.ts ${ONLY//,/ } > /tmp/data/reports.json
       - name: Extract and verify
+        timeout-minutes: 240
         env:
           LLM_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           if [ -z "$LLM_API_KEY" ]; then echo "::error::Add the GROQ_API_KEY repository secret"; exit 1; fi
-          python3 scripts/fundamentals/extract.py /tmp/data/reports.json /tmp/data/fundamentals.json | tee /tmp/data/log.txt
+          python3 scripts/fundamentals/extract.py /tmp/data/reports.json /tmp/data/fundamentals.json --budget-min 200 | tee /tmp/data/log.txt
       - name: Publish to the data branch
         id: publish
+        if: always()
         run: |
           python3 - <<'PY'
           import json
@@ -70,7 +72,7 @@ jobs:
           git push -q origin data
           echo "changed=yes" >> $GITHUB_OUTPUT
       - name: Build a new APK with the data
-        if: steps.publish.outputs.changed == 'yes'
+        if: always() && steps.publish.outputs.changed == 'yes'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run android.yml --ref main

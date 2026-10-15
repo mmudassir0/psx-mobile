@@ -58,10 +58,10 @@ def text_pages(path: str) -> list[str]:
     return pages
 
 
-def ocr_page(path: str, i: int) -> str:
-    """OCR one page (0-based) at 300 dpi; table-friendly page segmentation."""
+def ocr_page(path: str, i: int, dpi: int = 300) -> str:
+    """OCR one page (0-based); table-friendly page segmentation. Low dpi is enough to find headings."""
     with tempfile.TemporaryDirectory() as d:
-        run(["pdftoppm", "-r", "300", "-gray", "-f", str(i + 1), "-l", str(i + 1), "-png", path, f"{d}/p"], timeout=300)
+        run(["pdftoppm", "-r", str(dpi), "-gray", "-f", str(i + 1), "-l", str(i + 1), "-png", path, f"{d}/p"], timeout=300)
         files = sorted(os.listdir(d))
         if not files:
             return ""
@@ -134,13 +134,16 @@ def statement_pages(path: str) -> tuple[list[int], list[str], str]:
     idx = locate(pages)
     if not idx:
         # The statement may be a scanned page inside a text PDF, or the whole PDF may be scanned.
-        blank = [i for i, p in enumerate(pages) if len(p.strip()) < 200][:80]
+        # Quick low-resolution pass to find the statement, then full resolution only on the pages that matter.
+        blank = [i for i, p in enumerate(pages) if len(p.strip()) < 200][:60]
         for i in blank:
-            pages[i] = ocr_page(path, i)
+            pages[i] = ocr_page(path, i, dpi=110)
         method = "ocr"
         idx = locate(pages)
         if not idx:
             return [], pages, method
+        for i in idx:
+            pages[i] = ocr_page(path, i)
     # Labels found but the numbers are drawn as graphics: OCR those pages.
     for i in idx:
         if len(BIGNUM.findall(pages[i])) < 12:
@@ -409,9 +412,25 @@ def main():
         except Exception:
             prev = {}
 
+    budget = float(args[args.index("--budget-min") + 1]) * 60 if "--budget-min" in args else None
+    started = time.time()
     out, failures = dict(prev), {}
+
+    def write():
+        tmp = dest + ".tmp"
+        json.dump({
+            "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "model": MODEL,
+            "companies": dict(sorted(out.items())),
+            "failures": dict(sorted(failures.items())),
+        }, open(tmp, "w"), indent=1)
+        os.replace(tmp, dest)
+
     with tempfile.TemporaryDirectory() as work:
         for c in companies:
+            if budget and time.time() - started > budget:
+                print(f"Time budget reached; {c['symbol']} and later wait for the next run", flush=True)
+                break
             sym = c["symbol"]
             rep = pick_report(c)
             old = prev.get(sym)
@@ -428,14 +447,9 @@ def main():
             else:
                 failures[sym] = r
                 print(f"{sym}: FAILED {r.get('reason')}", flush=True)
+            write()  # keep progress even if the job is stopped
             time.sleep(12)  # free tier allows ~8K tokens a minute; one statement is ~2K with the prompt
-
-    json.dump({
-        "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "model": MODEL,
-        "companies": dict(sorted(out.items())),
-        "failures": dict(sorted(failures.items())),
-    }, open(dest, "w"), indent=1)
+    write()
 
 
 if __name__ == "__main__":
