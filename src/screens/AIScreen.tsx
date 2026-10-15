@@ -6,9 +6,9 @@ import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
 import { chatContext } from '../ai/chat';
 import { CHAT_SYSTEM } from '../ai/context';
-import { ChatMessage, streamChat, StreamHandle } from '../ai/ollama';
-import { useEngine } from '../ai/useEngine';
-import { EngineCard } from '../ui/EngineCard';
+import type { ChatMessage, Generation } from '../ai/models';
+import { canRun, useAi } from '../store/ai';
+import { ModelCard } from '../ui/ModelCard';
 import { Md } from '../ui/Md';
 import { Card, Icon, T } from '../ui/kit';
 
@@ -29,10 +29,10 @@ interface Turn {
 /** Market snapshot plus "Ask Sahm": questions answered by the on-phone model from live PSX data. */
 export default function AIScreen() {
   const { stocks, indices } = useMarket();
-  const engine = useEngine();
+  const ai = useAi();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
-  const handle = useRef<StreamHandle | null>(null);
+  const handle = useRef<Generation | null>(null);
   const scroll = useRef<ScrollView>(null);
   const busy = turns.some((t) => t.status === 'reading' || t.status === 'writing');
 
@@ -57,8 +57,7 @@ export default function AIScreen() {
 
   const ask = async (question: string) => {
     const q = question.trim();
-    if (!q || busy || engine.state.status !== 'ready') return;
-    const model = engine.state.model;
+    if (!q || busy || !canRun(ai.phase)) return;
     const idx = turns.length;
     const history = turns.filter((t) => t.status === 'done').slice(-2);
     setTurns((ts) => [...ts, { q, a: '', status: 'reading' }]);
@@ -70,7 +69,7 @@ export default function AIScreen() {
       const messages: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` }];
       for (const h of history) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
       messages.push({ role: 'user', content: q });
-      const h = streamChat(engine.settings!.url, model, messages, (a) => patch(idx, { a }), { numCtx: 6144 });
+      const h = await ai.run(messages, (a) => patch(idx, { a }), 500);
       handle.current = h;
       const a = await h.done;
       patch(idx, { a, status: 'done' });
@@ -82,7 +81,7 @@ export default function AIScreen() {
     }
   };
 
-  const ready = engine.state.status === 'ready';
+  const ready = canRun(ai.phase);
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -100,7 +99,7 @@ export default function AIScreen() {
             </View>
           </View>
 
-          <EngineCard state={engine.state} onCheck={engine.check} />
+          <ModelCard />
 
           {turns.length === 0 ? (
             <>
@@ -171,7 +170,7 @@ export default function AIScreen() {
                   ) : t.a ? (
                     <Md text={t.a + (t.status === 'writing' ? ' ▍' : '')} size={14.5} />
                   ) : t.status === 'writing' ? (
-                    <T v="caption">Thinking…</T>
+                    <T v="caption">{ai.phase === 'loading' ? 'Loading the model…' : 'Thinking…'}</T>
                   ) : null}
                   {t.note ? (
                     <T v="caption" style={{ color: t.status === 'error' ? colors.downText : colors.faint }}>
@@ -191,7 +190,7 @@ export default function AIScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={ready ? 'Ask about a stock, sector or the market' : 'Start the on-phone AI to ask questions'}
+            placeholder={ready ? 'Ask about a stock, sector or the market' : 'Download the AI model to ask questions'}
             placeholderTextColor={colors.faint}
             editable={ready && !busy}
             onSubmitEditing={() => ask(input)}
@@ -199,7 +198,7 @@ export default function AIScreen() {
             style={styles.input}
           />
           {busy ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={() => handle.current?.cancel()} style={styles.send}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Stop" onPress={() => handle.current?.stop()} style={styles.send}>
               <View style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: colors.onGold }} />
             </Pressable>
           ) : (

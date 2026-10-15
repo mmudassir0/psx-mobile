@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed, ThemePref } from '../theme';
-import { useEngine } from '../ai/useEngine';
-import { DEFAULT_URL } from '../ai/ollama';
-import { EngineCard } from '../ui/EngineCard';
+import { gb, MODELS } from '../ai/models';
+import { useAi } from '../store/ai';
+import { ModelCard } from '../ui/ModelCard';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -20,12 +20,13 @@ export default function SettingsScreen() {
   const nav = useNavigation();
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
-  const engine = useEngine();
-  const [url, setUrl] = useState('');
-  useEffect(() => {
-    if (engine.settings) setUrl(engine.settings.url);
-  }, [engine.settings]);
-  const active = engine.state.status === 'ready' ? engine.state.model : null;
+  const ai = useAi();
+  const busy = ai.phase === 'downloading' || ai.phase === 'paused' || ai.phase === 'loading';
+  const confirmRemove = (id: string, name: string) =>
+    Alert.alert('Delete model?', `${name} will be removed from your phone. You can download it again later.`, [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => ai.remove(id) },
+    ]);
 
   const updateLine =
     upd.status === 'checking'
@@ -54,43 +55,32 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="AI">
-          <EngineCard state={engine.state} onCheck={engine.check} />
+          <ModelCard />
           <View style={styles.card}>
-            <T v="label">Ollama address</T>
-            <TextInput
-              value={url}
-              onChangeText={setUrl}
-              onEndEditing={() => url.trim() && engine.update({ url: url.trim() })}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              placeholder={DEFAULT_URL}
-              placeholderTextColor={colors.faint}
-              style={styles.input}
-            />
-            <T v="caption">Leave as {DEFAULT_URL} when Ollama runs in Termux on this phone.</T>
-            {engine.models.length ? (
-              <View style={{ gap: 6 }}>
-                <T v="label">Model</T>
-                {engine.models.map((m) => (
-                  <Pressable
-                    key={m.name}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: m.name === active }}
-                    onPress={() => engine.update({ model: m.name })}
-                    style={styles.row}
-                  >
-                    <T v="body" style={{ fontFamily: m.name === active ? fonts.bold : fonts.regular }}>
+            {MODELS.map((m, i) => {
+              const have = ai.installed[m.id];
+              const active = ai.model?.id === m.id && have;
+              return (
+                <View key={m.id} style={[styles.modelRow, i < MODELS.length - 1 && styles.border]}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="body" style={{ fontFamily: active ? fonts.bold : fonts.semibold, fontSize: 14.5 }}>
                       {m.name}
+                      {active ? '  ✓' : ''}
                     </T>
                     <T v="caption">
-                      {m.sizeGB.toFixed(1)} GB{m.name === active ? '  ✓' : ''}
+                      {gb(m.bytes)} · {have ? (active ? 'In use' : 'Downloaded') : 'Not downloaded'}
                     </T>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
+                  </View>
+                  {have && !active ? <Button label="Use" small tone="ghost" disabled={busy} onPress={() => ai.select(m.id)} /> : null}
+                  {have ? <Button label="Delete" small tone="ghost" disabled={busy} onPress={() => confirmRemove(m.id, m.name)} /> : null}
+                  {!have ? <Button label="Download" small disabled={busy} onPress={() => ai.startDownload(m.id)} /> : null}
+                </View>
+              );
+            })}
           </View>
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Models come from Qwen's official releases on Hugging Face and run fully on the phone; your questions never leave it.
+          </T>
         </Section>
 
         <Section title="App">
@@ -126,6 +116,7 @@ const styles = themed(() =>
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: space.section },
     card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 14 },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-    input: { height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12, fontFamily: fonts.regular, fontSize: 14.5, color: colors.text },
+    modelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
   }),
 );

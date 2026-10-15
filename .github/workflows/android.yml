@@ -61,13 +61,25 @@ jobs:
         run: node -e "const f='app.json',a=require('./'+f);a.expo.android.versionCode=100+${{ github.run_number }};require('fs').writeFileSync(f,JSON.stringify(a,null,2))"
 
       - name: Generate native Android project
-        run: npx expo prebuild --platform android --no-install
+        run: npx expo prebuild --platform android --no-install 2>&1 | tee /tmp/build.log
 
       - name: Build release APK
         working-directory: android
         env:
           EXPO_PUBLIC_BUILD: ${{ github.run_number }}
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a 2>&1 | tee -a /tmp/build.log
+
+      - name: Save the build log to the ci-logs branch on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/logs && grep -n -i -B2 -A8 "error\|failed\|what went wrong" /tmp/build.log | tail -400 > /tmp/logs/errors.txt || true
+          tail -300 /tmp/build.log > /tmp/logs/tail.txt || true
+          cd /tmp/logs && git init -q && git checkout -q -b ci-logs
+          git config user.name "ci" && git config user.email "ci@users.noreply.github.com"
+          git add . && git commit -qm "Build ${{ github.run_number }} failed"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-logs
 
       - name: Collect APK
         run: |

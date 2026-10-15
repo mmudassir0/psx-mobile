@@ -3,10 +3,10 @@ import { View } from 'react-native';
 import { colors, space } from '../../theme';
 import { fmtDateTime } from '../../format';
 import { analysisMessages, StockPack, stockContext } from '../../ai/context';
-import { streamChat, StreamHandle } from '../../ai/ollama';
-import { useEngine } from '../../ai/useEngine';
+import type { Generation } from '../../ai/models';
+import { canRun, useAi } from '../../store/ai';
 import { load, save } from '../../storage';
-import { EngineCard } from '../../ui/EngineCard';
+import { ModelCard } from '../../ui/ModelCard';
 import { Md } from '../../ui/Md';
 import { Panel } from '../../ui/bits';
 import { Button, Section, T } from '../../ui/kit';
@@ -22,31 +22,36 @@ const today = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 1
 
 /** AI verdict for one stock, written by the on-phone model from the app's own numbers. */
 export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack; ready: boolean }) {
-  const engine = useEngine();
+  const ai = useAi();
   const [saved, setSaved] = useState<Saved | null>(null);
   const [text, setText] = useState('');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showData, setShowData] = useState(false);
-  const handle = useRef<StreamHandle | null>(null);
+  const handle = useRef<Generation | null>(null);
+  const [phaseNote, setPhaseNote] = useState<string | null>(null);
   const key = `ai.analysis.${symbol}`;
   const context = useMemo(() => (ready ? stockContext(pack) : ''), [ready, pack]);
 
   useEffect(() => {
     load<Saved | null>(key, null).then((s) => s && s.day === today() && setSaved(s));
-    return () => handle.current?.cancel();
+    return () => handle.current?.stop();
   }, [key]);
 
   const run = async () => {
-    if (engine.state.status !== 'ready' || !context) return;
-    const model = engine.state.model;
+    if (!canRun(ai.phase) || !context || !ai.model) return;
+    const model = ai.model.name;
     setError(null);
     setText('');
     setSaved(null);
     setRunning(true);
-    const h = streamChat(engine.settings!.url, model, analysisMessages(context), setText);
-    handle.current = h;
+    setPhaseNote('Reading the data…');
     try {
+      const h = await ai.run(analysisMessages(context), (t) => {
+        setPhaseNote(null);
+        setText(t);
+      });
+      handle.current = h;
       const out = await h.done;
       if (out.trim()) {
         const s = { day: today(), at: Date.now(), model, text: out };
@@ -57,6 +62,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
       setError((e as Error).message);
     } finally {
       setRunning(false);
+      setPhaseNote(null);
       handle.current = null;
     }
   };
@@ -65,7 +71,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
 
   return (
     <View style={{ gap: space.section }}>
-      <EngineCard state={engine.state} onCheck={engine.check} />
+      <ModelCard />
 
       <Section title="AI analysis">
         <Panel style={{ paddingVertical: 16, gap: 12 }}>
@@ -77,6 +83,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
               entry, stop and target levels taken from the data.
             </T>
           )}
+          {running && phaseNote ? <T v="caption">{ai.phase === 'loading' ? 'Loading the model…' : phaseNote}</T> : null}
           {error ? <T v="caption" style={{ color: colors.downText }}>Stopped: {error}</T> : null}
           {saved && !running ? (
             <T v="caption">
@@ -84,12 +91,12 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
             </T>
           ) : null}
           {running ? (
-            <Button label="Stop" tone="ghost" onPress={() => handle.current?.cancel()} />
+            <Button label="Stop" tone="ghost" onPress={() => handle.current?.stop()} />
           ) : (
             <Button
               label={!ready ? 'Loading data…' : saved ? 'Write again' : 'Analyze with AI'}
               onPress={run}
-              disabled={!ready || engine.state.status !== 'ready'}
+              disabled={!ready || !canRun(ai.phase)}
             />
           )}
         </Panel>

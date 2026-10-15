@@ -7,7 +7,7 @@ import { technicals } from '../src/analysis/technicals';
 import { computeRatios } from '../src/analysis/ratios';
 import { analysisMessages, median, stockContext } from '../src/ai/context';
 import { mentionedSector, mentionedSymbols, screeningTable } from '../src/ai/chat';
-import { chooseModel, parseNdjson } from '../src/ai/ollama';
+import { MODELS, modelById } from '../src/ai/models';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -52,9 +52,8 @@ check('screening filters sector and Shariah', table.includes('CEMENT') && table.
 const dcl = screeningTable('cement stocks', stocks).split('\n').find((l) => l.startsWith('DCL |'));
 check('loss-makers show no P/E, not 0', !!dcl && dcl.split(' | ')[5] === '-', dcl);
 
-const { items, rest } = parseNdjson('{"message":{"content":"Hel"}}\n{"message":{"content":"lo"}}\n{"message":{"con');
-check('stream parser keeps partial line', items.length === 2 && rest === '{"message":{"con');
-check('model choice prefers saved, then suggested', chooseModel([{ name: 'llama3.2:1b', sizeGB: 1 }, { name: 'qwen2.5:3b', sizeGB: 2 }], null) === 'qwen2.5:3b' && chooseModel([{ name: 'a', sizeGB: 1 }], 'a') === 'a' && chooseModel([], null) === null);
+check('model catalog points at official Qwen GGUF files', MODELS.every((m) => m.url.startsWith('https://huggingface.co/Qwen/') && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
+check('model ids are unique and resolvable', new Set(MODELS.map((m) => m.id)).size === MODELS.length && modelById(MODELS[0].id) === MODELS[0] && modelById('nope') === null);
 
 if (failed) {
   console.log(`\n${failed} AI check(s) failed`);

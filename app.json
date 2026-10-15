@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sahm",
     "slug": "sahm-app",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -40,9 +40,14 @@
         "expo-build-properties",
         {
           "android": {
-            "useLegacyPackaging": true,
-            "usesCleartextTraffic": true
+            "useLegacyPackaging": true
           }
+        }
+      ],
+      [
+        "llama.rn",
+        {
+          "enableOpenCL": false
         }
       ]
     ]
