@@ -75,12 +75,13 @@ Liquid stocks, next 12 months:
 - Pooled, cheap stocks clearly beat dear ones (all stocks: +64.6% against
   +48.3%).
 - But the edge was not steady. Undervalued beat Overvalued by 20–39 points for
-  valuations made from April 2023 to January 2024, and in October 2024. From
-  January 2025 the gap was between −5 and +5 points. Most of the edge came from
+  valuations made from April 2023 to January 2024, and in October 2024; April
+  and July 2024 went the other way (−7 and −20). From January 2025 the gap
+  was between −5 and +5 points. Most of the edge came from
   the 2023–24 re-rating of cheap stocks.
 - "Overvalued against its own past P/E" was the clearest warning: the most
   expensive fifth on that measure rose a median 2% over 12 months, against
-  13% for all liquid stocks.
+  13% for all the stocks it could value.
 
 So the verdict counts fair value as one ordinary fundamental point (weight 1,
 replacing the plain P/E-vs-sector point), not more.
