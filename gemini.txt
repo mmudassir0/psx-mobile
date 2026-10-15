@@ -1,0 +1,33 @@
+prompt chars: 4102
+
+===== Flash, app request #1: HTTP 503 headers 0.9s, first byte 0.9s, first text -s, total 0.9s, 0 chars, error=null
+events: {}
+{"error":{"message":"gemini-3.8-flash is currently experiencing high demand, spikes in demand are usually temporary. Please try again later.","code":"service_unavailable"}}
+
+===== Flash, app request #2: HTTP 503 headers 0.7s, first byte 0.7s, first text -s, total 0.7s, 0 chars, error=null
+events: {}
+
+===== Flash, app request #3: HTTP 200 headers 9.1s, first byte 9.1s, first text 9.1s, total 9.1s, 1532 chars, error=null
+events: {"interaction.created":1,"interaction.status_update":1,"step.start":2,"step.delta":18,"step.stop":2,"interaction.completed":1}
+usage: "usage":{"total_tokens":1953,"total_input_tokens":1554,"input_tokens_by_modality":[{"modality":"text","tokens":1554}
+
+===== Flash, thinking minimal: HTTP 400 headers 0.2s, first byte 0.2s, first text -s, total 0.2s, 0 chars, error=null
+events: {}
+
+===== Flash, no generation_config: HTTP 200 headers 15.4s, first byte 15.4s, first text 15.4s, total 18.3s, 1776 chars, error=null
+events: {"interaction.created":1,"interaction.status_update":1,"step.start":2,"step.delta":20,"step.stop":2,"interaction.completed":1}
+usage: "usage":{"total_tokens":3828,"total_input_tokens":1554,"input_tokens_by_modality":[{"modality":"text","tokens":1554}
+
+===== Flash, tiny prompt: HTTP 503 headers 0.1s, first byte 0.1s, first text -s, total 0.1s, 0 chars, error=null
+events: {}
+
+===== Gemini 3.1 Pro: HTTP 429 headers 0.1s, first byte 0.1s, first text -s, total 0.1s, 0 chars, error=null
+events: {}
+{"error":{"message":"Rate limit exceeded for model gemini-3.1-pro (limit: 0 requests per day on Free Tier). Please upgrade your tier at https://ai.dev/rate-limit.","code":"too_many_requests"}}
+
+===== Gemini 4 Argon: HTTP 429 headers 0.2s, first byte 0.2s, first text -s, total 0.2s, 0 chars, error=Rate limit exceeded for model gemini-4-argon (limit: 0 input tokens per minute on Free Tier). Please upgrade your tier at https://ai.dev/rate-limit.
+events: {"error":1}
+event: error
+data: {"error":{"message":"Rate limit exceeded for model gemini-4-argon (limit: 0 input tokens per minute on Free Tier). Please upgrade your tier at https://ai.dev/rate-limit.","code":"rate_limit_exceeded"},"event_type":"error"}
+
+
