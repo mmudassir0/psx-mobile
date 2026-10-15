@@ -1,0 +1,31 @@
+# Downloads every listed company's annual results for the fair-value backtest
+# and saves them to the companies branch. Manual only.
+name: Company results
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Fetch
+        env:
+          BUDGET_MIN: '150'
+        run: |
+          git fetch -q origin history && git show origin/history:index.json > /tmp/index.json || true
+          npx tsx scripts/fetch-companies.ts /tmp/companies /tmp/index.json 2>&1 | tee /tmp/fetch.log
+      - name: Save
+        if: always()
+        run: |
+          mkdir -p /tmp/companies && cp /tmp/fetch.log /tmp/companies/ || true
+          cd /tmp/companies
+          git init -q && git checkout -q -b companies
+          git config user.name "companies" && git config user.email "companies@users.noreply.github.com"
+          git add . && git commit -qm "Company results ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" companies
