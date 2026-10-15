@@ -24,6 +24,7 @@ import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '..
 import { SkiaChart, ChartMode } from '../ui/SkiaChart';
 import { analyze, computeSeries } from '../analysis/signals';
 import { Backtest, backtest } from '../analysis/backtest';
+import { valueStock } from '../analysis/valuation';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -179,20 +180,23 @@ export default function StockScreen() {
   const { stocks } = useMarket();
   const pack = useMemo<StockPack>(() => {
     const balance = balanceSheetFor(symbol);
+    const ratios = computeRatios(balance, company, stock);
+    const peers = stock
+      ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
+      : [];
     return {
       stock,
       company,
       analysis,
       tech,
-      ratios: computeRatios(balance, company, stock),
+      ratios,
       balance,
-      peers: stock
-        ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
-        : [],
+      peers,
+      fair: company ? valueStock({ symbol, stock, company, ratios, balance, peers, daily }) : null,
       today: new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10),
       backtest: bt,
     };
-  }, [symbol, stock, company, analysis, tech, stocks, bt]);
+  }, [symbol, stock, company, analysis, tech, stocks, bt, daily]);
 
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
@@ -400,7 +404,7 @@ export default function StockScreen() {
   if (tab === 'overview') content = overview;
   else if (tab === 'ai') content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
   else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} /></View>;
-  else if (tab === 'fundamentals') content = <View style={pad}><FundamentalsTab company={company} stock={stock} err={companyErr} /></View>;
+  else if (tab === 'fundamentals') content = <View style={pad}><FundamentalsTab company={company} stock={stock} err={companyErr} fair={pack.fair} /></View>;
   else if (tab === 'news') content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;
   else if (tab === 'profile') content = <View style={pad}><ProfileTab company={company} err={companyErr} /></View>;
   else content = <View style={pad}><PeersTab stock={stock} /></View>;

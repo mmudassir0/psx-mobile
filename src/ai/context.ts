@@ -7,6 +7,7 @@
  * and weigh this evidence, never to calculate.
  */
 import { Backtest, recordText, trackRecord } from '../analysis/backtest';
+import { FairValue, fairText } from '../analysis/fairValue';
 import type { CompanyInfo, Stock } from '../psx/types';
 import type { Analysis } from '../analysis/signals';
 import type { Technicals } from '../analysis/technicals';
@@ -41,6 +42,8 @@ export interface StockPack {
   today: string; // YYYY-MM-DD
   /** the technical score tested on this stock's own history, when computed */
   backtest?: Backtest | null;
+  /** fair value range, when it could be estimated */
+  fair?: FairValue | null;
 }
 
 /**
@@ -120,6 +123,10 @@ export function stockContext(x: StockPack, compact = false): string {
     const peerPe = median(x.peers.map((q) => q.pe ?? NaN).filter((v) => v > 0));
     const pe = c.pe ?? s?.pe;
     L.push(`Valuation: P/E ${pe != null && pe > 0 ? n(pe) : 'n/a (loss or no earnings)'} (sector median ${n(peerPe)}), dividend yield ${p(s?.divYield)}, market cap ${big(c.marketCap)}.`);
+  }
+  if (x.fair && price != null) {
+    L.push('');
+    L.push(compact ? fairText(x.fair, price).split('\n')[0] : fairText(x.fair, price));
   }
   if (x.ratios) {
     const q = x.ratios;

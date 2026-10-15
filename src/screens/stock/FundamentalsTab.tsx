@@ -6,6 +6,8 @@ import type { CompanyInfo, FinTable, Stock } from '../../psx/types';
 import { KV, Panel } from '../../ui/bits';
 import { balanceSheetFor, computeRatios } from '../../analysis/ratios';
 import { Loading, Section, Segmented, T } from '../../ui/kit';
+import { FairValueCard } from '../../ui/FairValueCard';
+import { FairValue, MIN_PEERS } from '../../analysis/fairValue';
 
 /** PSX reports money in thousands of rupees, EPS and ratios as-is. */
 function cell(label: string, v: number | null): string {
@@ -90,7 +92,7 @@ const pct = (v: number | null) => (v == null ? '—' : fmtPct(v * 100, false));
 const x = (v: number | null, suffix = '×') => (v == null ? '—' : fmtNum(v, 2) + suffix);
 const rs = (v: number | null) => (v == null ? '—' : `Rs. ${fmtCompact(v)}`);
 
-export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo | null; stock?: Stock; err: string | null }) {
+export function FundamentalsTab({ company, stock, err, fair }: { company: CompanyInfo | null; stock?: Stock; err: string | null; fair?: FairValue | null }) {
   const [period, setPeriod] = useState<'annual' | 'quarterly'>('annual');
   const bs = useMemo(() => balanceSheetFor(company?.symbol ?? stock?.symbol ?? ''), [company?.symbol, stock?.symbol]);
   const r = useMemo(() => computeRatios(bs, company, stock), [bs, company, stock]);
@@ -103,6 +105,17 @@ export function FundamentalsTab({ company, stock, err }: { company: CompanyInfo 
 
   return (
     <View style={{ gap: space.section }}>
+      <Section title="Fair value">
+        {fair && price ? (
+          <FairValueCard f={fair} price={price} />
+        ) : (
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Not enough data to estimate a fair value: it needs profits with at least {MIN_PEERS} comparable companies in the
+            sector, or the balance sheet.
+          </T>
+        )}
+      </Section>
+
       <Section title="Valuation">
         <Panel>
           <KV label="P/E ratio" sub="Trailing 12 months" value={company.pe != null ? fmtNum(company.pe) : '—'} />
