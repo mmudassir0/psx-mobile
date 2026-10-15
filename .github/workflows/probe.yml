@@ -1,0 +1,28 @@
+# Runs one script against live PSX and saves its output to the probe branch. Manual only.
+name: Probe
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Script under scripts/ to run with tsx'
+        default: 'probe-history.ts'
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: mkdir -p /tmp/out && (npx tsx "scripts/${{ inputs.script }}" > /tmp/out/out.txt 2>&1 || true)
+      - name: Save
+        if: always()
+        run: |
+          cd /tmp/out
+          git init -q && git checkout -q -b probe
+          git config user.name "probe" && git config user.email "probe@users.noreply.github.com"
+          git add . && git commit -qm "Probe ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe

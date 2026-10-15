@@ -146,6 +146,19 @@ export async function fetchDailyCandles(symbol: string): Promise<Candle[]> {
   return adjustCandles(parseHistorical(html), eod);
 }
 
+/**
+ * Raw daily bars for one calendar month (month 1–12), not adjusted for splits.
+ * Used to top up saved history without downloading ten years again.
+ */
+export async function fetchMonthCandles(symbol: string, year: number, month: number): Promise<Candle[]> {
+  return parseHistorical(await xhr('/historical', { month: String(month), year: String(year), symbol }, 20_000));
+}
+
+/** Raw HTML of a PSX request, for probes and size checks. */
+export async function fetchRaw(path: string, form?: Record<string, string>, asXhr = true): Promise<string> {
+  return asXhr ? xhr(path, form, 40_000) : request(path, { timeoutMs: 40_000 });
+}
+
 /** Stocks in an index with their weight and the points they moved it today. */
 export async function fetchIndexConstituents(code: string): Promise<Constituent[]> {
   return parseIndexConstituents(await xhr(`/indices/${encodeURIComponent(code)}`));
