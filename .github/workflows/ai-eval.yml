@@ -1,0 +1,64 @@
+# Runs Sahm's real AI prompts on live PSX data with each on-phone model
+# (llama.cpp, same engine as the app) and the online models, then saves the
+# answers to the ai-eval-results branch for review. Manual only.
+name: AI eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Bundle latest fundamentals
+        run: |
+          if git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/f.json 2>/dev/null; then
+            cp /tmp/f.json assets/fundamentals.json
+          fi
+      - name: llama.cpp
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/llama && cd /tmp/llama
+          URL=$(gh api repos/ggml-org/llama.cpp/releases/latest -q '.assets[] | select(.name | test("bin-ubuntu-x64.(zip|tar.gz)$")) | .browser_download_url' | head -1)
+          echo "$URL"
+          curl -sSL -o pkg "$URL"
+          (unzip -q pkg || tar xzf pkg) 2>/dev/null
+          BIN=$(find . -name llama-server -type f | head -1)
+          echo "LLAMA_SERVER=/tmp/llama/$BIN" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$(dirname /tmp/llama/$BIN)" >> $GITHUB_ENV
+      - name: Models
+        run: |
+          mkdir -p /tmp/models && cd /tmp/models
+          curl -sSL -o fast.gguf https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf
+          curl -sSL -o best.gguf https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+          curl -sSL -o old3b.gguf https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf
+          ls -la
+      - name: Evaluate
+        env:
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          mkdir -p /tmp/out
+          for m in fast best old3b; do
+            $LLAMA_SERVER -m /tmp/models/$m.gguf -c 6144 -t 4 --port 8080 > /tmp/out/server-$m.log 2>&1 &
+            PID=$!
+            for i in $(seq 1 60); do curl -sf localhost:8080/health >/dev/null && break; sleep 2; done
+            EVAL_TARGETS="[{\"name\":\"$m\",\"url\":\"http://localhost:8080/v1/chat/completions\",\"model\":\"$m\",\"tier\":\"small\"}]" \
+              npx tsx scripts/ai-eval.ts /tmp/out/$m.json 2>&1 | tee -a /tmp/out/log.txt || true
+            kill $PID; sleep 2
+          done
+          EVAL_TARGETS="[{\"name\":\"gpt-oss-120b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-120b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"},{\"name\":\"llama-3.3-70b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"llama-3.3-70b-versatile\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"}]" \
+            npx tsx scripts/ai-eval.ts /tmp/out/online.json 2>&1 | tee -a /tmp/out/log.txt || true
+      - name: Save results
+        if: always()
+        run: |
+          cd /tmp/out
+          git init -q && git checkout -q -b ai-eval-results
+          git config user.name "ai-eval" && git config user.email "ai-eval@users.noreply.github.com"
+          git add . && git commit -qm "AI eval ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ai-eval-results

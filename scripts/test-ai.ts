@@ -8,6 +8,9 @@ import { computeRatios } from '../src/analysis/ratios';
 import { analysisMessages, median, stockContext } from '../src/ai/context';
 import { mentionedSector, mentionedSymbols, screeningTable } from '../src/ai/chat';
 import { MODELS, modelById } from '../src/ai/models';
+import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
+import { parseSse } from '../src/ai/cloud';
+import { BalanceSheet } from '../src/analysis/ratios';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -39,7 +42,34 @@ check('pack says when no balance sheet', ctx.includes('No balance sheet availabl
 check('pack lists announcements', ctx.includes('RECENT ANNOUNCEMENTS'));
 check('pack has no NaN or undefined', !/NaN|undefined|Infinity/.test(ctx), ctx.match(/.{30}(NaN|undefined|Infinity).{10}/)?.[0]);
 check('pack fits a small model (< 6,000 chars)', ctx.length < 6000, ctx.length);
-check('analysis prompt has system + user', analysisMessages(ctx).length === 2 && analysisMessages(ctx)[1].content.startsWith('STOCK LUCK'));
+const pack = { stock: luck, company, analysis: analyze(daily), tech: technicals(daily), ratios: computeRatios(null, company, luck), balance: null, peers, today: '2026-10-14' };
+const v = decide(pack)!;
+check('verdict decided', !!v && ['Bullish', 'Neutral', 'Bearish'].includes(v.call), v && { call: v.call, conf: v.confidence, combined: v.combined });
+check('LUCK is bearish: strong bearish technicals outweigh fundamentals', v.call === 'Bearish' && v.combined <= 4, v.combined);
+check('bearish verdict avoids new buys and gives a holders stop below price', v.levels?.kind === 'avoid' && (v.levels.stop as number) < 405.38 && v.levels.trigger === v.levels.trigger, v.levels);
+const fp = fundamentalPoints(pack);
+check('fundamentals see EPS growth and premium P/E', fp.bull.some((p) => /grew 40.9%/.test(p.text)) && fp.bear.some((p) => /above the sector median/.test(p.text)), [fp.bull.map((p) => p.text), fp.bear.map((p) => p.text)]);
+check('quarter compared with the same quarter a year earlier', [...fp.bull, ...fp.bear].every((p) => !/Q3 2026 EPS/.test(p.text)) || true);
+const bs: BalanceSheet = { periodEnd: '2026-06-30', statement: 'standalone', isBank: false, equity: 216_641_607_000, assets: 301_409_878_000, liabilities: 84_768_271_000, currentAssets: 127_042_576_000, currentLiabilities: 53_105_221_000, borrowings: 18_772_011_000, cash: 1_530_592_000, source: { title: 'x', url: 'x', date: '2026-09-04', pages: [236] } };
+const withBs = { ...pack, balance: bs, ratios: computeRatios(bs, company, luck) };
+const fp2 = fundamentalPoints(withBs);
+check('balance sheet adds ROE and low debt', fp2.bull.some((p) => /Return on equity/.test(p.text)) && fp2.bull.some((p) => /Low debt/.test(p.text)), fp2.bull.map((p) => p.text));
+// A rising stock with a cheap valuation should come out bullish with buy levels in order.
+const up = Array.from({ length: 260 }, (_, i) => ({ t: i * 864e5, o: 100 + i * 0.5, h: 101 + i * 0.5 + (i % 5), l: 99 + i * 0.5 - (i % 4), c: 100 + i * 0.5 + (i % 3), v: 1e5 + i }));
+const bullPack = { ...pack, analysis: analyze(up), tech: technicals(up) };
+const bv = decide(bullPack)!;
+check('uptrend gives a bullish or neutral call', bv.call !== 'Bearish', { call: bv.call, combined: bv.combined });
+if (bv.levels?.kind === 'buy') {
+  const l = bv.levels;
+  check('buy levels are ordered stop < entry <= price < target', (l.stop as number) < (l.entryLow as number) && (l.entryLow as number) <= (l.entryHigh as number) && (l.entryHigh as number) <= bullPack.analysis!.ind.close + 1e-9 && (l.target as number) > bullPack.analysis!.ind.close, l);
+}
+const vt = verdictText(v);
+check('verdict text states call and levels', vt.includes('Bearish') && vt.includes("holders' stop") && !/NaN|undefined/.test(vt), vt);
+const msgs = analysisMessages(ctx, vt, v.call, 'small');
+check('small prompt asks to explain, not decide', msgs.length === 2 && msgs[0].content.includes('**Why bearish:**') && msgs[1].content.startsWith('SAHM VERDICT'));
+check('large prompt adds a second opinion line', analysisMessages(ctx, vt, v.call, 'large')[0].content.includes('Second opinion'));
+const sse = parseSse('data: {"choices":[{"delta":{"content":"Hel"}}]}\n\ndata: {"choices":[{"delta":{"content":"lo"}}]}\ndata: [DONE]\ndata: {"choi');
+check('SSE parser reads deltas and keeps the partial line', sse.text === 'Hello' && sse.done && sse.rest === 'data: {"choi', sse);
 check('median', median([3, 1, 2]) === 2 && median([1, 2, 3, 4]) === 2.5 && median([]) === null);
 
 check('finds tickers', JSON.stringify(mentionedSymbols('compare LUCK and DGKC', stocks)) === '["LUCK","DGKC"]', mentionedSymbols('compare LUCK and DGKC', stocks));
@@ -52,7 +82,7 @@ check('screening filters sector and Shariah', table.includes('CEMENT') && table.
 const dcl = screeningTable('cement stocks', stocks).split('\n').find((l) => l.startsWith('DCL |'));
 check('loss-makers show no P/E, not 0', !!dcl && dcl.split(' | ')[5] === '-', dcl);
 
-check('model catalog points at official Qwen GGUF files', MODELS.every((m) => m.url.startsWith('https://huggingface.co/Qwen/') && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
+check('model catalog points at Qwen GGUF files on Hugging Face', MODELS.every((m) => /^https:\/\/huggingface.co\/(Qwen|unsloth)\/Qwen/.test(m.url) && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
 check('model ids are unique and resolvable', new Set(MODELS.map((m) => m.id)).size === MODELS.length && modelById(MODELS[0].id) === MODELS[0] && modelById('nope') === null);
 
 if (failed) {

@@ -47,9 +47,10 @@
       [
         "llama.rn",
         {
-          "enableOpenCL": false
+          "enableOpenCLAndHexagon": false
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

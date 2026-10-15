@@ -1,6 +1,7 @@
 /** Choose, download and manage the on-phone AI model; shows its status once installed. */
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { colors, fonts } from '../theme';
 import { gb, MODELS } from '../ai/models';
 import { useAi } from '../store/ai';
@@ -15,8 +16,9 @@ function Bar({ value }: { value: number }) {
   );
 }
 
-export function ModelCard() {
+export function ModelCard({ inSettings }: { inSettings?: boolean } = {}) {
   const ai = useAi();
+  const nav = useNavigation();
   const m = ai.model;
 
   if (ai.phase === 'checking') {
@@ -77,13 +79,19 @@ export function ModelCard() {
   return (
     <Panel style={{ paddingVertical: 16, gap: 12 }}>
       <T v="body" style={{ fontFamily: fonts.semibold }}>
-        Download the AI model
+        Set up the AI
       </T>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Sahm's AI runs entirely on your phone: free, private, works offline. Download it once; Wi-Fi recommended.
+        Download a model to run the AI on your phone (free, private, works offline), or add a free online key for the smartest
+        answers.
       </T>
+      {!ai.hasKey && !inSettings ? (
+        <Pressable accessibilityRole="button" onPress={() => nav.navigate('Settings')}>
+          <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Use the free online AI instead ›</T>
+        </Pressable>
+      ) : null}
       {ai.error ? <T v="caption" style={{ color: colors.downText }}>{ai.error}</T> : null}
-      {MODELS.map((x) => (
+      {MODELS.filter((x) => x.id !== 'qwen2.5-3b').map((x) => (
         <View key={x.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
           <View style={{ flex: 1, gap: 2 }}>
             <T v="body" style={{ fontFamily: fonts.semibold, fontSize: 14.5 }}>

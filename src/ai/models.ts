@@ -19,12 +19,20 @@ export const MODELS: LocalModel[] = [
     blurb: 'Quicker answers, good for summaries.',
   },
   {
+    id: 'qwen3-4b',
+    name: 'Best · Qwen3 4B',
+    file: 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+    url: 'https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+    bytes: 2_497_281_120,
+    blurb: 'Newest and most capable; the best answers on the phone.',
+  },
+  {
     id: 'qwen2.5-3b',
-    name: 'Smart · Qwen2.5 3B',
+    name: 'Older · Qwen2.5 3B',
     file: 'qwen2.5-3b-instruct-q4_k_m.gguf',
     url: 'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf',
     bytes: 2_104_932_768,
-    blurb: 'More careful reasoning, about half the speed.',
+    blurb: 'Superseded by Qwen3 4B; keep only if already downloaded.',
   },
 ];
 

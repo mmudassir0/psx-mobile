@@ -7,7 +7,7 @@ import { useMarket } from '../store/market';
 import { chatContext } from '../ai/chat';
 import { CHAT_SYSTEM } from '../ai/context';
 import type { ChatMessage, Generation } from '../ai/models';
-import { canRun, useAi } from '../store/ai';
+import { useAi } from '../store/ai';
 import { ModelCard } from '../ui/ModelCard';
 import { Md } from '../ui/Md';
 import { Card, Icon, T } from '../ui/kit';
@@ -57,7 +57,7 @@ export default function AIScreen() {
 
   const ask = async (question: string) => {
     const q = question.trim();
-    if (!q || busy || !canRun(ai.phase)) return;
+    if (!q || busy || !ai.available) return;
     const idx = turns.length;
     const history = turns.filter((t) => t.status === 'done').slice(-2);
     setTurns((ts) => [...ts, { q, a: '', status: 'reading' }]);
@@ -66,13 +66,16 @@ export default function AIScreen() {
     try {
       const { text, symbols } = await chatContext(q, stocks, indices);
       patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
-      const messages: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` }];
-      for (const h of history) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
-      messages.push({ role: 'user', content: q });
-      const h = await ai.run(messages, (a) => patch(idx, { a }), 500);
-      handle.current = h;
-      const a = await h.done;
-      patch(idx, { a, status: 'done' });
+      const build = (): ChatMessage[] => {
+        const m: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` }];
+        for (const h of history) m.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
+        m.push({ role: 'user', content: q });
+        return m;
+      };
+      const r = await ai.run(build, (a) => patch(idx, { a }), 500);
+      handle.current = r.gen;
+      const a = await r.gen.done;
+      patch(idx, { a, status: 'done', note: `${symbols.length ? `Read live data for ${symbols.join(', ')} · ` : ''}${r.engine()}` });
     } catch (e) {
       patch(idx, { status: 'error', note: (e as Error).message });
     } finally {
@@ -81,7 +84,7 @@ export default function AIScreen() {
     }
   };
 
-  const ready = canRun(ai.phase);
+  const ready = ai.available;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -99,7 +102,7 @@ export default function AIScreen() {
             </View>
           </View>
 
-          <ModelCard />
+          {!ai.available || ai.phase === 'downloading' || ai.phase === 'loading' ? <ModelCard /> : null}
 
           {turns.length === 0 ? (
             <>
@@ -190,7 +193,7 @@ export default function AIScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={ready ? 'Ask about a stock, sector or the market' : 'Download the AI model to ask questions'}
+            placeholder={ready ? 'Ask about a stock, sector or the market' : 'Set up AI in Settings to ask questions'}
             placeholderTextColor={colors.faint}
             editable={ready && !busy}
             onSubmitEditing={() => ask(input)}
