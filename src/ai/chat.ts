@@ -14,27 +14,58 @@ import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { StockPack, stockContext } from './context';
 import { decide } from './verdict';
 
+const GENERIC_NAME_WORDS = new Set(
+  ('limited ltd company corporation pakistan industries the and bank banks cement power energy textile textiles mills ' +
+    'oil gas sugar fertilizer fertilizers pharma pharmaceuticals insurance motors motor steel foods food chemical chemicals ' +
+    'holdings holding group international investment investments securities technologies technology systems modaraba ' +
+    'fund mutual services petroleum refinery national general first united global capital leasing').split(' '),
+);
+
 const COMMON_WORDS = new Set(['THE', 'AND', 'FOR', 'ARE', 'BUY', 'SELL', 'PSX', 'KSE', 'ROE', 'ROA', 'EPS', 'PE', 'AI', 'IS', 'IT', 'OR', 'TOP', 'BEST', 'WITH', 'NOW', 'ALL']);
 
-/** Stock symbols named in a question, in order, at most `max`. Matches tickers and distinctive company names. */
+/** Lowercase words that are also tickers; typed in lowercase they are almost always plain English. */
+const ENGLISH = new Set(
+  ('power best good cheap bank banks stock stocks today which what about oil gas fast safe gold glass sugar steel cable ' +
+    'top low high buy sell hold pace nice fine pak pakistan more most less news fund year week day and with for the are ' +
+    'into over under than then this that from have has had can will should would could next last data price prices').split(' '),
+);
+
+const LEGAL = /\b(limited|ltd|company|co|corporation|corp|the|plc)\b/g;
+const normName = (t: string) =>
+  t.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ').replace(LEGAL, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Stock symbols named in a question, in order, at most `max`.
+ * Tickers count when typed in capitals, or in lowercase when they aren't an
+ * ordinary word. Company names count on two of their words together
+ * ("lucky cement", "hub power") or on a first word no other company shares.
+ */
 export function mentionedSymbols(question: string, stocks: Stock[], max = 3): string[] {
-  const bySymbol = new Map(stocks.map((s) => [s.symbol, s]));
+  const bySymbol = new Set(stocks.map((s) => s.symbol));
   const out: string[] = [];
-  for (const w of question.toUpperCase().match(/[A-Z][A-Z0-9]{1,9}/g) ?? []) {
-    if (bySymbol.has(w) && !COMMON_WORDS.has(w) && !out.includes(w)) out.push(w);
+  for (const tok of question.match(/[A-Za-z][A-Za-z0-9]{1,9}/g) ?? []) {
+    const up = tok.toUpperCase();
+    if (!bySymbol.has(up) || COMMON_WORDS.has(up) || out.includes(up)) continue;
+    const caps = tok === up;
+    if (caps || (tok.length >= 3 && !ENGLISH.has(tok.toLowerCase()))) out.push(up);
   }
-  // company names: "lucky cement", "meezan bank"
-  const q = question.toLowerCase();
-  for (const s of stocks) {
-    if (out.length >= max) break;
-    const words = s.name
-      .toLowerCase()
-      .replace(/\b(limited|ltd|company|corporation|co|pakistan|industries|the)\b\.?/g, '')
-      .trim()
-      .split(/\s+/)
-      .filter((w) => w.length > 3);
-    if (words.length && q.includes(words.slice(0, 2).join(' ')) && !out.includes(s.symbol)) out.push(s.symbol);
+  const q = ` ${normName(question)} `;
+  const names = stocks.map((s) => ({ s, toks: normName(s.name).split(' ').filter(Boolean) }));
+  const firstCount = new Map<string, number>();
+  for (const n of names) if (n.toks[0]) firstCount.set(n.toks[0], (firstCount.get(n.toks[0]) ?? 0) + 1);
+  // When several companies share the matched words ("fauji fertilizer"), the one whose whole name is closest wins.
+  const best = new Map<string, { sym: string; len: number }>();
+  for (const { s, toks } of names) {
+    if (!toks.length) continue;
+    const pair = toks.length >= 2 && q.includes(` ${toks[0]} ${toks[1]} `);
+    const whole = q.includes(` ${toks.join(' ')} `) && (toks.length >= 2 || firstCount.get(toks[0]) === 1);
+    const unique = toks[0].length >= 5 && firstCount.get(toks[0]) === 1 && !GENERIC_NAME_WORDS.has(toks[0]) && q.includes(` ${toks[0]} `);
+    if (!pair && !whole && !unique) continue;
+    const key = pair ? `${toks[0]} ${toks[1]}` : toks[0];
+    const cur = best.get(key);
+    if (!cur || toks.length < cur.len) best.set(key, { sym: s.symbol, len: toks.length });
   }
+  for (const { sym } of best.values()) if (out.length < max && !out.includes(sym)) out.push(sym);
   return out.slice(0, max);
 }
 

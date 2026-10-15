@@ -76,6 +76,12 @@ check('median', median([3, 1, 2]) === 2 && median([1, 2, 3, 4]) === 2.5 && media
 
 check('finds tickers', JSON.stringify(mentionedSymbols('compare LUCK and DGKC', stocks)) === '["LUCK","DGKC"]', mentionedSymbols('compare LUCK and DGKC', stocks));
 check('ignores common words', !mentionedSymbols('IS IT A BUY NOW', stocks).length, mentionedSymbols('IS IT A BUY NOW', stocks));
+check('generic words in a question match no company', mentionedSymbols('Shariah banks with the best dividend yield', stocks).length === 0, mentionedSymbols('Shariah banks with the best dividend yield', stocks));
+check('distinctive names still match', mentionedSymbols('is meezan bank a buy?', stocks).includes('MEBL'), mentionedSymbols('is meezan bank a buy?', stocks));
+for (const [q, want] of [['what about lucky cement?', ['LUCK']], ['compare engro and fauji fertilizer', ['ENGRO', 'FFC']], ['best power stocks', []], ['How is hub power doing', ['HUBC']], ['systems limited outlook', ['SYS']], ['ogdc vs ppl', ['OGDC', 'PPL']]] as [string, string[]][]) {
+  const got = mentionedSymbols(q, stocks);
+  check(`question "${q}" finds ${want.join(', ') || 'no stock'}`, JSON.stringify(got) === JSON.stringify(want), got);
+}
 check('finds company names', mentionedSymbols('what about lucky cement?', stocks).includes('LUCK'), mentionedSymbols('what about lucky cement?', stocks));
 const bankSector = mentionedSector('best bank stocks for dividends', stocks);
 check('finds a sector', !!bankSector && /bank/i.test(bankSector), bankSector);

@@ -55,7 +55,7 @@ export function stockContext(x: StockPack, compact = false): string {
 
   L.push(`STOCK ${sym} — ${c?.name ?? s?.name ?? ''} (${s?.sector ?? c?.sector ?? 'sector n/a'})${s?.shariah ? ', Shariah-compliant' : ''}`);
   L.push(`Date ${x.today}. Price Rs ${n(price)}, today ${p(s?.changePct ?? c?.changePct, 2)}, 1-year ${p(c?.change1y)}, YTD ${p(c?.ytd)}.`);
-  if (c?.week52Low != null && c?.week52High != null && price != null) {
+  if (c?.week52Low != null && c?.week52High != null && price != null && c.week52High > c.week52Low) {
     const pos = ((price - c.week52Low) / (c.week52High - c.week52Low)) * 100;
     L.push(`52-week range Rs ${n(c.week52Low)} to ${n(c.week52High)}; price is ${pos.toFixed(0)}% of the way up.`);
   }
@@ -103,7 +103,8 @@ export function stockContext(x: StockPack, compact = false): string {
       L.push(`Latest year: gross margin ${p(g(/gross/i))}, net margin ${p(g(/net profit/i))}, EPS growth ${p(g(/eps growth/i))}, PEG ${n(g(/^peg/i))}.`);
     }
     const peerPe = median(x.peers.map((q) => q.pe ?? NaN).filter((v) => v > 0));
-    L.push(`Valuation: P/E ${n(c.pe ?? s?.pe)} (sector median ${n(peerPe)}), dividend yield ${p(s?.divYield)}, market cap ${big(c.marketCap)}.`);
+    const pe = c.pe ?? s?.pe;
+    L.push(`Valuation: P/E ${pe != null && pe > 0 ? n(pe) : 'n/a (loss or no earnings)'} (sector median ${n(peerPe)}), dividend yield ${p(s?.divYield)}, market cap ${big(c.marketCap)}.`);
   }
   if (x.ratios) {
     const q = x.ratios;
