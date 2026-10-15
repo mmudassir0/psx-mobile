@@ -8,10 +8,10 @@ import type { ChatMessage, Generation } from './models';
 
 export const CLOUD_URL = 'https://api.groq.com/openai/v1/chat/completions';
 /** Tried in order: the second only when the first is rate-limited or unavailable. */
-export const CLOUD_MODELS = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+export const CLOUD_MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 export const CLOUD_LABEL: Record<string, string> = {
   'openai/gpt-oss-120b': 'GPT-OSS 120B (online)',
-  'llama-3.3-70b-versatile': 'Llama 3.3 70B (online)',
+  'openai/gpt-oss-20b': 'GPT-OSS 20B (online)',
 };
 
 /** Pulls the text out of a server-sent-events buffer; returns new text and the unparsed tail. */
@@ -138,6 +138,6 @@ export function cloudGenerate(
 
 /** Quick key check with a one-word reply. */
 export async function testKey(key: string): Promise<string> {
-  const g = streamOnce(key, 'llama-3.3-70b-versatile', [{ role: 'user', content: 'Reply with the single word OK.' }], () => {}, 5);
+  const g = streamOnce(key, 'openai/gpt-oss-20b', [{ role: 'user', content: 'Reply with the single word OK.' }], () => {}, 16);
   return g.done;
 }

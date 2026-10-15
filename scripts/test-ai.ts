@@ -6,7 +6,7 @@ import { analyze } from '../src/analysis/signals';
 import { technicals } from '../src/analysis/technicals';
 import { computeRatios } from '../src/analysis/ratios';
 import { analysisMessages, median, stockContext } from '../src/ai/context';
-import { mentionedSector, mentionedSymbols, screeningTable } from '../src/ai/chat';
+import { comparison, mentionedSector, mentionedSymbols, ranking, screeningTable } from '../src/ai/chat';
 import { MODELS, modelById } from '../src/ai/models';
 import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
 import { parseSse } from '../src/ai/cloud';
@@ -84,6 +84,16 @@ check('screening filters sector and Shariah', table.includes('CEMENT') && table.
 const dcl = screeningTable('cement stocks', stocks).split('\n').find((l) => l.startsWith('DCL |'));
 check('loss-makers show no P/E, not 0', !!dcl && dcl.split(' | ')[5] === '-', dcl);
 
+const cheap = ranking('Which cement stock looks cheapest?', stocks)!;
+check('cheapest cement is ranked by P/E, lowest first', !!cheap && cheap.split('\n')[1].startsWith('1. THCCL') && cheap.includes('P/E, lowest first'), cheap?.split('\n').slice(0, 3));
+check('ranking skips loss-makers', !/DCL \(/.test(cheap));
+const divi = ranking('Shariah banks with the best dividend yield', stocks)!;
+check('dividend ranking is Shariah banks only, highest first', !!divi && /Shariah .*Bank/i.test(divi) && Number(divi.split('\n')[1].match(/: ([\d.]+)%/)![1]) >= Number(divi.split('\n')[2].match(/: ([\d.]+)%/)![1]), divi?.split('\n').slice(0, 3));
+check('no ranking for a plain question', ranking('What is LUCK?', stocks) === null);
+const cmp = comparison([pack, { ...pack, stock: stocks.find((x) => x.symbol === 'DGKC'), company: null, analysis: null, tech: null, balance: null, ratios: null }]);
+check('comparison lists both symbols with a verdict row', cmp.includes('measure | LUCK | DGKC') && /Sahm verdict \| Bearish/.test(cmp) && !/NaN|undefined/.test(cmp), cmp);
+const compactCtx = stockContext(pack, true);
+check('compact pack is much smaller and keeps the essentials', compactCtx.length < ctx.length * 0.7 && compactCtx.includes('TECHNICAL SCORE') && compactCtx.includes('Valuation:'), [compactCtx.length, ctx.length]);
 check('model catalog points at Qwen GGUF files on Hugging Face', MODELS.every((m) => /^https:\/\/huggingface.co\/(Qwen|unsloth)\/Qwen/.test(m.url) && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
 check('model ids are unique and resolvable', new Set(MODELS.map((m) => m.id)).size === MODELS.length && modelById(MODELS[0].id) === MODELS[0] && modelById('nope') === null);
 

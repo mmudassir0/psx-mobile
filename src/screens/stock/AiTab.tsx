@@ -34,6 +34,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
   const handle = useRef<Generation | null>(null);
   const key = `ai.explain.${symbol}`;
   const context = useMemo(() => (ready ? stockContext(pack) : ''), [ready, pack]);
+  const compact = useMemo(() => (ready ? stockContext(pack, true) : ''), [ready, pack]);
   const verdict = useMemo(() => (ready ? decide(pack) : null), [ready, pack]);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
     setSaved(null);
     setRunning(true);
     try {
-      const r = await ai.run((tier) => analysisMessages(context, verdictText(verdict), verdict.call, tier), setText, 450);
+      const r = await ai.run((tier) => analysisMessages(tier === 'small' ? compact : context, verdictText(verdict), verdict.call, tier), setText, 450);
       handle.current = r.gen;
       setEngine(r.engine());
       const out = await r.gen.done;

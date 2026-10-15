@@ -64,10 +64,10 @@ export default function AIScreen() {
     setInput('');
     setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     try {
-      const { text, symbols } = await chatContext(q, stocks, indices);
+      const { text, compact, symbols } = await chatContext(q, stocks, indices);
       patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
-      const build = (): ChatMessage[] => {
-        const m: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` }];
+      const build = (tier: 'small' | 'large'): ChatMessage[] => {
+        const m: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${tier === 'small' ? compact : text}` }];
         for (const h of history) m.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
         m.push({ role: 'user', content: q });
         return m;

@@ -34,14 +34,14 @@ jobs:
           mkdir -p /tmp/models && cd /tmp/models
           curl -sSL -o fast.gguf https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf
           curl -sSL -o best.gguf https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
-          curl -sSL -o old3b.gguf https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf
           ls -la
       - name: Evaluate
         env:
           GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           mkdir -p /tmp/out
-          for m in fast best old3b; do
+          curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_KEY" > /tmp/out/groq-models.json || true
+          for m in best fast; do
             $LLAMA_SERVER -m /tmp/models/$m.gguf -c 6144 -t 4 --port 8080 > /tmp/out/server-$m.log 2>&1 &
             PID=$!
             for i in $(seq 1 60); do curl -sf localhost:8080/health >/dev/null && break; sleep 2; done
@@ -49,7 +49,7 @@ jobs:
               npx tsx scripts/ai-eval.ts /tmp/out/$m.json 2>&1 | tee -a /tmp/out/log.txt || true
             kill $PID; sleep 2
           done
-          EVAL_TARGETS="[{\"name\":\"gpt-oss-120b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-120b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"},{\"name\":\"llama-3.3-70b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"llama-3.3-70b-versatile\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"}]" \
+          EVAL_TARGETS="[{\"name\":\"gpt-oss-120b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-120b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"},{\"name\":\"gpt-oss-20b\",\"url\":\"https://api.groq.com/openai/v1/chat/completions\",\"model\":\"openai/gpt-oss-20b\",\"key\":\"$GROQ_KEY\",\"tier\":\"large\"}]" \
             npx tsx scripts/ai-eval.ts /tmp/out/online.json 2>&1 | tee -a /tmp/out/log.txt || true
       - name: Save results
         if: always()

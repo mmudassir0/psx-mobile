@@ -26,7 +26,7 @@ interface Target {
 }
 
 const SYMBOLS = ['LUCK', 'MEBL', 'OGDC', 'SYS', 'EFERT'];
-const QUESTIONS = ['Which cement stock looks cheapest?', 'Compare LUCK and DGKC'];
+const QUESTIONS = ['Which cement stock looks cheapest?', 'Compare LUCK and DGKC', 'Shariah banks with the best dividend yield'];
 
 const fx = (n: string) => readFileSync(join(__dirname, 'fixtures', n), 'utf8');
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -135,17 +135,17 @@ async function main() {
       id: sym,
       kind: 'explain',
       verdict: vt,
-      msgs: { small: analysisMessages(ctx, vt, v.call, 'small'), large: analysisMessages(ctx, vt, v.call, 'large') },
+      msgs: { small: analysisMessages(stockContext(pack, true), vt, v.call, 'small'), large: analysisMessages(ctx, vt, v.call, 'large') },
     });
   }
   if (!live && !SYMBOLS.length) return;
   for (const q of QUESTIONS) {
-    const { text } = await chatContext(q, stocks, indices);
-    const m = [
-      { role: 'system', content: `${CHAT_SYSTEM}\n----------\n${text}` },
+    const { text, compact } = await chatContext(q, stocks, indices);
+    const mk = (ctx: string) => [
+      { role: 'system', content: `${CHAT_SYSTEM}\n----------\n${ctx}` },
       { role: 'user', content: q },
     ];
-    cases.push({ id: q, kind: 'chat', msgs: { small: m, large: m } });
+    cases.push({ id: q, kind: 'chat', msgs: { small: mk(compact), large: mk(text) } });
   }
 
   const results: unknown[] = [];

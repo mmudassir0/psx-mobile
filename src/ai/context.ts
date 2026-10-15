@@ -40,7 +40,13 @@ export interface StockPack {
   today: string; // YYYY-MM-DD
 }
 
-export function stockContext(x: StockPack): string {
+/**
+ * `compact` (for on-phone models) keeps what the explanation needs and drops
+ * detail the verdict already summarises: per-rule lines, indicator tables,
+ * pivots, older results and peers. Roughly halves the prompt, which is most of
+ * the wait before a phone model starts writing.
+ */
+export function stockContext(x: StockPack, compact = false): string {
   const s = x.stock;
   const c = x.company;
   const sym = s?.symbol ?? c?.symbol ?? '?';
@@ -58,10 +64,10 @@ export function stockContext(x: StockPack): string {
     const a = x.analysis;
     L.push('');
     L.push(`TECHNICAL SCORE ${a.score.toFixed(1)}/10 (${a.stance}), from daily closes to ${new Date(a.asOf).toISOString().slice(0, 10)}.`);
-    for (const rule of a.rules) L.push(`- ${rule.vote > 0 ? 'bullish' : rule.vote < 0 ? 'bearish' : 'neutral'}: ${rule.reason}`);
+    if (!compact) for (const rule of a.rules) L.push(`- ${rule.vote > 0 ? 'bullish' : rule.vote < 0 ? 'bearish' : 'neutral'}: ${rule.reason}`);
     L.push(`Support Rs ${n(a.support?.price)}, resistance Rs ${n(a.resistance?.price)}, volatility stop (close - 2×ATR) Rs ${n(a.stop)}, ATR Rs ${n(a.ind.atr14)}.`);
   }
-  if (x.tech) {
+  if (x.tech && !compact) {
     const t = x.tech;
     L.push(
       `Indicator summary: ${t.summary.buy} buy, ${t.summary.neutral} neutral, ${t.summary.sell} sell → ${t.summary.verdict}. ` +
@@ -83,12 +89,12 @@ export function stockContext(x: StockPack): string {
       const eps = row(/^eps$/i);
       L.push(
         `ANNUAL RESULTS (fiscal year ends ${c.fiscalYearEnd ?? 'n/a'}; newest first): ` +
-          fa.periods.map((per, i) => `${per}: sales ${big((sales[i] ?? NaN) * 1000)}, profit ${big((profit[i] ?? NaN) * 1000)}, EPS ${n(eps[i])}`).join('; ') +
+          fa.periods.slice(0, compact ? 2 : 4).map((per, i) => `${per}: sales ${big((sales[i] ?? NaN) * 1000)}, profit ${big((profit[i] ?? NaN) * 1000)}, EPS ${n(eps[i])}`).join('; ') +
           '.',
       );
     }
     const fq = c.financialsQuarterly;
-    if (fq) {
+    if (fq && !compact) {
       const eps = fq.rows.find((rw) => /^eps$/i.test(rw.label))?.values ?? [];
       L.push(`Quarterly EPS (newest first): ${fq.periods.map((per, i) => `${per} ${n(eps[i])}`).join(', ')}.`);
     }
@@ -121,14 +127,14 @@ export function stockContext(x: StockPack): string {
       seen.add(k);
       return true;
     })
-    .slice(0, 6);
+    .slice(0, compact ? 4 : 6);
   if (news.length) {
     L.push('');
     L.push('RECENT ANNOUNCEMENTS (titles only, newest first):');
     for (const a of news) L.push(`- ${a.date} [${a.category}] ${a.title.length > 100 ? a.title.slice(0, 99) + '…' : a.title}`);
   }
 
-  if (x.peers.length) {
+  if (x.peers.length && !compact) {
     L.push('');
     L.push(
       'PEERS (largest first): ' +
@@ -186,7 +192,8 @@ export const CHAT_SYSTEM = `You are Sahm, an assistant for the Pakistan Stock Ex
 Answer the question using ONLY the data below the line. Every number there is correct.
 - Copy numbers exactly; do not calculate new ones; do not invent prices, news or companies.
 - Answer the question directly in the first sentence, then give the 2–4 facts that support it.
-- To compare or rank, use the table columns and say which column you used.
+- If the data has a RANKING or COMPARISON block, base your answer on it: it is already sorted and correct.
+- "Cheap" or "expensive" means valuation (P/E, price to book), never the share price.
 - A '-' means the value is not available; never treat it as zero.
 - If the data does not contain the answer, say what is missing in one sentence.
 - Keep it short. Mention symbols in capitals. End investment opinions with "Not investment advice."`;

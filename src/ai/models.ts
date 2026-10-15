@@ -11,20 +11,20 @@ export interface LocalModel {
 
 export const MODELS: LocalModel[] = [
   {
-    id: 'qwen2.5-1.5b',
-    name: 'Fast · Qwen2.5 1.5B',
-    file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf',
-    url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
-    bytes: 1_117_320_736,
-    blurb: 'Quicker answers, good for summaries.',
-  },
-  {
     id: 'qwen3-4b',
     name: 'Best · Qwen3 4B',
     file: 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
     url: 'https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
     bytes: 2_497_281_120,
-    blurb: 'Newest and most capable; the best answers on the phone.',
+    blurb: 'Recommended: the most accurate model that fits the phone.',
+  },
+  {
+    id: 'qwen2.5-1.5b',
+    name: 'Fast · Qwen2.5 1.5B',
+    file: 'qwen2.5-1.5b-instruct-q4_k_m.gguf',
+    url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
+    bytes: 1_117_320_736,
+    blurb: 'About 3× quicker but makes more mistakes; for low storage.',
   },
   {
     id: 'qwen2.5-3b',
