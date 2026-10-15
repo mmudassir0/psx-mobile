@@ -22,8 +22,14 @@ Six tabs: Overview (chart, day and 52-week range, bid/ask, circuit breakers), Te
 ## Balance-sheet ratios
 ROE, ROA, book value, P/B, current ratio and debt ratios need figures PSX doesn't publish, so they come from each company's own report. The `Fundamentals` workflow (Mon and Thu, or run it by hand) finds each KSE-100 company's latest report on PSX, locates the standalone balance sheet (OCR where the page is scanned), has a model on Groq's free tier read it, and then checks every figure in code: it must appear on the page in the current-period column, assets must equal equity + liabilities, and borrowings are summed from verified lines. Failures are logged, never published. Results go to `fundamentals.json` on the `data` branch and every APK build bundles them; the app computes the ratios with live prices and links to the source report. Needs the `GROQ_API_KEY` repository secret. Code: `scripts/fundamentals/`, `src/analysis/ratios.ts`.
 
-## On-phone AI
-Each stock has an AI tab with a written verdict (trend, entry, stop, target, risks, news), and the AI tab has "Ask Sahm", a chat about stocks, sectors and the market. The model runs inside the app with llama.cpp (`llama.rn`): the user downloads it once from Settings or the AI tab (Qwen2.5 1.5B, 1.1 GB, or 3B, 2.1 GB, official GGUF files from Hugging Face), with pause/resume and a size check. Nothing leaves the phone. The app builds a compact data pack from its own calculations (`src/ai/context.ts`, `src/ai/chat.ts`) and the model only explains it; "What the AI reads" shows the exact pack. Engine: `src/ai/engine.ts` (web builds use `engine.web.ts`, a labelled stand-in for previews); state: `src/store/ai.tsx`.
+## AI
+Every stock's AI tab starts with **Sahm's verdict**, decided in code (`src/ai/verdict.ts`): technical score plus a fundamental score (valuation vs sector, EPS growth, quarter vs a year earlier, ROE, debt, current ratio, dividend), combined into Bullish/Neutral/Bearish with a confidence and levels (buy zone, stop, target, reward/risk; or "wait" with a holders' stop and trigger when bearish). The AI then explains that verdict; it never decides it. In the "Ask Sahm" chat, rankings ("cheapest cement", "best dividend") and side-by-side comparisons are computed in code (`src/ai/chat.ts`) and handed to the model.
+
+Two engines, chosen in Settings → AI (Auto / Online / On phone):
+- **Online:** Groq's free tier (GPT-OSS 120B, falling back to 20B on rate limits) with the user's own key, stored with `expo-secure-store` (`src/ai/cloud.ts`).
+- **On phone:** llama.cpp via `llama.rn` with a downloaded model: Qwen3 4B (recommended, 2.5 GB) or Qwen2.5 1.5B (1.1 GB), with pause/resume and a size check (`src/ai/engine.ts`, `src/store/ai.tsx`). Phone models get a compact data pack to cut the wait before the first word.
+
+`.github/workflows/ai-eval.yml` runs the real prompts on live PSX data with each model (llama.cpp built from source, same engine as the app) and Groq, saving answers and speeds to the `ai-eval-results` branch.
 
 ## Themes
 White by default; Dark or "follow the phone" in Settings (gear on Home). Colors live in `src/theme.ts`; stylesheets that use them are wrapped in `themed()` so they rebuild when the theme changes.

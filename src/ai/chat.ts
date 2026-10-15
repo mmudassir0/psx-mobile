@@ -217,25 +217,34 @@ export async function packOf(symbol: string, stocks: Stock[]): Promise<StockPack
   };
 }
 
-/** Side-by-side table for comparison questions, with the rule-based verdict for each. */
+/** Side-by-side table for comparison questions, with the rule-based verdict for each. ★ marks the better value. */
 export function comparison(packs: StockPack[]): string {
-  const rows: [string, (p: StockPack) => string][] = [
-    ['price Rs', (p) => f(p.stock?.price ?? p.company?.close, 2)],
-    ['today %', (p) => f(p.stock?.changePct ?? p.company?.changePct)],
-    ['1-year %', (p) => f(p.company?.change1y ?? p.stock?.change1y)],
-    ['P/E', (p) => { const v = p.company?.pe ?? p.stock?.pe; return v != null && v > 0 ? f(v) : '-'; }],
-    ['dividend yield %', (p) => f(p.stock?.divYield)],
-    ['ROE %', (p) => (p.balance && p.ratios?.roe != null ? f(p.ratios.roe * 100) : '-')],
-    ['EPS growth %', (p) => f(p.company?.ratios?.rows.find((r) => /eps growth/i.test(r.label))?.values[0])],
-    ['market cap Rs B', (p) => f((p.company?.marketCap ?? p.stock?.marketCap ?? NaN) / 1e9, 0)],
-    ['technical score /10', (p) => f(p.analysis?.score)],
-    ['Sahm verdict', (p) => { const v = decide(p); return v ? `${v.call} (${v.confidence})` : '-'; }],
+  const num = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? null : v);
+  // [label, value, decimals, which is better]
+  const rows: [string, (p: StockPack) => number | null, number, 'high' | 'low' | null][] = [
+    ['price Rs', (p) => num(p.stock?.price ?? p.company?.close), 2, null],
+    ['today %', (p) => num(p.stock?.changePct ?? p.company?.changePct), 1, 'high'],
+    ['1-year %', (p) => num(p.company?.change1y ?? p.stock?.change1y), 1, 'high'],
+    ['P/E (lower = cheaper)', (p) => { const v = p.company?.pe ?? p.stock?.pe; return v != null && v > 0 ? v : null; }, 1, 'low'],
+    ['dividend yield %', (p) => num(p.stock?.divYield), 1, 'high'],
+    ['ROE %', (p) => (p.balance && p.ratios?.roe != null ? p.ratios.roe * 100 : null), 1, 'high'],
+    ['EPS growth %', (p) => num(p.company?.ratios?.rows.find((r) => /eps growth/i.test(r.label))?.values[0]), 1, 'high'],
+    ['market cap Rs B', (p) => num((p.company?.marketCap ?? p.stock?.marketCap ?? NaN) / 1e9), 0, null],
+    ['technical score /10', (p) => num(p.analysis?.score), 1, 'high'],
   ];
   const syms = packs.map((p) => p.stock?.symbol ?? p.company?.symbol ?? '?');
+  const lines = rows.map(([label, get, d, better]) => {
+    const vals = packs.map(get);
+    const known = vals.filter((v): v is number => v != null);
+    const target = better && known.length > 1 && new Set(known).size > 1 ? (better === 'high' ? Math.max(...known) : Math.min(...known)) : null;
+    return `${label} | ${vals.map((v) => (v == null ? '-' : v.toFixed(d) + (v === target ? ' ★' : ''))).join(' | ')}`;
+  });
+  const verdicts = packs.map((p) => { const v = decide(p); return v ? `${v.call} (${v.confidence})` : '-'; });
   return [
-    'COMPARISON (computed by Sahm; base the answer on it)',
+    'COMPARISON (computed by Sahm; base the answer on it. ★ marks the better value in each row)',
     `measure | ${syms.join(' | ')}`,
-    ...rows.map(([label, get]) => `${label} | ${packs.map(get).join(' | ')}`),
+    ...lines,
+    `Sahm verdict | ${verdicts.join(' | ')}`,
   ].join('\n');
 }
 

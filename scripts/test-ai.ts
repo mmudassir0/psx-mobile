@@ -98,6 +98,7 @@ check('dividend ranking is Shariah banks only, highest first', !!divi && /Sharia
 check('no ranking for a plain question', ranking('What is LUCK?', stocks) === null);
 const cmp = comparison([pack, { ...pack, stock: stocks.find((x) => x.symbol === 'DGKC'), company: null, analysis: null, tech: null, balance: null, ratios: null }]);
 check('comparison lists both symbols with a verdict row', cmp.includes('measure | LUCK | DGKC') && /Sahm verdict \| Bearish/.test(cmp) && !/NaN|undefined/.test(cmp), cmp);
+check('comparison stars the better 1-year return and the lower P/E', /1-year % \| -10\.1 ★ \| -23\.5$/m.test(cmp) && /P\/E \(lower = cheaper\) \| 12\.7 \| 7\.1 ★$/m.test(cmp), cmp.split('\n').slice(2, 6));
 const compactCtx = stockContext(pack, true);
 check('compact pack is much smaller and keeps the essentials', compactCtx.length < ctx.length * 0.7 && compactCtx.includes('TECHNICAL SCORE') && compactCtx.includes('Valuation:'), [compactCtx.length, ctx.length]);
 check('model catalog points at Qwen GGUF files on Hugging Face', MODELS.every((m) => /^https:\/\/huggingface.co\/(Qwen|unsloth)\/Qwen/.test(m.url) && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
