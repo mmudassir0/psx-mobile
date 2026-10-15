@@ -49,7 +49,7 @@ check('LUCK is bearish: strong bearish technicals outweigh fundamentals', v.call
 check('bearish verdict avoids new buys and gives a holders stop below price', v.levels?.kind === 'avoid' && (v.levels.stop as number) < 405.38 && v.levels.trigger === v.levels.trigger, v.levels);
 const fp = fundamentalPoints(pack);
 check('fundamentals see EPS growth and premium P/E', fp.bull.some((p) => /grew 40.9%/.test(p.text)) && fp.bear.some((p) => /above the sector median/.test(p.text)), [fp.bull.map((p) => p.text), fp.bear.map((p) => p.text)]);
-check('quarter compared with the same quarter a year earlier', [...fp.bull, ...fp.bear].every((p) => !/Q3 2026 EPS/.test(p.text)) || true);
+check('flat quarter (9.21 vs 9.22 a year earlier) adds no point', [...fp.bull, ...fp.bear].every((p) => !/Q3 2026 EPS/.test(p.text)));
 const bs: BalanceSheet = { periodEnd: '2026-06-30', statement: 'standalone', isBank: false, equity: 216_641_607_000, assets: 301_409_878_000, liabilities: 84_768_271_000, currentAssets: 127_042_576_000, currentLiabilities: 53_105_221_000, borrowings: 18_772_011_000, cash: 1_530_592_000, source: { title: 'x', url: 'x', date: '2026-09-04', pages: [236] } };
 const withBs = { ...pack, balance: bs, ratios: computeRatios(bs, company, luck) };
 const fp2 = fundamentalPoints(withBs);
@@ -64,6 +64,8 @@ if (bv.levels?.kind === 'buy') {
   check('buy levels are ordered stop < entry <= price < target', (l.stop as number) < (l.entryLow as number) && (l.entryLow as number) <= (l.entryHigh as number) && (l.entryHigh as number) <= bullPack.analysis!.ind.close + 1e-9 && (l.target as number) > bullPack.analysis!.ind.close, l);
 }
 const vt = verdictText(v);
+check('conflict only when the two sides point opposite ways', v.headline.includes('conflict') === (v.technical!.score <= 4 && (v.fundamental?.score ?? 5) >= 6) || v.headline.includes('conflict') === (v.technical!.score >= 6 && (v.fundamental?.score ?? 5) <= 4), v.headline);
+check('no conflict wording when fundamentals are only fair', bv.fundamental?.label !== 'Fair' || !bv.headline.includes('conflict'), bv.headline);
 check('verdict text states call and levels', vt.includes('Bearish') && vt.includes("holders' stop") && !/NaN|undefined/.test(vt), vt);
 const msgs = analysisMessages(ctx, vt, v.call, 'small');
 check('small prompt asks to explain, not decide', msgs.length === 2 && msgs[0].content.includes('**Why bearish:**') && msgs[1].content.startsWith('SAHM VERDICT'));

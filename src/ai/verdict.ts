@@ -117,11 +117,13 @@ export function decide(x: StockPack): Verdict | null {
   const call: Call = combined >= 6 ? 'Bullish' : combined <= 4 ? 'Bearish' : 'Neutral';
 
   const dir = (v: number) => (v >= 6 ? 1 : v <= 4 ? -1 : 0);
-  const agree = fs == null ? null : dir(t) === dir(fs);
+  // Conflict = technicals and fundamentals point in opposite directions (not merely one of them neutral).
+  const conflict = fs != null && dir(t) * dir(fs) === -1;
+  const confirmed = fs != null && dir(t) !== 0 && dir(t) === dir(fs);
   const strength = Math.abs(combined - 5);
   let confidence: Confidence = strength >= 2 ? 'High' : strength >= 1 ? 'Medium' : 'Low';
-  if (agree === false && dir(t) !== 0 && dir(fs as number) !== 0) confidence = 'Low'; // technicals and fundamentals point opposite ways
-  else if (fs == null && confidence === 'High') confidence = 'Medium'; // no fundamental confirmation
+  if (conflict) confidence = 'Low';
+  else if (!confirmed && confidence === 'High') confidence = 'Medium'; // strong call without fundamental confirmation
 
   // Levels for a long position. Stop sits half an ATR under support (or 2 ATR under the price).
   const sup = a.support?.price ?? null;
@@ -146,7 +148,9 @@ export function decide(x: StockPack): Verdict | null {
   const headline =
     ft == null
       ? `Technicals are ${tWord}; not enough company data to judge the fundamentals.`
-      : `Technicals are ${tWord} and fundamentals look ${ft.label.toLowerCase()}${agree === false ? ', so the signals conflict' : ''}.`;
+      : conflict
+        ? `Technicals are ${tWord} but fundamentals look ${ft.label.toLowerCase()}, so the signals conflict.`
+        : `Technicals are ${tWord} and fundamentals look ${ft.label.toLowerCase()}${confirmed ? '; both point the same way' : ''}.`;
 
   return { call, confidence, technical: { score: t, stance: a.stance }, fundamental: ft, combined, levels, bull, bear, headline };
 }

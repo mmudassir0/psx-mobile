@@ -4,7 +4,10 @@
  *   tsx scripts/ai-eval.ts out.json
  * Env: EVAL_TARGETS = JSON list of {name, url, model, key?, tier}
  */
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { adjustCandles, parseCompany, parseHistorical, parseIndices, parseScreener, parseSymbols, parseTimeseries, parseTradingBoard } from '../src/psx/parse';
+import type { Candle, CompanyInfo } from '../src/psx/types';
 import { fetchBoard, fetchScreener, fetchSymbols, fetchIndices, fetchCompany, fetchDailyCandles } from '../src/psx/api';
 import { mergeStocks } from '../src/psx/merge';
 import { analyze } from '../src/analysis/signals';
@@ -25,7 +28,11 @@ interface Target {
 const SYMBOLS = ['LUCK', 'MEBL', 'OGDC', 'SYS', 'EFERT'];
 const QUESTIONS = ['Which cement stock looks cheapest?', 'Compare LUCK and DGKC'];
 
-async function retry<T>(f: () => Promise<T>, n = 4): Promise<T> {
+const fx = (n: string) => readFileSync(join(__dirname, 'fixtures', n), 'utf8');
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _unused = { fetchCompany, fetchDailyCandles };
+
+async function retry<T>(f: () => Promise<T>, n = 2): Promise<T> {
   let last: unknown;
   for (let i = 0; i < n; i++) {
     try {
@@ -71,18 +78,44 @@ async function ask(t: Target, messages: { role: string; content: string }[], max
 
 async function main() {
   const targets: Target[] = JSON.parse(process.env.EVAL_TARGETS || '[]');
+  // PSX often refuses cloud runners; fall back to the saved pages in scripts/fixtures.
+  let live = true;
   const [symbols, screener, board, indices] = await Promise.all([
-    retry(fetchSymbols),
-    retry(fetchScreener),
-    retry(fetchBoard).catch(() => []),
-    retry(fetchIndices).catch(() => []),
+    retry(fetchSymbols).catch(() => ((live = false), parseSymbols(JSON.parse(fx('symbols.json'))))),
+    retry(fetchScreener).catch(() => ((live = false), parseScreener(fx('screener.html')))),
+    retry(fetchBoard).catch(() => parseTradingBoard(fx('board.html'))),
+    retry(fetchIndices).catch(() => parseIndices(fx('indices.html'))),
   ]);
+  console.log(live ? 'Using live PSX data' : 'PSX unreachable: using saved pages');
   const stocks = mergeStocks(symbols, screener, board);
+  const saved = (sym: string): [CompanyInfo, Candle[]] | null =>
+    sym === 'LUCK' || sym === 'UPTREND'
+      ? [
+          parseCompany('LUCK', fx('company_LUCK.html')),
+          sym === 'LUCK'
+            ? adjustCandles(parseHistorical(fx('historical_LUCK.html')), parseTimeseries(JSON.parse(fx('eod_LUCK.json'))))
+            : // a steady uptrend with pullbacks, to see how the models explain a bullish call
+              Array.from({ length: 300 }, (_, i) => {
+                const c = 300 + i * 0.45 + 8 * Math.sin(i / 6);
+                return { t: Date.UTC(2025, 6, 1) + i * 864e5, o: c - 1, h: c + 3, l: c - 3, c, v: 9e5 + (i % 7) * 1e5 };
+              }),
+        ]
+      : null;
   const cases: { id: string; kind: string; msgs: Record<Tier, { role: string; content: string }[]>; verdict?: string }[] = [];
 
-  for (const sym of SYMBOLS) {
-    const stock = stocks.find((s) => s.symbol === sym);
-    const [company, daily] = await Promise.all([retry(() => fetchCompany(sym)), retry(() => fetchDailyCandles(sym))]);
+  for (const sym of live ? SYMBOLS : ['LUCK', 'UPTREND']) {
+    const found = stocks.find((s) => s.symbol === (sym === 'UPTREND' ? 'LUCK' : sym));
+    const stock = found && sym === 'UPTREND' ? { ...found } : found;
+    let company: CompanyInfo, daily: Candle[];
+    try {
+      if (sym === 'UPTREND') throw new Error('synthetic');
+      [company, daily] = await Promise.all([retry(() => fetchCompany(sym)), retry(() => fetchDailyCandles(sym))]);
+    } catch {
+      const s2 = saved(sym);
+      if (!s2) continue;
+      [company, daily] = s2;
+    }
+    if (sym === 'UPTREND' && stock) stock.price = daily[daily.length - 1].c;
     const balance = balanceSheetFor(sym);
     const pack: StockPack = {
       stock,
@@ -105,6 +138,7 @@ async function main() {
       msgs: { small: analysisMessages(ctx, vt, v.call, 'small'), large: analysisMessages(ctx, vt, v.call, 'large') },
     });
   }
+  if (!live && !SYMBOLS.length) return;
   for (const q of QUESTIONS) {
     const { text } = await chatContext(q, stocks, indices);
     const m = [
