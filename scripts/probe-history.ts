@@ -1,7 +1,21 @@
 /** Checks PSX's /historical with a month and year, and the sizes of the stock-page downloads. */
-import { fetchMonthCandles, fetchRaw } from '../src/psx/api';
+import { fetchMonthCandles as monthFetch, fetchRaw as rawFetch } from '../src/psx/api';
 import { parseHistorical } from '../src/psx/parse';
 
+async function retry<T>(f: () => Promise<T>, n = 6): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < n; i++) {
+    try {
+      return await f();
+    } catch (e) {
+      last = e;
+      await new Promise((r) => setTimeout(r, 5000 * (i + 1)));
+    }
+  }
+  throw last;
+}
+const fetchRaw = (...a: Parameters<typeof rawFetch>) => retry(() => rawFetch(...a));
+const fetchMonthCandles = (...a: Parameters<typeof monthFetch>) => retry(() => monthFetch(...a));
 const day = (t: number) => new Date(t).toISOString().slice(0, 10);
 (async () => {
   const kb = (s: string) => `${(s.length / 1024).toFixed(0)} KB`;

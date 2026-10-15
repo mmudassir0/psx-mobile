@@ -19,6 +19,8 @@ import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold 
 import { colors, fonts } from './src/theme';
 import type { RootParams, TabParams } from './src/nav/types';
 import { MarketProvider } from './src/store/market';
+import { setStorage } from './src/psx/cache';
+import { diskStore } from './src/psx/diskStore';
 import { UserProvider, useUser } from './src/store/user';
 import { UpdateProvider } from './src/store/update';
 import { ThemeProvider, useTheme } from './src/store/theme';
@@ -36,6 +38,7 @@ import IndexScreen from './src/screens/IndexScreen';
 import OrderScreen from './src/screens/OrderScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+setStorage(diskStore);
 
 const Stack = createNativeStackNavigator<RootParams>();
 const Tab = createBottomTabNavigator<TabParams>();

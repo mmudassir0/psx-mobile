@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
@@ -15,7 +15,9 @@ import { PeersTab } from './stock/PeersTab';
 import { AiTab } from './stock/AiTab';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import type { StockPack } from '../ai/context';
-import { fetchCompany, fetchDailyCandles, fetchSeries } from '../psx/api';
+import { fetchCompany, fetchSeries } from '../psx/api';
+import { cached, COMPANY_TTL } from '../psx/cache';
+import { dailyCandles } from '../psx/history';
 import { groupCandles, ticksToCandles } from '../psx/parse';
 import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
 import { useMarket, useStock } from '../store/market';
@@ -30,14 +32,6 @@ type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
 const DAY = 86_400_000;
 
-const cache = new Map<string, { at: number; data: unknown }>();
-async function cached<T>(key: string, ttl: number, load: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < ttl) return hit.data as T;
-  const data = await load();
-  cache.set(key, { at: Date.now(), data });
-  return data;
-}
 
 /** The latest session's ticks only (the intraday feed can include earlier days). */
 function lastSession(ticks: SeriesPoint[]): SeriesPoint[] {
@@ -143,25 +137,48 @@ export default function StockScreen() {
   const [chartErr, setChartErr] = useState<string | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
-    fetchCompany(symbol)
-      .then((c) => alive && setCompany(c))
-      .catch((e) => alive && setCompanyErr((e as Error).message));
-    cached(`daily:${symbol}`, 30 * 60_000, () => fetchDailyCandles(symbol))
-      .then((d) => alive && setDaily(d))
-      .catch((e) => {
-        if (!alive) return;
-        setDaily([]);
-        setChartErr((e as Error).message);
-      });
-    cached(`int:${symbol}`, 60_000, () => fetchSeries('int', symbol))
-      .then((d) => alive && setTicks(d))
-      .catch(() => alive && setTicks([]));
-    return () => {
-      alive = false;
-    };
-  }, [symbol]);
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(
+    (force = false) => {
+      let alive = true;
+      const jobs = [
+        cached(`company:${symbol}`, COMPANY_TTL, () => fetchCompany(symbol), { persist: true, force })
+          .then((c) => {
+            if (!alive) return;
+            setCompany(c);
+            setCompanyErr(null);
+          })
+          .catch((e) => alive && setCompanyErr((e as Error).message)),
+        dailyCandles(symbol, { force })
+          .then((d) => {
+            if (!alive) return;
+            setDaily(d);
+            setChartErr(null);
+          })
+          .catch((e) => {
+            if (!alive) return;
+            setDaily((cur) => cur ?? []);
+            setChartErr((e as Error).message);
+          }),
+        cached(`int:${symbol}`, 60_000, () => fetchSeries('int', symbol), { force })
+          .then((d) => alive && setTicks(d))
+          .catch(() => alive && setTicks((cur) => cur ?? [])),
+      ];
+      return {
+        done: Promise.all(jobs),
+        cancel: () => {
+          alive = false;
+        },
+      };
+    },
+    [symbol],
+  );
+  useEffect(() => load().cancel, [load]);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load(true).done;
+    setRefreshing(false);
+  };
 
   const intradayBars = useMemo(() => ticksToCandles(lastSession(ticks ?? []), 5), [ticks]);
   const { bars, unit, visible } = useMemo(() => barsFor(range, daily ?? [], intradayBars), [range, daily, intradayBars]);
@@ -424,7 +441,12 @@ export default function StockScreen() {
           onPress={() => toggleWatch(symbol)}
         />
       </View>
-      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!scrubbing} stickyHeaderIndices={[1]}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        scrollEnabled={!scrubbing}
+        stickyHeaderIndices={[1]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
+      >
         <View style={{ gap: 6, paddingHorizontal: space.gutter, paddingBottom: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <T v="body" style={{ fontFamily: fonts.semibold, color: colors.text2 }} numberOfLines={1}>

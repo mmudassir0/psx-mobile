@@ -6,6 +6,7 @@ import type { RootParams } from '../nav/types';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtSigned } from '../format';
 import { fetchIndexConstituents, fetchSeries, INDEX_ABOUT, INDEX_NAMES } from '../psx/api';
+import { cached } from '../psx/cache';
 import { ticksToCandles } from '../psx/parse';
 import type { Candle, Constituent, SeriesPoint } from '../psx/types';
 import { useMarket } from '../store/market';
@@ -24,14 +25,6 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 const DAY = 86_400_000;
 
-const cache = new Map<string, { at: number; data: unknown }>();
-async function cached<T>(key: string, ttl: number, load: () => Promise<T>): Promise<T> {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < ttl) return hit.data as T;
-  const data = await load();
-  cache.set(key, { at: Date.now(), data });
-  return data;
-}
 
 function lastSession(ticks: SeriesPoint[]) {
   if (!ticks.length) return ticks;
@@ -101,18 +94,18 @@ export default function IndexScreen() {
 
   const load = useCallback(
     async (force = false) => {
-      const ttl = force ? 0 : 60_000;
+      const ttl = 60_000;
       await Promise.all([
-        cached(`cons:${code}`, ttl, () => fetchIndexConstituents(code))
+        cached(`cons:${code}`, ttl, () => fetchIndexConstituents(code), { force })
           .then((d) => {
             setCons(d);
             setConsErr(null);
           })
           .catch((e) => setConsErr((e as Error).message)),
-        cached(`int:${code}`, ttl, () => fetchSeries('int', code))
+        cached(`int:${code}`, ttl, () => fetchSeries('int', code), { force })
           .then(setTicks)
           .catch(() => setTicks([])),
-        cached(`eod:${code}`, 30 * 60_000, () => fetchSeries('eod', code))
+        cached(`eod:${code}`, 30 * 60_000, () => fetchSeries('eod', code), { force, persist: true })
           .then(setEod)
           .catch(() => setEod([])),
       ]);

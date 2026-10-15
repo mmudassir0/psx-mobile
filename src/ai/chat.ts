@@ -6,8 +6,10 @@
  * market snapshot is always included. Everything is computed here; the model
  * only reads.
  */
-import type { IndexQuote, Stock } from '../psx/types';
-import { fetchCompany, fetchDailyCandles } from '../psx/api';
+import type { IndexQuote, Stock, Candle } from '../psx/types';
+import { fetchCompany } from '../psx/api';
+import { cached, COMPANY_TTL } from '../psx/cache';
+import { dailyCandles } from '../psx/history';
 import { analyze, computeSeries } from '../analysis/signals';
 import { backtest } from '../analysis/backtest';
 import { valueStock } from '../analysis/valuation';
@@ -202,8 +204,8 @@ export function marketSnapshot(stocks: Stock[], indices: IndexQuote[]): string {
 export async function packOf(symbol: string, stocks: Stock[]): Promise<StockPack> {
   const stock = stocks.find((s) => s.symbol === symbol);
   const [company, daily] = await Promise.all([
-    fetchCompany(symbol).catch(() => null),
-    fetchDailyCandles(symbol).catch(() => []),
+    cached(`company:${symbol}`, COMPANY_TTL, () => fetchCompany(symbol), { persist: true }).catch(() => null),
+    dailyCandles(symbol).catch(() => [] as Candle[]),
   ]);
   const balance = balanceSheetFor(symbol);
   const peers = stock ? stocks.filter((s) => s.sector === stock.sector && s.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)) : [];
