@@ -20,9 +20,9 @@ function Row({ label, o, base, now, last }: { label: string; o: Outcome; base: O
   const tone = label === 'All days' ? colors.text : o.avg > base.avg + 0.005 ? colors.up : o.avg < base.avg - 0.005 ? colors.downText : colors.text;
   return (
     <View style={[styles.row, !last && styles.border]}>
-      <T v="body" style={{ flex: 1.4, fontSize: 14, fontFamily: now ? fonts.bold : fonts.regular }}>
+      <T v="body" numberOfLines={1} style={{ flex: 1.4, fontSize: 14, fontFamily: now ? fonts.bold : fonts.regular }}>
+        {now ? <T style={{ color: colors.gold, fontSize: 14 }}>● </T> : null}
         {label}
-        {now ? '  ← now' : ''}
       </T>
       <T v="mono" style={styles.cell}>
         {o.days}
@@ -51,7 +51,7 @@ export function BacktestCard({ symbol, bt, analysis }: { symbol: string; bt: Bac
     <Panel style={{ paddingVertical: 16, gap: 12 }}>
       <T v="caption" style={{ lineHeight: 18 }}>
         Sahm's technical score replayed on every trading day since {since}, using only the prices known that day. What
-        happened over the next 10 trading days:
+        happened over the next 10 trading days (● is today's reading):
       </T>
       <View>
         <View style={[styles.row, styles.border]}>
