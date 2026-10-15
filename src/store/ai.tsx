@@ -8,7 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Engine from '../ai/engine';
 import { ChatMessage, Generation, LocalModel, MODELS, modelById } from '../ai/models';
 import { Attempt, chain, groqAttempts } from '../ai/cloud';
-import { FLASH, geminiModel, geminiStream, GeminiModel } from '../ai/gemini';
+import { FLASH, geminiModel, geminiWithRetry, GeminiModel } from '../ai/gemini';
 import type { Tier } from '../ai/context';
 import { load as loadKey, save } from '../storage';
 
@@ -251,7 +251,7 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
       const attempts: Attempt[] = [];
       if (gem) {
         const models = gemini.id === FLASH.id ? [FLASH] : [gemini, FLASH];
-        for (const m of models) attempts.push({ label: `${m.label} (online)`, start: (cb) => geminiStream(gem, m.id, large, cb, max) });
+        for (const m of models) attempts.push({ label: `${m.label} (online)`, start: (cb) => geminiWithRetry(gem, m.id, large, cb, max) });
       }
       if (groq) attempts.push(...groqAttempts(groq, large, max));
       if (mode === 'auto' && phoneReady) {

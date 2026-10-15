@@ -10,7 +10,7 @@ import { comparison, mentionedSector, mentionedSymbols, ranking, screeningTable 
 import { MODELS, modelById } from '../src/ai/models';
 import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
 import { chain, parseSse, CloudError } from '../src/ai/cloud';
-import { parseInteractionSse, toInteraction } from '../src/ai/gemini';
+import { geminiWithRetry, parseInteractionSse, testGeminiKey, toInteraction } from '../src/ai/gemini';
 import { sharePrompt } from '../src/ai/sharePrompt';
 import { BalanceSheet } from '../src/analysis/ratios';
 
@@ -123,6 +123,34 @@ chain([fake(new CloudError('limit', 429)), fake('second')], () => {}, (l) => lab
     () => check('chain stops on a bad key', false),
     (e) => check('chain stops on a bad key', (e as Error).message === 'bad key'),
   );
+}).then(async () => {
+  // Gemini over a fake XMLHttpRequest that replays queued responses.
+  const queue: { status: number; body: string }[] = [];
+  let sent = 0;
+  (globalThis as any).XMLHttpRequest = class {
+    status = 0; responseText = ''; timeout = 0;
+    onprogress?: () => void; onload?: () => void; onerror?: () => void; onabort?: () => void;
+    open() {} setRequestHeader() {}
+    abort() { this.onabort?.(); }
+    send() {
+      sent++;
+      const r = queue.shift() ?? { status: 0, body: '' };
+      setTimeout(() => {
+        if (!r.status) return this.onerror?.();
+        this.status = r.status; this.responseText = r.body; this.onload?.();
+      }, 1);
+    }
+  };
+  const ok = 'data: {"delta":{"type":"text","text":"Fine"},"event_type":"step.delta"}\ndata: {"event_type":"interaction.completed"}\n';
+  const busy503 = '{"error":{"message":"high demand","code":"service_unavailable"}}';
+  queue.push({ status: 503, body: busy503 }, { status: 200, body: ok });
+  const t1 = await geminiWithRetry('k', 'm', [{ role: 'user', content: 'q' }], () => {}, 10, 5).done;
+  check('Gemini retries once after "high demand"', t1 === 'Fine' && sent === 2, { t1, sent });
+  queue.push({ status: 503, body: busy503 }, { status: 503, body: busy503 });
+  check('a key Google accepted while busy is kept', (await testGeminiKey('k')) === 'busy');
+  queue.push({ status: 400, body: '{"error":{"message":"API key not valid"}}' });
+  const bad = await testGeminiKey('k').then(() => '', (e) => (e as Error).message);
+  check('a refused key is reported', /rejected/.test(bad), bad);
 }).then(() => {
   if (failed) {
     console.log(`\n${failed} AI check(s) failed`);

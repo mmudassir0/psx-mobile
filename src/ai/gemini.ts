@@ -115,7 +115,6 @@ export function geminiStream(
   };
   const done = new Promise<string>((resolve, reject) => {
     const consume = () => {
-      kick();
       if (xhr.status && xhr.status >= 400) return;
       const chunk = xhr.responseText.slice(seen);
       seen = xhr.responseText.length;
@@ -127,7 +126,10 @@ export function geminiStream(
       }
       if (r.error) reject(new CloudError(`Gemini: ${r.error}`, 500));
     };
-    xhr.onprogress = consume;
+    xhr.onprogress = () => {
+      kick();
+      consume();
+    };
     xhr.onload = () => {
       if (idle) clearTimeout(idle);
       if (xhr.status >= 400) return reject(new CloudError(friendly(xhr.status, xhr.responseText), xhr.status === 404 || xhr.status === 403 ? 429 : xhr.status));
@@ -152,7 +154,48 @@ export function geminiStream(
   return { done, stop: () => xhr.abort() };
 }
 
-/** Quick key check with Gemini Flash. */
-export async function testGeminiKey(key: string): Promise<string> {
-  return geminiStream(key, FLASH.id, [{ role: 'user', content: 'Reply with the single word OK.' }], () => {}, 16).done;
+const busy = (e: unknown) => e instanceof CloudError && e.status === 503;
+
+/**
+ * Gemini Flash often answers 503 "high demand" for a moment; one retry after
+ * a short pause usually gets through, before falling back to another provider.
+ */
+export function geminiWithRetry(
+  key: string,
+  model: string,
+  messages: ChatMessage[],
+  onText: (t: string) => void,
+  maxTokens: number,
+  pauseMs = 2000,
+): Generation {
+  let current = geminiStream(key, model, messages, onText, maxTokens);
+  let stopped = false;
+  const done = current.done.catch(async (e) => {
+    if (!busy(e) || stopped) throw e;
+    await new Promise((r) => setTimeout(r, pauseMs));
+    if (stopped) return '';
+    current = geminiStream(key, model, messages, onText, maxTokens);
+    return current.done;
+  });
+  return {
+    done,
+    stop: () => {
+      stopped = true;
+      current.stop();
+    },
+  };
+}
+
+/**
+ * Quick key check with Gemini Flash. Resolves 'ok', or 'busy' when Google is
+ * overloaded (the key itself was accepted); throws when the key is refused.
+ */
+export async function testGeminiKey(key: string): Promise<'ok' | 'busy'> {
+  try {
+    await geminiWithRetry(key, FLASH.id, [{ role: 'user', content: 'Reply with the single word OK.' }], () => {}, 16).done;
+    return 'ok';
+  } catch (e) {
+    if (busy(e)) return 'busy';
+    throw e;
+  }
 }

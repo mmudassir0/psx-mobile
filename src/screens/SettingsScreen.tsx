@@ -47,10 +47,10 @@ export default function SettingsScreen() {
     setGemTesting(true);
     setGemMsg(null);
     try {
-      await testGeminiKey(k);
+      const r = await testGeminiKey(k);
       await ai.setGeminiKey(k);
       setGemInput('');
-      setGemMsg('Key saved and working.');
+      setGemMsg(r === 'ok' ? 'Key saved and working.' : 'Key saved. Gemini is busy right now, so Sahm will use Groq until it frees up.');
     } catch (e) {
       setGemMsg((e as Error).message);
     } finally {
@@ -116,8 +116,9 @@ export default function SettingsScreen() {
               Gemini (Google)
             </T>
             <T v="caption" style={{ lineHeight: 18 }}>
-              Used first when added. Create a key at aistudio.google.com (Get API key). Flash works on the free tier; Pro and Argon
-              need billing on the key's Google Cloud project, which your Developer Program credits can cover.
+              Used first when added. Create a key at aistudio.google.com (Get API key). Flash works on the free tier. Pro and Argon
+              have no free quota: they need billing turned on for the key's Google Cloud project (a Gemini app subscription does not
+              cover the API).
             </T>
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}>
               <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open aistudio.google.com ›</T>
