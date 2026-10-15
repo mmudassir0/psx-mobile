@@ -39,7 +39,7 @@ const ctx = stockContext({
 });
 
 check('pack names the stock and price', ctx.includes('STOCK LUCK') && ctx.includes('Rs 405.38'));
-check('pack carries the signal score', ctx.includes('TECHNICAL SCORE 2.0/10 (Strong bearish)'));
+check('pack carries the signal score', ctx.includes('TECHNICAL SCORE 2.7/10 (Bearish)'));
 check('pack carries annual EPS', ctx.includes('EPS 31.83'));
 check('pack says when no balance sheet', ctx.includes('No balance sheet available'));
 check('pack lists announcements', ctx.includes('RECENT ANNOUNCEMENTS'));
@@ -55,6 +55,9 @@ const vb = decide(withBt)!;
 check('verdict carries the track record', vb.record?.group === 'bearish' && vb.record.days > 100, vb.record);
 check('track record reaches the AI', stockContext(withBt).includes('TRACK RECORD') && stockContext(withBt, true).includes('TRACK RECORD') && verdictText(vb).includes('Track record:'));
 check('a good record never raises confidence', vb.confidence === v.confidence, [vb.confidence, v.confidence]);
+const thinV = decide({ ...pack, analysis: { ...pack.analysis!, liquidity: 1.2e6 } })!;
+check('thinly traded stocks get low confidence and a warning', thinV.confidence === 'Low' && /Thinly traded \(about Rs 1\.2M a day\)/.test(thinV.headline), thinV.headline);
+check('liquid LUCK has no thin-trading warning', !/Thinly/.test(v.headline) && ctx.includes('Liquidity: median daily traded value'));
 // Same stock with a record where bearish readings were followed by rises: confidence drops.
 const flipped: Backtest = { ...bt, groups: { ...bt.groups, bearish: { ...bt.groups.bearish, 10: { days: 500, up: 0.62, avg: 0.02 } } } };
 const vw = decide({ ...pack, backtest: flipped })!;

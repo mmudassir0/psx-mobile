@@ -3,7 +3,12 @@
  *
  * Each rule votes +1 (bullish), -1 (bearish) or 0 with a weight and a plain
  * reason. Score = 5 + 5 × (weighted votes / total weight), so 0..10 with 5 as
- * neutral. Everything here is deterministic: the AI layer explains these
+ * neutral.
+ *
+ * Weights and directions come from a backtest of 465 PSX stocks (2017–2026,
+ * scripts/backtest-study.ts): on liquid stocks short-term trend and MACD
+ * carried most of the edge, and band breaks and RSI extremes behaved as
+ * momentum (they tended to continue, not reverse). Everything here is deterministic: the AI layer explains these
  * numbers later, it never computes them.
  */
 import type { Candle } from '../psx/types';
@@ -49,7 +54,12 @@ export interface Analysis {
   stop: number | null;
   /** bars of history used; under 200 means the long-trend rules were skipped */
   bars: number;
+  /** median daily traded value (Rs) over the last 60 sessions */
+  liquidity: number;
 }
+
+/** Below this median daily traded value the backtest found no edge in chart signals. */
+export const THIN_TRADING = 5_000_000;
 
 export const MIN_BARS = 60;
 
@@ -135,7 +145,7 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
   // 1. Long-term trend
   if (ind.ema200 != null) {
     const d = pct(close, ind.ema200);
-    add('trend200', 'Long-term trend', 2, d > 0 ? 1 : -1, `Price is ${f1(Math.abs(d))}% ${d > 0 ? 'above' : 'below'} the 200-day average`);
+    add('trend200', 'Long-term trend', 1, d > 0 ? 1 : -1, `Price is ${f1(Math.abs(d))}% ${d > 0 ? 'above' : 'below'} the 200-day average`);
   }
   // 2. Golden / death cross state, and a fresh cross in the last 10 days
   if (ind.ema50 != null && ind.ema200 != null) {
@@ -148,7 +158,7 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
     add(
       'cross',
       '50/200-day averages',
-      1.5,
+      1,
       up ? 1 : -1,
       fresh
         ? `${up ? 'Golden' : 'Death'} cross in the last 10 days: 50-day average just moved ${up ? 'above' : 'below'} the 200-day`
@@ -158,7 +168,7 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
   // 3. Short-term trend
   if (ind.ema20 != null) {
     const d = pct(close, ind.ema20);
-    add('trend20', 'Short-term trend', 1, d > 0 ? 1 : -1, `Price is ${f1(Math.abs(d))}% ${d > 0 ? 'above' : 'below'} the 20-day average`);
+    add('trend20', 'Short-term trend', 2, d > 0 ? 1 : -1, `Price is ${f1(Math.abs(d))}% ${d > 0 ? 'above' : 'below'} the 20-day average`);
   }
   // 4. MACD
   if (ind.macd != null && ind.macdSignal != null) {
@@ -175,7 +185,7 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
     add(
       'macd',
       'MACD momentum',
-      1,
+      1.5,
       up ? 1 : -1,
       crossAgo >= 0 ? `MACD crossed ${up ? 'above' : 'below'} its signal line ${when}` : `MACD is ${up ? 'above' : 'below'} its signal line`,
     );
@@ -183,15 +193,17 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
   // 5. RSI
   if (ind.rsi14 != null) {
     const v = ind.rsi14;
-    if (v < 30) add('rsi', 'RSI', 1, 1, `RSI ${v.toFixed(0)}: oversold, a rebound is common from here`);
-    else if (v > 70) add('rsi', 'RSI', 1, -1, `RSI ${v.toFixed(0)}: overbought, pullbacks are common from here`);
+    // On PSX, extremes have tended to continue rather than reverse, so RSI is read as momentum.
+    if (v > 70) add('rsi', 'RSI', 0.5, 1, `RSI ${v.toFixed(0)}: strong buying momentum (overbought, which on PSX has more often continued than reversed)`);
+    else if (v < 30) add('rsi', 'RSI', 0.5, -1, `RSI ${v.toFixed(0)}: heavy selling (oversold, which is not by itself a reason to buy)`);
     else if (v >= 50) add('rsi', 'RSI', 0.5, 1, `RSI ${v.toFixed(0)}: buyers in control`);
     else add('rsi', 'RSI', 0.5, -1, `RSI ${v.toFixed(0)}: sellers in control`);
   }
   // 6. Bollinger bands
   if (ind.bbUpper != null && ind.bbLower != null) {
-    if (close < ind.bbLower) add('bb', 'Bollinger bands', 0.5, 1, 'Closed below the lower band: stretched to the downside');
-    else if (close > ind.bbUpper) add('bb', 'Bollinger bands', 0.5, -1, 'Closed above the upper band: stretched to the upside');
+    // Band breaks behaved as breakouts on PSX: moves beyond a band tended to continue.
+    if (close > ind.bbUpper) add('bb', 'Bollinger bands', 0.5, 1, 'Closed above the upper band: a breakout move');
+    else if (close < ind.bbLower) add('bb', 'Bollinger bands', 0.5, -1, 'Closed below the lower band: a breakdown move');
     else add('bb', 'Bollinger bands', 0.5, 0, 'Inside the bands');
   }
   // 7. Volume confirmation of today's move
@@ -214,6 +226,13 @@ export function rulesAt(S: SeriesSet, n: number): { rules: Rule[]; ind: Indicato
   return { rules, ind, score };
 }
 
+function medianValue(c: Candle[]): number {
+  const v = c.map((b) => b.v * b.c).sort((a, b) => a - b);
+  if (!v.length) return 0;
+  const m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+
 /** Analyse daily candles (oldest first). Returns null when there is too little history. */
 export function analyze(candles: Candle[], series?: SeriesSet): Analysis | null {
   const S = series ?? computeSeries(candles);
@@ -234,5 +253,6 @@ export function analyze(candles: Candle[], series?: SeriesSet): Analysis | null 
     resistance: lv.resistance,
     stop: ind.atr14 != null ? close - 2 * ind.atr14 : null,
     bars: c.length,
+    liquidity: medianValue(c.slice(-60)),
   };
 }

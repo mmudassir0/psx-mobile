@@ -7,6 +7,7 @@
  * verdict, not to invent one.
  */
 import { recordText, TrackRecord, trackRecord } from '../analysis/backtest';
+import { THIN_TRADING } from '../analysis/signals';
 import type { StockPack } from './context';
 import { median } from './context';
 
@@ -127,6 +128,9 @@ export function decide(x: StockPack): Verdict | null {
   let confidence: Confidence = strength >= 2 ? 'High' : strength >= 1 ? 'Medium' : 'Low';
   if (conflict) confidence = 'Low';
   else if (!confirmed && confidence === 'High') confidence = 'Medium'; // strong call without fundamental confirmation
+  // Across 465 PSX stocks, chart signals showed no edge on thinly traded ones.
+  const thin = a.liquidity < THIN_TRADING;
+  if (thin) confidence = 'Low';
   // A technical signal that has not worked on this stock before earns less trust (a good record never adds any).
   const record = x.backtest ? trackRecord(x.backtest, a.stance) : null;
   if (record && record.group !== 'neutral' && record.edge === 'worse' && dir(t) !== 0 && dir(t) === dir(combined)) {
@@ -160,7 +164,8 @@ export function decide(x: StockPack): Verdict | null {
         ? `Technicals are ${tWord} but fundamentals look ${ft.label.toLowerCase()}, so the signals conflict.`
         : `Technicals are ${tWord} and fundamentals look ${ft.label.toLowerCase()}${confirmed ? '; both point the same way' : ''}.`;
 
-  return { call, confidence, technical: { score: t, stance: a.stance }, fundamental: ft, combined, levels, bull, bear, headline, record };
+  const thinNote = thin ? ` Thinly traded (about Rs ${(a.liquidity / 1e6).toFixed(1)}M a day), and chart signals have not worked on stocks this quiet, so confidence is low.` : '';
+  return { call, confidence, technical: { score: t, stance: a.stance }, fundamental: ft, combined, levels, bull, bear, headline: headline + thinNote, record };
 }
 
 /** The verdict as text for the model to explain. */

@@ -68,6 +68,7 @@ export function stockContext(x: StockPack, compact = false): string {
     L.push('');
     L.push(`TECHNICAL SCORE ${a.score.toFixed(1)}/10 (${a.stance}), from daily closes to ${new Date(a.asOf).toISOString().slice(0, 10)}.`);
     if (!compact) for (const rule of a.rules) L.push(`- ${rule.vote > 0 ? 'bullish' : rule.vote < 0 ? 'bearish' : 'neutral'}: ${rule.reason}`);
+    L.push(`Liquidity: median daily traded value Rs ${big(a.liquidity)} over 60 sessions${a.liquidity < 5e6 ? ' (thin: chart signals are unreliable on stocks this quiet)' : ''}.`);
     L.push(`Support Rs ${n(a.support?.price)}, resistance Rs ${n(a.resistance?.price)}, volatility stop (close - 2×ATR) Rs ${n(a.stop)}, ATR Rs ${n(a.ind.atr14)}.`);
     const rec = x.backtest ? trackRecord(x.backtest, a.stance) : null;
     if (rec) {

@@ -41,11 +41,9 @@ for (const f of files) {
     const { rules, score } = rulesAt(S, i);
     const votes = new Int8Array(IDS.length).fill(9);
     let rsiExtreme = false;
-    for (const r of rules) {
-      const k = IDS.indexOf(r.id as Id);
-      votes[k] = r.vote;
-      if (r.id === 'rsi' && r.weight === 1) rsiExtreme = true;
-    }
+    for (const r of rules) votes[IDS.indexOf(r.id as Id)] = r.vote;
+    const rv = S.rsi[i];
+    if (rv != null && (rv > 70 || rv < 30)) rsiExtreme = true;
     const w = val.slice(Math.max(0, i - 59), i + 1).sort((a, b) => a - b);
     const liquid = w[w.length >> 1] >= 5e6;
     const r = new Float64Array(H.length);
@@ -92,40 +90,46 @@ for (const [period, ds] of [['2017-21', liquid.filter((d) => d.t < SPLIT)], ['20
 }
 
 // Alternative weightings. Weight per rule; rsi gets its weight doubled when extreme (as now); negative = flip the vote.
-type W = Record<Id, number>;
-const CURRENT: W = { trend200: 2, cross: 1.5, trend20: 1, macd: 1, rsi: 0.5, bb: 0.5, volume: 0.5, obv: 0.5 };
+// Stored votes read band breaks and RSI extremes as momentum (the app's rules).
+// `reversion` reads them the old way: extremes vote against the move, and RSI extremes count double.
+type W = Record<Id, number> & { reversion?: boolean };
+const OLD: W = { trend200: 2, cross: 1.5, trend20: 1, macd: 1, rsi: 0.5, bb: 0.5, volume: 0.5, obv: 0.5, reversion: true };
+const CURRENT: W = { trend200: 1, cross: 1, trend20: 2, macd: 1.5, rsi: 0.5, bb: 0.5, volume: 0.5, obv: 0.5 };
 const VARIANTS: Record<string, W> = {
+  'v0.12 weights': OLD,
   current: CURRENT,
+  'old + momentum reads': { ...OLD, reversion: false },
   'no macd': { ...CURRENT, macd: 0 },
-  'no bb': { ...CURRENT, bb: 0 },
-  'bb flipped': { ...CURRENT, bb: -0.5 },
-  'no macd, no bb': { ...CURRENT, macd: 0, bb: 0 },
-  'no macd, bb flipped': { ...CURRENT, macd: 0, bb: -0.5 },
-  'trend only': { trend200: 2, cross: 1.5, trend20: 1, macd: 0, rsi: 0, bb: 0, volume: 0, obv: 0 },
-  'trend + volume': { trend200: 2, cross: 1.5, trend20: 1, macd: 0, rsi: 0, bb: 0, volume: 0.5, obv: 0.5 },
-  'heavier short trend': { ...CURRENT, trend20: 2 },
+  'no long trend': { ...CURRENT, trend200: 0, cross: 0 },
+  'long trend 2': { ...CURRENT, trend200: 2 },
   'no rsi': { ...CURRENT, rsi: 0 },
+  'no bb': { ...CURRENT, bb: 0 },
+  'no volume rules': { ...CURRENT, volume: 0, obv: 0 },
 };
 function scoreWith(d: Day, w: W) {
   let net = 0, tot = 0;
   IDS.forEach((id, k) => {
     const v = d.votes[k];
     if (v === 9 || !w[id]) return;
-    const wt = Math.abs(w[id]) * (id === 'rsi' && d.rsiExtreme ? 2 : 1);
+    const extreme = (id === 'rsi' && d.rsiExtreme) || (id === 'bb' && v !== 0);
+    const wt = Math.abs(w[id]) * (w.reversion && id === 'rsi' && d.rsiExtreme ? 2 : 1);
+    const vote = w.reversion && extreme ? -v : v;
     tot += wt;
-    net += wt * v * Math.sign(w[id]);
+    net += wt * vote * Math.sign(w[id]);
   });
   return tot ? Math.round((5 + (5 * net) / tot) * 10) / 10 : 5;
 }
 console.log('\n== Weightings (10-day, liquid). spread = bullish avg − bearish avg; lift = bullish avg − all-days avg');
-console.log('variant'.padEnd(22), 'period ', 'bull days', ' bull avg', ' bear avg', '  spread', '    lift', ' bull up%', ' bear down%');
+console.log('variant'.padEnd(22), 'period ', 'bull days', ' bull avg', ' bear avg', '  spread', '    lift', ' bull up%', ' bear down%', '  spread5', ' spread20');
 for (const [name, w] of Object.entries(VARIANTS)) {
   for (const [period, ds] of [['17-21', liquid.filter((d) => d.t < SPLIT)], ['22+  ', liquid.filter((d) => d.t >= SPLIT)]] as const) {
     const all = stats(ds);
-    const bull = ds.filter((d) => grp(scoreWith(d, w)) === 'bullish');
-    const bear = ds.filter((d) => grp(scoreWith(d, w)) === 'bearish');
+    const g = ds.map((d) => grp(scoreWith(d, w)));
+    const bull = ds.filter((_, i) => g[i] === 'bullish');
+    const bear = ds.filter((_, i) => g[i] === 'bearish');
     const b = stats(bull), r = stats(bear);
-    console.log(name.padEnd(22), period, String(b.n).padStart(9), pc(b.avg), pc(r.avg), pc(b.avg - r.avg), pc(b.avg - all.avg), ((b.up * 100).toFixed(1) + '%').padStart(9), (((1 - r.up) * 100).toFixed(1) + '%').padStart(10));
+    const sp = (j: number) => pc(stats(bull, j).avg - stats(bear, j).avg);
+    console.log(name.padEnd(22), period, String(b.n).padStart(9), pc(b.avg), pc(r.avg), pc(b.avg - r.avg), pc(b.avg - all.avg), ((b.up * 100).toFixed(1) + '%').padStart(9), (((1 - r.up) * 100).toFixed(1) + '%').padStart(10), sp(0).padStart(9), sp(2).padStart(9));
   }
 }
 
