@@ -1,5 +1,6 @@
 # Downloads every listed company's annual results for the fair-value backtest
-# and saves them to the companies branch. Manual only.
+# and saves them, with the study (fair-study.txt), to the companies branch.
+# Run Price history first. Manual only.
 name: Company results
 on:
   workflow_dispatch:
@@ -20,10 +21,15 @@ jobs:
         run: |
           git fetch -q origin history && git show origin/history:index.json > /tmp/index.json || true
           npx tsx scripts/fetch-companies.ts /tmp/companies /tmp/index.json 2>&1 | tee /tmp/fetch.log
+      - name: Study
+        if: always()
+        run: |
+          mkdir -p /tmp/history && (git archive origin/history | tar -x -C /tmp/history) || true
+          npx tsx scripts/fair-study.ts /tmp/history /tmp/companies > /tmp/fair-study.txt 2>&1 || true
       - name: Save
         if: always()
         run: |
-          mkdir -p /tmp/companies && cp /tmp/fetch.log /tmp/companies/ || true
+          mkdir -p /tmp/companies && cp /tmp/fetch.log /tmp/fair-study.txt /tmp/companies/ 2>/dev/null || true
           cd /tmp/companies
           git init -q && git checkout -q -b companies
           git config user.name "companies" && git config user.email "companies@users.noreply.github.com"

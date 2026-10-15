@@ -57,7 +57,16 @@ export function fundamentalPoints(x: StockPack): { bull: Point[]; bear: Point[];
   const pe = c?.pe ?? s?.pe ?? null;
   const peerPe = median(x.peers.map((q) => q.pe ?? NaN).filter((v) => v > 0));
 
-  if (pe != null && pe > 0 && peerPe != null && x.peers.length >= 3) {
+  // Fair value replaces the plain P/E comparison when it has a verdict (it already includes the sector P/E).
+  // Weight 1, not more: in the backtest cheap stocks beat dear ones over 12 months in 2023–24 but not since 2025.
+  const fv = x.fair;
+  const price = s?.price ?? c?.close ?? null;
+  if (fv?.label && price != null) {
+    const gap = Math.abs(price / fv.mid - 1) * 100;
+    const range = `Rs ${f2(fv.low)}–${f2(fv.high)}`;
+    if (fv.label === 'Undervalued') bull.push({ text: `Price is ${gap.toFixed(0)}% below Sahm's fair value midpoint of Rs ${f2(fv.mid)} (range ${range})`, weight: 1 });
+    else if (fv.label === 'Overvalued') bear.push({ text: `Price is ${gap.toFixed(0)}% above Sahm's fair value midpoint of Rs ${f2(fv.mid)} (range ${range})`, weight: 1 });
+  } else if (pe != null && pe > 0 && peerPe != null && x.peers.length >= 3) {
     if (pe < peerPe * 0.8) bull.push({ text: `P/E ${pe.toFixed(1)} is below the sector median of ${peerPe.toFixed(1)}`, weight: 1 });
     else if (pe > peerPe * 1.25) bear.push({ text: `P/E ${pe.toFixed(1)} is above the sector median of ${peerPe.toFixed(1)}`, weight: 1 });
   }
