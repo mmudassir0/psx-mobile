@@ -28,7 +28,6 @@ const TOKEN_TTL = 20 * 60_000;
 
 let token: string | null = null;
 let tokenAt = 0;
-let tokenPromise: Promise<void> | null = null;
 
 export class PsxError extends Error {
   constructor(message: string, readonly status?: number) {
@@ -81,16 +80,25 @@ function remember(html: string) {
   }
 }
 
-async function ensureToken(force = false) {
-  if (!force && token && Date.now() - tokenAt < TOKEN_TTL) return;
-  if (!tokenPromise) {
-    tokenPromise = request('/indices')
-      .then(remember)
+/** The /indices page carries both the index quotes and the token; callers at the same moment share one download. */
+let indicesPage: Promise<string> | null = null;
+function loadIndicesPage(): Promise<string> {
+  if (!indicesPage) {
+    indicesPage = request('/indices')
+      .then((html) => {
+        remember(html);
+        return html;
+      })
       .finally(() => {
-        tokenPromise = null;
+        indicesPage = null;
       });
   }
-  await tokenPromise;
+  return indicesPage;
+}
+
+async function ensureToken(force = false) {
+  if (!force && token && Date.now() - tokenAt < TOKEN_TTL) return;
+  await loadIndicesPage();
 }
 
 /** A JSON/fragment call that needs the token; refreshes it once on 403/404. */
@@ -108,9 +116,7 @@ async function xhr(path: string, form?: Record<string, string>, timeoutMs?: numb
 }
 
 export async function fetchIndices(): Promise<IndexQuote[]> {
-  const html = await request('/indices');
-  remember(html);
-  return parseIndices(html);
+  return parseIndices(await loadIndicesPage());
 }
 
 export async function fetchBoard(): Promise<BoardQuote[]> {

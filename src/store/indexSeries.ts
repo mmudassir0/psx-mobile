@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchSeries } from '../psx/api';
+import { cached } from '../psx/cache';
 import type { SeriesPoint } from '../psx/types';
 import { useMarket } from './market';
 
@@ -18,7 +19,8 @@ export function useIndexSeries(codes: string[]): Record<string, number[]> {
     if (!stale.length) return;
     Promise.all(
       stale.map((c) =>
-        fetchSeries('int', c)
+        // Same entry as the index page uses, and one download even if this runs twice at once.
+        cached(`int:${c}`, REFRESH_MS, () => fetchSeries('int', c))
           .then((d) => {
             const lastDay = d.length ? Math.floor((d[d.length - 1].t + 5 * 3600_000) / 86_400_000) : 0;
             store[c] = { at: Date.now(), data: d.filter((p) => Math.floor((p.t + 5 * 3600_000) / 86_400_000) === lastDay) };
