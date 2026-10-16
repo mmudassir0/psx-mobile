@@ -19,6 +19,7 @@ jobs:
       - run: npm ci
       - env:
           GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
         run: mkdir -p /tmp/out && (npx tsx "scripts/${{ inputs.script }}" > /tmp/out/out.txt 2>&1 || true)
       - name: Save
         if: always()
