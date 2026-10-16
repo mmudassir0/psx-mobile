@@ -49,7 +49,62 @@ export function checkHoldings(raw: string, known?: (symbol: string) => boolean):
   return { holdings: [...out.values()].sort((a, b) => a.symbol.localeCompare(b.symbol)), rejected };
 }
 
-export async function readScreenshots(key: string, images: ImagePart[], known?: (s: string) => boolean): Promise<ReadResult> {
-  const text = await geminiImages(key, FLASH.id, READ_SYSTEM, `Read the holdings from these ${images.length} screenshot(s).`, images);
-  return checkHoldings(text, known);
+/** Groq's Qwen reads images (tested on a sample broker screen: exact, under a second). */
+export const GROQ_VISION = 'qwen/qwen3.8-27b';
+
+async function groqImages(key: string, images: ImagePart[]): Promise<string> {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: GROQ_VISION,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: READ_SYSTEM },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `Read the holdings from these ${images.length} screenshot(s).` },
+            ...images.map((im) => ({ type: 'image_url', image_url: { url: `data:${im.mime};base64,${im.data}` } })),
+          ],
+        },
+      ],
+    }),
+  });
+  const j = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(j?.error?.message ?? `Groq answered ${res.status}`);
+  return j?.choices?.[0]?.message?.content ?? '';
+}
+
+/** Reads screenshots three at a time and merges the results (a symbol seen twice keeps the later reading). */
+export async function readScreenshots(keys: { groq?: string | null; gemini?: string | null }, images: ImagePart[], known?: (s: string) => boolean): Promise<ReadResult> {
+  const merged = new Map<string, Holding>();
+  const rejected: string[] = [];
+  for (let i = 0; i < images.length; i += 3) {
+    const r = await readBatch(keys, images.slice(i, i + 3), known);
+    for (const h of r.holdings) merged.set(h.symbol, h);
+    rejected.push(...r.rejected);
+  }
+  return { holdings: [...merged.values()].sort((a, b) => a.symbol.localeCompare(b.symbol)), rejected: [...new Set(rejected)] };
+}
+
+/** Groq first (its own free quota), then Gemini. */
+async function readBatch(keys: { groq?: string | null; gemini?: string | null }, images: ImagePart[], known?: (s: string) => boolean): Promise<ReadResult> {
+  const prompt = `Read the holdings from these ${images.length} screenshot(s).`;
+  let lastErr: unknown = new Error('Add a Groq or Gemini key in Settings → AI to read screenshots');
+  if (keys.groq) {
+    try {
+      return checkHoldings(await groqImages(keys.groq, images), known);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (keys.gemini) {
+    try {
+      return checkHoldings(await geminiImages(keys.gemini, FLASH.id, READ_SYSTEM, prompt, images), known);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
 }

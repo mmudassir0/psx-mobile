@@ -64,6 +64,12 @@ async function readSecret(name: string): Promise<string | null> {
     return null; // web preview
   }
 }
+/** The saved online-AI keys, for features outside the chat (reading screenshots). */
+export async function aiKeys(): Promise<{ groq: string | null; gemini: string | null }> {
+  const [groq, gemini] = await Promise.all([readSecret(K_KEY), readSecret(K_GEMINI)]);
+  return { groq, gemini };
+}
+
 async function writeSecret(name: string, v: string | null): Promise<void> {
   try {
     if (v) await SecureStore.setItemAsync(name, v.trim());

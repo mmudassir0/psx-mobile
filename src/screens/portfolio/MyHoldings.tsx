@@ -1,5 +1,5 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
@@ -14,6 +14,7 @@ import { shortSector } from '../../sectors';
 import { Panel } from '../../ui/bits';
 import { StressCard } from '../../ui/StressCard';
 import { TradeSheet } from '../../ui/TradeSheet';
+import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
 
 const nextClosure = (d: Dividends) => d.list.map((p) => p.bookClosure).filter((t): t is number => t != null && t > Date.now()).sort()[0] ?? null;
@@ -122,6 +123,11 @@ export function MyHoldings() {
   const [newTrade, setNewTrade] = useState(false);
   const breadth = feed?.breadth ?? null;
   const { rows, total, sectors, loading, candles } = useReviews(holdings, stocks, bySymbol, breadth);
+  // Keep a record of each holding decision shown, to score it later.
+  useEffect(() => {
+    if (loading) return;
+    for (const r of rows) if (r.review) record({ symbol: r.holding.symbol, day: pkToday(), kind: 'holding', call: r.review.action, price: r.price });
+  }, [loading, rows]);
   const stressRows = useMemo(() => rows.map((r) => ({ symbol: r.holding.symbol, value: r.value })), [rows]);
 
   const sorted = useMemo(
@@ -207,6 +213,9 @@ export function MyHoldings() {
           ))}
         </Panel>
       </Section>
+      <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>
+        <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>How have these decisions done? ›</T>
+      </Pressable>
       <T v="caption" style={{ lineHeight: 18 }}>
         Review means the business has weakened (losses or falling earnings). Trim means one holding is over 20% of your money, or it
         is far above fair value with a broken chart. Add more needs a price below fair value, an uptrend, and under 10% of your

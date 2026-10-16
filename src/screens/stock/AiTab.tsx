@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
-import { colors, space } from '../../theme';
+import { Pressable, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { colors, fonts, space } from '../../theme';
 import { fmtDateTime } from '../../format';
 import { analysisMessages, StockPack, stockContext } from '../../ai/context';
 import { decide, verdictText } from '../../ai/verdict';
@@ -12,6 +13,7 @@ import { ModelCard } from '../../ui/ModelCard';
 import { Md } from '../../ui/Md';
 import { Panel } from '../../ui/bits';
 import { VerdictCard } from '../../ui/VerdictCard';
+import { pkToday, record } from '../../journal/store';
 import { Button, Loading, Section, T } from '../../ui/kit';
 
 interface Saved {
@@ -26,6 +28,7 @@ const today = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 1
 /** Rule-based verdict (instant) plus an AI explanation of it. */
 export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack; ready: boolean }) {
   const ai = useAi();
+  const nav = useNavigation();
   const [saved, setSaved] = useState<Saved | null>(null);
   const [text, setText] = useState('');
   const [running, setRunning] = useState(false);
@@ -37,6 +40,11 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
   const context = useMemo(() => (ready ? stockContext(pack) : ''), [ready, pack]);
   const compact = useMemo(() => (ready ? stockContext(pack, true) : ''), [ready, pack]);
   const verdict = useMemo(() => (ready ? decide(pack) : null), [ready, pack]);
+  // Keep a record of every verdict shown, to score it later.
+  useEffect(() => {
+    const price = pack.stock?.price ?? pack.company?.close ?? null;
+    if (verdict && price) record({ symbol, day: pkToday(), kind: 'verdict', call: verdict.call, confidence: verdict.confidence, price });
+  }, [verdict, symbol, pack.stock?.price, pack.company?.close]);
 
   useEffect(() => {
     load<Saved | null>(key, null).then((s) => s && s.day === today() && setSaved(s));
@@ -79,6 +87,9 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
         <T v="caption" style={{ lineHeight: 18 }}>
           Decided by fixed rules from the technicals and the company's results; the same data always gives the same verdict.
         </T>
+        <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>
+          <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>How have Sahm's verdicts done? ›</T>
+        </Pressable>
       </Section>
 
       {verdict ? (

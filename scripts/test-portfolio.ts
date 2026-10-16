@@ -2,6 +2,8 @@ import { parseHoldings, quarterYoY, reviewHolding, ReviewInput } from '../src/po
 import { computeSeries } from '../src/analysis/signals';
 import { dataChecks } from '../src/analysis/quality';
 import { applyTrade } from '../src/portfolio/holdings';
+import { checkHoldings } from '../src/portfolio/screenshot';
+import { addEntry, scoreEntry, statsByCall } from '../src/journal/journal';
 import type { Candle } from '../src/psx/types';
 
 let failed = 0;
@@ -66,6 +68,29 @@ check('a sell keeps the average and reports the profit', sl.holdings[0].shares =
 check('selling everything removes the holding', applyTrade(h0, { symbol: 'LUCK', side: 'sell', shares: 200, price: 430 }).holdings.length === 0);
 check('cannot sell more than you hold', !!applyTrade(h0, { symbol: 'LUCK', side: 'sell', shares: 201, price: 430 }).error);
 check('cannot sell what you do not hold', !!applyTrade(h0, { symbol: 'MARI', side: 'sell', shares: 1, price: 600 }).error);
+
+// The real answer Groq's Qwen gave for the made-up sample screenshot, in a code fence.
+const qwen = '```json\n{"holdings":[{"symbol":"OGDC","shares":150,"avgCost":250.00},{"symbol":"MEBL","shares":25,"avgCost":500.00},{"symbol":"TRG","shares":1200,"avgCost":61.25},{"symbol":"PSO","shares":40,"avgCost":380.10}]}\n```';
+const ck = checkHoldings(qwen);
+check('screenshot answer: parsed through a code fence, sorted', ck.holdings.map((h) => h.symbol).join() === 'MEBL,OGDC,PSO,TRG' && ck.holdings.find((h) => h.symbol === 'PSO')!.avgCost === 380.1, ck);
+const bad2 = checkHoldings('{"holdings":[{"symbol":"luck","shares":"1,000","avgCost":"419.11"},{"symbol":"X Y","shares":5,"avgCost":1},{"symbol":"OGDC","shares":2.5,"avgCost":300},{"symbol":"ZZZZ","shares":1,"avgCost":1}]}', (s) => s !== 'ZZZZ');
+check('screenshot answer: commas fixed, bad rows rejected with reasons', bad2.holdings.length === 1 && bad2.holdings[0].shares === 1000 && bad2.rejected.length === 3, bad2);
+check('screenshot answer with no JSON', checkHoldings('sorry').holdings.length === 0);
+
+// Journal
+const e1 = { symbol: 'A', day: '2026-01-05', kind: 'verdict' as const, call: 'Bullish', price: 100 };
+let j = addEntry([], e1);
+j = addEntry(j, { ...e1, price: 101 });
+check('one entry per stock, kind and day', j.length === 1 && j[0].price === 100);
+check('a new day adds an entry', addEntry(j, { ...e1, day: '2026-01-06' }).length === 2);
+const D = (i: number) => Date.UTC(2026, 0, 5) - 5 * 3600e3 + i * 864e5;
+const stockC = Array.from({ length: 80 }, (_, i) => ({ t: D(i), o: 0, h: 0, l: 0, c: 100 * (1 + 0.002 * i), v: 1 }));
+const ix = Array.from({ length: 80 }, (_, i) => ({ t: D(i), v: 1000 * (1 + 0.001 * i), vol: 0 }));
+const sc = scoreEntry(e1, stockC, ix);
+check('scored from the entry day close after 21 and 63 days, against the index', Math.abs(sc.ret[21]! - 0.042) < 1e-9 && Math.abs(sc.rel[21]! - (0.042 - 0.021)) < 1e-9 && sc.ret[63] != null, sc);
+check('too recent to score: nothing', Object.keys(scoreEntry({ ...e1, day: '2026-03-20' }, stockC, ix).ret).length === 0);
+const st = statsByCall([sc, scoreEntry({ ...e1, symbol: 'B', call: 'Bearish' }, stockC, ix)], 21);
+check('stats: Bullish that beat the index is right, Bearish that beat it is wrong', st.find((x) => x.call === 'Bullish')!.right === 1 && st.find((x) => x.call === 'Bearish')!.right === 0, st);
 
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);

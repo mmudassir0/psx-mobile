@@ -8,6 +8,9 @@ import { holdingsText, setHoldings, useHoldings } from '../portfolio/holdings';
 import { parseHoldings } from '../portfolio/review';
 import { useMarket } from '../store/market';
 import { Button, IconButton, T } from '../ui/kit';
+import * as ImagePicker from 'expo-image-picker';
+import { readScreenshots } from '../portfolio/screenshot';
+import { aiKeys } from '../store/ai';
 
 export default function EditHoldingsScreen() {
   const nav = useNavigation();
@@ -27,6 +30,37 @@ export default function EditHoldingsScreen() {
     await setHoldings(parsed);
     nav.goBack();
   };
+  const [reading, setReading] = useState(false);
+  const [readMsg, setReadMsg] = useState<string | null>(null);
+  const fromScreenshots = async () => {
+    setReadMsg(null);
+    const pick = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 8, base64: true, quality: 0.6 });
+    if (pick.canceled || !pick.assets.length) return;
+    setReading(true);
+    try {
+      const images = pick.assets.filter((a) => a.base64).map((a) => ({ data: a.base64 as string, mime: a.mimeType ?? 'image/jpeg' }));
+      const r = await readScreenshots(await aiKeys(), images, bySymbol.size ? (s) => bySymbol.has(s) : undefined);
+      if (!r.holdings.length) {
+        setReadMsg(`No holdings found${r.rejected.length ? `: ${r.rejected.join('; ')}` : ''}.`);
+        return;
+      }
+      // Merge: what the screenshots show replaces those lines; other holdings stay.
+      const current = parseHoldings(text).holdings;
+      const read = new Map(r.holdings.map((h) => [h.symbol, h]));
+      const merged = [...current.filter((h) => !read.has(h.symbol)), ...r.holdings].sort((a, b) => a.symbol.localeCompare(b.symbol));
+      setTouched(true);
+      setText(holdingsText(merged));
+      const inv = r.holdings.reduce((a, h) => a + h.shares * h.avgCost, 0);
+      setReadMsg(
+        `Read ${r.holdings.length} holdings (Rs ${Math.round(inv).toLocaleString('en-US')} invested) from ${images.length} screenshot${images.length > 1 ? 's' : ''}. Check them against your broker before saving.` +
+          (r.rejected.length ? ` Skipped: ${r.rejected.join('; ')}.` : ''),
+      );
+    } catch (e) {
+      setReadMsg((e as Error).message);
+    } finally {
+      setReading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -39,8 +73,15 @@ export default function EditHoldingsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <T v="caption" style={{ lineHeight: 18 }}>
-          One holding per line: symbol, number of shares, average buy price. For example "LUCK 200 419.11". Saved on this phone only.
+          One holding per line: symbol, number of shares, average buy price. For example "LUCK 200 419.11". Or pick screenshots of your
+          broker's portfolio screen and the AI fills them in (the images go to Groq or Gemini to be read). Saved on this phone only.
         </T>
+        <Button label={reading ? 'Reading screenshots…' : 'Read from broker screenshots'} tone="ghost" disabled={reading} onPress={fromScreenshots} />
+        {readMsg ? (
+          <T v="caption" style={{ lineHeight: 18 }}>
+            {readMsg}
+          </T>
+        ) : null}
         <TextInput
           value={text}
           onChangeText={(t) => {

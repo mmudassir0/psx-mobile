@@ -28,6 +28,7 @@ import { AiProvider } from './src/store/ai';
 import SettingsScreen from './src/screens/SettingsScreen';
 import PicksScreen from './src/screens/PicksScreen';
 import EditHoldingsScreen from './src/screens/EditHoldingsScreen';
+import RecordScreen from './src/screens/RecordScreen';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -113,6 +114,7 @@ function Root() {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Picks" component={PicksScreen} />
       <Stack.Screen name="EditHoldings" component={EditHoldingsScreen} />
+      <Stack.Screen name="Record" component={RecordScreen} />
     </Stack.Navigator>
   );
 }
