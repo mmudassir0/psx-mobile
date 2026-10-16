@@ -17,6 +17,7 @@ export type RootParams = {
   Order: { symbol: string; side?: Side };
   Settings: undefined;
   Picks: undefined;
+  EditHoldings: undefined;
 };
 
 declare global {

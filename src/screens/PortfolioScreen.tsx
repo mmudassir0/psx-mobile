@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,7 +9,9 @@ import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
 import { valuePortfolio } from '../paper/engine';
 import { shortSector } from '../sectors';
-import { Badge, Button, Card, Empty, T } from '../ui/kit';
+import { Badge, Button, Card, Empty, Segmented, T } from '../ui/kit';
+import { useHoldings } from '../portfolio/holdings';
+import { MyHoldings } from './portfolio/MyHoldings';
 
 const PALETTE = ['#E8B04B', '#6EA8FE', '#3DC6C0', '#B69CFF', '#F59E72', '#7B8797'];
 
@@ -44,7 +46,7 @@ function Donut({ parts }: { parts: { pct: number; color: string }[] }) {
   );
 }
 
-export default function PortfolioScreen() {
+function PaperPortfolio() {
   const nav = useNavigation();
   const { bySymbol } = useMarket();
   const { account, resetAccount } = useUser();
@@ -94,10 +96,10 @@ export default function PortfolioScreen() {
     ]);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
+    <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.between}>
-          <T v="h1">Portfolio</T>
+          <T v="caption">Practice money, not your real account.</T>
           <Badge label="Paper account" tone="gold" />
         </View>
 
@@ -193,7 +195,7 @@ export default function PortfolioScreen() {
           differ. Live trading arrives when a licensed broker partner is connected.
         </T>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -205,6 +207,27 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
         {value}
       </T>
     </View>
+  );
+}
+
+export default function PortfolioScreen() {
+  const { holdings, loaded } = useHoldings();
+  const [tab, setTab] = useState<'real' | 'paper'>('real');
+  return (
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
+        <T v="h1">Portfolio</T>
+        <Segmented
+          options={[
+            { key: 'real', label: `My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
+            { key: 'paper', label: 'Practice' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      </View>
+      {tab === 'real' ? <MyHoldings /> : <PaperPortfolio />}
+    </SafeAreaView>
   );
 }
 

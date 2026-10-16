@@ -194,7 +194,8 @@ export function fairValue(x: FairInput): FairValue | null {
   const g = LONG_GROWTH;
   if (ok(bv) && bv > 0 && ok(x.roe)) {
     const roe = Math.min(x.roe, 0.35); // very high returns rarely last; cap what we pay for
-    if (roe > g) {
+    // Within two points of growth, the formula gives near-zero values that mean nothing.
+    if (roe > g + 0.02) {
       const mult = (roe - g) / (r - g);
       methods.push({
         id: 'justifiedPB',

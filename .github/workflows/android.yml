@@ -81,6 +81,7 @@ jobs:
           npx tsx scripts/test-fair.ts
           npx tsx scripts/test-cache.ts
           npx tsx scripts/test-picks.ts
+          npx tsx scripts/test-portfolio.ts
           python3 scripts/fundamentals/test_extract.py
 
       - name: Live PSX check
