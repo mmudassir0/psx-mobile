@@ -6,6 +6,7 @@ import type { CompanyInfo, FinTable, Stock } from '../../psx/types';
 import { KV, Panel } from '../../ui/bits';
 import { balanceSheetFor, computeRatios } from '../../analysis/ratios';
 import { dataChecks } from '../../analysis/quality';
+import { DividendsCard } from '../../ui/DividendsCard';
 import { Loading, Section, Segmented, T } from '../../ui/kit';
 import { FairValueCard } from '../../ui/FairValueCard';
 import { FairValue, MIN_PEERS } from '../../analysis/fairValue';
@@ -153,6 +154,10 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
           <KV label="1-year change" value={fmtPct(company.change1y)} color={(company.change1y ?? 0) < 0 ? colors.downText : undefined} />
           <KV label="Year to date" value={fmtPct(company.ytd)} color={(company.ytd ?? 0) < 0 ? colors.downText : undefined} last />
         </Panel>
+      </Section>
+
+      <Section title="Dividends">
+        <DividendsCard company={company} price={price} divYield={stock?.divYield ?? null} />
       </Section>
 
       <Section title="Results">

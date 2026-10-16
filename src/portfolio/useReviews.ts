@@ -1,7 +1,9 @@
 /** Loads what each holding's review needs (shared cache, one stock at a time) and reviews it. */
 import { useEffect, useMemo, useState } from 'react';
 import type { CompanyInfo, Stock } from '../psx/types';
-import { fetchCompany } from '../psx/api';
+import { fetchCompany, fetchPayouts } from '../psx/api';
+import { dividends, Dividends, Payout } from '../analysis/dividends';
+import { fiscalEndMonth } from '../analysis/fairValue';
 import { cached, COMPANY_TTL } from '../psx/cache';
 import { dailyCandles } from '../psx/history';
 import { analyze, computeSeries } from '../analysis/signals';
@@ -18,24 +20,26 @@ export interface Row {
   value: number;
   weight: number;
   review: Review | null;
+  dividends: Dividends | null;
 }
 
 const FUND = /etf|exchange traded|mutual fund/i;
 
 export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<string, Stock>, breadth: number | null) {
-  const [data, setData] = useState<Record<string, { company: CompanyInfo | null; candles: Candle[] | null }>>({});
+  const [data, setData] = useState<Record<string, { company: CompanyInfo | null; candles: Candle[] | null; payouts: Payout[] | null }>>({});
   const key = holdings.map((h) => h.symbol).join(',');
 
   useEffect(() => {
     let alive = true;
     (async () => {
       for (const h of holdings) {
-        const [company, candles] = await Promise.all([
+        const [company, candles, payouts] = await Promise.all([
           cached(`company:${h.symbol}`, COMPANY_TTL, () => fetchCompany(h.symbol), { persist: true }).catch(() => null),
           dailyCandles(h.symbol).catch(() => null),
+          cached(`payouts:${h.symbol}`, 6 * 3600_000, () => fetchPayouts(h.symbol), { persist: true }).catch(() => null),
         ]);
         if (!alive) return;
-        setData((d) => ({ ...d, [h.symbol]: { company, candles } }));
+        setData((d) => ({ ...d, [h.symbol]: { company, candles, payouts } }));
       }
     })();
     return () => {
@@ -58,13 +62,16 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
     }
     const rows: Row[] = base.map((r) => {
       const d = data[r.holding.symbol];
-      if (!d) return { ...r, weight: r.value / total, review: null };
+      if (!d) return { ...r, weight: r.value / total, review: null, dividends: null };
       const series = d.candles?.length ? computeSeries(d.candles) : null;
       const balance = balanceSheetFor(r.holding.symbol);
       const ratios = d.company ? computeRatios(balance, d.company, r.stock) : null;
       const peers = r.stock ? stocks.filter((x) => x.sector === r.stock!.sector && x.symbol !== r.holding.symbol) : [];
       const fund = FUND.test(r.stock?.sector ?? '') || FUND.test(d.company?.sector ?? '');
       const fair = d.company && !fund ? valueStock({ symbol: r.holding.symbol, stock: r.stock, company: d.company, ratios, balance, peers, daily: d.candles }) : null;
+      const dv = d.payouts
+        ? dividends(d.payouts, { price: r.price, divYield: r.stock?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(d.company?.fiscalYearEnd), latestFiscalYear: d.company?.financialsAnnual?.periods[0] ?? null })
+        : null;
       const review = reviewHolding({
         holding: r.holding,
         price: r.price,
@@ -81,9 +88,10 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         isBank: !!balance?.isBank,
         fair,
         divYield: r.stock?.divYield ?? null,
+        dividends: dv,
         checks: dataChecks({ symbol: r.holding.symbol, name: r.stock?.name ?? d.company?.name, sector: r.stock?.sector ?? d.company?.sector, company: d.company, balance, ratios }),
       });
-      return { ...r, weight: r.value / total, review };
+      return { ...r, weight: r.value / total, review, dividends: dv };
     });
     const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
     return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };

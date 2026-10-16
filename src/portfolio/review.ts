@@ -16,6 +16,7 @@ import type { Analysis, SeriesSet } from '../analysis/signals';
 import type { FairValue } from '../analysis/fairValue';
 import type { Ratios } from '../analysis/ratios';
 import type { DataChecks } from '../analysis/quality';
+import type { Dividends } from '../analysis/dividends';
 
 export type Action = 'Add more' | 'Hold' | 'Trim' | 'Review';
 
@@ -46,6 +47,8 @@ export interface ReviewInput {
   divYield: number | null;
   /** warnings about numbers that may mislead (see analysis/quality.ts) */
   checks?: DataChecks | null;
+  /** dividend history from PSX's payouts table */
+  dividends?: Dividends | null;
 }
 
 export interface Review {
@@ -154,7 +157,11 @@ export function reviewHolding(x: ReviewInput): Review {
       else if (r.roe < 0.08) bad.push(`Weak return on equity (${pc(r.roe, 1)})`);
       if (!x.isBank && r.debtToEquity != null && r.debtToEquity > 1.5) bad.push(`Heavy borrowing: debt is ${pc(r.debtToEquity)} of equity${x.checks?.debtOdd ? ' (see the check below)' : ''}`);
     }
-    if (x.divYield != null && x.divYield >= 6) good.push(`Dividend yield ${x.divYield.toFixed(1)}%`);
+    const dv = x.dividends;
+    if (dv?.cut) fundamentalBreaks.push(dv.cut);
+    else if (dv?.lower) bad.push(dv.lower);
+    const yieldPct = dv?.ttmYield != null && dv.ttm > 0 ? dv.ttmYield * 100 : x.divYield;
+    if (yieldPct != null && yieldPct >= 6) good.push(`Dividend yield ${yieldPct.toFixed(1)}%${dv?.ttm ? ` (Rs ${dv.ttm.toFixed(2)} a share in the last 12 months)` : ''}`);
   }
 
   // --- Valuation

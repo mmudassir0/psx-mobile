@@ -19,6 +19,7 @@ import {
   parseTimeseries,
   parseTradingBoard,
 } from './parse';
+import { parsePayouts, Payout } from '../analysis/dividends';
 import type { BoardQuote, Candle, Constituent, CompanyInfo, IndexQuote, ScreenerRow, SeriesPoint, SymbolInfo } from './types';
 
 export const PSX_BASE = process.env.EXPO_PUBLIC_PSX_BASE || 'https://dps.psx.com.pk';
@@ -158,6 +159,11 @@ export async function fetchDailyCandles(symbol: string): Promise<Candle[]> {
  */
 export async function fetchMonthCandles(symbol: string, year: number, month: number): Promise<Candle[]> {
   return parseHistorical(await xhr('/historical', { month: String(month), year: String(year), symbol }, 20_000));
+}
+
+/** Dividend and bonus announcements from the company page's payouts table. */
+export async function fetchPayouts(symbol: string): Promise<Payout[]> {
+  return parsePayouts(await xhr('/company/payouts', { symbol }, 20_000));
 }
 
 /** Raw HTML of a PSX request, for probes and size checks. */

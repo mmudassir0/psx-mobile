@@ -3,7 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
-import { fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
+import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
+import type { Dividends } from '../../analysis/dividends';
 import { useMarket } from '../../store/market';
 import { useHoldings } from '../../portfolio/holdings';
 import { Row, useReviews } from '../../portfolio/useReviews';
@@ -14,6 +15,7 @@ import { Panel } from '../../ui/bits';
 import { StressCard } from '../../ui/StressCard';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
 
+const nextClosure = (d: Dividends) => d.list.map((p) => p.bookClosure).filter((t): t is number => t != null && t > Date.now()).sort()[0] ?? null;
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
 const pct = (v: number, d = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(d)}%`;
 
@@ -83,6 +85,13 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
                   </T>
                 </View>
               ))}
+              {r.dividends && r.dividends.list.length ? (
+                <T v="caption" style={{ lineHeight: 18 }}>
+                  Dividends: Rs {r.dividends.ttm.toFixed(2)} a share in the last 12 months
+                  {r.dividends.ttm > 0 ? `, about Rs ${fmtNum(r.dividends.ttm * r.holding.shares, 0)} on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
+                  {nextClosure(r.dividends) ? `. Next book closure ${fmtDay(nextClosure(r.dividends)!)}` : ''}.
+                </T>
+              ) : null}
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
             </View>
           ) : null}
@@ -126,6 +135,7 @@ export function MyHoldings() {
 
   const invested = holdings.reduce((a, h) => a + h.shares * h.avgCost, 0);
   const pnl = total - invested;
+  const income = rows.reduce((a, r) => a + (r.dividends?.ttm ?? 0) * r.holding.shares, 0);
   const counts = ORDER.map((a) => [a, rows.filter((r) => r.review?.action === a).length] as const).filter(([, n]) => n > 0);
   const watching = rows.filter((r) => r.review?.watch).length;
 
@@ -137,6 +147,11 @@ export function MyHoldings() {
         <T v="mono" style={{ color: changeColor(pnl) }}>
           {fmtSigned(pnl, 0)} ({pct(invested ? total / invested - 1 : 0)}) on {fmtNum(invested, 0)} invested
         </T>
+        {!loading && income > 0 ? (
+          <T v="caption">
+            Dividends: about Rs {fmtNum(income, 0)} a year at the last 12 months' rate ({((income / total) * 100).toFixed(1)}% yield)
+          </T>
+        ) : null}
         {!loading ? (
           <T v="body" style={{ fontSize: 14, color: colors.text2 }}>
             {counts.map(([a, n]) => `${n} ${a.toLowerCase()}`).join(' · ')}
