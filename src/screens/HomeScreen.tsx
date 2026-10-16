@@ -8,6 +8,7 @@ import { INDEX_NAMES } from '../psx/api';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
 import { useIndexSeries } from '../store/indexSeries';
+import { PicksHomeCard } from '../ui/PicksHomeCard';
 import { valuePortfolio } from '../paper/engine';
 import { Change, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
@@ -146,6 +147,10 @@ export default function HomeScreen() {
             </View>
           </View>
         </Pressable>
+
+        <View style={styles.pad}>
+          <PicksHomeCard />
+        </View>
 
         <View style={styles.pad}>
           <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>

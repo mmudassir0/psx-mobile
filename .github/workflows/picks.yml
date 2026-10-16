@@ -1,0 +1,40 @@
+# Daily picks: after the close (the real run) and before the open (republish,
+# because ntfy.sh keeps messages for about 12 hours). State lives on the picks branch.
+name: Daily picks
+on:
+  schedule:
+    - cron: '13 12 * * 1-5' # 17:13 Pakistan time
+    - cron: '13 3 * * 1-5' # 08:13 Pakistan time
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: picks
+  cancel-in-progress: false
+jobs:
+  picks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Load state
+        run: |
+          mkdir -p /tmp/state /tmp/history
+          if git fetch -q origin picks 2>/dev/null; then git archive origin/picks | tar -x -C /tmp/state; fi
+          if [ ! -d /tmp/state/cache ]; then git fetch -q origin history && git archive origin/history | tar -x -C /tmp/history; fi
+      - name: Picks
+        env:
+          PUBLISH: '1'
+        run: npx tsx scripts/daily-picks.ts /tmp/state /tmp/history 2>&1 | tee /tmp/state/log.txt
+      - name: Save state
+        if: always()
+        run: |
+          cd /tmp/state
+          [ -f latest.json ] || exit 0
+          git init -q && git checkout -q -b picks
+          git config user.name "picks" && git config user.email "picks@users.noreply.github.com"
+          git add . && git commit -qm "Picks $(date -u +%F)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" picks

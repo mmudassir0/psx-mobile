@@ -3,6 +3,19 @@ name: Android APK
 on:
   push:
     branches: [main]
+    # Only changes that end up inside the app; scripts, docs and other jobs are checked by tests.yml.
+    paths:
+      - 'src/**'
+      - 'assets/**'
+      - 'App.tsx'
+      - 'index.ts'
+      - 'app.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'babel.config.js'
+      - 'metro.config.js'
+      - 'tsconfig.json'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,6 +47,19 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Most of the build is compiling C++ (llama.cpp, Skia, React Native libraries).
+      # ccache reuses the compiled objects from earlier builds when the sources haven't changed.
+      - name: Install ccache
+        run: sudo apt-get install -y -qq ccache >/dev/null
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ hashFiles('package-lock.json') }}-${{ github.run_number }}
+          restore-keys: |
+            ccache-${{ hashFiles('package-lock.json') }}-
+            ccache-
+
       - name: Bundle latest fundamentals
         run: |
           if git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/f.json 2>/dev/null; then
@@ -54,6 +80,7 @@ jobs:
           npx tsx scripts/test-backtest.ts
           npx tsx scripts/test-fair.ts
           npx tsx scripts/test-cache.ts
+          npx tsx scripts/test-picks.ts
           python3 scripts/fundamentals/test_extract.py
 
       - name: Live PSX check
@@ -70,9 +97,19 @@ jobs:
         working-directory: android
         env:
           EXPO_PUBLIC_BUILD: ${{ github.run_number }}
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+          CCACHE_DIR: /home/runner/.cache/ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_NOHASHDIR: 'true'
+          CCACHE_COMPILERCHECK: content
+          CCACHE_MAXSIZE: 3G
+          CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
         run: |
           set -o pipefail
-          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a 2>&1 | tee -a /tmp/build.log
+          ccache -z
+          ./gradlew assembleRelease --no-daemon --build-cache -PreactNativeArchitectures=arm64-v8a 2>&1 | tee -a /tmp/build.log
+          ccache -s | tee -a /tmp/build.log
 
       - name: Save the build log to the ci-logs branch on failure
         if: failure()

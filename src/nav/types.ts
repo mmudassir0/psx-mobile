@@ -16,6 +16,7 @@ export type RootParams = {
   Index: { code: string };
   Order: { symbol: string; side?: Side };
   Settings: undefined;
+  Picks: undefined;
 };
 
 declare global {

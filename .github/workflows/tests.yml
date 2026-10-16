@@ -1,0 +1,19 @@
+# Type check and tests on every push (a couple of minutes). The APK build only
+# runs when app code changes (android.yml).
+name: Tests
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
