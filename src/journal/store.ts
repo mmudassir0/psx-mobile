@@ -25,3 +25,8 @@ export function record(e: Entry) {
 }
 
 export const pkToday = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
+
+/** Forget the in-memory copy (after a restore wrote new entries). */
+export function reloadJournal() {
+  list = null;
+}

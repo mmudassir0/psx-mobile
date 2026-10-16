@@ -129,3 +129,73 @@ export function dividends(
   }
   return { faceValue: fv, ttm, ttmYield: opts.price ? ttm / opts.price : null, years, list, cut, lower };
 }
+
+// ---------------------------------------------------------------- tax ----
+
+export type TaxStatus = 'filer' | 'non-filer';
+export type PayerKind = 'stock' | 'power' | 'fund';
+
+/**
+ * Tax withheld on cash dividends (Income Tax Ordinance s.150, rates for 2026-27):
+ * companies 15% for filers (on the Active Taxpayers List) and 30% for
+ * non-filers; power producers 7.5% / 15%; the equity part of a mutual fund or
+ * ETF 15% / 30% (its debt part is taxed more; PSX's ETFs hold shares).
+ */
+export function dividendTaxRate(status: TaxStatus, kind: PayerKind = 'stock'): number {
+  const filer = status === 'filer';
+  if (kind === 'power') return filer ? 0.075 : 0.15;
+  return filer ? 0.15 : 0.3;
+}
+
+/** Which tax rate applies, from the PSX sector name. */
+export function payerKind(sector: string | null | undefined): PayerKind {
+  const s = sector ?? '';
+  if (/power generation/i.test(s)) return 'power';
+  if (/etf|exchange traded|mutual fund/i.test(s)) return 'fund';
+  return 'stock';
+}
+
+// ------------------------------------------------------- upcoming payout ----
+
+const DAY_MS = 864e5;
+
+/**
+ * The last day to buy and still get a payout: PSX settles trades the next
+ * working day (T+1), and the register closes at the end of the day before book
+ * closure starts, so a buy must be made two working days before it. Weekends
+ * are skipped; PSX holidays are not known here, so the broker's ex-date wins.
+ */
+export function lastBuyDay(bookClosure: number): number {
+  let t = bookClosure;
+  let left = 2;
+  while (left > 0) {
+    t -= DAY_MS;
+    const wd = new Date(t + 5 * 3600_000).getUTCDay();
+    if (wd !== 0 && wd !== 6) left--;
+  }
+  return t;
+}
+
+export interface UpcomingPayout {
+  bookClosure: number;
+  lastBuyDay: number;
+  /** cash Rs per share before tax */
+  dps: number;
+  bonusPct: number;
+  announced: number;
+}
+
+/** The next payout whose book closure hasn't started yet. */
+export function upcomingPayout(d: Dividends | null, now = Date.now()): UpcomingPayout | null {
+  if (!d) return null;
+  const next = d.list.filter((p) => p.bookClosure != null && p.bookClosure > now && (p.dps > 0 || p.bonusPct > 0)).sort((a, b) => a.bookClosure! - b.bookClosure!)[0];
+  if (!next) return null;
+  return { bookClosure: next.bookClosure!, lastBuyDay: lastBuyDay(next.bookClosure!), dps: next.dps, bonusPct: next.bonusPct, announced: next.announced };
+}
+
+/** A bonus issue whose book closure has passed in the last 60 days (the shares should be in your account by now). */
+export function recentBonus(d: Dividends | null, now = Date.now()): { pct: number; key: string; bookClosure: number } | null {
+  if (!d) return null;
+  const b = d.list.find((p) => p.bonusPct > 0 && p.bookClosure != null && p.bookClosure < now && now - p.bookClosure < 60 * DAY_MS);
+  return b ? { pct: b.bonusPct, key: String(b.announced), bookClosure: b.bookClosure! } : null;
+}

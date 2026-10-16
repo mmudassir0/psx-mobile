@@ -6,7 +6,8 @@ import { fmtDay } from '../format';
 import type { CompanyInfo } from '../psx/types';
 import { fetchPayouts } from '../psx/api';
 import { cached } from '../psx/cache';
-import { dividends, Payout } from '../analysis/dividends';
+import { dividends, dividendTaxRate, payerKind, Payout, upcomingPayout } from '../analysis/dividends';
+import { taxStatusPref } from '../portfolio/prefs';
 import { fiscalEndMonth } from '../analysis/fairValue';
 import { Panel } from './bits';
 import { T } from './kit';
@@ -16,6 +17,8 @@ const KIND: Record<string, string> = { YR: 'Final', HYR: 'Half-year', IQ: '1st q
 export function DividendsCard({ company, price, divYield }: { company: CompanyInfo; price: number | null; divYield: number | null }) {
   const [payouts, setPayouts] = useState<Payout[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const status = taxStatusPref.use();
+  const rate = dividendTaxRate(status, payerKind(company.sector));
   useEffect(() => {
     cached(`payouts:${company.symbol}`, 6 * 3600_000, () => fetchPayouts(company.symbol), { persist: true })
       .then(setPayouts)
@@ -47,6 +50,24 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
           </T>
         </View>
       </View>
+      {d.ttm > 0 ? (
+        <T v="caption">
+          After {(rate * 100).toFixed(1).replace(/\.0$/, '')}% tax ({status === 'filer' ? 'filer' : 'non-filer'}): Rs {(d.ttm * (1 - rate)).toFixed(2)} a share
+          {d.ttmYield != null ? `, ${(d.ttmYield * (1 - rate) * 100).toFixed(1)}% yield` : ''}
+        </T>
+      ) : null}
+      {(() => {
+        const up = upcomingPayout(d);
+        return up ? (
+          <View style={styles.next}>
+            <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
+              Next: {up.dps > 0 ? `Rs ${up.dps.toFixed(2)} a share (Rs ${(up.dps * (1 - rate)).toFixed(2)} after tax)` : ''}
+              {up.dps > 0 && up.bonusPct > 0 ? ' + ' : ''}
+              {up.bonusPct > 0 ? `${up.bonusPct}% bonus shares` : ''}. Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
+            </T>
+          </View>
+        ) : null;
+      })()}
       {d.cut ? <T v="body" style={{ color: colors.downText, fontSize: 14 }}>▼ {d.cut}</T> : null}
       {d.lower ? <T v="body" style={{ color: colors.gold, fontSize: 14 }}>▼ {d.lower}</T> : null}
       <View>
@@ -72,7 +93,7 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
       </View>
       <T v="caption" style={{ lineHeight: 18 }}>
         PSX announces dividends as a % of face value; Sahm takes face value as Rs {d.faceValue}, the value that matches PSX's published yield.
-        To receive a dividend you must hold the shares before book closure starts.
+        To receive a dividend, buy at least two working days before book closure starts (PSX settles a day after the trade). Tax status is set in Settings.
       </T>
     </Panel>
   );
@@ -80,6 +101,7 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
 
 const styles = themed(() =>
   StyleSheet.create({
+    next: { backgroundColor: colors.upSoft, borderRadius: 8, padding: 8 },
     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 10 },
     border: { borderTopWidth: 1, borderTopColor: colors.hairline },
   }),

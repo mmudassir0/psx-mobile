@@ -23,7 +23,9 @@ import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
 import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
-import { SkiaChart, ChartMode } from '../ui/SkiaChart';
+import { SkiaChart, ChartMode, ChartLevel, ChartLine } from '../ui/SkiaChart';
+import { relativeReturn } from '../analysis/market';
+import { load as loadPref, save as savePref } from '../storage';
 import { analyze, computeSeries } from '../analysis/signals';
 import { Backtest, backtest } from '../analysis/backtest';
 import { valueStock } from '../analysis/valuation';
@@ -130,6 +132,23 @@ export default function StockScreen() {
   const [tab, setTab] = useState<Tab>('overview');
   const [range, setRange] = useState<Range>('1M');
   const [mode, setMode] = useState<ChartMode>('candle');
+  // Chart extras, remembered between stocks
+  type Extra = 'ma' | 'levels' | 'fair';
+  const [extras, setExtras] = useState<Extra[]>([]);
+  useEffect(() => {
+    loadPref<Extra[]>('chart.extras', []).then(setExtras);
+  }, []);
+  const toggleExtra = (k: Extra) =>
+    setExtras((cur) => {
+      const next = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k];
+      savePref('chart.extras', next);
+      return next;
+    });
+  const [kse, setKse] = useState<SeriesPoint[] | null>(null);
+  const [kmi, setKmi] = useState<SeriesPoint[] | null>(null);
+  useEffect(() => {
+    cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).then(setKse).catch(() => {});
+  }, []);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyErr, setCompanyErr] = useState<string | null>(null);
   const [daily, setDaily] = useState<Candle[] | null>(null);
@@ -215,6 +234,48 @@ export default function StockScreen() {
     };
   }, [symbol, stock, company, analysis, tech, stocks, bt, daily]);
 
+  // --- chart extras (daily ranges only) ---
+  const dailyRange = range === '1W' || range === '1M' || range === '3M' || range === '1Y';
+  const maLines = useMemo((): ChartLine[] | undefined => {
+    if (!series || !dailyRange || !extras.includes('ma')) return undefined;
+    const e50 = new Map<number, number | null>();
+    const e200 = new Map<number, number | null>();
+    series.c.forEach((b, i) => {
+      e50.set(b.t, series.e50[i]);
+      e200.set(b.t, series.e200[i]);
+    });
+    return [
+      { values: bars.map((b) => e50.get(b.t) ?? null), color: colors.gold },
+      { values: bars.map((b) => e200.get(b.t) ?? null), color: colors.shariah },
+    ];
+  }, [series, bars, dailyRange, extras]);
+  const levelList = useMemo((): ChartLevel[] | undefined => {
+    if (!dailyRange) return undefined;
+    const out: ChartLevel[] = [];
+    if (extras.includes('levels') && analysis) {
+      if (analysis.resistance) out.push({ price: analysis.resistance.price, label: `Resistance ${fmtPrice(analysis.resistance.price)}`, color: colors.downText });
+      if (analysis.support) out.push({ price: analysis.support.price, label: `Support ${fmtPrice(analysis.support.price)}`, color: colors.up });
+      if (analysis.stop) out.push({ price: analysis.stop, label: `Stop (2 ATR) ${fmtPrice(analysis.stop)}`, color: colors.muted });
+    }
+    if (extras.includes('fair') && pack.fair) out.push({ price: pack.fair.mid, label: `Fair value ${fmtPrice(pack.fair.mid)}`, color: colors.text2 });
+    return out.length ? out : undefined;
+  }, [dailyRange, extras, analysis, pack.fair]);
+  const fairBand = dailyRange && extras.includes('fair') && pack.fair ? { low: pack.fair.low, high: pack.fair.high, color: colors.up } : null;
+
+  // --- this stock against the market over the range ---
+  useEffect(() => {
+    if (stock?.shariah && !kmi) cached<SeriesPoint[]>('eod:KMI30', 30 * 60_000, () => fetchSeries('eod', 'KMI30'), { persist: true }).then(setKmi).catch(() => {});
+  }, [stock?.shariah, kmi]);
+  const relBars: Partial<Record<Range, number>> = { '1W': 5, '1M': 22, '3M': 63, '1Y': 248 };
+  const rel = useMemo(() => {
+    const n = relBars[range];
+    if (!n || !daily?.length) return null;
+    const k = kse ? relativeReturn(daily, kse, n) : null;
+    const m = stock?.shariah && kmi ? relativeReturn(daily, kmi, n) : null;
+    return k || m ? { k, m } : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, daily, kse, kmi, stock?.shariah]);
+
   const price = stock?.price ?? company?.close ?? null;
   const change = stock?.change ?? company?.change ?? null;
   const changePct = stock?.changePct ?? company?.changePct ?? null;
@@ -237,7 +298,7 @@ export default function StockScreen() {
   };
 
   const subline = (
-    <T v="caption" style={{ color: changeColor(change), fontSize: 13, marginLeft: 4 }} numberOfLines={1}>
+    <T v="caption" style={{ color: changeColor(change), fontSize: 13, marginLeft: 4, lineHeight: 18 }} numberOfLines={2}>
       {fmtSigned(change)} today
       {rangePct != null && range !== '1D' ? (
         <T v="caption" style={{ color: colors.faint, fontSize: 13 }}>
@@ -246,6 +307,24 @@ export default function StockScreen() {
             {fmtPct(rangePct)}
           </T>{' '}
           {rangeWord[range]}
+          {rel?.k ? (
+            <T v="caption" style={{ fontSize: 13, color: colors.faint }}>
+              {' · '}
+              <T v="caption" style={{ fontSize: 13, color: changeColor(rel.k.alpha) }}>
+                {fmtPct(rel.k.alpha * 100)}
+              </T>{' '}
+              vs KSE-100
+            </T>
+          ) : null}
+          {rel?.m ? (
+            <T v="caption" style={{ fontSize: 13, color: colors.faint }}>
+              {', '}
+              <T v="caption" style={{ fontSize: 13, color: changeColor(rel.m.alpha) }}>
+                {fmtPct(rel.m.alpha * 100)}
+              </T>{' '}
+              vs KMI-30
+            </T>
+          ) : null}
         </T>
       ) : null}
     </T>
@@ -280,7 +359,7 @@ export default function StockScreen() {
               <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
             </View>
           ) : (
-            <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} />
+            <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} lines={maLines} levels={levelList} band={fairBand} />
           )}
         </View>
         <View style={styles.rangeRow}>
@@ -306,6 +385,36 @@ export default function StockScreen() {
             {mode === 'candle' ? <CandleGlyph /> : <Icon name="market" size={18} color={colors.text} />}
           </Pressable>
         </View>
+        {dailyRange ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.extras}>
+            {(
+              [
+                ['ma', '50 & 200-day averages'],
+                ['levels', 'Support & resistance'],
+                ['fair', 'Fair value'],
+              ] as const
+            ).map(([k, label]) => {
+              const on = extras.includes(k);
+              return (
+                <Pressable key={k} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleExtra(k)} style={[styles.extra, on && styles.extraOn]}>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>{label}</T>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+        {dailyRange && extras.includes('ma') ? (
+          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>
+            <T v="caption" style={{ color: colors.gold, fontSize: 12 }}>━ 50-day</T>
+            {'   '}
+            <T v="caption" style={{ color: colors.shariah, fontSize: 12 }}>━ 200-day</T>
+            {extras.includes('fair') && pack.fair ? '   Shaded: fair value range (a rough guide, see Fundamentals)' : ''}
+          </T>
+        ) : dailyRange && extras.includes('fair') && pack.fair ? (
+          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>Shaded: Sahm's fair value range, a rough guide (see Fundamentals).</T>
+        ) : dailyRange && extras.includes('fair') && !pack.fair ? (
+          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>No fair value for this stock.</T>
+        ) : null}
       </View>
 
       <View style={{ paddingHorizontal: space.gutter, gap: space.section }}>
@@ -501,6 +610,9 @@ const styles = themed(() => StyleSheet.create({
   content: { paddingTop: 4, paddingBottom: 28 },
   ohlc: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: space.gutter },
+  extras: { gap: 8, paddingHorizontal: space.gutter },
+  extra: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  extraOn: { backgroundColor: colors.surface2, borderColor: colors.line },
   ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
   range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   rangeOn: { backgroundColor: colors.line },

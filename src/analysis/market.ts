@@ -171,3 +171,31 @@ export interface MarketFeed {
 }
 
 export const sectorRows = (f: MarketFeed): SectorStat[] => f.sectors.map(([name, n, r1w, r1m, vol, up]) => ({ name, n, r1w, r1m, vol, up }));
+
+const pkDate = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
+
+/**
+ * The stock's change over its last `bars` sessions against the index's change
+ * between the same two dates (the index's last close on or before each date).
+ */
+export function relativeReturn(candles: Candle[], index: SeriesPoint[], bars: number): { stockRet: number; indexRet: number; alpha: number } | null {
+  const n = candles.length - 1;
+  if (n < bars || !index.length) return null;
+  const from = candles[n - bars];
+  const to = candles[n];
+  if (!(from.c > 0)) return null;
+  const at = (day: string) => {
+    let v: number | null = null;
+    for (const p of index) {
+      if (pkDate(p.t) <= day) v = p.v;
+      else break;
+    }
+    return v;
+  };
+  const i0 = at(pkDate(from.t));
+  const i1 = at(pkDate(to.t));
+  if (i0 == null || i1 == null || !(i0 > 0)) return null;
+  const stockRet = to.c / from.c - 1;
+  const indexRet = i1 / i0 - 1;
+  return { stockRet, indexRet, alpha: stockRet - indexRet };
+}

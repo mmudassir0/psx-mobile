@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { Canvas, Circle, Group, Line, Path, RoundedRect, Skia, Text, useFont, vec, LinearGradient } from '@shopify/react-native-skia';
+import { Canvas, Circle, DashPathEffect, Group, Line, Path, Rect, RoundedRect, Skia, Text, useFont, vec, LinearGradient } from '@shopify/react-native-skia';
 import type { SkPath } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -83,6 +83,27 @@ function niceStep(span: number, count: number): number {
   return step * mag;
 }
 
+/** A line drawn over the price (e.g. a moving average), one value per candle (null = none). */
+export interface ChartLine {
+  values: (number | null)[];
+  color: string;
+}
+/** A horizontal price level with a short label, e.g. support. */
+export interface ChartLevel {
+  price: number;
+  label: string;
+  color: string;
+}
+const MAX_LEVELS = 4;
+
+interface Overlay {
+  l1: number[];
+  l2: number[];
+  levels: number[];
+  bandLo: number;
+  bandHi: number;
+}
+
 interface Series {
   t: number[];
   o: number[];
@@ -109,6 +130,9 @@ export function SkiaChart({
   volumeHeight = 46,
   header,
   onScrubChange,
+  lines,
+  levels,
+  band,
 }: {
   candles: Candle[];
   /** bars shown at first (the rest is reachable by swiping) */
@@ -120,6 +144,12 @@ export function SkiaChart({
   volumeHeight?: number;
   header?: (active: Candle | null) => React.ReactNode;
   onScrubChange?: (scrubbing: boolean) => void;
+  /** up to two lines over the price, aligned with `candles` */
+  lines?: ChartLine[];
+  /** up to four horizontal levels */
+  levels?: ChartLevel[];
+  /** a shaded price range, e.g. a fair value range */
+  band?: { low: number; high: number; color: string } | null;
 }) {
   const font = useFont(require('@expo-google-fonts/manrope/600SemiBold/Manrope_600SemiBold.ttf'), 11);
   const fontBold = useFont(require('@expo-google-fonts/manrope/700Bold/Manrope_700Bold.ttf'), 11);
@@ -136,6 +166,18 @@ export function SkiaChart({
   const cross = useSharedValue(-1); // active bar index, -1 = none
   const startEnd = useSharedValue(0);
   const startCount = useSharedValue(1);
+  const ov = useSharedValue<Overlay>({ l1: [], l2: [], levels: [], bandLo: -1, bandHi: -1 });
+  const lvls = (levels ?? []).slice(0, MAX_LEVELS);
+  useEffect(() => {
+    const arr = (l?: ChartLine) => (l ? l.values.map((v) => (v == null || !isFinite(v) ? NaN : v)) : []);
+    ov.value = {
+      l1: arr(lines?.[0]),
+      l2: arr(lines?.[1]),
+      levels: (levels ?? []).slice(0, MAX_LEVELS).map((l) => l.price),
+      bandLo: band ? band.low : -1,
+      bandHi: band ? band.high : -1,
+    };
+  }, [lines, levels, band, ov]);
   const shape = useRef<{ n: number; visible: number; firstT: number | null } | null>(null);
 
   useEffect(() => {
@@ -192,6 +234,22 @@ export function SkiaChart({
       if (l < lo) lo = l;
       if (h > hi) hi = h;
       if (d.v[i] > vmax) vmax = d.v[i];
+      // moving-average lines stay in view
+      const a = ov.value.l1[i];
+      const b = ov.value.l2[i];
+      if (a === a && a !== undefined) {
+        if (a < lo) lo = a;
+        if (a > hi) hi = a;
+      }
+      if (b === b && b !== undefined) {
+        if (b < lo) lo = b;
+        if (b > hi) hi = b;
+      }
+    }
+    // a band the user asked to see (fair value) stays in view too
+    if (ov.value.bandLo > 0) {
+      lo = Math.min(lo, ov.value.bandLo);
+      hi = Math.max(hi, ov.value.bandHi);
     }
     if (prev.value > 0 && unit === 'intraday') {
       lo = Math.min(lo, prev.value);
@@ -223,7 +281,9 @@ export function SkiaChart({
     const linePath = Skia.Path.Make();
     const area = Skia.Path.Make();
     const grid = Skia.Path.Make();
-    if (g.n < 1) return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid };
+    const ma1 = Skia.Path.Make();
+    const ma2 = Skia.Path.Make();
+    if (g.n < 1) return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma1, ma2 };
     const x = (i: number) => (i - (g.e - g.cnt)) * g.slot + g.slot / 2;
     const y = (v: number) => 8 + ((g.hi - v) / (g.hi - g.lo)) * (height - 16);
     const bw = Math.max(1, Math.min(14, g.slot * 0.64));
@@ -262,7 +322,25 @@ export function SkiaChart({
       area.lineTo(lastX, height);
       area.close();
     }
-    return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid };
+    const o = ov.value;
+    const trace = (vals: number[], path: SkPath) => {
+      let pen = false;
+      for (let i = g.i0; i <= g.i1; i++) {
+        const v = vals[i];
+        if (v === undefined || v !== v) {
+          pen = false;
+          continue;
+        }
+        const cx = x(i);
+        const py = y(v);
+        if (pen) path.lineTo(cx, py);
+        else path.moveTo(cx, py);
+        pen = true;
+      }
+    };
+    if (o.l1.length) trace(o.l1, ma1);
+    if (o.l2.length) trace(o.l2, ma2);
+    return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma1, ma2 };
   });
 
   const upBody = useDerivedValue(() => paths.value.upBody);
@@ -273,6 +351,8 @@ export function SkiaChart({
   const volDn = useDerivedValue(() => paths.value.volDn);
   const linePath = useDerivedValue(() => paths.value.linePath);
   const area = useDerivedValue(() => paths.value.area);
+  const ma1 = useDerivedValue(() => paths.value.ma1);
+  const ma2 = useDerivedValue(() => paths.value.ma2);
 
   // colour of the line/tag: up if the last visible close is above the first visible one (or prev close for 1D)
   const trendUp = useDerivedValue(() => {
@@ -302,6 +382,44 @@ export function SkiaChart({
     const g = geo.value;
     return 8 + ((g.hi - v) / (g.hi - g.lo)) * (height - 16);
   };
+  // horizontal levels (off the chart when outside the visible price range)
+  const levelY = [0, 1, 2, 3].map((k) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => {
+      const p = ov.value.levels[k];
+      const g = geo.value;
+      return p === undefined || p < g.lo || p > g.hi ? -100 : yOf(p);
+    }),
+  );
+  const levelP1 = levelY.map((ly) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => vec(0, ly.value)),
+  );
+  const levelP2 = levelY.map((ly) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => vec(geo.value.plotW, ly.value)),
+  );
+  // a label too close to an earlier one is hidden, so they don't print over each other
+  const levelTextY = levelY.map((ly, k) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => {
+      const yk = ly.value;
+      if (yk < 0) return -100;
+      for (let j = 0; j < k; j++) {
+        const yj = levelY[j].value;
+        if (yj >= 0 && Math.abs(yj - yk) < 13) return -100;
+      }
+      return yk - 3;
+    }),
+  );
+  const bandRect = useDerivedValue(() => {
+    const o = ov.value;
+    const g = geo.value;
+    if (o.bandLo < 0 || o.bandHi < g.lo || o.bandLo > g.hi) return Skia.XYWHRect(0, -10, 0, 0);
+    const top = yOf(Math.min(o.bandHi, g.hi));
+    const bot = yOf(Math.max(o.bandLo, g.lo));
+    return Skia.XYWHRect(0, top, g.plotW, Math.max(1, bot - top));
+  });
   const gridPath = useDerivedValue(() => {
     const p = Skia.Path.Make();
     const plotW = geo.value.plotW;
@@ -496,6 +614,7 @@ export function SkiaChart({
             <Canvas style={{ width, height: total }}>
               <Path path={gridPath} style="stroke" strokeWidth={1} color={colors.hairline} />
               <Line p1={prevP1} p2={prevP2} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.7} />
+              {band ? <Rect rect={bandRect} color={band.color} opacity={0.18} /> : null}
               <Group clip={plotClip}>
               <Path path={volUp} color={colors.up} opacity={0.28} />
               <Path path={volDn} color={colors.down} opacity={0.28} />
@@ -517,6 +636,16 @@ export function SkiaChart({
                   <Path path={dnBody} color={colors.down} />
                 </Group>
               )}
+              {lines?.[0] ? <Path path={ma1} style="stroke" strokeWidth={1.4} color={lines[0].color} strokeJoin="round" /> : null}
+              {lines?.[1] ? <Path path={ma2} style="stroke" strokeWidth={1.4} color={lines[1].color} strokeJoin="round" /> : null}
+              {lvls.map((l, k) => (
+                <Group key={k}>
+                  <Line p1={levelP1[k]} p2={levelP2[k]} color={l.color} strokeWidth={1} style="stroke" opacity={0.85}>
+                    <DashPathEffect intervals={[5, 4]} />
+                  </Line>
+                  {font ? <Text x={4} y={levelTextY[k]} text={l.label} font={font} color={l.color} /> : null}
+                </Group>
+              ))}
               </Group>
               {/* price axis */}
               {font

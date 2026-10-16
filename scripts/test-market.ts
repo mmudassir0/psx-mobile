@@ -1,3 +1,5 @@
+import { relativeReturn } from '../src/analysis/market';
+import { passes, roeOf, debtOf, screen, screenLine } from '../src/analysis/screener';
 import { indexTrend, rawRegime, regimes, trendTriggers } from '../src/analysis/market';
 import { beta, drawdowns, inEpisode, stressTest } from '../src/portfolio/stress';
 import type { Candle, SeriesPoint } from '../src/psx/types';
@@ -40,6 +42,28 @@ const b = beta(lev, ix)!;
 check('beta of a stock that moves 2× the index is 2', Math.abs(b - 2) < 0.01, b);
 const st = stressTest([{ symbol: 'A', value: 300, candles: lev }, { symbol: 'B', value: 100, candles: asCandles(ix) }, { symbol: 'C', value: 100, candles: null }], ix);
 check('portfolio beta is value-weighted over holdings with data', Math.abs(st.beta! - (2 * 300 + 1 * 100) / 400) < 0.02 && Math.abs(st.coverage - 0.8) < 1e-9, st.beta);
+
+// --- relative return
+{
+  const D0 = Date.UTC(2026, 0, 5) - 5 * 3600e3;
+  const sc = Array.from({ length: 30 }, (_, i) => ({ t: D0 + i * 864e5, o: 0, h: 0, l: 0, c: 100 + i, v: 1 }));
+  const ix = Array.from({ length: 30 }, (_, i) => ({ t: D0 + i * 864e5, v: 1000 + 5 * i, vol: 0 }));
+  const rr = relativeReturn(sc, ix, 10)!;
+  check('relative return: stock and index over the same dates', Math.abs(rr.stockRet - (129 / 119 - 1)) < 1e-9 && Math.abs(rr.indexRet - (1145 / 1095 - 1)) < 1e-9 && Math.abs(rr.alpha - (rr.stockRet - rr.indexRet)) < 1e-12, rr);
+  check('relative return: too short is null', relativeReturn(sc.slice(0, 5), ix, 10) == null);
+}
+
+// --- screener
+{
+  const st = (o: object) => ({ symbol: 'S', name: 'S', sector: 'X', price: 100, marketCap: 1e9, pe: 5, divYield: 9, indexes: ['KSE100'], shariah: false, ...o }) as never;
+  const bs = (o: object) => ({ isBank: false, equity: 5e8, borrowings: 1e8, assets: 1e9, liabilities: 5e8, ...o }) as never;
+  check('screener: index, dividend and P/E filters', passes('kse100', st({}), null) && !passes('kmi30', st({}), null) && passes('div8', st({}), null) && passes('lowpe', st({}), null) && !passes('lowpe', st({ pe: -3 }), null) && !passes('lowpe', st({ pe: 0.2 }), null));
+  check('screener: ROE from market cap / P/E / equity', Math.abs(roeOf(st({}), bs({}))! - 0.4) < 1e-9 && passes('roe15', st({}), bs({})) && !passes('roe15', st({}), null));
+  check('screener: low debt, never for banks or without a balance sheet', passes('lowdebt', st({}), bs({})) && debtOf(bs({ isBank: true })) == null && !passes('lowdebt', st({}), null) && !passes('lowdebt', st({}), bs({ borrowings: 4e8 })));
+  const list = screen([st({ symbol: 'A', pe: 9 }), st({ symbol: 'B', pe: 4 }), st({ symbol: 'C', pe: null })], [], 'pe', () => null);
+  check('screener: lowest P/E first, no P/E last', list.map((x: { symbol: string }) => x.symbol).join() === 'B,A,C');
+  check('screener: row line', screenLine(st({}), bs({})) === 'P/E 5.0 · div 9.0% · ROE 40% · debt 20% of equity', screenLine(st({}), bs({})));
+}
 
 if (failed) {
   console.log(`\n${failed} market check(s) failed`);

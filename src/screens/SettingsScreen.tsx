@@ -11,6 +11,9 @@ import { ModelCard } from '../ui/ModelCard';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { BackupCard } from '../ui/BackupCard';
+import { taxStatusPref } from '../portfolio/prefs';
+import type { TaxStatus } from '../analysis/dividends';
 
 const MODES: { key: AiMode; label: string }[] = [
   { key: 'auto', label: 'Auto' },
@@ -31,6 +34,7 @@ const THEMES: { key: ThemePref; label: string }[] = [
 
 export default function SettingsScreen() {
   const nav = useNavigation();
+  const taxStatus = taxStatusPref.use();
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
   const ai = useAi();
@@ -103,6 +107,25 @@ export default function SettingsScreen() {
         <Section title="Appearance">
           <Segmented options={THEMES} value={pref} onChange={setPref} />
           <T v="caption">“Phone” follows your phone's light or dark mode.</T>
+        </Section>
+
+        <Section title="Tax status">
+          <Segmented
+            options={[
+              { key: 'filer', label: 'Filer' },
+              { key: 'non-filer', label: 'Non-filer' },
+            ]}
+            value={taxStatus}
+            onChange={(v: TaxStatus) => taxStatusPref.set(v)}
+          />
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Used for dividends after tax. On the FBR Active Taxpayers List (a filer): 15% on dividends, 7.5% from power producers. Not on
+            it: 30% and 15%. Rates for 2026-27; your broker's statement shows what was actually withheld.
+          </T>
+        </Section>
+
+        <Section title="Your data">
+          <BackupCard />
         </Section>
 
         <Section title="AI">

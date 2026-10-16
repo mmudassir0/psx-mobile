@@ -4,7 +4,9 @@ import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
-import type { Dividends } from '../../analysis/dividends';
+import { dividendTaxRate, payerKind, recentBonus, upcomingPayout, type Dividends } from '../../analysis/dividends';
+import { applyBonus, setHoldings } from '../../portfolio/holdings';
+import { appliedBonusesPref, taxStatusPref } from '../../portfolio/prefs';
 import { useMarket } from '../../store/market';
 import { useHoldings } from '../../portfolio/holdings';
 import { Row, useReviews } from '../../portfolio/useReviews';
@@ -19,7 +21,6 @@ import { TradeSheet } from '../../ui/TradeSheet';
 import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
 
-const nextClosure = (d: Dividends) => d.list.map((p) => p.bookClosure).filter((t): t is number => t != null && t > Date.now()).sort()[0] ?? null;
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
 const pct = (v: number, d = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(d)}%`;
 
@@ -30,7 +31,7 @@ function actionTone(a: Action, watch: boolean): [string, string] {
   return watch ? [colors.text, colors.surface2] : [colors.muted, colors.surface2];
 }
 
-function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
+function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onOpen: () => void; taxRate: number; applied: string[]; holdingsAll: Row['holding'][] }) {
   const [open, setOpen] = useState(false);
   const [trading, setTrading] = useState(false);
   const rv = r.review;
@@ -68,6 +69,47 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
               {rv.headline}
             </T>
           </View>
+          {(() => {
+            const up = upcomingPayout(r.dividends);
+            if (!up) return null;
+            const net = up.dps * r.holding.shares * (1 - taxRate);
+            return (
+              <View style={styles.payout}>
+                <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
+                  Next payout: {up.dps > 0 ? `about Rs ${fmtNum(net, 0)} after tax on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
+                  {up.dps > 0 && up.bonusPct > 0 ? ' plus ' : ''}
+                  {up.bonusPct > 0 ? `${up.bonusPct}% bonus shares (about ${fmtNum(Math.floor((r.holding.shares * up.bonusPct) / 100), 0)})` : ''}. Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
+                </T>
+              </View>
+            );
+          })()}
+          {(() => {
+            const b = recentBonus(r.dividends);
+            const key = b ? `${r.holding.symbol}:${b.key}` : '';
+            if (!b || applied.includes(key)) return null;
+            return (
+              <View style={styles.payout}>
+                <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
+                  {b.pct}% bonus shares, book closure {fmtDay(b.bookClosure)}. Once they show in your broker account, add them here so shares and average price stay right.
+                </T>
+                <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={async () => {
+                      await setHoldings(applyBonus(holdingsAll, r.holding.symbol, b.pct));
+                      await appliedBonusesPref.set([...applied, key]);
+                    }}
+                  >
+                    <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Add {b.pct}% bonus shares</T>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" hitSlop={8} onPress={() => appliedBonusesPref.set([...applied, key])}>
+                    <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.muted }}>Already done</T>
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })()}
           {r.results?.latest?.fresh || r.results?.meetingNotice ? (
             <Pressable accessibilityRole="link" onPress={() => r.results?.latest?.url && Linking.openURL(r.results.latest.url)} style={styles.results}>
               <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
@@ -102,8 +144,10 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
               {r.dividends && r.dividends.list.length ? (
                 <T v="caption" style={{ lineHeight: 18 }}>
                   Dividends: Rs {r.dividends.ttm.toFixed(2)} a share in the last 12 months
-                  {r.dividends.ttm > 0 ? `, about Rs ${fmtNum(r.dividends.ttm * r.holding.shares, 0)} on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
-                  {nextClosure(r.dividends) ? `. Next book closure ${fmtDay(nextClosure(r.dividends)!)}` : ''}.
+                  {r.dividends.ttm > 0
+                    ? `, about Rs ${fmtNum(r.dividends.ttm * r.holding.shares * (1 - taxRate), 0)} after ${(taxRate * 100).toFixed(1).replace(/\.0$/, '')}% tax on your ${fmtNum(r.holding.shares, 0)} shares (Rs ${fmtNum(r.dividends.ttm * r.holding.shares, 0)} before tax)`
+                    : ''}
+                  .
                 </T>
               ) : null}
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
@@ -130,6 +174,8 @@ export function MyHoldings() {
   const nav = useNavigation();
   const { stocks, bySymbol } = useMarket();
   const { holdings, loaded } = useHoldings();
+  const taxStatus = taxStatusPref.use();
+  const applied = appliedBonusesPref.use();
   const { feed } = usePicksFeed();
   const [newTrade, setNewTrade] = useState(false);
   const breadth = feed?.breadth ?? null;
@@ -162,6 +208,12 @@ export function MyHoldings() {
   const invested = holdings.reduce((a, h) => a + h.shares * h.avgCost, 0);
   const pnl = total - invested;
   const income = rows.reduce((a, r) => a + (r.dividends?.ttm ?? 0) * r.holding.shares, 0);
+  const rateOf = (r: Row) => dividendTaxRate(taxStatus, payerKind(r.stock?.sector ?? (r.fund ? 'ETF' : null)));
+  const netIncome = rows.reduce((a, r) => a + (r.dividends?.ttm ?? 0) * r.holding.shares * (1 - rateOf(r)), 0);
+  const upcoming = rows
+    .map((r) => ({ r, up: upcomingPayout(r.dividends) }))
+    .filter((x): x is { r: Row; up: NonNullable<ReturnType<typeof upcomingPayout>> } => !!x.up)
+    .sort((a, b) => a.up.bookClosure - b.up.bookClosure);
   const counts = ORDER.map((a) => [a, rows.filter((r) => r.review?.action === a).length] as const).filter(([, n]) => n > 0);
   const watching = rows.filter((r) => r.review?.watch).length;
   const reported = rows.filter((r) => r.results?.latest?.fresh).map((r) => r.holding.symbol);
@@ -176,8 +228,9 @@ export function MyHoldings() {
           {fmtSigned(pnl, 0)} ({pct(invested ? total / invested - 1 : 0)}) on {fmtNum(invested, 0)} invested
         </T>
         {!loading && income > 0 ? (
-          <T v="caption">
-            Dividends: about Rs {fmtNum(income, 0)} a year at the last 12 months' rate ({((income / total) * 100).toFixed(1)}% yield)
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Dividends: about Rs {fmtNum(netIncome, 0)} a year after tax as a {taxStatus === 'filer' ? 'filer' : 'non-filer'} ({((netIncome / total) * 100).toFixed(1)}% yield), Rs{' '}
+            {fmtNum(income, 0)} before tax, at the last 12 months' rate
           </T>
         ) : null}
         {!loading ? (
@@ -210,9 +263,42 @@ export function MyHoldings() {
         </Panel>
       ) : null}
 
+      {!loading && upcoming.length ? (
+        <Section title="Upcoming payouts">
+          <Panel style={{ paddingVertical: 6 }}>
+            {upcoming.map(({ r, up }, i) => (
+              <View key={r.holding.symbol} style={[styles.upRow, i < upcoming.length - 1 && styles.upBorder]}>
+                <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                  <T style={{ fontFamily: fonts.heavy, fontSize: 15 }}>{r.holding.symbol}</T>
+                  <T v="caption">
+                    Book closure {fmtDay(up.bookClosure)} · buy by {fmtDay(up.lastBuyDay)}
+                  </T>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  {up.dps > 0 ? (
+                    <T v="mono" style={{ fontSize: 14.5 }}>
+                      Rs {fmtNum(up.dps * r.holding.shares * (1 - rateOf(r)), 0)}
+                    </T>
+                  ) : null}
+                  <T v="caption">
+                    {up.dps > 0 ? `Rs ${up.dps.toFixed(2)}/share, after tax` : ''}
+                    {up.dps > 0 && up.bonusPct > 0 ? ' + ' : ''}
+                    {up.bonusPct > 0 ? `${up.bonusPct}% bonus` : ''}
+                  </T>
+                </View>
+              </View>
+            ))}
+          </Panel>
+          <T v="caption" style={{ lineHeight: 18 }}>
+            "Buy by" counts two working days back from book closure, as PSX settles a day after the trade. Market holidays aren't
+            counted, so check the ex-date in your broker app if it's close.
+          </T>
+        </Section>
+      ) : null}
+
       <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
         {sorted.map((r) => (
-          <HoldingCard key={r.holding.symbol} r={r} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
+          <HoldingCard key={r.holding.symbol} r={r} taxRate={rateOf(r)} applied={applied} holdingsAll={holdings} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
         ))}
       </Section>
 
@@ -255,6 +341,9 @@ const styles = themed(() =>
     content: { paddingHorizontal: 20, paddingTop: 14, gap: 18, paddingBottom: 36 },
     check: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 8 },
     results: { backgroundColor: colors.surface2, borderRadius: 8, padding: 8 },
+    payout: { backgroundColor: colors.upSoft, borderRadius: 8, padding: 8 },
+    upRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+    upBorder: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
     chip: { paddingHorizontal: 10, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     sector: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   }),

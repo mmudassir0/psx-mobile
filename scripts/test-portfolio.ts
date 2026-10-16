@@ -1,7 +1,8 @@
 import { parseHoldings, quarterYoY, reviewHolding, ReviewInput } from '../src/portfolio/review';
 import { computeSeries } from '../src/analysis/signals';
 import { dataChecks } from '../src/analysis/quality';
-import { applyTrade } from '../src/portfolio/holdings';
+import { applyBonus, applyTrade } from '../src/portfolio/holdings';
+import { makeBackup, readBackup } from '../src/backup';
 import { checkHoldings, retryWait } from '../src/portfolio/screenshot';
 import { addEntry, scoreEntry, statsByCall } from '../src/journal/journal';
 import type { Candle } from '../src/psx/types';
@@ -98,6 +99,20 @@ check('scored from the entry day close after 21 and 63 days, against the index',
 check('too recent to score: nothing', Object.keys(scoreEntry({ ...e1, day: '2026-03-20' }, stockC, ix).ret).length === 0);
 const st = statsByCall([sc, scoreEntry({ ...e1, symbol: 'B', call: 'Bearish' }, stockC, ix)], 21);
 check('stats: Bullish that beat the index is right, Bearish that beat it is wrong', st.find((x) => x.call === 'Bullish')!.right === 1 && st.find((x) => x.call === 'Bearish')!.right === 0, st);
+
+// --- Bonus shares
+const bon = applyBonus([{ symbol: 'LUCK', shares: 205, avgCost: 400 }, { symbol: 'X', shares: 1, avgCost: 1 }], 'LUCK', 10);
+check('bonus: 10% more shares, fractions dropped, same total cost', bon[0].shares === 225 && Math.abs(bon[0].avgCost - Math.round(((205 * 400) / 225) * 100) / 100) < 1e-9 && bon[1].shares === 1, bon);
+check('bonus: unknown symbol changes nothing', applyBonus(bon, 'NONE', 10) === bon);
+
+// --- Backup
+const bk = makeBackup({ 'real.holdings': [{ symbol: 'LUCK', shares: 200, avgCost: 419.11 }], 'user.watchlist': ['OGDC'], 'journal.v1': [{ symbol: 'A', day: '2026-10-01', kind: 'verdict', call: 'Bullish', price: 1 }], 'user.taxStatus': 'filer', 'paper.account': null }, new Date('2026-10-17T00:00:00Z'));
+const rd = readBackup('Here is my backup: ' + bk);
+check('backup: round trip with counts', rd.ok && rd.restore.counts.holdings === 1 && rd.restore.counts.watchlist === 1 && rd.restore.counts.journal === 1 && !rd.restore.counts.practice && rd.restore.skipped.length === 0, rd);
+const bad = readBackup(bk.replace('"shares":200', '"shares":-5'));
+check('backup: damaged holdings are left out, the rest restores', bad.ok && !bad.restore.data['real.holdings'] && bad.restore.skipped.includes('real.holdings') && bad.restore.counts.watchlist === 1, bad);
+check('backup: not a backup', !readBackup('{"hello":1}').ok && !readBackup('nothing here').ok && !readBackup(bk.slice(0, 40)).ok);
+check('backup: never includes API keys', !/groq|gemini|api_key/i.test(bk));
 
 // --- New-money plan
 const prv = (o: object) => ({ action: 'Hold', watch: false, trendUp: true, upside: 0, checks: [], ...o }) as never;

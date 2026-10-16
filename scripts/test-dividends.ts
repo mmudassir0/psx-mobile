@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { dividends, inferFaceValue, parsePayouts } from '../src/analysis/dividends';
+import { dividends, dividendTaxRate, inferFaceValue, lastBuyDay, parsePayouts, payerKind, recentBonus, upcomingPayout } from '../src/analysis/dividends';
 import { reviewHolding } from '../src/portfolio/review';
 
 let failed = 0;
@@ -37,6 +37,25 @@ check('only an interim so far this year: not called a cut yet', interimOnly.cut 
 const base = { holding: { symbol: 'X', shares: 10, avgCost: 50 }, price: 50, weight: 0.05, sector: null, sectorWeight: 0.05, fund: false, series: null, analysis: null, company: { pe: 8, financialsAnnual: null } as never, ratios: null, hasBalanceSheet: false, isBank: false, fair: null, divYield: null };
 check('a dividend cut makes a holding Review', reviewHolding({ ...base, dividends: c }).action === 'Review');
 check('high trailing yield is a plus', reviewHolding({ ...base, price: 10, dividends: dividends(cutP, { price: 10, divYield: null, fiscalEndMonth: 11, latestFiscalYear: '2024', now: Date.UTC(2025, 6, 1) }) }).good.some((t) => /Dividend yield/.test(t)));
+
+// --- tax and upcoming payouts
+check('tax: filer 15%, non-filer 30%, power producers 7.5% / 15%', dividendTaxRate('filer') === 0.15 && dividendTaxRate('non-filer') === 0.3 && dividendTaxRate('filer', 'power') === 0.075 && dividendTaxRate('non-filer', 'power') === 0.15);
+check('tax: kind from PSX sector', payerKind('POWER GENERATION & DISTRIBUTION') === 'power' && payerKind('CEMENT') === 'stock' && payerKind('Exchange Traded Funds') === 'fund');
+const pk = (t: number) => new Date(t + 5 * 3600e3).toISOString().slice(0, 10);
+check('last day to buy: two working days before book closure', pk(lastBuyDay(Date.UTC(2026, 9, 22, 7))) === '2026-10-20');
+check('last day to buy: skips the weekend (Monday closure -> Thursday)', pk(lastBuyDay(Date.UTC(2026, 9, 26, 7))) === '2026-10-22');
+const fake = { faceValue: 10, ttm: 0, ttmYield: null, years: [], cut: null, lower: null, list: [
+  { announced: Date.UTC(2026, 9, 10), period: null, periodType: null, dps: 5, bonusPct: 0, bookClosure: Date.UTC(2026, 9, 22, 7) },
+  { announced: Date.UTC(2026, 9, 1), period: null, periodType: null, dps: 0, bonusPct: 10, bookClosure: Date.UTC(2026, 9, 8, 7) },
+  { announced: Date.UTC(2026, 3, 1), period: null, periodType: null, dps: 3, bonusPct: 0, bookClosure: Date.UTC(2026, 3, 20, 7) },
+] };
+const at = Date.UTC(2026, 9, 17);
+const nx = upcomingPayout(fake, at);
+check('upcoming payout: the next book closure still ahead', nx?.dps === 5 && pk(nx.bookClosure) === '2026-10-22' && pk(nx.lastBuyDay) === '2026-10-20', nx);
+check('upcoming payout: none once book closure has started', upcomingPayout(fake, Date.UTC(2026, 9, 23)) == null);
+const rb = recentBonus(fake, at);
+check('recent bonus: a bonus whose book closure passed in the last 60 days', rb?.pct === 10 && rb.key === String(Date.UTC(2026, 9, 1)), rb);
+check('recent bonus: forgotten after 60 days', recentBonus(fake, Date.UTC(2026, 11, 20)) == null);
 
 if (failed) {
   console.log(`\n${failed} dividend check(s) failed`);

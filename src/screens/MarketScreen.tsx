@@ -13,6 +13,8 @@ import { Change, Empty, Icon, Loading, Section, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
 import { Sparkline } from '../ui/PriceChart';
 import { MarketStatus } from './HomeScreen';
+import { FILTERS, FilterId, passes, screenLine, SortId, SORTS, screen } from '../analysis/screener';
+import { balanceSheetFor } from '../analysis/ratios';
 
 type Mode = 'gainers' | 'losers' | 'active' | 'all';
 const MODES: { key: Mode; label: string }[] = [
@@ -49,6 +51,12 @@ export default function MarketScreen() {
   const { ready, stocks, indices, refresh, refreshing } = useMarket();
   const [mode, setMode] = useState<Mode>('gainers');
   const [shariahOnly, setShariahOnly] = useState(false);
+  const [filters, setFilters] = useState<FilterId[]>([]);
+  const [sort, setSort] = useState<SortId>('cap');
+  const toggleFilter = (f: FilterId) => {
+    setFilters((cur) => (cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f]));
+    setLimit(10);
+  };
   const [sector, setSector] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [allIndices, setAllIndices] = useState(false);
@@ -80,13 +88,13 @@ export default function MarketScreen() {
   }, [stocks, query]);
 
   const list = useMemo(() => {
-    let l = stocks.filter((s) => (!shariahOnly || s.shariah) && (!sector || s.sector === sector));
-    if (mode === 'all') return [...l].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0));
+    let l = stocks.filter((s) => (!shariahOnly || s.shariah) && (!sector || s.sector === sector) && filters.every((f) => passes(f, s, balanceSheetFor(s.symbol))));
+    if (mode === 'all') return screen(l, [], sort, balanceSheetFor);
     if (mode === 'active') return l.filter((s) => (s.volume ?? 0) > 0).sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
     l = l.filter((s) => s.changePct != null && (s.volume ?? 0) >= 10_000);
     l.sort((a, b) => (b.changePct as number) - (a.changePct as number));
     return mode === 'gainers' ? l.filter((s) => (s.changePct as number) > 0) : l.reverse().filter((s) => (s.changePct as number) < 0);
-  }, [stocks, mode, shariahOnly, sector]);
+  }, [stocks, mode, shariahOnly, sector, filters, sort]);
   const shown = list.slice(0, limit);
   const open = (symbol: string) => nav.navigate('Stock', { symbol });
 
@@ -247,6 +255,37 @@ export default function MarketScreen() {
                     <T style={{ fontFamily: fonts.bold, fontSize: 13, color: shariahOnly ? colors.shariah : colors.text2 }}>Shariah only</T>
                   </Pressable>
                 </ScrollView>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {FILTERS.map((f) => {
+                    const on = filters.includes(f.id);
+                    return (
+                      <Pressable key={f.id} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleFilter(f.id)} style={[styles.fchip, on && styles.fchipOn]}>
+                        <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>{f.label}</T>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {mode === 'all' ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, alignItems: 'center' }}>
+                    <T v="caption">Sort:</T>
+                    {SORTS.map((o) => (
+                      <Pressable key={o.id} accessibilityRole="tab" accessibilityState={{ selected: o.id === sort }} onPress={() => setSort(o.id)} style={[styles.fchip, o.id === sort && styles.fchipOn]}>
+                        <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: o.id === sort ? colors.text : colors.faint }}>{o.label}</T>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : null}
+                {filters.length || shariahOnly ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <T v="caption" style={{ flex: 1 }}>
+                      {list.length} stock{list.length === 1 ? '' : 's'} match
+                      {filters.some((f) => FILTERS.find((x) => x.id === f)?.needsBalance) ? ' (ROE and debt are known for KSE-100 and KMI-30 members only)' : ''}
+                    </T>
+                    <Pressable accessibilityRole="button" hitSlop={8} onPress={() => (setFilters([]), setShariahOnly(false))}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>Reset filters</T>
+                    </Pressable>
+                  </View>
+                ) : null}
                 {shown.length === 0 ? (
                   <Empty title="No stocks here" body="Try another list or clear the filters." />
                 ) : (
@@ -255,7 +294,7 @@ export default function MarketScreen() {
                       <StockRow
                         key={s.symbol}
                         stock={s}
-                        sub={mode === 'active' ? volumeLabel(s) : undefined}
+                        sub={mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || undefined : undefined}
                         last={i === shown.length - 1}
                         onPress={() => open(s.symbol)}
                       />
@@ -314,6 +353,8 @@ const styles = themed(() => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tile: { width: '32%', flexGrow: 1, height: 64, borderRadius: 14, padding: 11, justifyContent: 'space-between' },
   tileOn: { borderWidth: 2, borderColor: colors.gold },
+  fchip: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+  fchipOn: { backgroundColor: colors.surface2, borderColor: colors.line },
   chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   chipOn: { backgroundColor: colors.gold },
   more: { paddingVertical: 12, alignItems: 'center' },

@@ -66,3 +66,16 @@ export function applyTrade(h: Holding[], t: Trade): { holdings: Holding[]; reali
   const next = h.filter((x) => x.symbol !== sym).concat(left > 0 ? [{ ...cur, shares: left }] : []);
   return { holdings: next, realised: (t.price - cur.avgCost) * t.shares, error: null };
 }
+
+/**
+ * A bonus issue: shares go up by the bonus percentage (fractions are paid in
+ * cash, so they're dropped) and the average price falls so the total cost is
+ * unchanged.
+ */
+export function applyBonus(h: Holding[], symbol: string, bonusPct: number): Holding[] {
+  const cur = h.find((x) => x.symbol === symbol);
+  if (!cur || !(bonusPct > 0)) return h;
+  const shares = Math.floor(cur.shares * (1 + bonusPct / 100));
+  const avgCost = Math.round(((cur.shares * cur.avgCost) / shares) * 100) / 100;
+  return h.map((x) => (x.symbol === symbol ? { ...x, shares, avgCost } : x));
+}
