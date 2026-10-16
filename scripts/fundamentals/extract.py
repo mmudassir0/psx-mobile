@@ -14,7 +14,9 @@ Anything that fails a check is recorded as a failure, never published.
 Usage:
   python extract.py reports.json out.json [--limit N] [--only SYM,SYM]
 Environment:
-  LLM_API_KEY    API key for an OpenAI-compatible chat endpoint (Groq's free tier by default)
+  GEMINI_API_KEY Google Gemini key: used first (Gemini Flash, free tier), when set
+  LLM_API_KEY    API key for an OpenAI-compatible chat endpoint (Groq's free tier by default),
+                 used when Gemini is busy or out of quota
   LLM_URL        endpoint, default https://api.groq.com/openai/v1/chat/completions
   MODEL          model id, default openai/gpt-oss-120b
 """
@@ -33,6 +35,9 @@ from datetime import datetime, timezone
 UA = "Mozilla/5.0 (compatible; sahm-fundamentals/1.0)"
 MODEL = os.environ.get("MODEL") or "openai/gpt-oss-120b"
 ENDPOINT = os.environ.get("LLM_URL") or "https://api.groq.com/openai/v1/chat/completions"
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or ""
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL") or "gemini-3.8-flash"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse"
 FIELDS = ["total_equity", "total_assets", "total_liabilities", "current_assets", "current_liabilities", "cash"]
 
 HEADING = re.compile(r"statement\s+of\s+financial\s+position|balance\s+sheet", re.I)
@@ -182,7 +187,61 @@ def compact(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
 
 
+class Busy(Exception):
+    """The provider is out of quota or overloaded: try the next one."""
+
+
+def ask_gemini(messages: list[dict]) -> dict:
+    """Gemini through the Interactions API (streamed), same request shape as the app."""
+    system = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
+    turns = [m for m in messages if m["role"] != "system"]
+    earlier = "\n\n".join(("Earlier input" if m["role"] == "user" else "Your earlier answer") + ": " + m["content"] for m in turns[:-1])
+    inp = (earlier + "\n\nNow: " + turns[-1]["content"]) if earlier else turns[-1]["content"]
+    body = json.dumps({
+        "model": GEMINI_MODEL,
+        "system_instruction": system + "\nReply with the JSON object only.",
+        "input": inp,
+        "stream": True,
+        "store": False,
+        "generation_config": {"thinking_level": "low", "max_output_tokens": 4000},
+    }).encode()
+    for attempt in range(4):
+        req = urllib.request.Request(GEMINI_URL, data=body, headers={"x-goog-api-key": GEMINI_KEY, "Content-Type": "application/json", "User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                raw = r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if e.code == 503 and attempt < 3:  # "high demand": usually passes in seconds
+                time.sleep(5 * (attempt + 1))
+                continue
+            if e.code in (429, 403, 404, 503):
+                raise Busy(f"gemini HTTP {e.code}")
+            raise RuntimeError(f"gemini HTTP {e.code}: {e.read()[:300]!r}")
+        text = ""
+        for line in raw.splitlines():
+            if not line.startswith("data:"):
+                continue
+            try:
+                j = json.loads(line[5:].strip())
+            except Exception:
+                continue
+            if j.get("event_type") == "error":
+                raise Busy(f"gemini: {j.get('error', {}).get('message', '')[:200]}")
+            d = j.get("delta") or {}
+            if j.get("event_type") == "step.delta" and d.get("type") == "text":
+                text += d.get("text", "")
+        m = re.search(r"\{.*\}", text, re.S)
+        if not m:
+            raise RuntimeError(f"no JSON in Gemini reply: {text[:300]!r}")
+        return json.loads(m.group(0))
+    raise Busy("gemini busy")
+
+
+gemini_off = False  # set once Gemini runs out of quota in this run
+
+
 def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = None) -> dict:
+    global gemini_off
     text = compact(text)
     messages = [
         {"role": "system", "content": PROMPT},
@@ -196,6 +255,15 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
              + ". Use the CURRENT period column (the first figure of each pair, the later date). The page may "
                "print two statements side by side; read each figure from its own column. Return the corrected JSON."},
         ]
+    if GEMINI_KEY and not gemini_off:
+        try:
+            return ask_gemini(messages)
+        except Busy as e:
+            print(f"  Gemini unavailable ({e}); using Groq", flush=True)
+            if "429" in str(e) or "quota" in str(e).lower():
+                gemini_off = True
+    if not token:
+        raise RuntimeError("Gemini unavailable and no Groq key")
     body = json.dumps({
         "model": MODEL,
         "temperature": 0,
@@ -398,7 +466,9 @@ def main():
     args = sys.argv[3:]
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
     only = set(args[args.index("--only") + 1].split(",")) if "--only" in args else None
-    token = os.environ["LLM_API_KEY"]
+    token = os.environ.get("LLM_API_KEY", "")
+    if not token and not GEMINI_KEY:
+        sys.exit("Set GEMINI_API_KEY or LLM_API_KEY")
     companies = json.load(open(src))
     if only:
         companies = [c for c in companies if c["symbol"] in only]
@@ -412,6 +482,8 @@ def main():
         except Exception:
             prev = {}
 
+    # Companies with no balance sheet yet come first, so coverage grows every run.
+    companies.sort(key=lambda c: (c["symbol"] in prev, c["symbol"]))
     budget = float(args[args.index("--budget-min") + 1]) * 60 if "--budget-min" in args else None
     started = time.time()
     out, failures = dict(prev), {}
@@ -448,7 +520,7 @@ def main():
                 failures[sym] = r
                 print(f"{sym}: FAILED {r.get('reason')}", flush=True)
             write()  # keep progress even if the job is stopped
-            time.sleep(12)  # free tier allows ~8K tokens a minute; one statement is ~2K with the prompt
+            time.sleep(4 if GEMINI_KEY and not gemini_off else 12)  # Groq free tier allows ~8K tokens a minute
     write()
 
 

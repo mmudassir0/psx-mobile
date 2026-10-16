@@ -1,4 +1,4 @@
-# Reads each KSE-100 company's latest report from PSX, extracts its balance
+# Reads each KSE-100 and KMI-30 company's latest report from PSX, extracts its balance
 # sheet, verifies it, and stores the result in assets/fundamentals.json on the
 # `data` branch. When anything changed, it starts a new APK build so the app
 # ships with the fresh numbers. Companies whose report hasn't changed are
@@ -6,11 +6,11 @@
 name: Fundamentals
 on:
   schedule:
-    - cron: '17 1 * * 1,4'   # Mon and Thu 06:17 PKT
+    - cron: '17 1 * * *'   # daily 06:17 PKT; unchanged reports are skipped in seconds
   workflow_dispatch:
     inputs:
       only:
-        description: 'Comma-separated symbols (blank = all KSE-100)'
+        description: 'Comma-separated symbols (blank = all KSE-100 and KMI-30)'
         required: false
 permissions:
   contents: write
@@ -43,8 +43,9 @@ jobs:
         timeout-minutes: 240
         env:
           LLM_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -z "$LLM_API_KEY" ]; then echo "::error::Add the GROQ_API_KEY repository secret"; exit 1; fi
+          if [ -z "$LLM_API_KEY$GEMINI_API_KEY" ]; then echo "::error::Add the GEMINI_API_KEY or GROQ_API_KEY repository secret"; exit 1; fi
           python3 scripts/fundamentals/extract.py /tmp/data/reports.json /tmp/data/fundamentals.json --budget-min 200 | tee /tmp/data/log.txt
       - name: Publish to the data branch
         id: publish

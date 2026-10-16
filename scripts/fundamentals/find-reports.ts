@@ -1,6 +1,6 @@
 /**
  * Lists each company's latest financial report PDFs from its PSX company page.
- * Usage: tsx find-reports.ts [SYMBOL ...]   (no symbols = all KSE-100 constituents)
+ * Usage: tsx find-reports.ts [SYMBOL ...]   (no symbols = all KSE-100 and KMI-30 members)
  * Prints JSON: [{ symbol, sector, reports: [{ kind, period, date, title, url }] }]
  */
 import { fetchCompany, fetchIndexConstituents } from '../../src/psx/api';
@@ -32,7 +32,11 @@ async function retry<T>(f: () => Promise<T>, tries = 4): Promise<T> {
 
 async function main() {
   let symbols = process.argv.slice(2);
-  if (!symbols.length) symbols = (await retry(() => fetchIndexConstituents('KSE100'))).map((c) => c.symbol);
+  if (!symbols.length) {
+    // KSE-100 and KMI-30 members: the stocks most people hold.
+    const sets = await Promise.all(['KSE100', 'KMI30'].map((code) => retry(() => fetchIndexConstituents(code)).catch(() => [])));
+    symbols = [...new Set(sets.flat().map((c) => c.symbol))];
+  }
   const out = [];
   for (const symbol of symbols) {
     try {
