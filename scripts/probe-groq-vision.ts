@@ -8,7 +8,7 @@ import { checkHoldings, READ_SYSTEM } from '../src/portfolio/screenshot';
   const models = (await (await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${key}` } })).json()).data.map((m: { id: string }) => m.id).sort();
   console.log('models:', models.join(', '));
   const data = readFileSync(join(__dirname, 'fixtures', 'portfolio_sample.jpg')).toString('base64');
-  for (const m of models.filter((id: string) => /llama-4|vision|scout|maverick|qwen.*vl|gemma/i.test(id))) {
+  for (const m of models.filter((id: string) => /llama-4|vision|scout|maverick|qwen|gemma/i.test(id))) {
     const t0 = Date.now();
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
