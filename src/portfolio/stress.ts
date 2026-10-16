@@ -19,8 +19,8 @@ export interface Episode {
 const DAY = 864e5;
 const dayKey = (t: number) => Math.floor((t + 5 * 3600_000) / DAY);
 
-/** Non-overlapping peak-to-trough falls of at least `min` (e.g. 0.15), biggest first. */
-export function drawdowns(pts: SeriesPoint[], min = 0.15, max = 6): Episode[] {
+/** Non-overlapping peak-to-trough falls of at least `min` (default 10%), the biggest few in date order. */
+export function drawdowns(pts: SeriesPoint[], min = 0.1, max = 6): Episode[] {
   const p = pts.filter((x) => x.v > 0);
   const out: Episode[] = [];
   let peak = 0;

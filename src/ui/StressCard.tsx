@@ -47,8 +47,8 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
         ) : null}
       </Panel>
 
-      <T v="label">The KSE-100's biggest falls in the last 10 years</T>
-      {res.episodes.length === 0 ? <T v="caption">No fall of 15% or more in the available history.</T> : null}
+      <T v="label">The KSE-100's biggest falls (10% or more) since PSX's index history starts</T>
+      {res.episodes.length === 0 ? <T v="caption">No fall of 10% or more in the available history.</T> : null}
       {[...res.episodes].reverse().map((ep, i) => (
         <Panel key={ep.e.peakT} style={{ paddingVertical: 12, gap: 6 }}>
           <Pressable accessibilityRole="button" onPress={() => setOpen(open === i ? null : i)} style={{ gap: 4 }}>
