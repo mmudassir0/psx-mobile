@@ -87,6 +87,8 @@ function niceStep(span: number, count: number): number {
 export interface ChartLine {
   values: (number | null)[];
   color: string;
+  /** a thinner, lighter line (e.g. Bollinger bands) */
+  thin?: boolean;
 }
 /** A horizontal price level with a short label, e.g. support. */
 export interface ChartLevel {
@@ -94,14 +96,33 @@ export interface ChartLevel {
   label: string;
   color: string;
 }
-const MAX_LEVELS = 4;
+const MAX_LEVELS = 8;
+const MAX_LINES = 5;
+const PANE_H = 62;
+const PANE_GAP = 8;
+
+/** A marker on one candle, e.g. a golden cross. */
+export interface ChartMarker {
+  t: number;
+  kind: 'up' | 'down';
+}
+/** Indicator panels under the price, aligned with `candles`. */
+export interface ChartPanes {
+  rsi?: (number | null)[];
+  macd?: { macd: (number | null)[]; signal: (number | null)[]; hist: (number | null)[] };
+}
 
 interface Overlay {
-  l1: number[];
-  l2: number[];
+  lines: number[][];
   levels: number[];
   bandLo: number;
   bandHi: number;
+  /** 1 = up marker, -1 = down marker, per candle */
+  marks: number[];
+  rsi: number[];
+  macd: number[];
+  sig: number[];
+  hist: number[];
 }
 
 interface Series {
@@ -133,6 +154,8 @@ export function SkiaChart({
   lines,
   levels,
   band,
+  markers,
+  panes,
 }: {
   candles: Candle[];
   /** bars shown at first (the rest is reachable by swiping) */
@@ -144,10 +167,14 @@ export function SkiaChart({
   volumeHeight?: number;
   header?: (active: Candle | null) => React.ReactNode;
   onScrubChange?: (scrubbing: boolean) => void;
-  /** up to two lines over the price, aligned with `candles` */
+  /** up to five lines over the price, aligned with `candles` */
   lines?: ChartLine[];
-  /** up to four horizontal levels */
+  /** up to eight horizontal levels */
   levels?: ChartLevel[];
+  /** arrows on single candles */
+  markers?: ChartMarker[];
+  /** RSI and MACD panels under the price */
+  panes?: ChartPanes;
   /** a shaded price range, e.g. a fair value range */
   band?: { low: number; high: number; color: string } | null;
 }) {
@@ -155,7 +182,14 @@ export function SkiaChart({
   const fontBold = useFont(require('@expo-google-fonts/manrope/700Bold/Manrope_700Bold.ttf'), 11);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [width, setWidth] = useState(0);
-  const total = height + volumeHeight + X_LABEL_H;
+  const paneList = [panes?.rsi ? ('rsi' as const) : null, panes?.macd ? ('macd' as const) : null].filter((x): x is 'rsi' | 'macd' => !!x);
+  const panesH = paneList.length * (PANE_H + PANE_GAP);
+  const plotBottom = height + volumeHeight + panesH;
+  const total = plotBottom + X_LABEL_H;
+  // where each panel starts (unused ones sit off the chart)
+  const paneTopOf = (k: 'rsi' | 'macd') => (paneList.includes(k) ? height + volumeHeight + paneList.indexOf(k) * (PANE_H + PANE_GAP) + PANE_GAP : -1000);
+  const rsiTop = paneTopOf('rsi');
+  const macdTop = paneTopOf('macd');
 
   const data = useSharedValue<Series>({ t: [], o: [], h: [], l: [], c: [], v: [] });
   const W = useSharedValue(0);
@@ -166,18 +200,29 @@ export function SkiaChart({
   const cross = useSharedValue(-1); // active bar index, -1 = none
   const startEnd = useSharedValue(0);
   const startCount = useSharedValue(1);
-  const ov = useSharedValue<Overlay>({ l1: [], l2: [], levels: [], bandLo: -1, bandHi: -1 });
+  const ov = useSharedValue<Overlay>({ lines: [], levels: [], bandLo: -1, bandHi: -1, marks: [], rsi: [], macd: [], sig: [], hist: [] });
   const lvls = (levels ?? []).slice(0, MAX_LEVELS);
+  const lns = (lines ?? []).slice(0, MAX_LINES);
   useEffect(() => {
-    const arr = (l?: ChartLine) => (l ? l.values.map((v) => (v == null || !isFinite(v) ? NaN : v)) : []);
+    const num = (a?: (number | null)[]) => (a ? a.map((v) => (v == null || !isFinite(v) ? NaN : v)) : []);
+    const at = new Map(candles.map((c, i) => [c.t, i]));
+    const marks: number[] = new Array(candles.length).fill(0);
+    for (const m of markers ?? []) {
+      const i = at.get(m.t);
+      if (i != null) marks[i] = m.kind === 'up' ? 1 : -1;
+    }
     ov.value = {
-      l1: arr(lines?.[0]),
-      l2: arr(lines?.[1]),
+      lines: (lines ?? []).slice(0, MAX_LINES).map((l) => num(l.values)),
       levels: (levels ?? []).slice(0, MAX_LEVELS).map((l) => l.price),
       bandLo: band ? band.low : -1,
       bandHi: band ? band.high : -1,
+      marks,
+      rsi: num(panes?.rsi),
+      macd: num(panes?.macd?.macd),
+      sig: num(panes?.macd?.signal),
+      hist: num(panes?.macd?.hist),
     };
-  }, [lines, levels, band, ov]);
+  }, [lines, levels, band, markers, panes, candles, ov]);
   const shape = useRef<{ n: number; visible: number; firstT: number | null } | null>(null);
 
   useEffect(() => {
@@ -234,16 +279,14 @@ export function SkiaChart({
       if (l < lo) lo = l;
       if (h > hi) hi = h;
       if (d.v[i] > vmax) vmax = d.v[i];
-      // moving-average lines stay in view
-      const a = ov.value.l1[i];
-      const b = ov.value.l2[i];
-      if (a === a && a !== undefined) {
-        if (a < lo) lo = a;
-        if (a > hi) hi = a;
-      }
-      if (b === b && b !== undefined) {
-        if (b < lo) lo = b;
-        if (b > hi) hi = b;
+      // lines over the price (averages, bands) stay in view
+      const ls = ov.value.lines;
+      for (let k = 0; k < ls.length; k++) {
+        const a = ls[k][i];
+        if (a === a && a !== undefined) {
+          if (a < lo) lo = a;
+          if (a > hi) hi = a;
+        }
       }
     }
     // a band the user asked to see (fair value) stays in view too
@@ -281,9 +324,16 @@ export function SkiaChart({
     const linePath = Skia.Path.Make();
     const area = Skia.Path.Make();
     const grid = Skia.Path.Make();
-    const ma1 = Skia.Path.Make();
-    const ma2 = Skia.Path.Make();
-    if (g.n < 1) return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma1, ma2 };
+    const ma = [Skia.Path.Make(), Skia.Path.Make(), Skia.Path.Make(), Skia.Path.Make(), Skia.Path.Make()];
+    const mkUp = Skia.Path.Make();
+    const mkDn = Skia.Path.Make();
+    const rsiP = Skia.Path.Make();
+    const macdP = Skia.Path.Make();
+    const sigP = Skia.Path.Make();
+    const histUp = Skia.Path.Make();
+    const histDn = Skia.Path.Make();
+    const empty = { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma, mkUp, mkDn, rsiP, macdP, sigP, histUp, histDn };
+    if (g.n < 1) return empty;
     const x = (i: number) => (i - (g.e - g.cnt)) * g.slot + g.slot / 2;
     const y = (v: number) => 8 + ((g.hi - v) / (g.hi - g.lo)) * (height - 16);
     const bw = Math.max(1, Math.min(14, g.slot * 0.64));
@@ -338,9 +388,86 @@ export function SkiaChart({
         pen = true;
       }
     };
-    if (o.l1.length) trace(o.l1, ma1);
-    if (o.l2.length) trace(o.l2, ma2);
-    return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma1, ma2 };
+    for (let k = 0; k < o.lines.length && k < ma.length; k++) trace(o.lines[k], ma[k]);
+
+    // arrows: up under the candle's low, down over its high
+    if (o.marks.length) {
+      const sz = 5;
+      for (let i = g.i0; i <= g.i1; i++) {
+        const m = o.marks[i];
+        if (!m) continue;
+        const cx = x(i);
+        if (m > 0) {
+          const ty = y(line ? d.c[i] : d.l[i]) + 6;
+          mkUp.moveTo(cx, ty);
+          mkUp.lineTo(cx - sz, ty + sz * 1.6);
+          mkUp.lineTo(cx + sz, ty + sz * 1.6);
+          mkUp.close();
+        } else {
+          const ty = y(line ? d.c[i] : d.h[i]) - 6;
+          mkDn.moveTo(cx, ty);
+          mkDn.lineTo(cx - sz, ty - sz * 1.6);
+          mkDn.lineTo(cx + sz, ty - sz * 1.6);
+          mkDn.close();
+        }
+      }
+    }
+
+    // RSI panel: 0–100
+    if (o.rsi.length) {
+      const top = rsiTop;
+      const ry = (v: number) => top + 3 + ((100 - v) / 100) * (PANE_H - 6);
+      let pen = false;
+      for (let i = g.i0; i <= g.i1; i++) {
+        const v = o.rsi[i];
+        if (v === undefined || v !== v) {
+          pen = false;
+          continue;
+        }
+        if (pen) rsiP.lineTo(x(i), ry(v));
+        else rsiP.moveTo(x(i), ry(v));
+        pen = true;
+      }
+    }
+    // MACD panel: centred on zero, scaled to what's on screen
+    if (o.macd.length) {
+      const top = macdTop;
+      let m = 0;
+      for (let i = g.i0; i <= g.i1; i++) {
+        const a = Math.abs(o.macd[i]);
+        const b = Math.abs(o.sig[i]);
+        const c = Math.abs(o.hist[i]);
+        if (a === a && a > m) m = a;
+        if (b === b && b > m) m = b;
+        if (c === c && c > m) m = c;
+      }
+      if (m > 0) {
+        const mid = top + PANE_H / 2;
+        const my = (v: number) => mid - (v / m) * (PANE_H / 2 - 3);
+        const tr = (vals: number[], path: SkPath) => {
+          let pen = false;
+          for (let i = g.i0; i <= g.i1; i++) {
+            const v = vals[i];
+            if (v === undefined || v !== v) {
+              pen = false;
+              continue;
+            }
+            if (pen) path.lineTo(x(i), my(v));
+            else path.moveTo(x(i), my(v));
+            pen = true;
+          }
+        };
+        tr(o.macd, macdP);
+        tr(o.sig, sigP);
+        for (let i = g.i0; i <= g.i1; i++) {
+          const v = o.hist[i];
+          if (v === undefined || v !== v) continue;
+          const yy = my(v);
+          (v >= 0 ? histUp : histDn).addRect({ x: x(i) - bw / 2, y: Math.min(yy, mid), width: bw, height: Math.max(1, Math.abs(mid - yy)) });
+        }
+      }
+    }
+    return { upBody, upWick, dnBody, dnWick, volUp, volDn, linePath, area, grid, ma, mkUp, mkDn, rsiP, macdP, sigP, histUp, histDn };
   });
 
   const upBody = useDerivedValue(() => paths.value.upBody);
@@ -351,8 +478,28 @@ export function SkiaChart({
   const volDn = useDerivedValue(() => paths.value.volDn);
   const linePath = useDerivedValue(() => paths.value.linePath);
   const area = useDerivedValue(() => paths.value.area);
-  const ma1 = useDerivedValue(() => paths.value.ma1);
-  const ma2 = useDerivedValue(() => paths.value.ma2);
+  const maP = [0, 1, 2, 3, 4].map((k) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => paths.value.ma[k]),
+  );
+  const mkUp = useDerivedValue(() => paths.value.mkUp);
+  const mkDn = useDerivedValue(() => paths.value.mkDn);
+  const rsiP = useDerivedValue(() => paths.value.rsiP);
+  const macdP = useDerivedValue(() => paths.value.macdP);
+  const sigP = useDerivedValue(() => paths.value.sigP);
+  const histUp = useDerivedValue(() => paths.value.histUp);
+  const histDn = useDerivedValue(() => paths.value.histDn);
+  // latest (or inspected) indicator values for the panel labels
+  const paneIdx = useDerivedValue(() => (cross.value >= 0 ? cross.value : Math.min(geo.value.n - 1, Math.max(0, Math.ceil(geo.value.e) - 1))));
+  const rsiText = useDerivedValue(() => {
+    const v = ov.value.rsi[paneIdx.value];
+    return v === undefined || v !== v ? 'RSI 14' : 'RSI 14   ' + v.toFixed(1);
+  });
+  const macdText = useDerivedValue(() => {
+    const a = ov.value.macd[paneIdx.value];
+    const b = ov.value.sig[paneIdx.value];
+    return a === undefined || a !== a ? 'MACD 12, 26, 9' : 'MACD ' + a.toFixed(2) + '   signal ' + (b === b ? b.toFixed(2) : '–');
+  });
 
   // colour of the line/tag: up if the last visible close is above the first visible one (or prev close for 1D)
   const trendUp = useDerivedValue(() => {
@@ -368,6 +515,7 @@ export function SkiaChart({
   const upOpacity = useDerivedValue(() => trendUp.value);
   const dnOpacity = useDerivedValue(() => 1 - trendUp.value);
   const plotClip = useDerivedValue(() => Skia.XYWHRect(0, 0, geo.value.plotW, height + volumeHeight));
+  const paneClip = useDerivedValue(() => Skia.XYWHRect(0, height + volumeHeight, geo.value.plotW, panesH));
 
   // price axis ticks
   const tickVals = useDerivedValue(() => {
@@ -383,7 +531,7 @@ export function SkiaChart({
     return 8 + ((g.hi - v) / (g.hi - g.lo)) * (height - 16);
   };
   // horizontal levels (off the chart when outside the visible price range)
-  const levelY = [0, 1, 2, 3].map((k) =>
+  const levelY = [0, 1, 2, 3, 4, 5, 6, 7].map((k) =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useDerivedValue(() => {
       const p = ov.value.levels[k];
@@ -490,7 +638,7 @@ export function SkiaChart({
   const crossC = useDerivedValue(() => (cross.value < 0 ? 0 : data.value.c[cross.value]));
   const crossY = useDerivedValue(() => (cross.value < 0 ? -100 : yOf(crossC.value)));
   const crossV1 = useDerivedValue(() => vec(crossX.value, 0));
-  const crossV2 = useDerivedValue(() => vec(crossX.value, height + volumeHeight));
+  const crossV2 = useDerivedValue(() => vec(crossX.value, plotBottom));
   const crossH1 = useDerivedValue(() => vec(0, crossY.value));
   const crossH2 = useDerivedValue(() => vec(geo.value.plotW, crossY.value));
   const crossTagY = useDerivedValue(() => crossY.value - 10);
@@ -636,8 +784,15 @@ export function SkiaChart({
                   <Path path={dnBody} color={colors.down} />
                 </Group>
               )}
-              {lines?.[0] ? <Path path={ma1} style="stroke" strokeWidth={1.4} color={lines[0].color} strokeJoin="round" /> : null}
-              {lines?.[1] ? <Path path={ma2} style="stroke" strokeWidth={1.4} color={lines[1].color} strokeJoin="round" /> : null}
+              {lns.map((l, k) => (
+                <Path key={k} path={maP[k]} style="stroke" strokeWidth={l.thin ? 1 : 1.4} color={l.color} strokeJoin="round" opacity={l.thin ? 0.8 : 1} />
+              ))}
+              {markers?.length ? (
+                <Group>
+                  <Path path={mkUp} color={colors.up} />
+                  <Path path={mkDn} color={colors.down} />
+                </Group>
+              ) : null}
               {lvls.map((l, k) => (
                 <Group key={k}>
                   <Line p1={levelP1[k]} p2={levelP2[k]} color={l.color} strokeWidth={1} style="stroke" opacity={0.85}>
@@ -647,6 +802,41 @@ export function SkiaChart({
                 </Group>
               ))}
               </Group>
+              {/* indicator panels */}
+              {paneList.length ? (
+                <Group clip={paneClip}>
+                  {panes?.rsi ? (
+                    <Group>
+                      <Line p1={vec(0, rsiTop)} p2={vec(4000, rsiTop)} color={colors.hairline} strokeWidth={1} style="stroke" />
+                      <Line p1={vec(0, rsiTop + 3 + 0.3 * (PANE_H - 6))} p2={vec(4000, rsiTop + 3 + 0.3 * (PANE_H - 6))} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.6}>
+                        <DashPathEffect intervals={[3, 4]} />
+                      </Line>
+                      <Line p1={vec(0, rsiTop + 3 + 0.7 * (PANE_H - 6))} p2={vec(4000, rsiTop + 3 + 0.7 * (PANE_H - 6))} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.6}>
+                        <DashPathEffect intervals={[3, 4]} />
+                      </Line>
+                      <Path path={rsiP} style="stroke" strokeWidth={1.4} color={colors.gold} />
+                      {font ? <Text x={4} y={rsiTop + 12} text={rsiText} font={font} color={colors.muted} /> : null}
+                    </Group>
+                  ) : null}
+                  {panes?.macd ? (
+                    <Group>
+                      <Line p1={vec(0, macdTop)} p2={vec(4000, macdTop)} color={colors.hairline} strokeWidth={1} style="stroke" />
+                      <Line p1={vec(0, macdTop + PANE_H / 2)} p2={vec(4000, macdTop + PANE_H / 2)} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.5} />
+                      <Path path={histUp} color={colors.up} opacity={0.45} />
+                      <Path path={histDn} color={colors.down} opacity={0.45} />
+                      <Path path={macdP} style="stroke" strokeWidth={1.3} color={colors.gold} />
+                      <Path path={sigP} style="stroke" strokeWidth={1.3} color={colors.shariah} />
+                      {font ? <Text x={4} y={macdTop + 12} text={macdText} font={font} color={colors.muted} /> : null}
+                    </Group>
+                  ) : null}
+                </Group>
+              ) : null}
+              {font && panes?.rsi ? (
+                <Group>
+                  <Text x={tagTextX} y={rsiTop + 3 + 0.3 * (PANE_H - 6) + 4} text="70" font={font} color={colors.faint} />
+                  <Text x={tagTextX} y={rsiTop + 3 + 0.7 * (PANE_H - 6) + 4} text="30" font={font} color={colors.faint} />
+                </Group>
+              ) : null}
               {/* price axis */}
               {font
                 ? tickT.map((t, k) => <Text key={k} x={tagTextX} y={tickY[k]} text={t} font={font} color={colors.faint} />)

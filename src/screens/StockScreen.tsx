@@ -23,7 +23,8 @@ import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
 import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
-import { SkiaChart, ChartMode, ChartLevel, ChartLine } from '../ui/SkiaChart';
+import { SkiaChart, ChartMode, ChartLevel, ChartLine, ChartMarker, ChartPanes } from '../ui/SkiaChart';
+import { usePicksFeed } from '../picks/feed';
 import { relativeReturn } from '../analysis/market';
 import { load as loadPref, save as savePref } from '../storage';
 import { analyze, computeSeries } from '../analysis/signals';
@@ -133,7 +134,7 @@ export default function StockScreen() {
   const [range, setRange] = useState<Range>('1M');
   const [mode, setMode] = useState<ChartMode>('candle');
   // Chart extras, remembered between stocks
-  type Extra = 'ma' | 'levels' | 'fair';
+  type Extra = 'ma' | 'bb' | 'levels' | 'w52' | 'pick' | 'cross' | 'rsi' | 'macd' | 'fair';
   const [extras, setExtras] = useState<Extra[]>([]);
   useEffect(() => {
     loadPref<Extra[]>('chart.extras', []).then(setExtras);
@@ -236,31 +237,79 @@ export default function StockScreen() {
 
   // --- chart extras (daily ranges only) ---
   const dailyRange = range === '1W' || range === '1M' || range === '3M' || range === '1Y';
+  // indicator values by candle time, so they line up with whatever bars the chart shows
+  const byT = useMemo(() => {
+    if (!series) return null;
+    const m = new Map<number, number>();
+    series.c.forEach((b, i) => m.set(b.t, i));
+    return m;
+  }, [series]);
+  const align = useCallback((vals: (number | null)[]) => bars.map((b) => (byT?.has(b.t) ? vals[byT.get(b.t)!] ?? null : null)), [bars, byT]);
   const maLines = useMemo((): ChartLine[] | undefined => {
-    if (!series || !dailyRange || !extras.includes('ma')) return undefined;
-    const e50 = new Map<number, number | null>();
-    const e200 = new Map<number, number | null>();
-    series.c.forEach((b, i) => {
-      e50.set(b.t, series.e50[i]);
-      e200.set(b.t, series.e200[i]);
-    });
-    return [
-      { values: bars.map((b) => e50.get(b.t) ?? null), color: colors.gold },
-      { values: bars.map((b) => e200.get(b.t) ?? null), color: colors.shariah },
-    ];
-  }, [series, bars, dailyRange, extras]);
+    if (!series || !dailyRange) return undefined;
+    const out: ChartLine[] = [];
+    if (extras.includes('ma'))
+      out.push({ values: align(series.e20), color: colors.muted, thin: true }, { values: align(series.e50), color: colors.gold }, { values: align(series.e200), color: colors.shariah });
+    if (extras.includes('bb')) out.push({ values: align(series.bbUpper), color: colors.text2, thin: true }, { values: align(series.bbLower), color: colors.text2, thin: true });
+    return out.length ? out : undefined;
+  }, [series, dailyRange, extras, align]);
+  const { feeds } = usePicksFeed();
+  const pick = useMemo(() => {
+    for (const id of ['all', 'kse100', 'kmi30'] as const) {
+      const f = feeds?.[id];
+      const p = f?.picks.find((x) => x.symbol === symbol) ?? f?.open.find((x) => x.symbol === symbol);
+      if (p) return p;
+    }
+    return null;
+  }, [feeds, symbol]);
   const levelList = useMemo((): ChartLevel[] | undefined => {
     if (!dailyRange) return undefined;
     const out: ChartLevel[] = [];
+    if (extras.includes('pick') && pick) {
+      const L = pick.levels;
+      out.push(
+        { price: L.tp2, label: `TP2 ${fmtPrice(L.tp2)}`, color: colors.up },
+        { price: L.tp1, label: `TP1 ${fmtPrice(L.tp1)}`, color: colors.up },
+        { price: L.entryHigh, label: `Buy zone ${fmtPrice(L.entryLow)}–${fmtPrice(L.entryHigh)}`, color: colors.gold },
+        { price: L.entryLow, label: '', color: colors.gold },
+        { price: L.stop, label: `Pick stop ${fmtPrice(L.stop)}`, color: colors.downText },
+      );
+    }
     if (extras.includes('levels') && analysis) {
       if (analysis.resistance) out.push({ price: analysis.resistance.price, label: `Resistance ${fmtPrice(analysis.resistance.price)}`, color: colors.downText });
       if (analysis.support) out.push({ price: analysis.support.price, label: `Support ${fmtPrice(analysis.support.price)}`, color: colors.up });
-      if (analysis.stop) out.push({ price: analysis.stop, label: `Stop (2 ATR) ${fmtPrice(analysis.stop)}`, color: colors.muted });
+      if (analysis.stop && !extras.includes('pick')) out.push({ price: analysis.stop, label: `Stop (2 ATR) ${fmtPrice(analysis.stop)}`, color: colors.muted });
+    }
+    if (extras.includes('w52') && daily?.length) {
+      const yr = daily.slice(-248);
+      const hi = Math.max(...yr.map((b) => b.h));
+      const lo = Math.min(...yr.map((b) => b.l));
+      out.push({ price: hi, label: `52-week high ${fmtPrice(hi)}`, color: colors.text2 }, { price: lo, label: `52-week low ${fmtPrice(lo)}`, color: colors.text2 });
     }
     if (extras.includes('fair') && pack.fair) out.push({ price: pack.fair.mid, label: `Fair value ${fmtPrice(pack.fair.mid)}`, color: colors.text2 });
-    return out.length ? out : undefined;
-  }, [dailyRange, extras, analysis, pack.fair]);
+    return out.length ? out.slice(0, 8) : undefined;
+  }, [dailyRange, extras, analysis, pack.fair, pick, daily]);
   const fairBand = dailyRange && extras.includes('fair') && pack.fair ? { low: pack.fair.low, high: pack.fair.high, color: colors.up } : null;
+  // golden cross (50-day above 200-day) and death cross, over the whole history
+  const crosses = useMemo((): ChartMarker[] | undefined => {
+    if (!series || !dailyRange || !extras.includes('cross')) return undefined;
+    const out: ChartMarker[] = [];
+    for (let i = 1; i < series.c.length; i++) {
+      const a0 = series.e50[i - 1], b0 = series.e200[i - 1], a1 = series.e50[i], b1 = series.e200[i];
+      if (a0 == null || b0 == null || a1 == null || b1 == null) continue;
+      if (a0 <= b0 && a1 > b1) out.push({ t: series.c[i].t, kind: 'up' });
+      else if (a0 >= b0 && a1 < b1) out.push({ t: series.c[i].t, kind: 'down' });
+    }
+    return out;
+  }, [series, dailyRange, extras]);
+  const panesOn = useMemo((): ChartPanes | undefined => {
+    if (!series || !dailyRange || (!extras.includes('rsi') && !extras.includes('macd'))) return undefined;
+    return {
+      rsi: extras.includes('rsi') ? align(series.rsi) : undefined,
+      macd: extras.includes('macd') ? { macd: align(series.macd), signal: align(series.signal), hist: align(series.hist) } : undefined,
+    };
+  }, [series, dailyRange, extras, align]);
+  const lastCross = crosses?.length ? crosses[crosses.length - 1] : null;
 
   // --- this stock against the market over the range ---
   useEffect(() => {
@@ -359,7 +408,7 @@ export default function StockScreen() {
               <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
             </View>
           ) : (
-            <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} lines={maLines} levels={levelList} band={fairBand} />
+            <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} lines={maLines} levels={levelList} band={fairBand} markers={crosses} panes={panesOn} />
           )}
         </View>
         <View style={styles.rangeRow}>
@@ -389,8 +438,14 @@ export default function StockScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.extras}>
             {(
               [
-                ['ma', '50 & 200-day averages'],
+                ['ma', '20, 50 & 200-day'],
+                ['bb', 'Bollinger Bands'],
                 ['levels', 'Support & resistance'],
+                ['w52', '52-week high/low'],
+                ...(pick ? ([['pick', 'Pick levels']] as const) : []),
+                ['cross', 'Golden/death cross'],
+                ['rsi', 'RSI'],
+                ['macd', 'MACD'],
                 ['fair', 'Fair value'],
               ] as const
             ).map(([k, label]) => {
@@ -403,17 +458,42 @@ export default function StockScreen() {
             })}
           </ScrollView>
         ) : null}
-        {dailyRange && extras.includes('ma') ? (
-          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>
-            <T v="caption" style={{ color: colors.gold, fontSize: 12 }}>━ 50-day</T>
-            {'   '}
-            <T v="caption" style={{ color: colors.shariah, fontSize: 12 }}>━ 200-day</T>
-            {extras.includes('fair') && pack.fair ? '   Shaded: fair value range (a rough guide, see Fundamentals)' : ''}
-          </T>
-        ) : dailyRange && extras.includes('fair') && pack.fair ? (
-          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>Shaded: Sahm's fair value range, a rough guide (see Fundamentals).</T>
-        ) : dailyRange && extras.includes('fair') && !pack.fair ? (
-          <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }}>No fair value for this stock.</T>
+        {dailyRange ? (
+          <View style={{ paddingHorizontal: space.gutter, gap: 3 }}>
+            {extras.includes('ma') || extras.includes('bb') ? (
+              <T v="caption" style={{ fontSize: 12 }}>
+                {extras.includes('ma') ? (
+                  <>
+                    <T v="caption" style={{ color: colors.muted, fontSize: 12 }}>━ 20-day</T>
+                    {'   '}
+                    <T v="caption" style={{ color: colors.gold, fontSize: 12 }}>━ 50-day</T>
+                    {'   '}
+                    <T v="caption" style={{ color: colors.shariah, fontSize: 12 }}>━ 200-day</T>
+                    {'   '}
+                  </>
+                ) : null}
+                {extras.includes('bb') ? <T v="caption" style={{ color: colors.text2, fontSize: 12 }}>━ Bollinger (20-day ± 2 SD)</T> : null}
+              </T>
+            ) : null}
+            {extras.includes('pick') && pick ? (
+              <T v="caption" style={{ fontSize: 12 }}>
+                Pick from {fmtDay(Date.parse(pick.day + 'T12:00:00Z'))}: buy only inside the zone; sell half at TP1, the rest at TP2 or the stop.
+              </T>
+            ) : null}
+            {extras.includes('cross') ? (
+              <T v="caption" style={{ fontSize: 12 }}>
+                <T v="caption" style={{ color: colors.up, fontSize: 12 }}>▲</T> golden cross (50-day rises above 200-day){'  '}
+                <T v="caption" style={{ color: colors.down, fontSize: 12 }}>▼</T> death cross
+                {lastCross ? `. Last: ${lastCross.kind === 'up' ? 'golden' : 'death'} cross on ${fmtDay(lastCross.t)}` : '. None in this history'}.
+              </T>
+            ) : null}
+            {extras.includes('rsi') ? <T v="caption" style={{ fontSize: 12 }}>RSI over 70 is stretched up, under 30 stretched down.</T> : null}
+            {extras.includes('fair') ? (
+              <T v="caption" style={{ fontSize: 12 }}>
+                {pack.fair ? "Shaded: Sahm's fair value range, a rough guide (see Fundamentals)." : 'No fair value for this stock.'}
+              </T>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
