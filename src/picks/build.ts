@@ -45,6 +45,8 @@ export interface ScoredPick extends Pick {
   result: Result;
   ret: number | null;
   closedDay: string | null;
+  /** bought: the price traded into the buy zone */
+  filled?: boolean;
 }
 
 export interface Stats {
@@ -119,7 +121,7 @@ export function choosePicks(stocks: Universe[], day: string): Pick[] {
 export function scorePick(p: Pick, candles: Candle[]): ScoredPick {
   const after = candles.filter((b) => pkDay(b.t) > p.day);
   const o: Outcome = playOut(after, p.levels, WAIT_DAYS, RULES.hold);
-  return { ...p, result: o.result, ret: o.ret, closedDay: o.closedAt != null ? pkDay(o.closedAt) : o.result === 'no-fill' ? pkDay(after[WAIT_DAYS - 1].t) : null };
+  return { ...p, result: o.result, ret: o.ret, filled: o.filledAt != null, closedDay: o.closedAt != null ? pkDay(o.closedAt) : o.result === 'no-fill' ? pkDay(after[WAIT_DAYS - 1].t) : null };
 }
 
 export function statsOf(done: ScoredPick[], sinceDay: string, weak = false): Stats {

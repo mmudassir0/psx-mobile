@@ -117,7 +117,7 @@ export default function PicksScreen() {
             {feed.open.length ? (
               <Section title="Earlier picks still in play">
                 {feed.open.map((p) => (
-                  <PickCard key={p.symbol + p.day} p={p} price={price(p.symbol)} bought onOpen={() => open(p.symbol)} />
+                  <PickCard key={p.symbol + p.day} p={p} price={price(p.symbol)} bought={!!p.filled} onOpen={() => open(p.symbol)} />
                 ))}
               </Section>
             ) : null}

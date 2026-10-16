@@ -48,7 +48,8 @@ check('breadth = share of liquid stocks above their 200-day average', near(bread
 const p: Pick = { symbol: 'X', setup: 'momentum', day: '2026-01-05', close: 100, levels: L, score: 8, liquidity: 1e7 };
 const after = [bar(0, 1, 1, 1, 1), bar(1, 101, 101, 99, 100), bar(2, 100, 116, 99, 115)];
 const sp = scorePick(p, after);
-check('scoring ignores bars on or before the pick day', sp.result === 'tp2' && sp.closedDay === '2026-01-07', sp);
+check('scoring ignores bars on or before the pick day', sp.filled === true && sp.result === 'tp2' && sp.closedDay === '2026-01-07', sp);
+check('a pick not yet in its buy zone is not marked bought', scorePick(p, [bar(1, 103, 104, 102, 103)]).filled === false);
 const done: ScoredPick[] = [sp, { ...p, result: 'stop', ret: -0.06, closedDay: '2026-01-06' }, { ...p, result: 'no-fill', ret: null, closedDay: '2026-01-08' }, { ...p, weak: true, result: 'stop', ret: -0.05, closedDay: '2026-01-06' }];
 const st = statsOf(done, '2026-01-01');
 check('scorecard counts strong-market picks only', st.picks === 3 && st.bought === 2 && st.won === 1 && near(st.avgRet, ((sp.ret as number) - 0.06) / 2), st);

@@ -116,7 +116,8 @@ async function main() {
     breadth,
     marketOk,
     picks: history.filter((p) => p.day === day),
-    open: history.filter((p) => p.result === 'open' && p.day < day),
+    // Earlier picks still running; an unbought one is dropped when the stock is picked again today.
+    open: history.filter((p) => p.result === 'open' && p.day < day && (p.filled || !history.some((q) => q.day === day && q.symbol === p.symbol))),
     recent: closed.slice(0, 12),
     stats: statsOf(closed, since),
     weakStats: statsOf(closed, since, true),
