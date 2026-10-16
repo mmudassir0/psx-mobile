@@ -147,14 +147,15 @@ export default function IndexScreen() {
     setRefreshing(false);
   };
 
+  // Kept apart so a live refresh of today's ticks doesn't rebuild (and reset) the daily chart.
+  const intraday = useMemo(() => ticksToCandles(lastSession(ticks ?? []), 5), [ticks]);
+  const daily = useMemo(() => eodBars(eod ?? [], false), [eod]);
+  const weekly = useMemo(() => eodBars(eod ?? [], true), [eod]);
   const { bars, unit, visible } = useMemo((): { bars: Candle[]; unit: ChartUnit; visible: number } => {
-    if (range === '1D') {
-      const b = ticksToCandles(lastSession(ticks ?? []), 5);
-      return { bars: b, unit: 'intraday', visible: b.length };
-    }
-    const visible = { '1M': 22, '3M': 63, '1Y': 248, '5Y': 261 }[range];
-    return { bars: eodBars(eod ?? [], range === '5Y'), unit: range === '5Y' ? 'month' : 'day', visible };
-  }, [range, ticks, eod]);
+    if (range === '1D') return { bars: intraday, unit: 'intraday', visible: intraday.length };
+    if (range === '5Y') return { bars: weekly, unit: 'month', visible: 261 };
+    return { bars: daily, unit: 'day', visible: { '1M': 22, '3M': 63, '1Y': 248 }[range] };
+  }, [range, intraday, daily, weekly]);
   const loadingChart = range === '1D' ? ticks == null : eod == null;
   const chartMode: ChartMode = mode;
   const prevClose = quote?.current != null && quote.change != null ? quote.current - quote.change : null;

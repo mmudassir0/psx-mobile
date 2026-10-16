@@ -1,4 +1,4 @@
-/** Reads holdings from broker screenshots with Gemini, then checks them in code. */
+/** Reads holdings from broker screenshots with Groq's vision model (or Gemini), then checks them in code. */
 import { geminiImages, ImagePart, FLASH } from '../ai/gemini';
 import type { Holding } from './review';
 
@@ -52,6 +52,30 @@ export function checkHoldings(raw: string, known?: (symbol: string) => boolean):
 /** Groq's Qwen reads images (tested on a sample broker screen: exact, under a second). */
 export const GROQ_VISION = 'qwen/qwen3.8-27b';
 
+/**
+ * Groq's free tier allows about 7,000 input and 1,000 output tokens a minute for
+ * this model. A phone screenshot is about 2,000 input tokens, so screenshots go
+ * one per request with a small output budget, and a rate-limit answer is waited
+ * out (Groq says how long) instead of failing.
+ */
+const GROQ_MAX_OUT = 450;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export class RateLimited extends Error {
+  constructor(message: string, readonly waitMs: number) {
+    super(message);
+  }
+}
+
+/** Seconds to wait from a 429 answer: the Retry-After header or "try again in 4.3s" / "in 1m2s" in the message. */
+export function retryWait(message: string, header: string | null): number {
+  const h = Number(header);
+  if (header && Number.isFinite(h)) return h * 1000;
+  const m = message.match(/try again in (?:(\d+)m)?([\d.]+)s/i);
+  if (m) return (Number(m[1] ?? 0) * 60 + Number(m[2])) * 1000;
+  return 20_000;
+}
+
 async function groqImages(key: string, images: ImagePart[]): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -59,6 +83,7 @@ async function groqImages(key: string, images: ImagePart[]): Promise<string> {
     body: JSON.stringify({
       model: GROQ_VISION,
       temperature: 0,
+      max_tokens: GROQ_MAX_OUT,
       messages: [
         { role: 'system', content: READ_SYSTEM },
         {
@@ -72,39 +97,67 @@ async function groqImages(key: string, images: ImagePart[]): Promise<string> {
     }),
   });
   const j = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(j?.error?.message ?? `Groq answered ${res.status}`);
+  const msg = j?.error?.message ?? `Groq answered ${res.status}`;
+  if (res.status === 429) throw new RateLimited(msg, retryWait(msg, res.headers.get('retry-after')));
+  if (!res.ok) throw new Error(msg);
   return j?.choices?.[0]?.message?.content ?? '';
 }
 
-/** Reads screenshots three at a time and merges the results (a symbol seen twice keeps the later reading). */
-export async function readScreenshots(keys: { groq?: string | null; gemini?: string | null }, images: ImagePart[], known?: (s: string) => boolean): Promise<ReadResult> {
-  const merged = new Map<string, Holding>();
-  const rejected: string[] = [];
-  for (let i = 0; i < images.length; i += 3) {
-    const r = await readBatch(keys, images.slice(i, i + 3), known);
-    for (const h of r.holdings) merged.set(h.symbol, h);
-    rejected.push(...r.rejected);
+async function groqWithWaits(key: string, images: ImagePart[], onStatus?: (s: string) => void): Promise<string> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await groqImages(key, images);
+    } catch (e) {
+      // A daily limit asks for a wait of many minutes: give up and let Gemini try.
+      if (!(e instanceof RateLimited) || attempt >= 3 || e.waitMs > 90_000) throw e;
+      const secs = Math.ceil(e.waitMs / 1000) + 1;
+      onStatus?.(`Groq's free tier allows a few screenshots a minute; waiting ${secs}s…`);
+      await sleep(secs * 1000);
+    }
   }
-  return { holdings: [...merged.values()].sort((a, b) => a.symbol.localeCompare(b.symbol)), rejected: [...new Set(rejected)] };
 }
 
-/** Groq first (its own free quota), then Gemini. */
-async function readBatch(keys: { groq?: string | null; gemini?: string | null }, images: ImagePart[], known?: (s: string) => boolean): Promise<ReadResult> {
-  const prompt = `Read the holdings from these ${images.length} screenshot(s).`;
-  let lastErr: unknown = new Error('Add a Groq or Gemini key in Settings → AI to read screenshots');
+/** Reads screenshots one at a time and merges the results (a symbol seen twice keeps the later reading). */
+export async function readScreenshots(
+  keys: { groq?: string | null; gemini?: string | null },
+  images: ImagePart[],
+  known?: (s: string) => boolean,
+  onStatus?: (s: string) => void,
+): Promise<ReadResult> {
+  const merged = new Map<string, Holding>();
+  const rejected: string[] = [];
+  const failed: string[] = [];
+  for (let i = 0; i < images.length; i++) {
+    onStatus?.(`Reading screenshot ${i + 1} of ${images.length}…`);
+    try {
+      const r = await readOne(keys, images[i], known, onStatus);
+      for (const h of r.holdings) merged.set(h.symbol, h);
+      rejected.push(...r.rejected);
+    } catch (e) {
+      failed.push(`screenshot ${i + 1}: ${(e as Error).message}`);
+    }
+  }
+  if (!merged.size && failed.length) throw new Error(failed.join('\n'));
+  return { holdings: [...merged.values()].sort((a, b) => a.symbol.localeCompare(b.symbol)), rejected: [...new Set([...rejected, ...failed])] };
+}
+
+/** Groq first (its own free quota), then Gemini; says what each one answered if both fail. */
+async function readOne(keys: { groq?: string | null; gemini?: string | null }, image: ImagePart, known?: (s: string) => boolean, onStatus?: (s: string) => void): Promise<ReadResult> {
+  if (!keys.groq && !keys.gemini) throw new Error('Add a Groq or Gemini key in Settings → AI to read screenshots');
+  const errors: string[] = [];
   if (keys.groq) {
     try {
-      return checkHoldings(await groqImages(keys.groq, images), known);
+      return checkHoldings(await groqWithWaits(keys.groq, [image], onStatus), known);
     } catch (e) {
-      lastErr = e;
+      errors.push(`Groq: ${(e as Error).message}`);
     }
   }
   if (keys.gemini) {
     try {
-      return checkHoldings(await geminiImages(keys.gemini, FLASH.id, READ_SYSTEM, prompt, images), known);
+      return checkHoldings(await geminiImages(keys.gemini, FLASH.id, READ_SYSTEM, 'Read the holdings from this screenshot.', [image]), known);
     } catch (e) {
-      lastErr = e;
+      errors.push(`Gemini: ${(e as Error).message}`);
     }
   }
-  throw lastErr;
+  throw new Error(errors.join('; '));
 }

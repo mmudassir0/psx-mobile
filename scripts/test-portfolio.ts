@@ -2,7 +2,7 @@ import { parseHoldings, quarterYoY, reviewHolding, ReviewInput } from '../src/po
 import { computeSeries } from '../src/analysis/signals';
 import { dataChecks } from '../src/analysis/quality';
 import { applyTrade } from '../src/portfolio/holdings';
-import { checkHoldings } from '../src/portfolio/screenshot';
+import { checkHoldings, retryWait } from '../src/portfolio/screenshot';
 import { addEntry, scoreEntry, statsByCall } from '../src/journal/journal';
 import type { Candle } from '../src/psx/types';
 import { planMoney, PlanRow } from '../src/portfolio/plan';
@@ -141,6 +141,8 @@ check('live record: bought, won, stops and running per setup', lr.bySetup.moment
 check('live verdict: too few trades is early', liveVerdict(lr.bySetup.momentum, 'momentum').tone === 'early');
 check('live verdict: 30 trades, 20% won is worse than testing', liveVerdict({ picks: 30, bought: 30, won: 6, avgRet: -0.02, stops: 20, running: 0 }, 'momentum').tone === 'worse');
 check('live verdict: 30 trades, 53% won is in line', liveVerdict({ picks: 30, bought: 30, won: 16, avgRet: 0.004, stops: 8, running: 0 }, 'momentum').tone === 'ok');
+
+check('groq wait: seconds, minutes and header', Math.abs(retryWait('Please try again in 4.3s.', null) - 4300) < 1e-6 && retryWait('try again in 1m2s', null) === 62000 && retryWait('x', '5') === 5000);
 
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);

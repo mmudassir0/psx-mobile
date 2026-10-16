@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
@@ -54,6 +54,10 @@ interface UpdateState {
   check: (manual?: boolean) => Promise<void>;
   download: () => Promise<void>;
   install: () => Promise<void>;
+  /** download paused because Sahm went to the background; it carries on when Sahm is back */
+  paused: boolean;
+  /** hand the download to the phone's browser, which keeps going in the background */
+  openInBrowser: () => void;
 }
 
 const Ctx = createContext<UpdateState | null>(null);
@@ -85,33 +89,99 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Android cuts an app's connections soon after it leaves the screen, so the
+  // download is paused when Sahm goes to the background and resumed from the
+  // same byte when it comes back.
+  const dl = useRef<FileSystem.DownloadResumable | null>(null);
+  const pausing = useRef(false);
+  const [paused, setPaused] = useState(false);
+
   const download = useCallback(async () => {
     if (!latest || busy.current) return;
     busy.current = true;
     setStatus('downloading');
-    setProgress(0);
     setError(null);
+    setPaused(false);
     try {
       const dest = `${FileSystem.cacheDirectory}Sahm-${latest.version}-${latest.build}.apk`;
       const info = await FileSystem.getInfoAsync(dest);
       if (!(info.exists && info.size === latest.size)) {
-        const dl = FileSystem.createDownloadResumable(latest.apkUrl, dest, {}, (p) => {
+        const onProgress = (p: FileSystem.DownloadProgressData) => {
           const total = p.totalBytesExpectedToWrite > 0 ? p.totalBytesExpectedToWrite : latest.size;
-          setProgress(total > 0 ? p.totalBytesWritten / total : 0);
-        });
-        const out = await dl.downloadAsync();
-        if (!out || out.status !== 200) throw new Error(`Download failed (${out?.status ?? 'no response'})`);
+          setProgress((old) => Math.max(old, total > 0 ? p.totalBytesWritten / total : 0));
+        };
+        let out: FileSystem.FileSystemDownloadResult | undefined;
+        if (dl.current) {
+          out = await dl.current.resumeAsync();
+        } else {
+          setProgress(0);
+          dl.current = FileSystem.createDownloadResumable(latest.apkUrl, dest, {}, onProgress);
+          out = await dl.current.downloadAsync();
+        }
+        if (!out) {
+          // paused for the background; the AppState listener resumes it
+          if (pausing.current) return;
+          throw new Error('Download stopped');
+        }
+        if (out.status !== 200 && out.status !== 206) throw new Error(`Download failed (${out.status})`);
+        const done = await FileSystem.getInfoAsync(dest);
+        if (done.exists && latest.size && done.size !== latest.size) {
+          dl.current = null;
+          await FileSystem.deleteAsync(dest, { idempotent: true });
+          throw new Error('The download was incomplete; tap Try again');
+        }
       }
+      dl.current = null;
       setProgress(1);
       setFile(dest);
       setStatus('ready');
       await openInstaller(dest);
     } catch (e) {
-      setError((e as Error).message);
+      // A paused download keeps what it has; one that failed outright starts over.
+      const resumable = !!dl.current?.savable().resumeData;
+      if (!resumable) dl.current = null;
+      if (pausing.current) {
+        // the connection was cut as Sahm went to the background: carry on when it's back
+        setPaused(true);
+        return;
+      }
+      setError(
+        resumable
+          ? `${(e as Error).message}. Try again carries on from ${Math.round(progressRef.current * 100)}%.`
+          : `${(e as Error).message}. If it keeps stopping, use Download in browser: the browser keeps going when you switch apps.`,
+      );
       setStatus('error');
     } finally {
       busy.current = false;
     }
+  }, [latest]);
+
+  const progressRef = useRef(0);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async (s) => {
+      if (s === 'background' && busy.current) {
+        pausing.current = true;
+        try {
+          await dl.current?.pauseAsync();
+          setPaused(true);
+        } catch {
+          // already finished or failed
+        }
+      } else if (s === 'active' && pausing.current) {
+        pausing.current = false;
+        setPaused(false);
+        download();
+      }
+    });
+    return () => sub.remove();
+  }, [download]);
+
+  const openInBrowser = useCallback(() => {
+    if (latest) Linking.openURL(latest.apkUrl);
   }, [latest]);
 
   const install = useCallback(async () => {
@@ -131,7 +201,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [check]);
 
-  return <Ctx.Provider value={{ status, latest, progress, error, check, download, install }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ status, latest, progress, error, check, download, install, paused, openInBrowser }}>{children}</Ctx.Provider>;
 }
 
 async function openInstaller(fileUri: string) {

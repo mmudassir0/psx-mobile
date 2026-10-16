@@ -39,7 +39,7 @@ export default function EditHoldingsScreen() {
     setReading(true);
     try {
       const images = pick.assets.filter((a) => a.base64).map((a) => ({ data: a.base64 as string, mime: a.mimeType ?? 'image/jpeg' }));
-      const r = await readScreenshots(await aiKeys(), images, bySymbol.size ? (s) => bySymbol.has(s) : undefined);
+      const r = await readScreenshots(await aiKeys(), images, bySymbol.size ? (s) => bySymbol.has(s) : undefined, setReadMsg);
       if (!r.holdings.length) {
         setReadMsg(`No holdings found${r.rejected.length ? `: ${r.rejected.join('; ')}` : ''}.`);
         return;

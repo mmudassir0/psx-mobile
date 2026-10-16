@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Canvas, Circle, Group, Line, Path, RoundedRect, Skia, Text, useFont, vec, LinearGradient } from '@shopify/react-native-skia';
 import type { SkPath } from '@shopify/react-native-skia';
@@ -135,6 +135,7 @@ export function SkiaChart({
   const cross = useSharedValue(-1); // active bar index, -1 = none
   const startEnd = useSharedValue(0);
   const startCount = useSharedValue(1);
+  const shape = useRef<{ n: number; visible: number; firstT: number | null } | null>(null);
 
   useEffect(() => {
     const n = candles.length;
@@ -146,11 +147,21 @@ export function SkiaChart({
       c: candles.map((c) => c.c),
       v: candles.map((c) => c.v),
     };
-    const vis = Math.max(Math.min(n, MIN_BARS), Math.min(n, visible));
-    count.value = vis;
-    end.value = n;
-    cross.value = -1;
-    setActiveIdx(null);
+    // Same series with new bars (a live refresh): keep where the user has
+    // scrolled and zoomed to, following the latest bar only if they were on it.
+    const was = shape.current;
+    const showAll = !!was && was.visible === was.n && visible === n;
+    const sameSeries = was && (was.visible === visible || showAll) && was.firstT === (candles[0]?.t ?? null) && n >= was.n;
+    if (sameSeries) {
+      if (showAll && count.value >= was.n - 0.5) count.value = Math.max(Math.min(n, MIN_BARS), n);
+      if (end.value >= was.n - 0.5) end.value = n;
+    } else {
+      count.value = Math.max(Math.min(n, MIN_BARS), Math.min(n, visible));
+      end.value = n;
+      cross.value = -1;
+      setActiveIdx(null);
+    }
+    shape.current = { n, visible, firstT: candles[0]?.t ?? null };
   }, [candles, visible, data, count, end, cross]);
 
   useEffect(() => {

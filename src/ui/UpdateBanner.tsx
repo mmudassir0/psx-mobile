@@ -8,7 +8,7 @@ const mb = (b: number) => `${(b / 1048576).toFixed(1)} MB`;
 
 /** Shown on Home when a newer build is on GitHub. */
 export function UpdateBanner() {
-  const { status, latest, progress, error, download, install } = useUpdate();
+  const { status, latest, progress, error, download, install, paused, openInBrowser } = useUpdate();
   if (!latest || !['available', 'downloading', 'ready', 'error'].includes(status)) return null;
   if (status === 'error' && progress === 0 && latest.build <= BUILD) return null;
   const notes = latest.notes.split('\n')[0];
@@ -30,7 +30,9 @@ export function UpdateBanner() {
           <View style={styles.track}>
             <View style={[styles.fill, { width: `${Math.round(progress * 100)}%` }]} />
           </View>
-          <T v="caption">Downloading… {Math.round(progress * 100)}%</T>
+          <T v="caption">
+            {paused ? `Paused at ${Math.round(progress * 100)}% while Sahm is in the background; it carries on when you come back.` : `Downloading… ${Math.round(progress * 100)}%. Keep Sahm open until it finishes.`}
+          </T>
         </View>
       ) : status === 'ready' ? (
         <Button small label="Install update" onPress={install} />
@@ -38,6 +40,11 @@ export function UpdateBanner() {
         <Button small label={status === 'error' ? 'Try again' : 'Download and install'} onPress={download} />
       )}
       {status === 'error' && error ? <T v="caption" style={{ color: colors.down }}>{error}</T> : null}
+      {status === 'downloading' || status === 'error' || status === 'available' ? (
+        <Pressable accessibilityRole="link" onPress={openInBrowser} hitSlop={8}>
+          <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Download in browser instead ›</T>
+        </Pressable>
+      ) : null}
       {status === 'ready' ? (
         <T v="caption">If Android asks, allow Sahm to install apps, then come back and tap Install update.</T>
       ) : null}
