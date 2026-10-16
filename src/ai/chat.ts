@@ -13,6 +13,8 @@ import { dailyCandles } from '../psx/history';
 import { analyze, computeSeries } from '../analysis/signals';
 import { backtest } from '../analysis/backtest';
 import { valueStock } from '../analysis/valuation';
+import type { MarketFeed } from '../analysis/market';
+import { marketFeedText } from './marketContext';
 import { technicals } from '../analysis/technicals';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { StockPack, stockContext } from './context';
@@ -261,16 +263,19 @@ export async function chatContext(
   question: string,
   stocks: Stock[],
   indices: IndexQuote[],
+  market?: MarketFeed | null,
 ): Promise<{ text: string; compact: string; symbols: string[] }> {
   const symbols = mentionedSymbols(question, stocks);
   const packs = await Promise.all(symbols.map((sym) => packOf(sym, stocks)));
   const rank = symbols.length < 2 ? ranking(question, stocks) : null;
   const head = [marketSnapshot(stocks, indices)];
+  const trendFull = market ? [marketFeedText(market)] : [];
+  const trendCompact = market ? [marketFeedText(market, true)] : [];
   if (packs.length >= 2) head.push(comparison(packs));
   if (rank) head.push(rank);
   const table = symbols.length < 2 ? [screeningTable(question, stocks, symbols.length ? 15 : 30)] : [];
-  const full = [...head, ...packs.map((p) => stockContext(p)), ...table];
+  const full = [...head, ...trendFull, ...packs.map((p) => stockContext(p)), ...table];
   // Phone models: the computed ranking or comparison plus slim packs; the big table only when nothing was ranked.
-  const compact = [...head, ...packs.map((p) => stockContext(p, true)), ...(rank || packs.length >= 2 ? [] : [screeningTable(question, stocks, 15)])];
+  const compact = [...head, ...trendCompact, ...packs.map((p) => stockContext(p, true)), ...(rank || packs.length >= 2 ? [] : [screeningTable(question, stocks, 15)])];
   return { text: full.join('\n\n'), compact: compact.join('\n\n'), symbols };
 }

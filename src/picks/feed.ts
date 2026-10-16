@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { cached } from '../psx/cache';
 import { ListId, listOf, PicksFeed } from './build';
+import type { MarketFeed } from '../analysis/market';
 import { FEED_TOPIC, NTFY } from './config';
 
-export type Feeds = Partial<Record<ListId, PicksFeed>>;
+export type Feeds = Partial<Record<ListId, PicksFeed>> & { market?: MarketFeed };
 
 /** The newest feed for each list in an ntfy JSON stream (one JSON object per line). */
 export function parseFeeds(ndjson: string): Feeds {
@@ -14,7 +15,12 @@ export function parseFeeds(ndjson: string): Feeds {
     try {
       const m = JSON.parse(line);
       if (m.event !== 'message' || typeof m.message !== 'string') continue;
-      const f = JSON.parse(m.message) as PicksFeed;
+      const raw = JSON.parse(m.message);
+      if (raw?.v === 1 && raw.kind === 'market' && Array.isArray(raw.sectors)) {
+        if (!out.market || raw.generatedAt > out.market.generatedAt) out.market = raw as MarketFeed;
+        continue;
+      }
+      const f = raw as PicksFeed;
       if (f?.v !== 1 || !Array.isArray(f.picks)) continue;
       const id = listOf(f);
       if (!out[id] || f.generatedAt > out[id]!.generatedAt) out[id] = f;
@@ -26,8 +32,10 @@ export function parseFeeds(ndjson: string): Feeds {
 }
 
 /** The newest feed of any list (tests, older callers). */
-export const parseFeed = (ndjson: string): PicksFeed | null =>
-  Object.values(parseFeeds(ndjson)).sort((a, b) => (a!.generatedAt < b!.generatedAt ? 1 : -1))[0] ?? null;
+export const parseFeed = (ndjson: string): PicksFeed | null => {
+  const { market: _m, ...lists } = parseFeeds(ndjson);
+  return (Object.values(lists) as PicksFeed[]).sort((a, b) => (a.generatedAt < b.generatedAt ? 1 : -1))[0] ?? null;
+};
 
 export async function fetchFeeds(): Promise<Feeds> {
   const res = await fetch(`${NTFY}/${FEED_TOPIC}/json?poll=1&since=all`);
@@ -56,5 +64,5 @@ export function usePicksFeed() {
   useEffect(() => {
     load();
   }, [load]);
-  return { feeds, feed: feeds?.all ?? null, error, loading, reload: () => load(true) };
+  return { feeds, feed: feeds?.all ?? null, market: feeds?.market ?? null, error, loading, reload: () => load(true) };
 }

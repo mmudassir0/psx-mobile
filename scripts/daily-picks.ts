@@ -15,7 +15,9 @@ import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
 import { breadthOf, choosePicks, ListId, listOf, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
-import { fetchIndexConstituents } from '../src/psx/api';
+import { fetchIndexConstituents, fetchSeries, fetchSymbols } from '../src/psx/api';
+import { indexTrend, MarketFeed } from '../src/analysis/market';
+import { MIN_LIQUIDITY } from '../src/analysis/picks';
 import { WAIT_DAYS } from '../src/analysis/picks';
 import { FEED_TOPIC, NTFY } from '../src/picks/config';
 
@@ -172,6 +174,73 @@ async function main() {
     }
   }
   writeFileSync(join(stateDir, 'latest.json'), JSON.stringify(feeds));
+
+  // 6. The market report: each index's trend and how every sector is doing.
+  const retry = async <T,>(f: () => Promise<T>): Promise<T | null> => {
+    for (let a = 0; a < 4; a++) {
+      try {
+        return await f();
+      } catch {
+        await sleep(4000 * (a + 1));
+      }
+    }
+    return null;
+  };
+  const sectorsPath = join(stateDir, 'sectors.json');
+  let sectorOf: Record<string, string> = existsSync(sectorsPath) ? JSON.parse(readFileSync(sectorsPath, 'utf8')) : {};
+  const syms = await retry(fetchSymbols);
+  if (syms?.length) {
+    sectorOf = Object.fromEntries(syms.map((x) => [x.symbol, x.sectorName]));
+    writeFileSync(sectorsPath, JSON.stringify(sectorOf));
+  }
+  const indices: MarketFeed['indices'] = {};
+  for (const code of ['KSE100', 'KMI30', 'ALLSHR']) {
+    const pts = await retry(() => fetchSeries('eod', code));
+    const t = pts ? indexTrend(pts) : null;
+    if (t) indices[code] = { regime: t.regime, since: t.since, days: t.days, close: Math.round(t.close), r1m: t.returns.m1 == null ? null : Math.round(t.returns.m1 * 1000) / 1000, fromHigh: Math.round(t.fromHigh * 1000) / 1000 };
+    console.log(`${code}: ${t ? `${t.regime} for ${t.days} days` : 'no data'}`);
+  }
+  const groups = new Map<string, { r1w: number[]; r1m: number[]; vol: number[]; up: number }>();
+  for (const u of universe) {
+    const S = u.series!;
+    const n = S.c.length - 1;
+    const sector = sectorOf[u.symbol];
+    if (!sector || n < 260 || pkDay(S.c[n].t) !== day || liquidityAt(S, n) < MIN_LIQUIDITY) continue;
+    const g = groups.get(sector) ?? { r1w: [], r1m: [], vol: [], up: 0 };
+    g.r1w.push(S.cl[n] / S.cl[n - 5] - 1);
+    g.r1m.push(S.cl[n] / S.cl[n - 21] - 1);
+    const avg = (a: number, b: number) => S.c.slice(a, b + 1).reduce((x, c) => x + c.v, 0) / (b - a + 1);
+    g.vol.push(avg(n - 4, n) / (avg(n - 59, n) || 1));
+    if (S.e200[n] != null && S.cl[n] > (S.e200[n] as number)) g.up++;
+    groups.set(sector, g);
+  }
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const r3 = (v: number) => Math.round(v * 1000) / 1000;
+  const market: MarketFeed = {
+    v: 1,
+    kind: 'market',
+    day,
+    generatedAt: new Date(now).toISOString(),
+    breadth,
+    indices,
+    sectors: [...groups]
+      .filter(([, g]) => g.r1m.length >= 2)
+      .map(([name, g]) => [name, g.r1m.length, r3(mean(g.r1w)), r3(mean(g.r1m)), Math.round(mean(g.vol) * 100) / 100, r3(g.up / g.r1m.length)] as MarketFeed['sectors'][number])
+      .sort((a, b) => b[3] - a[3]),
+  };
+  let mbody = JSON.stringify(market);
+  while (mbody.length > 3900 && market.sectors.length) {
+    // drop the smallest sectors first
+    market.sectors.splice(market.sectors.reduce((k, x, i, a) => (x[1] < a[k][1] ? i : k), 0), 1);
+    mbody = JSON.stringify(market);
+  }
+  writeFileSync(join(stateDir, 'market.json'), mbody);
+  console.log(`sectors: ${market.sectors.slice(0, 3).map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`).join(', ')} … ${market.sectors.slice(-2).map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`).join(', ')}`);
+  if (process.env.PUBLISH === '1') {
+    const res = await fetch(`${NTFY}/${FEED_TOPIC}`, { method: 'POST', body: mbody, headers: { Title: `Sahm market ${day}` } });
+    console.log(`published market report to ntfy: ${res.status}`);
+    if (!res.ok) process.exitCode = 1;
+  }
 }
 main().catch((e) => {
   console.error(e);

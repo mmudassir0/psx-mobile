@@ -9,6 +9,7 @@ import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
 import { useIndexSeries } from '../store/indexSeries';
 import { PicksHomeCard } from '../ui/PicksHomeCard';
+import { MarketLine } from '../ui/MarketLine';
 import { valuePortfolio } from '../paper/engine';
 import { Change, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
@@ -89,8 +90,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.pad}>
+        <View style={[styles.pad, { gap: 10 }]}>
           <MarketStatus />
+          <MarketLine />
         </View>
 
         <UpdateBanner />

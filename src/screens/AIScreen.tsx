@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, themed } from '../theme';
 import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
+import { usePicksFeed } from '../picks/feed';
 import { chatContext } from '../ai/chat';
 import { CHAT_SYSTEM } from '../ai/context';
 import type { ChatMessage, Generation } from '../ai/models';
@@ -32,6 +33,7 @@ interface Turn {
 /** Market snapshot plus "Ask Sahm": questions answered by the on-phone model from live PSX data. */
 export default function AIScreen() {
   const { stocks, indices } = useMarket();
+  const { market } = usePicksFeed();
   const ai = useAi();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
@@ -67,7 +69,7 @@ export default function AIScreen() {
     setInput('');
     setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     try {
-      const { text, compact, symbols } = await chatContext(q, stocks, indices);
+      const { text, compact, symbols } = await chatContext(q, stocks, indices, market);
       patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
       const build = (tier: 'small' | 'large'): ChatMessage[] => {
         const m: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${tier === 'small' ? compact : text}` }];

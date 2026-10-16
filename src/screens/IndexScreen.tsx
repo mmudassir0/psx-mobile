@@ -7,6 +7,11 @@ import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtSigned } from '../format';
 import { fetchIndexConstituents, fetchSeries, INDEX_ABOUT, INDEX_NAMES } from '../psx/api';
 import { cached } from '../psx/cache';
+import { indexTrend, sectorRows } from '../analysis/market';
+import { marketContext } from '../ai/marketContext';
+import { usePicksFeed } from '../picks/feed';
+import { IndexTrendCard, MarketAi } from '../ui/IndexTrendCard';
+import { SectorsCard } from '../ui/SectorsCard';
 import { ticksToCandles } from '../psx/parse';
 import type { Candle, Constituent, SeriesPoint } from '../psx/types';
 import { useMarket } from '../store/market';
@@ -139,6 +144,10 @@ export default function IndexScreen() {
   const chartMode: ChartMode = range === '1D' ? mode : 'line';
   const prevClose = quote?.current != null && quote.change != null ? quote.current - quote.change : null;
 
+  const trend = useMemo(() => (eod && eod.length ? indexTrend(eod) : null), [eod]);
+  const { market } = usePicksFeed();
+  const sectors = useMemo(() => (market ? sectorRows(market) : []), [market]);
+
   const stats = useMemo(() => {
     if (!cons) return null;
     const up = cons.filter((c) => (c.change ?? 0) > 0).length;
@@ -147,6 +156,11 @@ export default function IndexScreen() {
     const mcap = cons.reduce((s, c) => s + (c.marketCap ?? 0), 0);
     return { up, down, flat: cons.length - up - down, volume, mcap, count: cons.length };
   }, [cons]);
+  const aiContext = useMemo(
+    () => (trend ? marketContext(INDEX_NAMES[code] ?? code, trend, { breadth: market?.breadth ?? null, sectors, up: stats?.up, down: stats?.down }) : ''),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trend, market, sectors, code, stats],
+  );
 
   const list = useMemo(() => {
     if (!cons) return [];
@@ -283,6 +297,31 @@ export default function IndexScreen() {
                 {stats.down} down
               </T>
             </View>
+          </View>
+        ) : null}
+
+        {trend ? (
+          <View style={styles.pad}>
+            <Section title="Trend">
+              <IndexTrendCard t={trend} />
+            </Section>
+          </View>
+        ) : null}
+
+        {sectors.length && code !== 'KMI30' ? (
+          <View style={styles.pad}>
+            <Section title="Sectors">
+              <SectorsCard sectors={sectors} />
+            </Section>
+          </View>
+        ) : null}
+
+        {trend ? (
+          <View style={styles.pad}>
+            <Section title="AI view of the market">
+              <MarketAi id={code} context={aiContext} />
+              <T v="caption">Not investment advice.</T>
+            </Section>
           </View>
         ) : null}
 

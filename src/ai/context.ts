@@ -216,6 +216,7 @@ Answer the question using ONLY the data below the line. Every number there is co
 - Copy numbers exactly; do not calculate new ones; do not invent prices, news or companies.
 - Answer the question directly in the first sentence, then give the 2–4 facts that support it.
 - If the data has a RANKING or COMPARISON block, base your answer on it: it is already sorted and correct.
+- For questions about the market, an index or sectors, use the MARKET TREND and SECTORS lines; sector moves come from prices and volume, so don't invent reasons for them.
 - A FAIR VALUE block is Sahm's own estimate with its working; use it when asked what a stock is worth or whether it is under- or overvalued, give the range rather than one number, and mention its caveats.
 - A TRACK RECORD line is a backtest of the technical score on that stock's past prices; quote it when asked whether the signals work.
 - "Cheap" or "expensive" means valuation (P/E, price to book), never the share price.

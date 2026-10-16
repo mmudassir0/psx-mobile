@@ -11,6 +11,7 @@ import type { Action } from '../../portfolio/review';
 import { usePicksFeed } from '../../picks/feed';
 import { shortSector } from '../../sectors';
 import { Panel } from '../../ui/bits';
+import { StressCard } from '../../ui/StressCard';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
 
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
@@ -95,7 +96,8 @@ export function MyHoldings() {
   const { holdings, loaded } = useHoldings();
   const { feed } = usePicksFeed();
   const breadth = feed?.breadth ?? null;
-  const { rows, total, sectors, loading } = useReviews(holdings, stocks, bySymbol, breadth);
+  const { rows, total, sectors, loading, candles } = useReviews(holdings, stocks, bySymbol, breadth);
+  const stressRows = useMemo(() => rows.map((r) => ({ symbol: r.holding.symbol, value: r.value })), [rows]);
 
   const sorted = useMemo(
     () =>
@@ -148,6 +150,10 @@ export function MyHoldings() {
         {sorted.map((r) => (
           <HoldingCard key={r.holding.symbol} r={r} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
         ))}
+      </Section>
+
+      <Section title="Stress test">
+        {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
       </Section>
 
       <Section title="By sector">

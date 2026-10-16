@@ -83,6 +83,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
       });
       return { ...r, weight: r.value / total, review };
     });
-    return { rows, total, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };
+    const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
+    return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };
   }, [holdings, data, stocks, bySymbol, breadth]);
 }
