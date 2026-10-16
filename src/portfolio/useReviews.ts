@@ -85,7 +85,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         company: d.company,
         ratios,
         hasBalanceSheet: !!balance,
-        isBank: !!balance?.isBank,
+        isBank: !!balance?.isBank || /commercial bank/i.test((r?.stock?.sector ?? d?.company?.sector ?? '') as string),
         fair,
         divYield: r.stock?.divYield ?? null,
         dividends: dv,

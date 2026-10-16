@@ -57,6 +57,7 @@ check('an unflagged 40% drop is still a Review', reviewHolding({ ...base, compan
 const bs = { equity: 40, assets: 200, liabilities: 160, isBank: false, periodEnd: '2026-06-30', source: { pages: [34] } } as never;
 const dq = dataChecks({ symbol: 'E', company: null, balance: bs, ratios: { debtToEquity: 2.4, roe: 0.3 } as never, now: Date.UTC(2026, 9, 16) });
 check('very high debt is flagged with its page', dq.debtOdd && /240% of equity \(page 34/.test(dq.notes.join(' ')), dq.notes);
+check('a commercial bank\'s borrowing is not flagged', !dataChecks({ symbol: 'B', sector: 'Commercial Banks', company: null, balance: bs, ratios: { debtToEquity: 2.6 } as never }).debtOdd);
 check('an old balance sheet is flagged', /more than a year old/.test(dataChecks({ symbol: 'E', company: null, balance: bs, ratios: null, now: Date.UTC(2027, 11, 1) }).notes.join(' ')));
 
 const h0 = [{ symbol: 'LUCK', shares: 200, avgCost: 419.11 }];

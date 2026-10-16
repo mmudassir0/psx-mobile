@@ -89,7 +89,7 @@ async function main() {
         company: co,
         ratios,
         hasBalanceSheet: !!balance,
-        isBank: !!balance?.isBank,
+        isBank: !!balance?.isBank || /commercial bank/i.test(co?.sector ?? ''),
         fair: co && !fundLike ? valueStock({ symbol: sym, stock, company: co, ratios, balance, peers: [], daily: c }) : null,
         divYield: scr?.divYield ?? null,
         dividends: dv,
