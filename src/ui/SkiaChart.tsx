@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { Canvas, Group, Line, Path, RoundedRect, Skia, Text, useFont, vec, LinearGradient } from '@shopify/react-native-skia';
+import { Canvas, Circle, Group, Line, Path, RoundedRect, Skia, Text, useFont, vec, LinearGradient } from '@shopify/react-native-skia';
 import type { SkPath } from '@shopify/react-native-skia';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -16,6 +16,12 @@ const AXIS_W = 60;
 const X_LABEL_H = 22;
 const TICKS = 6;
 const MIN_BARS = 8;
+// readout box shown while inspecting (like a broker app's tooltip)
+const BOX_W = 178;
+const VALUE_X = 64; // values in a column after the labels
+const ROW_H = 17;
+const BOX_ROWS = 4;
+const BOX_H = BOX_ROWS * ROW_H + 12;
 
 
 // ---------------------------------------------------------------------------
@@ -55,6 +61,16 @@ function timeText(t: number, unit: ChartUnit): string {
   }
   if (unit === 'day') return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()];
   return MONTHS[d.getUTCMonth()] + ' ' + String(d.getUTCFullYear()).slice(2);
+}
+
+/** Full time stamp for the readout box: "11:09 · 16 Oct" or "16 Oct 2026". */
+function stampText(t: number, unit: ChartUnit): string {
+  'worklet';
+  const d = new Date(t + 5 * 3600000);
+  const day = d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()];
+  if (unit === 'intraday') return timeText(t, unit) + '  ·  ' + day;
+  if (unit === 'month') return 'Week of ' + day + ' ' + String(d.getUTCFullYear()).slice(2);
+  return day + ' ' + d.getUTCFullYear();
 }
 
 function niceStep(span: number, count: number): number {
@@ -351,6 +367,34 @@ export function SkiaChart({
   const crossTextY = useDerivedValue(() => crossY.value + 4);
   const crossText = useDerivedValue(() => (cross.value < 0 ? '' : tagText(crossC.value)));
   const crossOpacity = useDerivedValue(() => (cross.value < 0 ? 0 : 1));
+  // readout box: date, price, change, volume of the bar under the finger
+  const boxX = useDerivedValue(() => {
+    const plotW = geo.value.plotW;
+    // keep the box away from the finger: left half → box on the right, and back
+    return crossX.value > plotW / 2 ? 6 : Math.max(6, plotW - BOX_W - 6);
+  });
+  const rowY = (k: number) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useDerivedValue(() => 6 + 6 + (k + 1) * ROW_H - 4);
+  const rowYs = [rowY(0), rowY(1), rowY(2), rowY(3)];
+  const labelX = useDerivedValue(() => boxX.value + 9);
+  const crossRef = useDerivedValue(() => {
+    const i = cross.value;
+    if (i < 0) return 0;
+    if (unit === 'intraday' && prev.value > 0) return prev.value;
+    return i > 0 ? data.value.c[i - 1] : data.value.o[i];
+  });
+  const crossChg = useDerivedValue(() => (cross.value < 0 || crossRef.value <= 0 ? 0 : crossC.value / crossRef.value - 1));
+  const vStamp = useDerivedValue(() => (cross.value < 0 ? '' : stampText(data.value.t[cross.value], unit)));
+  const vPrice = useDerivedValue(() => (cross.value < 0 ? '' : tagText(crossC.value)));
+  const vChg = useDerivedValue(() => {
+    if (cross.value < 0) return '';
+    const ch = crossC.value - crossRef.value;
+    return (ch >= 0 ? '+' : '') + tagText(ch) + '  (' + (crossChg.value >= 0 ? '+' : '') + (crossChg.value * 100).toFixed(2) + '%)';
+  });
+  const vVol = useDerivedValue(() => (cross.value < 0 ? '' : fmtNum(data.value.v[cross.value] || 0, 0)));
+  const chgColor = useDerivedValue(() => (crossChg.value >= 0 ? colors.up : colors.down));
+  const valueX = useDerivedValue(() => boxX.value + VALUE_X);
   const tagX = useDerivedValue(() => geo.value.plotW + 2);
   const tagTextX = useDerivedValue(() => geo.value.plotW + 8);
   const gradStart = vec(0, 0);
@@ -484,6 +528,20 @@ export function SkiaChart({
                 <Line p1={crossH1} p2={crossH2} color={colors.muted} strokeWidth={1} style="stroke" />
                 <RoundedRect x={tagX} y={crossTagY} width={AXIS_W - 4} height={20} r={5} color={colors.text} />
                 {fontBold ? <Text x={tagTextX} y={crossTextY} text={crossText} font={fontBold} color={colors.onGold} /> : null}
+                <Circle cx={crossX} cy={crossY} r={4} color={colors.text} />
+                <RoundedRect x={boxX} y={6} width={BOX_W} height={BOX_H} r={8} color={colors.surface} opacity={0.96} />
+                <RoundedRect x={boxX} y={6} width={BOX_W} height={BOX_H} r={8} color={colors.hairline} style="stroke" strokeWidth={1} />
+                {font && fontBold ? (
+                  <Group>
+                    <Text x={labelX} y={rowYs[0]} text={vStamp} font={fontBold} color={colors.text} />
+                    <Text x={labelX} y={rowYs[1]} text="Price" font={font} color={colors.muted} />
+                    <Text x={valueX} y={rowYs[1]} text={vPrice} font={fontBold} color={colors.text} />
+                    <Text x={labelX} y={rowYs[2]} text="Change" font={font} color={colors.muted} />
+                    <Text x={valueX} y={rowYs[2]} text={vChg} font={fontBold} color={chgColor} />
+                    <Text x={labelX} y={rowYs[3]} text="Volume" font={font} color={colors.muted} />
+                    <Text x={valueX} y={rowYs[3]} text={vVol} font={fontBold} color={colors.text} />
+                  </Group>
+                ) : null}
               </Group>
             </Canvas>
           ) : null}

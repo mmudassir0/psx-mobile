@@ -10,6 +10,7 @@ import { analyze, computeSeries } from '../analysis/signals';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { valueStock } from '../analysis/valuation';
 import { dataChecks } from '../analysis/quality';
+import { resultsStatus, ResultsStatus } from '../analysis/results';
 import type { Candle } from '../psx/types';
 import { Holding, Review, reviewHolding } from './review';
 
@@ -21,6 +22,10 @@ export interface Row {
   weight: number;
   review: Review | null;
   dividends: Dividends | null;
+  /** an ETF or mutual fund */
+  fund: boolean;
+  /** latest results and whether more are due */
+  results: ResultsStatus | null;
 }
 
 const FUND = /etf|exchange traded|mutual fund/i;
@@ -62,7 +67,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
     }
     const rows: Row[] = base.map((r) => {
       const d = data[r.holding.symbol];
-      if (!d) return { ...r, weight: r.value / total, review: null, dividends: null };
+      if (!d) return { ...r, weight: r.value / total, review: null, dividends: null, fund: FUND.test(r.stock?.sector ?? ''), results: null };
       const series = d.candles?.length ? computeSeries(d.candles) : null;
       const balance = balanceSheetFor(r.holding.symbol);
       const ratios = d.company ? computeRatios(balance, d.company, r.stock) : null;
@@ -91,7 +96,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         dividends: dv,
         checks: dataChecks({ symbol: r.holding.symbol, name: r.stock?.name ?? d.company?.name, sector: r.stock?.sector ?? d.company?.sector, company: d.company, balance, ratios }),
       });
-      return { ...r, weight: r.value / total, review, dividends: dv };
+      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null };
     });
     const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
     return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };

@@ -5,6 +5,11 @@ import { applyTrade } from '../src/portfolio/holdings';
 import { checkHoldings } from '../src/portfolio/screenshot';
 import { addEntry, scoreEntry, statsByCall } from '../src/journal/journal';
 import type { Candle } from '../src/psx/types';
+import { planMoney, PlanRow } from '../src/portfolio/plan';
+import { expectedLabel, resultsLine, resultsStatus } from '../src/analysis/results';
+import { liveRecord, liveVerdict } from '../src/picks/build';
+import { readFileSync } from 'fs';
+import { parseCompany } from '../src/psx/parse';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -92,6 +97,50 @@ check('scored from the entry day close after 21 and 63 days, against the index',
 check('too recent to score: nothing', Object.keys(scoreEntry({ ...e1, day: '2026-03-20' }, stockC, ix).ret).length === 0);
 const st = statsByCall([sc, scoreEntry({ ...e1, symbol: 'B', call: 'Bearish' }, stockC, ix)], 21);
 check('stats: Bullish that beat the index is right, Bearish that beat it is wrong', st.find((x) => x.call === 'Bullish')!.right === 1 && st.find((x) => x.call === 'Bearish')!.right === 0, st);
+
+// --- New-money plan
+const prv = (o: object) => ({ action: 'Hold', watch: false, trendUp: true, upside: 0, checks: [], ...o }) as never;
+const prow = (symbol: string, value: number, sector: string, o: object = {}, price = 100): PlanRow => ({ symbol, price, value, sector, review: prv(o) });
+const pr = [
+  prow('BIG', 25_000, 'Cement', { action: 'Trim' }),
+  prow('CHEAP', 5_000, 'Fertilizer', { upside: 0.4, action: 'Add more' }),
+  prow('PRICEY', 5_000, 'Banks', { upside: -0.3 }),
+  prow('BROKEN', 5_000, 'Power', { watch: true }),
+  prow('WEAK', 5_000, 'Pharma', { action: 'Review' }),
+  prow('FAR', 5_000, 'Holding', { upside: -0.7 }),
+  prow('FULL', 50_000, 'Tech', {}),
+];
+const plan = planMoney(pr, 6_000);
+const got = (s: string) => plan.lines.find((l) => l.symbol === s)?.shares ?? 0;
+check('plan: skips Trim, Review, broken charts, far above fair value, already 10%+', ['BIG', 'WEAK', 'BROKEN', 'FAR', 'FULL'].every((s) => !got(s)) && plan.skipped.length >= 5, plan.skipped);
+check('plan: more to the cheap Add more than the pricey one', got('CHEAP') > got('PRICEY') && got('PRICEY') > 0, plan.lines);
+check('plan: whole shares, never over the amount', plan.lines.every((l) => Number.isInteger(l.shares)) && plan.lines.reduce((a, l) => a + l.amount, 0) <= 6_000 && plan.left >= 0);
+check('plan: no holding passes 10% after buying', plan.lines.every((l) => l.weightAfter <= 0.1 + 1e-9), plan.lines.map((l) => l.weightAfter));
+check('plan: says how much new money brings an over-20% holding under 20%', plan.dilute[0]?.symbol === 'BIG' && Math.abs(plan.dilute[0].needed - (25_000 / 0.2 - 100_000)) < 1e-6, plan.dilute);
+const big = planMoney([prow('L', 30_000, 'Cement', { action: 'Trim' }), prow('A', 70_000, 'Fert')], 1000);
+check('plan: new money needed to dilute an oversized holding', big.dilute[0]?.symbol === 'L' && Math.abs(big.dilute[0].needed - 50_000) < 1e-6, big.dilute);
+check('plan: nothing eligible says so', planMoney([prow('B', 5000, 'X', { watch: true })], 1000).note != null);
+
+// --- Results season
+check('fiscal labels: Sep quarter of a June year is Q1 next year', expectedLabel('2026-09', 5, false) === 'Q1 2027' && expectedLabel('2026-03', 5, false) === 'Q3 2026' && expectedLabel('2026-09', 11, false) === 'Q3 2026' && expectedLabel('2026-06', 5, true) === '2026');
+const luck = parseCompany('LUCK', readFileSync('scripts/fixtures/company_LUCK.html', 'utf8'));
+const rst = resultsStatus(luck, Date.parse('2026-08-12'));
+check('results: latest annual results with EPS against a year earlier', !!rst.latest && rst.latest.annual && rst.latest.fresh && rst.latest.period === '2026' && Math.abs(rst.latest.epsChange! - (31.83 / 22.59 - 1)) < 1e-9 && !rst.latest.tableBehind, rst.latest);
+check('results: line', /EPS Rs 31\.83 vs Rs 22\.59.*\+41%.*sales \+10%/.test(resultsLine(rst.latest!)), resultsLine(rst.latest!));
+check('results: old news is not fresh', !resultsStatus(luck, Date.parse('2026-10-17')).latest!.fresh);
+const withMeeting = { ...luck, announcements: [{ date: '2026-10-14', title: 'Board Meeting', url: null, category: 'Board Meetings' }, ...luck.announcements] };
+check('results: a board meeting after the last results means results are due', resultsStatus(withMeeting, Date.parse('2026-10-17')).meetingNotice?.date === '2026-10-14');
+const newQ = { ...luck, announcements: [{ date: '2026-10-16', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }, ...luck.announcements] };
+const nq = resultsStatus(newQ, Date.parse('2026-10-17')).latest!;
+check("results: PSX's table not updated yet is flagged, not read as the new quarter", nq.tableBehind && /hasn't updated/.test(resultsLine(nq)), nq);
+
+// --- Live picks record
+const lp = (setup: string, ret: number | null, result: string, filled = true) => ({ symbol: 'S', setup, day: '2026-10-15', result, ret, filled }) as never;
+const lr = liveRecord([lp('momentum', 0.05, 'tp2'), lp('momentum', -0.03, 'stop'), lp('momentum', null, 'open'), lp('pullback', null, 'no-fill', false)]);
+check('live record: bought, won, stops and running per setup', lr.bySetup.momentum.bought === 2 && lr.bySetup.momentum.won === 1 && lr.bySetup.momentum.stops === 1 && lr.bySetup.momentum.running === 1 && lr.bySetup.pullback.bought === 0 && lr.since === '2026-10-15', lr);
+check('live verdict: too few trades is early', liveVerdict(lr.bySetup.momentum, 'momentum').tone === 'early');
+check('live verdict: 30 trades, 20% won is worse than testing', liveVerdict({ picks: 30, bought: 30, won: 6, avgRet: -0.02, stops: 20, running: 0 }, 'momentum').tone === 'worse');
+check('live verdict: 30 trades, 53% won is in line', liveVerdict({ picks: 30, bought: 30, won: 16, avgRet: 0.004, stops: 8, running: 0 }, 'momentum').tone === 'ok');
 
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);

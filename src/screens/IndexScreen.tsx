@@ -38,15 +38,30 @@ function lastSession(ticks: SeriesPoint[]) {
   return ticks.filter((p) => dayOf(p.t) === d);
 }
 
-/** EOD index closes as line-chart bars (PSX publishes no daily high/low for indices). */
+/**
+ * Daily index bars. PSX publishes each day's open, close and volume for an
+ * index but no high or low, so a candle's wick only spans open to close.
+ * Long ranges are grouped into weeks: first open, last close, highest and
+ * lowest of those, and the week's total volume.
+ */
 function eodBars(eod: SeriesPoint[], weekly: boolean): Candle[] {
-  if (!eod.length) return [];
-  const pts = eod;
-  // Weekly sampling for long ranges keeps the line readable.
-  const step = weekly ? 5 : 1;
-  return pts
-    .filter((_, i) => i % step === 0 || i === pts.length - 1)
-    .map((p) => ({ t: p.t, o: p.open ?? p.v, h: p.v, l: p.v, c: p.v, v: p.vol }));
+  const day = eod.map((p) => {
+    const o = p.open ?? p.v;
+    return { t: p.t, o, h: Math.max(o, p.v), l: Math.min(o, p.v), c: p.v, v: p.vol ?? 0 };
+  });
+  if (!weekly) return day;
+  const weekOf = (t: number) => Math.floor((t + 5 * 3600_000 + 3 * DAY) / (7 * DAY)); // weeks starting Monday
+  const out: Candle[] = [];
+  for (const b of day) {
+    const last = out[out.length - 1];
+    if (last && weekOf(last.t) === weekOf(b.t)) {
+      last.h = Math.max(last.h, b.h);
+      last.l = Math.min(last.l, b.l);
+      last.c = b.c;
+      last.v += b.v;
+    } else out.push({ ...b, t: b.t });
+  }
+  return out;
 }
 
 function Row({ c, tab, onPress, last }: { c: Constituent; tab: Tab; onPress: () => void; last: boolean }) {
@@ -141,7 +156,7 @@ export default function IndexScreen() {
     return { bars: eodBars(eod ?? [], range === '5Y'), unit: range === '5Y' ? 'month' : 'day', visible };
   }, [range, ticks, eod]);
   const loadingChart = range === '1D' ? ticks == null : eod == null;
-  const chartMode: ChartMode = range === '1D' ? mode : 'line';
+  const chartMode: ChartMode = mode;
   const prevClose = quote?.current != null && quote.change != null ? quote.current - quote.change : null;
 
   const trend = useMemo(() => (eod && eod.length ? indexTrend(eod) : null), [eod]);
@@ -261,16 +276,20 @@ export default function IndexScreen() {
               </Pressable>
             ))}
           </View>
-          {range === '1D' ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setMode((m) => (m === 'line' ? 'candle' : 'line'))}
-              style={styles.modeBtn}
-            >
-              <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>{mode === 'line' ? 'Candles' : 'Line'}</T>
-            </Pressable>
-          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setMode((m) => (m === 'line' ? 'candle' : 'line'))}
+            style={styles.modeBtn}
+          >
+            <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>{mode === 'line' ? 'Candles' : 'Line'}</T>
+          </Pressable>
         </View>
+
+        {mode === 'candle' && range !== '1D' ? (
+          <T v="caption" style={[styles.pad, { marginTop: -8 }]}>
+            PSX gives no daily high or low for an index, so these candles run from open to close only.
+          </T>
+        ) : null}
 
         <View style={[styles.pad, styles.statGrid]}>
           <Stat label="Day high" value={fmtNum(quote?.high)} />

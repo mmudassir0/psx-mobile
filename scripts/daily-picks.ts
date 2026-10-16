@@ -14,7 +14,7 @@ import { dailyCandles, lastSource } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
-import { breadthOf, choosePicks, ListId, listOf, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
+import { breadthOf, choosePicks, ListId, listOf, liveRecord, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
 import { fetchIndexConstituents, fetchSeries, fetchSymbols } from '../src/psx/api';
 import { indexTrend, MarketFeed } from '../src/analysis/market';
 import { MIN_LIQUIDITY } from '../src/analysis/picks';
@@ -160,6 +160,7 @@ async function main() {
       stats: statsOf(closed, since),
       weakStats: statsOf(closed, since, true),
       rules: { hold: RULES.hold, wait: WAIT_DAYS },
+      live: liveRecord(mine),
       ...(stale ? { stale: true } : {}),
     };
     let body = JSON.stringify(feed);

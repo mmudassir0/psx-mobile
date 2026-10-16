@@ -62,6 +62,10 @@ export interface Review {
   technicalBreaks: string[];
   /** numbers to verify before acting on them */
   checks: string[];
+  /** above its 200-day average (null: not enough history) */
+  trendUp: boolean | null;
+  /** fair value mid ÷ price − 1, when there is a fair value */
+  upside: number | null;
   value: number;
   pnl: number;
   pnlPct: number;
@@ -218,6 +222,8 @@ export function reviewHolding(x: ReviewInput): Review {
     fundamentalBreaks,
     technicalBreaks,
     checks: x.checks?.notes ?? [],
+    trendUp: above200,
+    upside: f?.upside ?? null,
     value,
     pnl: value - cost,
     pnlPct: cost > 0 ? value / cost - 1 : 0,

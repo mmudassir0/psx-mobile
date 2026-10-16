@@ -5,7 +5,9 @@
  * Reviews each holding with the same rules as the app, as of today's close and
  * as of the day before, and sends a notification only when something changed:
  * a new Review/Trim, a new fundamental or technical break, a big daily move, a
- * new dividend, or a book closure coming up.
+ * new dividend, a book closure coming up, new financial results (with what
+ * the new numbers say and Sahm's decision after them) or a board meeting
+ * called, which usually means results within days.
  *
  * The repository is public, so its Actions logs are public too: this script
  * prints counts only, never the symbols. Symbols and the alert topic come from
@@ -24,6 +26,7 @@ import { dataChecks } from '../src/analysis/quality';
 import { dividends } from '../src/analysis/dividends';
 import { fiscalEndMonth } from '../src/analysis/fairValue';
 import { reviewHolding, Review } from '../src/portfolio/review';
+import { resultsLine, resultsStatus } from '../src/analysis/results';
 import type { Candle, CompanyInfo, Stock } from '../src/psx/types';
 import { NTFY } from '../src/picks/config';
 
@@ -113,6 +116,11 @@ async function main() {
       if (p.announced > lastBar - 2 * DAY && p.items.length) notes.push(`announced ${p.items.map((i) => `${i.pct}%${i.tag ? `(${i.tag})` : ''} ${i.type === 'D' ? 'cash dividend' : i.type === 'B' ? 'bonus shares' : 'right shares'}`).join(' + ')}`);
       if (p.bookClosure && p.bookClosure > lastBar && p.bookClosure - lastBar <= 4 * DAY) notes.push(`book closure starts ${new Date(p.bookClosure).toISOString().slice(0, 10)}: hold the shares before then to get the payout`);
     }
+    // Results season: the review above already uses the new numbers when PSX has updated them.
+    const rs = company ? resultsStatus(company, lastBar + DAY) : null;
+    const recent = (d: string) => Date.parse(d + 'T12:00:00Z') > lastBar - 2 * DAY;
+    if (rs?.latest && recent(rs.latest.date)) notes.push(`${resultsLine(rs.latest)}. Sahm now says ${today.action}${today.watch ? ' (watch)' : ''}`);
+    else if (rs?.meetingNotice && recent(rs.meetingNotice.date)) notes.push('board meeting called: results probably due within days');
     if (notes.length) lines.push(`${sym}: ${notes.join('; ')}`);
   }
   console.log(`Portfolio alerts: ${checked} of ${symbols.length} holdings checked, ${lines.length} with news`);

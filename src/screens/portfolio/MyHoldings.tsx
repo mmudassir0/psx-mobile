@@ -1,6 +1,6 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
@@ -13,6 +13,8 @@ import { usePicksFeed } from '../../picks/feed';
 import { shortSector } from '../../sectors';
 import { Panel } from '../../ui/bits';
 import { StressCard } from '../../ui/StressCard';
+import { PlanCard } from '../../ui/PlanCard';
+import { resultsLine } from '../../analysis/results';
 import { TradeSheet } from '../../ui/TradeSheet';
 import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
@@ -66,6 +68,15 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
               {rv.headline}
             </T>
           </View>
+          {r.results?.latest?.fresh || r.results?.meetingNotice ? (
+            <Pressable accessibilityRole="link" onPress={() => r.results?.latest?.url && Linking.openURL(r.results.latest.url)} style={styles.results}>
+              <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
+                {r.results.latest?.fresh
+                  ? resultsLine(r.results.latest)
+                  : `Board meeting notice on ${fmtDay(Date.parse(r.results.meetingNotice!.date + 'T12:00:00Z'))}: results are probably due within days.`}
+              </T>
+            </Pressable>
+          ) : null}
           {open ? (
             <View style={{ gap: 5 }}>
               {[
@@ -153,6 +164,8 @@ export function MyHoldings() {
   const income = rows.reduce((a, r) => a + (r.dividends?.ttm ?? 0) * r.holding.shares, 0);
   const counts = ORDER.map((a) => [a, rows.filter((r) => r.review?.action === a).length] as const).filter(([, n]) => n > 0);
   const watching = rows.filter((r) => r.review?.watch).length;
+  const reported = rows.filter((r) => r.results?.latest?.fresh).map((r) => r.holding.symbol);
+  const due = rows.filter((r) => !r.results?.latest?.fresh && r.results?.meetingNotice).map((r) => r.holding.symbol);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -189,10 +202,22 @@ export function MyHoldings() {
         <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />
       )}
 
+      {!loading && (reported.length || due.length) ? (
+        <Panel style={{ paddingVertical: 12, gap: 4 }}>
+          <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Results season</T>
+          {reported.length ? <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T> : null}
+          {due.length ? <T v="caption">Results due soon (board meeting called): {due.join(', ')}.</T> : null}
+        </Panel>
+      ) : null}
+
       <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
         {sorted.map((r) => (
           <HoldingCard key={r.holding.symbol} r={r} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
         ))}
+      </Section>
+
+      <Section title="Where should new money go?">
+        {loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}
       </Section>
 
       <Section title="Stress test">
@@ -229,6 +254,7 @@ const styles = themed(() =>
   StyleSheet.create({
     content: { paddingHorizontal: 20, paddingTop: 14, gap: 18, paddingBottom: 36 },
     check: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 8 },
+    results: { backgroundColor: colors.surface2, borderRadius: 8, padding: 8 },
     chip: { paddingHorizontal: 10, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     sector: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   }),

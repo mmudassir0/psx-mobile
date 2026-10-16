@@ -88,6 +88,63 @@ export interface PicksFeed {
   rules: { hold: number; wait: number };
   /** PSX refused most downloads on this run, so prices may be out of date */
   stale?: boolean;
+  /** every pick in this list since picks started, by setup, to set against the backtest */
+  live?: LiveRecord;
+}
+
+export type LiveSetup = 'momentum' | 'pullback';
+export interface SetupRecord {
+  /** picks made */
+  picks: number;
+  /** bought (reached the zone) and finished */
+  bought: number;
+  won: number;
+  avgRet: number | null;
+  stops: number;
+  /** bought and still running */
+  running: number;
+}
+export interface LiveRecord {
+  /** first pick day */
+  since: string | null;
+  bySetup: Record<LiveSetup, SetupRecord>;
+}
+
+/** How each setup has done for real since picks started (strong and weak markets together). */
+export function liveRecord(all: ScoredPick[]): LiveRecord {
+  const one = (id: LiveSetup): SetupRecord => {
+    const xs = all.filter((p) => p.setup === id);
+    const done = xs.filter((p) => p.result !== 'open' && p.ret != null);
+    return {
+      picks: xs.length,
+      bought: done.length,
+      won: done.filter((p) => (p.ret as number) > 0).length,
+      avgRet: done.length ? done.reduce((a, p) => a + (p.ret as number), 0) / done.length : null,
+      stops: done.filter((p) => p.result === 'stop').length,
+      running: xs.filter((p) => p.result === 'open' && p.filled).length,
+    };
+  };
+  const since = all.reduce<string | null>((a, p) => (a == null || p.day < a ? p.day : a), null);
+  return { since, bySetup: { momentum: one('momentum'), pullback: one('pullback') } };
+}
+
+/** Enough finished trades to judge against the backtest */
+export const JUDGE_MIN = 20;
+
+/**
+ * Live results against the recent test period. Win rates within about two
+ * standard errors of the test are "in line"; with fewer than JUDGE_MIN trades
+ * it's too early to say anything.
+ */
+export function liveVerdict(r: SetupRecord, id: LiveSetup): { tone: 'early' | 'ok' | 'worse' | 'better'; text: string } {
+  const t = TESTED[id].p2;
+  if (r.bought < JUDGE_MIN)
+    return { tone: 'early', text: `${r.bought} of ${JUDGE_MIN} finished trades needed before comparing with the test (${Math.round(t.won * 100)}% won there).` };
+  const rate = r.won / r.bought;
+  const se = Math.sqrt((t.won * (1 - t.won)) / r.bought);
+  if (rate < t.won - 2 * se) return { tone: 'worse', text: `Winning ${Math.round(rate * 100)}% against ${Math.round(t.won * 100)}% in testing: clearly worse. Following these picks isn't supported by the results so far.` };
+  if (rate > t.won + 2 * se) return { tone: 'better', text: `Winning ${Math.round(rate * 100)}% against ${Math.round(t.won * 100)}% in testing: better so far, which may be luck or a good market.` };
+  return { tone: 'ok', text: `Winning ${Math.round(rate * 100)}% against ${Math.round(t.won * 100)}% in testing: in line with the test.` };
 }
 
 /**

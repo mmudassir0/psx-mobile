@@ -6,7 +6,7 @@ import { colors, fonts, space, themed } from '../theme';
 import { fmtDay } from '../format';
 import { useMarket } from '../store/market';
 import { usePicksFeed } from '../picks/feed';
-import { ListId, LISTS, RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from '../picks/build';
+import { ListId, LISTS, LiveRecord, liveVerdict, RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from '../picks/build';
 import { SETUP_NAMES } from '../analysis/picks';
 import { PickCard, RESULT_LABEL } from '../ui/PickCard';
 import { Panel } from '../ui/bits';
@@ -30,6 +30,35 @@ function StatsLine({ s, label }: { s: Stats; label: string }) {
         </T>
       )}
     </View>
+  );
+}
+
+function LiveCard({ live }: { live: LiveRecord }) {
+  return (
+    <Panel style={{ paddingVertical: 14, gap: 12 }}>
+      <T v="caption">
+        Every pick in this list since {live.since ? day(live.since) : 'the start'}, in strong and weak markets, against the {TESTED_PERIODS.p2} backtest.
+      </T>
+      {(['momentum', 'pullback'] as const).map((k) => {
+        const r = live.bySetup[k];
+        const v = liveVerdict(r, k);
+        const tone = v.tone === 'worse' ? colors.downText : v.tone === 'better' || v.tone === 'ok' ? colors.up : colors.text2;
+        return (
+          <View key={k} style={{ gap: 3 }}>
+            <T v="body" style={{ fontFamily: fonts.semibold, fontSize: 14.5 }}>
+              {SETUP_NAMES[k]}
+            </T>
+            <T v="caption" style={{ lineHeight: 18 }}>
+              {r.picks} picked · {r.bought} bought and finished{r.running ? ` · ${r.running} running` : ''}
+              {r.bought ? ` · ${r.won} won · ${r.stops} stopped out · average ${pct(r.avgRet ?? 0)} (test ${pct(TESTED[k].p2.avg)})` : ''}
+            </T>
+            <T v="caption" style={{ lineHeight: 18, color: tone }}>
+              {v.text}
+            </T>
+          </View>
+        );
+      })}
+    </Panel>
   );
 }
 
@@ -128,6 +157,12 @@ export default function PicksScreen() {
                 {feed.open.map((p) => (
                   <PickCard key={p.symbol + p.day} p={p} price={price(p.symbol)} bought={!!p.filled} onOpen={() => open(p.symbol)} />
                 ))}
+              </Section>
+            ) : null}
+
+            {feed.live ? (
+              <Section title={`Live record vs testing: ${label}`}>
+                <LiveCard live={feed.live} />
               </Section>
             ) : null}
 
