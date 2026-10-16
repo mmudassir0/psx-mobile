@@ -9,6 +9,7 @@ import { planMoney, PlanRow } from '../src/portfolio/plan';
 import { expectedLabel, resultsLine, resultsStatus } from '../src/analysis/results';
 import { liveRecord, liveVerdict } from '../src/picks/build';
 import { readFileSync } from 'fs';
+import { eachLimit } from '../src/limit';
 import { parseCompany } from '../src/psx/parse';
 
 let failed = 0;
@@ -119,6 +120,12 @@ check('plan: no holding passes 10% after buying', plan.lines.every((l) => l.weig
 check('plan: says how much new money brings an over-20% holding under 20%', plan.dilute[0]?.symbol === 'BIG' && Math.abs(plan.dilute[0].needed - (25_000 / 0.2 - 100_000)) < 1e-6, plan.dilute);
 const big = planMoney([prow('L', 30_000, 'Cement', { action: 'Trim' }), prow('A', 70_000, 'Fert')], 1000);
 check('plan: new money needed to dilute an oversized holding', big.dilute[0]?.symbol === 'L' && Math.abs(big.dilute[0].needed - 50_000) < 1e-6, big.dilute);
+const sec = [prow('A1', 33_000, 'A', { action: 'Trim' }), prow('A2', 1_000, 'A', {}, 10), prow('B1', 9_000, 'B', {}, 900), prow('C', 57_000, 'C', { action: 'Trim' })];
+const sp = planMoney(sec, 20_000);
+const aAfter = 34_000 + sp.lines.filter((l) => l.symbol === 'A2').reduce((a, l) => a + l.amount, 0);
+check('plan: spending the leftover never takes a sector past 35%', aAfter <= 0.35 * 120_000 + 1e-6, { aAfter, lines: sp.lines });
+const one = planMoney([prow('P', 1_000, 'X', { upside: 0.4, action: 'Add more' }, 1_500), prow('R1', 1_000, 'Y', {}, 700), prow('R2', 1_000, 'W', {}, 700), prow('Z', 100_000, 'Z', { action: 'Trim' })], 2_500);
+check('plan: a holding whose part was under one share can still get one from the leftover', one.lines.some((l) => l.symbol === 'P' && l.shares === 1), one.lines);
 check('plan: nothing eligible says so', planMoney([prow('B', 5000, 'X', { watch: true })], 1000).note != null);
 
 // --- Results season
@@ -134,6 +141,10 @@ const newQ = { ...luck, announcements: [{ date: '2026-10-16', title: 'Financial 
 const nq = resultsStatus(newQ, Date.parse('2026-10-17')).latest!;
 check("results: PSX's table not updated yet is flagged, not read as the new quarter", nq.tableBehind && /hasn't updated/.test(resultsLine(nq)), nq);
 
+const oddLabels = { ...luck, financialsQuarterly: { periods: ['Sep-26', 'Jun-26'], rows: [{ label: 'EPS', values: [5, 4] }] }, announcements: [{ date: '2026-10-16', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }] };
+const odd = resultsStatus(oddLabels as never, Date.parse('2026-10-17')).latest!;
+check('results: unfamiliar period labels give no comparison, not last quarter as "a year earlier"', odd.epsChange == null && odd.vsPeriod == null, odd);
+
 // --- Live picks record
 const lp = (setup: string, ret: number | null, result: string, filled = true) => ({ symbol: 'S', setup, day: '2026-10-15', result, ret, filled }) as never;
 const lr = liveRecord([lp('momentum', 0.05, 'tp2'), lp('momentum', -0.03, 'stop'), lp('momentum', null, 'open'), lp('pullback', null, 'no-fill', false)]);
@@ -144,8 +155,26 @@ check('live verdict: 30 trades, 53% won is in line', liveVerdict({ picks: 30, bo
 
 check('groq wait: seconds, minutes and header', Math.abs(retryWait('Please try again in 4.3s.', null) - 4300) < 1e-6 && retryWait('try again in 1m2s', null) === 62000 && retryWait('x', '5') === 5000);
 
+(async () => {
+  let running = 0, most = 0;
+  const seen: number[] = [];
+  await eachLimit([1, 2, 3, 4, 5, 6, 7], 3, async (i) => {
+    running++;
+    most = Math.max(most, running);
+    await new Promise((r) => setTimeout(r, 5 * (i % 3)));
+    seen.push(i);
+    running--;
+  });
+  check('three at a time: never more than 3 running, every item done', most === 3 && seen.length === 7, { most, seen });
+  let stopAfter = 0;
+  await eachLimit([1, 2, 3, 4, 5, 6], 2, async () => void stopAfter++, () => stopAfter < 2);
+  check('three at a time: stops starting new work when told to', stopAfter === 2, stopAfter);
+  finish();
+})();
+function finish() {
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);
   process.exit(1);
 }
 console.log('\nall portfolio checks passed');
+}

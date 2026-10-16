@@ -10,6 +10,7 @@ import { analyze, computeSeries } from '../analysis/signals';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { valueStock } from '../analysis/valuation';
 import { dataChecks } from '../analysis/quality';
+import { eachLimit } from '../limit';
 import { resultsStatus, ResultsStatus } from '../analysis/results';
 import type { Candle } from '../psx/types';
 import { Holding, Review, reviewHolding } from './review';
@@ -37,7 +38,8 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
   useEffect(() => {
     let alive = true;
     (async () => {
-      for (const h of holdings) {
+      // Three holdings at a time: quicker than one by one, still gentle on PSX.
+      await eachLimit(holdings, 3, async (h) => {
         const [company, candles, payouts] = await Promise.all([
           cached(`company:${h.symbol}`, COMPANY_TTL, () => fetchCompany(h.symbol), { persist: true }).catch(() => null),
           dailyCandles(h.symbol).catch(() => null),
@@ -45,7 +47,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         ]);
         if (!alive) return;
         setData((d) => ({ ...d, [h.symbol]: { company, candles, payouts } }));
-      }
+      }, () => alive);
     })();
     return () => {
       alive = false;

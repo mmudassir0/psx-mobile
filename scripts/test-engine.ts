@@ -65,5 +65,25 @@ const v = valuePortfolio(acc, (s) => (s === 'LUCK' ? { price: 400, change: 5 } :
 check('valuation total = cash + holdings', near(v.total, acc.cash + 60 * 400), v);
 check('day change', near(v.dayChange, 300), v.dayChange);
 
+// A buy stop that gaps up can't spend the cash held for another open buy order.
+{
+  let g = newAccount(0, 100_000);
+  const a = placeOrder(g, { symbol: 'HUBC', side: 'buy', type: 'limit', qty: 100, price: 400 }, 420, 1);
+  if (a.ok) g = a.account;
+  const b = placeOrder(g, { symbol: 'PSO', side: 'buy', type: 'stop', qty: 140, price: 400 }, 390, 2);
+  check('buy stop placed beside a buy limit', a.ok && b.ok);
+  if (b.ok) g = b.account;
+  g = processOpenOrders(g, (s) => (s === 'PSO' ? 450 : 420), 3); // PSO gaps to 450: 63,000 + fee
+  const stop = g.orders.find((o) => o.symbol === 'PSO');
+  check('gapped buy stop is refused rather than using the limit order\'s cash', stop?.status === 'rejected' && !g.positions.PSO, stop);
+  g = processOpenOrders(g, (s) => (s === 'HUBC' ? 399 : 450), 4);
+  check('the buy limit still fills afterwards', g.positions.HUBC?.qty === 100, g.orders.find((o) => o.symbol === 'HUBC'));
+  let h = newAccount(0, 100_000);
+  const c = placeOrder(h, { symbol: 'PSO', side: 'buy', type: 'stop', qty: 100, price: 400 }, 390, 1);
+  if (c.ok) h = c.account;
+  h = processOpenOrders(h, () => 430, 2);
+  check('a gapped buy stop with enough free cash fills at the gap price', h.positions.PSO?.qty === 100 && h.orders[0].fillPrice === 430);
+}
+
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall engine checks passed');

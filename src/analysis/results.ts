@@ -78,7 +78,8 @@ function yearAgo(t: FinTable, label: string): number {
   if (q) return t.periods.findIndex((p) => p.toUpperCase() === `${q[1].toUpperCase()} ${Number(q[2]) - 1}`);
   const y = label.match(/^(\d{4})$/);
   if (y) return t.periods.findIndex((p) => p === String(Number(y[1]) - 1));
-  return 1;
+  // An unfamiliar label: don't guess, or last quarter would be shown as "a year earlier".
+  return -1;
 }
 
 export function resultsStatus(c: CompanyInfo | null, now = Date.now()): ResultsStatus {

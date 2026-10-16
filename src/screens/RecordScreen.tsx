@@ -11,6 +11,7 @@ import { cached } from '../psx/cache';
 import { dailyCandles } from '../psx/history';
 import { claim, Entry, H, HORIZONS, scoreEntry, Scored, statsByCall } from '../journal/journal';
 import { entries } from '../journal/store';
+import { eachLimit } from '../limit';
 import { Panel } from '../ui/bits';
 import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
@@ -34,10 +35,10 @@ export default function RecordScreen() {
       // Only stocks with entries at least a month old need prices.
       const due = [...new Set(all.filter((e) => Date.now() - Date.parse(e.day + 'T12:00:00Z') > 28 * 864e5).map((e) => e.symbol))];
       const candles: Record<string, Candle[]> = {};
-      for (const s of due) {
+      await eachLimit(due, 3, async (s) => {
         const c = await dailyCandles(s).catch(() => null);
         if (c) candles[s] = c;
-      }
+      }, () => alive);
       if (alive) setScored(all.map((e) => (candles[e.symbol] ? scoreEntry(e, candles[e.symbol], index) : { e, ret: {}, rel: {} })));
     })();
     return () => {

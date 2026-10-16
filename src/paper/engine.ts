@@ -120,7 +120,12 @@ function applyFill(acc: Account, o: Order, price: number, now: number): Account 
   let fillRealized: number | undefined;
 
   if (o.side === 'buy') {
-    if (value + fee > cash + 0.005) {
+    // A buy stop fills at the price it jumped to, which can be above what it reserved;
+    // it may only use cash not held back for the other open buy orders.
+    const others = acc.orders
+      .filter((x) => x.id !== o.id && x.status === 'open' && x.side === 'buy' && x.price != null)
+      .reduce((sum, x) => sum + x.qty * (x.price as number) * (1 + FEE_RATE), 0);
+    if (value + fee > cash - others + 0.005) {
       return updateOrder(acc, o.id, { status: 'rejected', reason: 'Not enough cash when the order triggered', updatedAt: now });
     }
     cash = r2(cash - value - fee);

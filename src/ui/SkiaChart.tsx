@@ -63,13 +63,14 @@ function timeText(t: number, unit: ChartUnit): string {
   return MONTHS[d.getUTCMonth()] + ' ' + String(d.getUTCFullYear()).slice(2);
 }
 
-/** Full time stamp for the readout box: "11:09 · 16 Oct" or "16 Oct 2026". */
+/** Full time stamp for the readout box: "11:09 · 16 Oct", "16 Oct 2026", "Week of 12 Oct 26" or "Oct 2026". */
 function stampText(t: number, unit: ChartUnit): string {
   'worklet';
   const d = new Date(t + 5 * 3600000);
   const day = d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()];
   if (unit === 'intraday') return timeText(t, unit) + '  ·  ' + day;
-  if (unit === 'month') return 'Week of ' + day + ' ' + String(d.getUTCFullYear()).slice(2);
+  if (unit === 'week') return 'Week of ' + day + ' ' + String(d.getUTCFullYear()).slice(2);
+  if (unit === 'month') return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
   return day + ' ' + d.getUTCFullYear();
 }
 

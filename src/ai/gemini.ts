@@ -106,6 +106,7 @@ export function geminiStream(
   // the whole answer, give up only when nothing has arrived for IDLE_MS.
   let idle: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
+  let failed = false;
   const kick = () => {
     if (idle) clearTimeout(idle);
     idle = setTimeout(() => {
@@ -115,7 +116,7 @@ export function geminiStream(
   };
   const done = new Promise<string>((resolve, reject) => {
     const consume = () => {
-      if (xhr.status && xhr.status >= 400) return;
+      if (failed || (xhr.status && xhr.status >= 400)) return;
       const chunk = xhr.responseText.slice(seen);
       seen = xhr.responseText.length;
       const r = parseInteractionSse(pending + chunk);
@@ -124,7 +125,13 @@ export function geminiStream(
         text += r.text;
         onText(text);
       }
-      if (r.error) reject(new CloudError(`Gemini: ${r.error}`, 500));
+      if (r.error) {
+        // Stop the stream so it doesn't keep writing over a fallback provider's answer.
+        if (idle) clearTimeout(idle);
+        failed = true;
+        reject(new CloudError(`Gemini: ${r.error}`, 500));
+        xhr.abort();
+      }
     };
     xhr.onprogress = () => {
       kick();

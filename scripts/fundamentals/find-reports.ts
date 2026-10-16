@@ -31,7 +31,8 @@ async function retry<T>(f: () => Promise<T>, tries = 4): Promise<T> {
 }
 
 async function main() {
-  let symbols = process.argv.slice(2);
+  // Only ticker-shaped arguments (letters, digits, dots, dashes)
+  let symbols = process.argv.slice(2).map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z][A-Z0-9.-]{0,11}$/.test(s));
   if (!symbols.length) {
     // KSE-100 and KMI-30 members: the stocks most people hold.
     const sets = await Promise.all(['KSE100', 'KMI30'].map((code) => retry(() => fetchIndexConstituents(code)).catch(() => [])));

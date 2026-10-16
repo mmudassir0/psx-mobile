@@ -130,13 +130,18 @@ export function planMoney(rows: PlanRow[], amount: number, opts: { breadth?: num
     if (n > 0) shares.set(p.r.symbol, n);
     cash -= n * p.r.price;
   }
+  // Sector room left after the whole shares actually bought (rounding down frees some).
+  const room = new Map([...sector].map(([k, v]) => [k, Math.max(0, SECTOR_MAX * after - v)]));
+  for (const p of pool) room.set(p.r.sector, (room.get(p.r.sector) ?? 0) - (shares.get(p.r.symbol) ?? 0) * p.r.price);
+  // Leftover cash buys more whole shares, within each holding's cap and its sector's room;
+  // this can also give one share to a holding whose part was under one share's price.
   for (const p of [...pool].sort((a, b) => b.s - a.s)) {
     const n0 = shares.get(p.r.symbol) ?? 0;
-    if (!n0) continue;
-    const extra = Math.floor(Math.min(cash, p.cap - n0 * p.r.price) / p.r.price);
+    const extra = Math.floor(Math.max(0, Math.min(cash, p.cap - n0 * p.r.price, room.get(p.r.sector) ?? 0)) / p.r.price);
     if (extra > 0) {
       shares.set(p.r.symbol, n0 + extra);
       cash -= extra * p.r.price;
+      room.set(p.r.sector, (room.get(p.r.sector) ?? 0) - extra * p.r.price);
     }
   }
   for (const p of pool.sort((a, b) => b.s - a.s)) {

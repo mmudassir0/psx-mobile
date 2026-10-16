@@ -54,23 +54,27 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       setUpdatedAt(Date.now());
       setError(null);
 
+      // The symbol list and screener are fetched together, and one failing doesn't skip the other
+      // or show an error: prices already loaded, and the saved lists stay in use.
       const now = Date.now();
-      if (now - symbolsAt.current > SYMBOLS_MS) {
-        const syms = await fetchSymbols();
-        if (syms.length) {
-          setSymbols(syms);
-          symbolsAt.current = now;
-          saveCached('psx.symbols', syms);
-        }
-      }
-      if (now - screenerAt.current > SCREENER_MS) {
-        const scr = await fetchScreener();
-        if (scr.length) {
-          setScreener(scr);
-          screenerAt.current = now;
-          saveCached('psx.screener', scr);
-        }
-      }
+      await Promise.allSettled([
+        now - symbolsAt.current > SYMBOLS_MS
+          ? fetchSymbols().then((syms) => {
+              if (!syms.length) return;
+              setSymbols(syms);
+              symbolsAt.current = now;
+              saveCached('psx.symbols', syms);
+            })
+          : null,
+        now - screenerAt.current > SCREENER_MS
+          ? fetchScreener().then((scr) => {
+              if (!scr.length) return;
+              setScreener(scr);
+              screenerAt.current = now;
+              saveCached('psx.screener', scr);
+            })
+          : null,
+      ]);
     } catch (e) {
       setError((e as Error).message || 'Could not reach PSX');
     } finally {

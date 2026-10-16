@@ -61,6 +61,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
       const r = await ai.run((tier) => analysisMessages(tier === 'small' ? compact : context, verdictText(verdict), verdict.call, tier), setText, 450);
       handle.current = r.gen;
       setEngine(r.engine());
+      r.watch?.(setEngine);
       const out = await r.gen.done;
       setEngine(r.engine());
       if (out.trim()) {

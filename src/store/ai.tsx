@@ -18,6 +18,8 @@ export interface Run {
   gen: Generation;
   /** which model is writing, e.g. "GPT-OSS 120B (online)" */
   engine: () => string;
+  /** called each time a fallback takes over, with the new model's name */
+  watch?: (cb: (label: string) => void) => void;
 }
 
 export type Phase = 'checking' | 'none' | 'downloading' | 'paused' | 'installed' | 'loading' | 'ready' | 'error';
@@ -274,8 +276,12 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
         });
       }
       let label = attempts[0].label;
-      const gen = chain(attempts, onText, (l) => (label = l));
-      return { gen, engine: () => label };
+      let listener: ((l: string) => void) | null = null;
+      const gen = chain(attempts, onText, (l) => {
+        label = l;
+        listener?.(l);
+      });
+      return { gen, engine: () => label, watch: (cb) => (listener = cb) };
     },
     [mode, runPhone, phoneReady, gemini, modelId],
   );

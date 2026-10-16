@@ -63,9 +63,10 @@ function streamOnce(key: string, model: string, messages: ChatMessage[], onText:
   let seen = 0;
   let pending = '';
   let text = '';
+  let failed = false;
   const done = new Promise<string>((resolve, reject) => {
     const consume = () => {
-      if (xhr.status && xhr.status >= 400) return;
+      if (failed || (xhr.status && xhr.status >= 400)) return;
       const chunk = xhr.responseText.slice(seen);
       seen = xhr.responseText.length;
       const r = parseSse(pending + chunk);
@@ -74,7 +75,11 @@ function streamOnce(key: string, model: string, messages: ChatMessage[], onText:
         text += r.text;
         onText(text);
       }
-      if (r.error) reject(new CloudError(`Groq: ${r.error}`, 500));
+      if (r.error) {
+        failed = true;
+        reject(new CloudError(`Groq: ${r.error}`, 500));
+        xhr.abort();
+      }
     };
     xhr.onprogress = consume;
     xhr.onload = () => {

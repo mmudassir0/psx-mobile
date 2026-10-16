@@ -12,16 +12,21 @@ function ensureDir() {
     ready = (async () => {
       const info = await FileSystem.getInfoAsync(DIR);
       if (!info.exists) await FileSystem.makeDirectoryAsync(DIR, { intermediates: true });
-      // Drop stocks not opened for two months so the cache can't grow forever.
-      const names = await FileSystem.readDirectoryAsync(DIR);
-      const cutoff = Date.now() / 1000 - PRUNE_AFTER_MS / 1000;
-      for (const n of names) {
-        const f = await FileSystem.getInfoAsync(DIR + n);
-        if (f.exists && !f.isDirectory && (f.modificationTime ?? 0) < cutoff) await FileSystem.deleteAsync(DIR + n, { idempotent: true });
-      }
+      // Reads and writes can start now; clean up in the background.
+      setTimeout(() => prune().catch(() => {}), 5000);
     })().catch(() => {});
   }
   return ready;
+}
+
+/** Drops stocks not opened for two months so the cache can't grow forever. */
+async function prune() {
+  const names = await FileSystem.readDirectoryAsync(DIR);
+  const cutoff = Date.now() / 1000 - PRUNE_AFTER_MS / 1000;
+  for (const n of names) {
+    const f = await FileSystem.getInfoAsync(DIR + n);
+    if (f.exists && !f.isDirectory && (f.modificationTime ?? 0) < cutoff) await FileSystem.deleteAsync(DIR + n, { idempotent: true });
+  }
 }
 
 export const diskStore: KeyValueStore = {

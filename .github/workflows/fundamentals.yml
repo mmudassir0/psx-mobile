@@ -36,9 +36,12 @@ jobs:
             git show origin/data:fundamentals.json > /tmp/data/fundamentals.json 2>/dev/null || true
           fi
       - name: Find reports
+        env:
+          ONLY: ${{ inputs.only }}
         run: |
-          ONLY="${{ github.event.inputs.only }}"
-          npx tsx scripts/fundamentals/find-reports.ts ${ONLY//,/ } > /tmp/data/reports.json
+          # The input arrives as data, never as part of the script; split it on commas and spaces.
+          IFS=', ' read -r -a SYMS <<< "$ONLY"
+          npx tsx scripts/fundamentals/find-reports.ts "${SYMS[@]}" > /tmp/data/reports.json
       - name: Extract and verify
         timeout-minutes: 240
         env:
