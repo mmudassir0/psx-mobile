@@ -27,6 +27,15 @@ export const TESTED: Record<'momentum' | 'pullback', { p1: { won: number; avg: n
 };
 export const TESTED_PERIODS = { p1: '2017–21', p2: '2022–26' };
 
+/** The three pick lists: the whole market, and the members of two indices. */
+export type ListId = 'all' | 'kse100' | 'kmi30';
+export const LISTS: { id: ListId; label: string; index: string | null }[] = [
+  { id: 'all', label: 'All shares', index: null },
+  { id: 'kse100', label: 'KSE-100', index: 'KSE100' },
+  { id: 'kmi30', label: 'KMI-30', index: 'KMI30' },
+];
+export const listOf = (p: { list?: ListId }): ListId => p.list ?? 'all';
+
 export interface Pick {
   symbol: string;
   setup: SetupId;
@@ -39,6 +48,8 @@ export interface Pick {
   liquidity: number;
   /** made when most stocks were in downtrends: shown to watch, not as a pick */
   weak?: boolean;
+  /** which list it was picked for (older picks: all shares) */
+  list?: ListId;
 }
 
 export interface ScoredPick extends Pick {
@@ -58,6 +69,8 @@ export interface Stats {
 
 export interface PicksFeed {
   v: 1;
+  /** which list this feed is for (older feeds: all shares) */
+  list?: ListId;
   /** day of the closing prices used */
   day: string;
   generatedAt: string;

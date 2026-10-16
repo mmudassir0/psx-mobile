@@ -6,11 +6,11 @@ import { colors, fonts, space, themed } from '../theme';
 import { fmtDay } from '../format';
 import { useMarket } from '../store/market';
 import { usePicksFeed } from '../picks/feed';
-import { RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from '../picks/build';
+import { ListId, LISTS, RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from '../picks/build';
 import { SETUP_NAMES } from '../analysis/picks';
 import { PickCard, RESULT_LABEL } from '../ui/PickCard';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Loading, Section, T } from '../ui/kit';
+import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
 const day = (d: string) => fmtDay(Date.parse(d + 'T12:00:00Z'));
 const pct = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
@@ -55,7 +55,10 @@ function ResultRow({ p, last }: { p: ScoredPick; last: boolean }) {
 export default function PicksScreen() {
   const nav = useNavigation();
   const { bySymbol } = useMarket();
-  const { feed, error, loading, reload } = usePicksFeed();
+  const { feeds, error, loading, reload } = usePicksFeed();
+  const [list, setList] = useState<ListId>('all');
+  const feed = feeds?.[list] ?? null;
+  const label = LISTS.find((l) => l.id === list)!.label;
   const [how, setHow] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
@@ -79,11 +82,15 @@ export default function PicksScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
       >
+        <Segmented options={LISTS.map((l) => ({ key: l.id, label: l.label }))} value={list} onChange={setList} />
         {!feed ? (
           loading ? (
             <Loading label="Loading today's picks" />
           ) : (
-            <Empty title="No picks yet" body={`${error ?? 'Nothing published yet'}. Picks are made every trading day after the close.`} />
+            <Empty
+              title={feeds ? `No ${label} picks yet` : 'No picks yet'}
+              body={feeds ? 'This list starts with the next run after the close.' : `${error ?? 'Nothing published yet'}. Picks are made every trading day after the close.`}
+            />
           )
         ) : (
           <>
@@ -102,9 +109,9 @@ export default function PicksScreen() {
               </View>
             </View>
 
-            <Section title={feed.marketOk ? "Today's picks" : 'Setups to watch'}>
+            <Section title={`${feed.marketOk ? "Today's picks" : 'Setups to watch'}: ${label}`}>
               {feed.picks.length === 0 ? (
-                <Empty title="No setups today" body="No liquid stock met the rules at the last close." />
+                <Empty title="No setups today" body={list === 'all' ? 'No liquid stock met the rules at the last close.' : `No ${label} stock met the rules at the last close.`} />
               ) : (
                 feed.picks.map((p) => <PickCard key={p.symbol} p={p} price={price(p.symbol)} onOpen={() => open(p.symbol)} />)
               )}
@@ -122,7 +129,7 @@ export default function PicksScreen() {
               </Section>
             ) : null}
 
-            <Section title="Scorecard, last 90 days">
+            <Section title={`Scorecard: ${label}, last 90 days`}>
               <Panel style={{ paddingVertical: 14, gap: 12 }}>
                 <StatsLine s={feed.stats} label="Picks (strong market)" />
                 <StatsLine s={feed.weakStats} label="Watch only (weak market)" />
@@ -142,9 +149,9 @@ export default function PicksScreen() {
             <Section title="How picks are made">
               <Panel style={{ paddingVertical: 14, gap: 10 }}>
                 <T v="body" style={{ fontSize: 14, lineHeight: 20, color: colors.text2 }}>
-                  Every evening Sahm scans stocks trading at least Rs 5M a day for two setups: {SETUP_NAMES.momentum.toLowerCase()} (technical score 7.5 or more)
+                  Every evening Sahm scans stocks trading at least Rs 5M a day (all shares, or only KSE-100 or KMI-30 members) for two setups: {SETUP_NAMES.momentum.toLowerCase()} (technical score 7.5 or more)
                   and {SETUP_NAMES.pullback.toLowerCase()} (a dip to the 20-day average while above the 50- and 200-day). The {RULES.max} with
-                  the highest score are picked. Buy zone: half a day's range under the close. Stop: two day-ranges under the zone. TP1 and
+                  the highest score in each list are picked, so a stock can appear in more than one. Buy zone: half a day's range under the close. Stop: two day-ranges under the zone. TP1 and
                   TP2: one and three times the risk.
                 </T>
                 <Pressable accessibilityRole="button" onPress={() => setHow((v) => !v)} hitSlop={8}>

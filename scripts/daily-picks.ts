@@ -14,7 +14,8 @@ import { dailyCandles } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
-import { breadthOf, choosePicks, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
+import { breadthOf, choosePicks, ListId, listOf, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
+import { fetchIndexConstituents } from '../src/psx/api';
 import { WAIT_DAYS } from '../src/analysis/picks';
 import { FEED_TOPIC, NTFY } from '../src/picks/config';
 
@@ -51,6 +52,25 @@ async function main() {
   const history: ScoredPick[] = existsSync(historyPath) ? JSON.parse(readFileSync(historyPath, 'utf8')) : [];
   const openSymbols = new Set(history.filter((p) => p.result === 'open').map((p) => p.symbol));
 
+  // Index members, from PSX; the last good list if PSX doesn't answer.
+  const membersPath = join(stateDir, 'indexes.json');
+  const members: Record<string, string[]> = existsSync(membersPath) ? JSON.parse(readFileSync(membersPath, 'utf8')) : {};
+  if (!members.KSE100 && historyDir && existsSync(join(historyDir, 'index.json'))) members.KSE100 = JSON.parse(readFileSync(join(historyDir, 'index.json'), 'utf8')).sets?.KSE100 ?? [];
+  for (const code of ['KSE100', 'KMI30']) {
+    for (let a = 0; a < 4; a++) {
+      try {
+        const list = (await fetchIndexConstituents(code)).map((c) => c.symbol);
+        if (list.length >= 20) members[code] = list;
+        break;
+      } catch {
+        await sleep(4000 * (a + 1));
+      }
+    }
+    console.log(`${code}: ${members[code]?.length ?? 0} members`);
+  }
+  writeFileSync(membersPath, JSON.stringify(members));
+  const indexMembers = new Set([...(members.KSE100 ?? []), ...(members.KMI30 ?? [])]);
+
   // 2. Bring liquid stocks (and any with an open pick) up to date. Once a week, everything,
   //    so stocks that became liquid are noticed.
   const scanAll = new Date(now).getUTCDay() === 1 || process.env.SCAN_ALL === '1';
@@ -61,7 +81,7 @@ async function main() {
     const c = toCandles(e.data.bars);
     const S = computeSeries(c);
     const liquid = S.c.length > 60 && liquidityAt(S, S.c.length - 1) >= 2_000_000;
-    if (scanAll || liquid || openSymbols.has(sym)) refresh.push(sym);
+    if (scanAll || liquid || openSymbols.has(sym) || indexMembers.has(sym)) refresh.push(sym);
   }
   console.log(`refreshing ${refresh.length} stocks${scanAll ? ' (weekly full scan)' : ''}`);
   const universe: Universe[] = [];
@@ -69,6 +89,7 @@ async function main() {
   for (const sym of refresh) {
     try {
       const candles = await dailyCandles(sym);
+      if (!candles.length) continue;
       universe.push({ symbol: sym, candles, series: computeSeries(candles) });
     } catch (e) {
       failed++;
@@ -95,47 +116,62 @@ async function main() {
     if (c) history[k] = scorePick(p, c);
   }
 
-  // 4. Today's picks, once per trading day.
+  // 4. Today's picks for each list, once per trading day. The market check is market-wide.
   const breadth = breadthOf(universe, day);
   const marketOk = breadth != null && breadth >= RULES.minBreadth;
-  if (!history.some((p) => p.day === day)) {
-    // In a weak market the same choices are kept as "watch only" and scored separately.
-    const picks = choosePicks(universe, day).map((p) => (marketOk ? p : { ...p, weak: true }));
+  const universeFor = (id: ListId) => {
+    const idx = LISTS.find((l) => l.id === id)!.index;
+    if (!idx) return universe;
+    const m = new Set(members[idx] ?? []);
+    return universe.filter((u) => m.has(u.symbol));
+  };
+  for (const L of LISTS) {
+    if (history.some((p) => p.day === day && listOf(p) === L.id)) continue;
+    const picks = choosePicks(universeFor(L.id), day).map((p) => ({ ...p, list: L.id, ...(marketOk ? {} : { weak: true }) }));
     for (const p of picks) history.push({ ...p, result: 'open', ret: null, closedDay: null });
-    console.log(`breadth ${breadth == null ? 'n/a' : (breadth * 100).toFixed(0) + '%'}${marketOk ? '' : ' (weak: watch only)'}: ${picks.map((p) => p.symbol).join(', ') || 'none'}`);
+    console.log(`${L.label}: ${picks.map((p) => p.symbol).join(', ') || 'none'}`);
   }
+  console.log(`breadth ${breadth == null ? 'n/a' : (breadth * 100).toFixed(0) + '%'}${marketOk ? '' : ' (weak: watch only)'}`);
   writeFileSync(historyPath, JSON.stringify(history));
 
-  // 5. The feed.
-  const closed = history.filter((p) => p.result !== 'open').sort((a, b) => ((b.closedDay ?? b.day) < (a.closedDay ?? a.day) ? -1 : 1));
+  // 5. One feed message per list (each stays under ntfy's 4 KB text limit).
   const since = pkDay(Date.parse(day + 'T12:00:00Z') - 90 * DAY);
-  const feed: PicksFeed = {
-    v: 1,
-    day,
-    generatedAt: new Date(now).toISOString(),
-    breadth,
-    marketOk,
-    picks: history.filter((p) => p.day === day),
-    // Earlier picks still running; an unbought one is dropped when the stock is picked again today.
-    open: history.filter((p) => p.result === 'open' && p.day < day && (p.filled || !history.some((q) => q.day === day && q.symbol === p.symbol))),
-    recent: closed.slice(0, 12),
-    stats: statsOf(closed, since),
-    weakStats: statsOf(closed, since, true),
-    rules: { hold: RULES.hold, wait: WAIT_DAYS },
-  };
-  // ntfy keeps messages up to 4 KB as text; trim the oldest results if needed.
-  let body = JSON.stringify(feed);
-  while (body.length > 3900 && feed.recent.length) {
-    feed.recent.pop();
-    body = JSON.stringify(feed);
+  const feeds: Record<string, PicksFeed> = {};
+  for (const L of LISTS) {
+    const mine = history.filter((p) => listOf(p) === L.id);
+    const closed = mine.filter((p) => p.result !== 'open').sort((a, b) => ((b.closedDay ?? b.day) < (a.closedDay ?? a.day) ? -1 : 1));
+    const feed: PicksFeed = {
+      v: 1,
+      list: L.id,
+      day,
+      generatedAt: new Date(now).toISOString(),
+      breadth,
+      marketOk,
+      picks: mine.filter((p) => p.day === day),
+      // Earlier picks still running; an unbought one is dropped when the stock is picked again today.
+      open: mine.filter((p) => p.result === 'open' && p.day < day && (p.filled || !mine.some((q) => q.day === day && q.symbol === p.symbol))),
+      recent: closed.slice(0, 12),
+      stats: statsOf(closed, since),
+      weakStats: statsOf(closed, since, true),
+      rules: { hold: RULES.hold, wait: WAIT_DAYS },
+    };
+    let body = JSON.stringify(feed);
+    while (body.length > 3900 && feed.recent.length) {
+      feed.recent.pop();
+      body = JSON.stringify(feed);
+    }
+    while (body.length > 3900 && feed.open.length) {
+      feed.open.pop();
+      body = JSON.stringify(feed);
+    }
+    feeds[L.id] = feed;
+    if (process.env.PUBLISH === '1') {
+      const res = await fetch(`${NTFY}/${FEED_TOPIC}`, { method: 'POST', body, headers: { Title: `Sahm picks ${L.label} ${day}` } });
+      console.log(`published ${L.label} to ntfy: ${res.status}`);
+      if (!res.ok) process.exitCode = 1;
+    }
   }
-  writeFileSync(join(stateDir, 'latest.json'), body);
-  if (process.env.PUBLISH === '1') {
-    const res = await fetch(`${NTFY}/${FEED_TOPIC}`, { method: 'POST', body, headers: { Title: `Sahm picks ${day}` } });
-    console.log(`published to ntfy: ${res.status}`);
-    if (!res.ok) process.exitCode = 1;
-  }
-  console.log(body);
+  writeFileSync(join(stateDir, 'latest.json'), JSON.stringify(feeds));
 }
 main().catch((e) => {
   console.error(e);

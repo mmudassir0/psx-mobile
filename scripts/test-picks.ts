@@ -1,7 +1,7 @@
 import { playOut, Levels, PICK_COST, setupsAt } from '../src/analysis/picks';
 import { computeSeries } from '../src/analysis/signals';
 import { breadthOf, choosePicks, pickText, pkDay, scorePick, statsOf, Pick, ScoredPick } from '../src/picks/build';
-import { parseFeed } from '../src/picks/feed';
+import { parseFeed, parseFeeds } from '../src/picks/feed';
 import type { Candle } from '../src/psx/types';
 
 let failed = 0;
@@ -64,6 +64,12 @@ const nd = [
 ].join('\n');
 check('feed reader takes the newest message and skips noise', parseFeed(nd)?.generatedAt === '2026-01-06T03:00:00Z');
 check('no messages: no feed', parseFeed('') === null);
+const lists = parseFeeds([
+  JSON.stringify({ event: 'message', message: JSON.stringify({ v: 1, picks: [], generatedAt: '2026-01-06T03:00:00Z', day: '2026-01-05' }) }),
+  JSON.stringify({ event: 'message', message: JSON.stringify({ v: 1, list: 'kse100', picks: [{ symbol: 'A' }], generatedAt: '2026-01-06T03:00:01Z', day: '2026-01-05' }) }),
+  JSON.stringify({ event: 'message', message: JSON.stringify({ v: 1, list: 'kmi30', picks: [], generatedAt: '2026-01-06T03:00:02Z', day: '2026-01-05' }) }),
+].join('\n'));
+check('one feed per list; older feeds count as all shares', !!lists.all && lists.kse100?.picks.length === 1 && !!lists.kmi30);
 
 if (failed) {
   console.log(`\n${failed} picks check(s) failed`);
