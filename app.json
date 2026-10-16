@@ -50,7 +50,15 @@
           "enableOpenCLAndHexagon": false
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sahm reads your broker screenshots to fill in your holdings.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

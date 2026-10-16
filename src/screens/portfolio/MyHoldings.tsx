@@ -13,6 +13,7 @@ import { usePicksFeed } from '../../picks/feed';
 import { shortSector } from '../../sectors';
 import { Panel } from '../../ui/bits';
 import { StressCard } from '../../ui/StressCard';
+import { TradeSheet } from '../../ui/TradeSheet';
 import { Button, Empty, Loading, Section, T } from '../../ui/kit';
 
 const nextClosure = (d: Dividends) => d.list.map((p) => p.bookClosure).filter((t): t is number => t != null && t > Date.now()).sort()[0] ?? null;
@@ -28,6 +29,7 @@ function actionTone(a: Action, watch: boolean): [string, string] {
 
 function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
   const [open, setOpen] = useState(false);
+  const [trading, setTrading] = useState(false);
   const rv = r.review;
   const [fg, bg] = rv ? actionTone(rv.action, rv.watch) : [colors.muted, colors.surface2];
   const pnl = rv?.pnl ?? r.value - r.holding.shares * r.holding.avgCost;
@@ -95,9 +97,15 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
             </View>
           ) : null}
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen((v) => !v)}>
-            <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{open ? 'Hide reasons' : 'Why?'}</T>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 22 }}>
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen((v) => !v)}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{open ? 'Hide reasons' : 'Why?'}</T>
+            </Pressable>
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setTrading((v) => !v)}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Bought or sold</T>
+            </Pressable>
+          </View>
+          {trading ? <TradeSheet symbol={r.holding.symbol} price={r.price} onDone={() => setTrading(false)} /> : null}
         </>
       ) : (
         <T v="caption">Checking…</T>
@@ -111,6 +119,7 @@ export function MyHoldings() {
   const { stocks, bySymbol } = useMarket();
   const { holdings, loaded } = useHoldings();
   const { feed } = usePicksFeed();
+  const [newTrade, setNewTrade] = useState(false);
   const breadth = feed?.breadth ?? null;
   const { rows, total, sectors, loading, candles } = useReviews(holdings, stocks, bySymbol, breadth);
   const stressRows = useMemo(() => rows.map((r) => ({ symbol: r.holding.symbol, value: r.value })), [rows]);
@@ -168,7 +177,13 @@ export function MyHoldings() {
         </T>
       ) : null}
 
-      <Section title="Holdings" action="Edit" onAction={() => nav.navigate('EditHoldings')}>
+      {newTrade ? (
+        <TradeSheet onDone={() => setNewTrade(false)} />
+      ) : (
+        <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />
+      )}
+
+      <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
         {sorted.map((r) => (
           <HoldingCard key={r.holding.symbol} r={r} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
         ))}

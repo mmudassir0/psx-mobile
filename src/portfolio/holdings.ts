@@ -37,3 +37,32 @@ export function useHoldings(): { holdings: Holding[]; loaded: boolean } {
   }, []);
   return { holdings: h ?? [], loaded: h != null };
 }
+
+export interface Trade {
+  symbol: string;
+  side: 'buy' | 'sell';
+  shares: number;
+  price: number;
+}
+
+/**
+ * Applies a buy or sell to the holdings. A buy updates the average price; a
+ * sell reduces shares (the average stays, as brokers show it) and removes the
+ * holding when none are left. Returns the realised profit of a sell.
+ */
+export function applyTrade(h: Holding[], t: Trade): { holdings: Holding[]; realised: number | null; error: string | null } {
+  const sym = t.symbol.trim().toUpperCase();
+  if (!sym || !(t.shares > 0) || !(t.price > 0)) return { holdings: h, realised: null, error: 'Enter a symbol, shares and price' };
+  const cur = h.find((x) => x.symbol === sym);
+  if (t.side === 'buy') {
+    const shares = (cur?.shares ?? 0) + t.shares;
+    const avgCost = cur ? (cur.shares * cur.avgCost + t.shares * t.price) / shares : t.price;
+    const next = [...h.filter((x) => x.symbol !== sym), { symbol: sym, shares, avgCost: Math.round(avgCost * 100) / 100 }];
+    return { holdings: next, realised: null, error: null };
+  }
+  if (!cur) return { holdings: h, realised: null, error: `You don't hold ${sym}` };
+  if (t.shares > cur.shares) return { holdings: h, realised: null, error: `You hold only ${cur.shares} ${sym}` };
+  const left = cur.shares - t.shares;
+  const next = h.filter((x) => x.symbol !== sym).concat(left > 0 ? [{ ...cur, shares: left }] : []);
+  return { holdings: next, realised: (t.price - cur.avgCost) * t.shares, error: null };
+}

@@ -199,3 +199,40 @@ export async function testGeminiKey(key: string): Promise<'ok' | 'busy'> {
     throw e;
   }
 }
+
+export interface ImagePart {
+  /** base64, no data: prefix */
+  data: string;
+  mime: string;
+}
+
+/**
+ * One Gemini request with images (Interactions API: input as text and image
+ * parts). Returns the whole answer text. Used to read broker screenshots.
+ */
+export function geminiImages(key: string, model: string, system: string, prompt: string, images: ImagePart[], maxTokens = 4000): Promise<string> {
+  const body = {
+    model,
+    system_instruction: system,
+    input: [{ type: 'text', text: prompt }, ...images.map((im) => ({ type: 'image', data: im.data, mime_type: im.mime }))],
+    stream: true,
+    store: false,
+    generation_config: { thinking_level: 'low', max_output_tokens: maxTokens },
+  };
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      if (xhr.status >= 400) return reject(new CloudError(friendly(xhr.status, xhr.responseText), xhr.status));
+      const r = parseInteractionSse(xhr.responseText + '\n');
+      if (r.error) return reject(new CloudError(`Gemini: ${r.error}`, 500));
+      resolve(r.text);
+    };
+    xhr.onerror = () => reject(new CloudError('No internet connection to Gemini', 0));
+    xhr.ontimeout = () => reject(new CloudError('Gemini took too long to answer', 0));
+    xhr.open('POST', GEMINI_URL);
+    xhr.timeout = 180_000;
+    xhr.setRequestHeader('x-goog-api-key', key);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify(body));
+  });
+}

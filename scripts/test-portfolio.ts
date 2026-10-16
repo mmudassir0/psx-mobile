@@ -1,6 +1,7 @@
 import { parseHoldings, quarterYoY, reviewHolding, ReviewInput } from '../src/portfolio/review';
 import { computeSeries } from '../src/analysis/signals';
 import { dataChecks } from '../src/analysis/quality';
+import { applyTrade } from '../src/portfolio/holdings';
 import type { Candle } from '../src/psx/types';
 
 let failed = 0;
@@ -55,6 +56,16 @@ const bs = { equity: 40, assets: 200, liabilities: 160, isBank: false, periodEnd
 const dq = dataChecks({ symbol: 'E', company: null, balance: bs, ratios: { debtToEquity: 2.4, roe: 0.3 } as never, now: Date.UTC(2026, 9, 16) });
 check('very high debt is flagged with its page', dq.debtOdd && /240% of equity \(page 34/.test(dq.notes.join(' ')), dq.notes);
 check('an old balance sheet is flagged', /more than a year old/.test(dataChecks({ symbol: 'E', company: null, balance: bs, ratios: null, now: Date.UTC(2027, 11, 1) }).notes.join(' ')));
+
+const h0 = [{ symbol: 'LUCK', shares: 200, avgCost: 419.11 }];
+const b = applyTrade(h0, { symbol: 'luck', side: 'buy', shares: 100, price: 400 });
+check('a buy updates the average price', b.holdings[0].shares === 300 && b.holdings[0].avgCost === Math.round(((200 * 419.11 + 100 * 400) / 300) * 100) / 100, b.holdings);
+check('a buy of a new stock adds it', applyTrade(h0, { symbol: 'OGDC', side: 'buy', shares: 10, price: 300 }).holdings.length === 2);
+const sl = applyTrade(h0, { symbol: 'LUCK', side: 'sell', shares: 50, price: 430 });
+check('a sell keeps the average and reports the profit', sl.holdings[0].shares === 150 && sl.holdings[0].avgCost === 419.11 && Math.abs(sl.realised! - 50 * (430 - 419.11)) < 1e-9);
+check('selling everything removes the holding', applyTrade(h0, { symbol: 'LUCK', side: 'sell', shares: 200, price: 430 }).holdings.length === 0);
+check('cannot sell more than you hold', !!applyTrade(h0, { symbol: 'LUCK', side: 'sell', shares: 201, price: 430 }).error);
+check('cannot sell what you do not hold', !!applyTrade(h0, { symbol: 'MARI', side: 'sell', shares: 1, price: 600 }).error);
 
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);
