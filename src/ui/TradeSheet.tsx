@@ -40,13 +40,13 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
         <TextInput value={shares} onChangeText={setShares} placeholder="Shares" keyboardType="numeric" placeholderTextColor={colors.faint} style={[styles.input, { flex: 1 }]} />
         <TextInput value={px} onChangeText={setPx} placeholder="Price" keyboardType="decimal-pad" placeholderTextColor={colors.faint} style={[styles.input, { flex: 1 }]} />
       </View>
-      {msg || preview.error ? (
+      {msg || (preview.error && shares) ? (
         <T v="caption" style={{ color: colors.downText }}>
-          {msg ?? (shares || px ? preview.error : '')}
+          {msg ?? (shares ? preview.error : '')}
         </T>
       ) : (
         <T v="caption">
-          {after ? `After this: ${fmtNum(after.shares, 0)} shares at an average of Rs ${after.avgCost.toFixed(2)}` : `This sells your whole holding`}
+          {!shares ? 'Enter the number of shares and the price you traded at.' : after ? `After this: ${fmtNum(after.shares, 0)} shares at an average of Rs ${after.avgCost.toFixed(2)}` : `This sells your whole holding`}
           {preview.realised != null ? `; ${preview.realised >= 0 ? 'profit' : 'loss'} of Rs ${fmtNum(Math.abs(preview.realised), 0)} on these shares` : ''}
         </T>
       )}
@@ -64,6 +64,6 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
 
 const styles = themed(() =>
   StyleSheet.create({
-    input: { height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text },
+    input: { minWidth: 0, flexBasis: 0, height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text },
   }),
 );
