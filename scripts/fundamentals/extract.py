@@ -14,7 +14,9 @@ Anything that fails a check is recorded as a failure, never published.
 Usage:
   python extract.py reports.json out.json [--limit N] [--only SYM,SYM]
 Environment:
-  GEMINI_API_KEY Google Gemini key: used first (Gemini Flash, free tier), when set
+  GEMINI_API_KEY Google Gemini key, used only when every Groq model is out for the day, and at
+                 most GEMINI_MAX times a run (default 5): the free tier allows ~20 requests a
+                 day and the app needs them
   LLM_API_KEY    API key for an OpenAI-compatible chat endpoint (Groq's free tier by default),
                  used when Gemini is busy or out of quota
   LLM_URL        endpoint, default https://api.groq.com/openai/v1/chat/completions
@@ -33,7 +35,9 @@ import urllib.request
 from datetime import datetime, timezone
 
 UA = "Mozilla/5.0 (compatible; sahm-fundamentals/1.0)"
-MODEL = os.environ.get("MODEL") or "openai/gpt-oss-120b"
+# Groq models in order; each has its own free daily limit, so when one runs out the next is used.
+MODELS = [m.strip() for m in (os.environ.get("MODEL") or "openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b").split(",") if m.strip()]
+MODEL = MODELS[0]
 ENDPOINT = os.environ.get("LLM_URL") or "https://api.groq.com/openai/v1/chat/completions"
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or ""
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL") or "gemini-3.8-flash"
@@ -238,10 +242,13 @@ def ask_gemini(messages: list[dict]) -> dict:
 
 
 gemini_off = False  # set once Gemini runs out of quota in this run
+gemini_used = 0
+GEMINI_MAX = int(os.environ.get("GEMINI_MAX") or 5)
+model_i = 0  # current Groq model
 
 
 def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = None) -> dict:
-    global gemini_off
+    global gemini_off, model_i, gemini_used
     text = compact(text)
     messages = [
         {"role": "system", "content": PROMPT},
@@ -255,17 +262,25 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
              + ". Use the CURRENT period column (the first figure of each pair, the later date). The page may "
                "print two statements side by side; read each figure from its own column. Return the corrected JSON."},
         ]
-    if GEMINI_KEY and not gemini_off:
+    while token and model_i < len(MODELS):
+        try:
+            return ask_groq(messages, token, MODELS[model_i])
+        except Busy as e:
+            print(f"  {MODELS[model_i]} out for now ({e}); trying the next model", flush=True)
+            model_i += 1
+    if GEMINI_KEY and not gemini_off and gemini_used < GEMINI_MAX:
+        gemini_used += 1
         try:
             return ask_gemini(messages)
         except Busy as e:
-            print(f"  Gemini unavailable ({e}); using Groq", flush=True)
-            if "429" in str(e) or "quota" in str(e).lower():
-                gemini_off = True
-    if not token:
-        raise RuntimeError("Gemini unavailable and no Groq key")
+            gemini_off = True
+            raise RuntimeError(f"all models busy ({e})")
+    raise RuntimeError("model rate limited: every model is out for today")
+
+
+def ask_groq(messages: list[dict], token: str, model: str) -> dict:
     body = json.dumps({
-        "model": MODEL,
+        "model": model,
         "temperature": 0,
         "response_format": {"type": "json_object"},
         "messages": messages,
@@ -289,12 +304,22 @@ def ask_model(text: str, token: str, feedback: tuple[dict, list[str]] | None = N
                 raise RuntimeError(f"no JSON in model reply: {content[:300]!r}")
             return json.loads(m.group(0))
         except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 6:
-                wait = float(e.headers.get("Retry-After") or 60)
-                time.sleep(min(wait, 120) + 2)
-                continue
-            raise RuntimeError(f"model HTTP {e.code}: {e.read()[:300]!r}")
-    raise RuntimeError("model rate limited")
+            detail = e.read()[:300].decode("utf-8", "replace")
+            if e.code == 404 or (e.code == 400 and "model" in detail and "not" in detail):
+                raise Busy(f"HTTP {e.code} (model not available)")
+            if e.code == 429:
+                # per-day limits won't clear by waiting; per-minute ones will
+                if re.search(r"per day|TPD|RPD", detail, re.I):
+                    raise Busy("daily limit")
+                if attempt < 6:
+                    wait = float(e.headers.get("Retry-After") or 60)
+                    if wait > 300:
+                        raise Busy(f"retry after {wait:.0f}s")
+                    time.sleep(min(wait, 120) + 2)
+                    continue
+                raise Busy("rate limited")
+            raise RuntimeError(f"model HTTP {e.code}: {detail!r}")
+    raise Busy("rate limited")
 
 
 # --------------------------------------------------------------- checks ----
@@ -512,6 +537,9 @@ def main():
             try:
                 r = process(c, token, work)
             except Exception as e:  # network, model or PDF trouble: keep last good data
+                if "every model is out" in str(e):
+                    print(f"Every model is out of free quota for today; {sym} and later wait for the next run", flush=True)
+                    break
                 r = {"ok": False, "reason": f"error: {e}"}
             if r.pop("ok"):
                 out[sym] = r
@@ -520,7 +548,7 @@ def main():
                 failures[sym] = r
                 print(f"{sym}: FAILED {r.get('reason')}", flush=True)
             write()  # keep progress even if the job is stopped
-            time.sleep(4 if GEMINI_KEY and not gemini_off else 12)  # Groq free tier allows ~8K tokens a minute
+            time.sleep(12)  # Groq free tier allows ~8K tokens a minute; one statement is ~2K with the prompt
     write()
 
 
