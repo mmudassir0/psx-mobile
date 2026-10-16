@@ -76,6 +76,13 @@ function HoldingCard({ r, onOpen }: { r: Row; onOpen: () => void }) {
                   </T>
                 </View>
               ))}
+              {rv.checks.map((t) => (
+                <View key={t} style={styles.check}>
+                  <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
+                    Check: {t}
+                  </T>
+                </View>
+              ))}
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
             </View>
           ) : null}
@@ -182,6 +189,7 @@ export function MyHoldings() {
 const styles = themed(() =>
   StyleSheet.create({
     content: { paddingHorizontal: 20, paddingTop: 14, gap: 18, paddingBottom: 36 },
+    check: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 8 },
     chip: { paddingHorizontal: 10, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     sector: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   }),

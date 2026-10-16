@@ -7,6 +7,7 @@ import { dailyCandles } from '../psx/history';
 import { analyze, computeSeries } from '../analysis/signals';
 import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { valueStock } from '../analysis/valuation';
+import { dataChecks } from '../analysis/quality';
 import type { Candle } from '../psx/types';
 import { Holding, Review, reviewHolding } from './review';
 
@@ -80,6 +81,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         isBank: !!balance?.isBank,
         fair,
         divYield: r.stock?.divYield ?? null,
+        checks: dataChecks({ symbol: r.holding.symbol, name: r.stock?.name ?? d.company?.name, sector: r.stock?.sector ?? d.company?.sector, company: d.company, balance, ratios }),
       });
       return { ...r, weight: r.value / total, review };
     });

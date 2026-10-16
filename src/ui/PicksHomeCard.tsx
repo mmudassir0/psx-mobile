@@ -6,6 +6,7 @@ import { colors, fonts, themed } from '../theme';
 import { fmtDay, fmtPrice } from '../format';
 import { usePicksFeed } from '../picks/feed';
 import { Panel } from './bits';
+import { StaleNote } from './StaleNote';
 import { Section, T } from './kit';
 
 export function PicksHomeCard() {
@@ -15,6 +16,7 @@ export function PicksHomeCard() {
   const list = feed.picks.slice(0, 3);
   return (
     <Section title={feed.marketOk ? 'Daily picks' : 'Setups to watch'} action="See all" onAction={() => nav.navigate('Picks')}>
+      <StaleNote feed={feed} />
       <Panel style={{ paddingVertical: 10 }}>
         <T v="caption" style={{ color: feed.marketOk ? colors.up : colors.downText, paddingVertical: 4 }}>
           {feed.marketOk ? 'Market strong' : 'Market weak: watch only'} · from the {fmtDay(Date.parse(feed.day + 'T12:00:00Z'))} close

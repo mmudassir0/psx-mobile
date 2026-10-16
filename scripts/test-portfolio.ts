@@ -1,5 +1,6 @@
 import { parseHoldings, quarterYoY, reviewHolding, ReviewInput } from '../src/portfolio/review';
 import { computeSeries } from '../src/analysis/signals';
+import { dataChecks } from '../src/analysis/quality';
 import type { Candle } from '../src/psx/types';
 
 let failed = 0;
@@ -44,6 +45,16 @@ const pnl = reviewHolding({ ...base, holding: { symbol: 'X', shares: 10, avgCost
 check('profit and loss from the buy price', pnl.pnl === 200 && Math.abs(pnl.pnlPct - 0.25) < 1e-12);
 const q = quarterYoY({ financialsQuarterly: { periods: ['Q2 2026', 'Q1 2026', 'Q4 2025', 'Q2 2025'], rows: [{ label: 'EPS', values: [3, 4, 5, 5] }] } } as never);
 check('latest quarter against the same quarter a year earlier', !!q && Math.abs(q.change + 0.4) < 1e-12 && q.then === 'Q2 2025', q);
+
+const holdco = dataChecks({ symbol: 'H', sector: 'Inv. Banks / Inv. Cos. / Securities Cos.', company: { financialsAnnual: annual(3, 100) } as never, balance: null, ratios: null });
+check('holding company and a 97% profit drop are flagged', holdco.holdingCompany && holdco.profitSwing && holdco.notes.length === 2, holdco.notes);
+const rv = reviewHolding({ ...base, sector: 'Inv. Banks / Inv. Cos. / Securities Cos.', company: { pe: 50, financialsAnnual: annual(3, 100) } as never, checks: holdco });
+check('a flagged profit drop is a check, not a Review', rv.action === 'Hold' && rv.checks.length === 2 && rv.bad.some((t) => /see the check/.test(t)), rv);
+check('an unflagged 40% drop is still a Review', reviewHolding({ ...base, company: { pe: 9, financialsAnnual: annual(60, 100) } as never, checks: dataChecks({ symbol: 'X', company: { financialsAnnual: annual(60, 100) } as never, balance: null, ratios: null }) }).action === 'Review');
+const bs = { equity: 40, assets: 200, liabilities: 160, isBank: false, periodEnd: '2026-06-30', source: { pages: [34] } } as never;
+const dq = dataChecks({ symbol: 'E', company: null, balance: bs, ratios: { debtToEquity: 2.4, roe: 0.3 } as never, now: Date.UTC(2026, 9, 16) });
+check('very high debt is flagged with its page', dq.debtOdd && /240% of equity \(page 34/.test(dq.notes.join(' ')), dq.notes);
+check('an old balance sheet is flagged', /more than a year old/.test(dataChecks({ symbol: 'E', company: null, balance: bs, ratios: null, now: Date.UTC(2027, 11, 1) }).notes.join(' ')));
 
 if (failed) {
   console.log(`\n${failed} portfolio check(s) failed`);

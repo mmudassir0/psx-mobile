@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KeyValueStore, readEntry, setStorage, writeEntry } from '../src/psx/cache';
-import { dailyCandles } from '../src/psx/history';
+import { dailyCandles, lastSource } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
@@ -88,9 +88,11 @@ async function main() {
   console.log(`refreshing ${refresh.length} stocks${scanAll ? ' (weekly full scan)' : ''}`);
   const universe: Universe[] = [];
   let failed = 0;
+  let staleCount = 0;
   for (const sym of refresh) {
     try {
       const candles = await dailyCandles(sym);
+      if (lastSource === 'stale') staleCount++;
       if (!candles.length) continue;
       universe.push({ symbol: sym, candles, series: computeSeries(candles) });
     } catch (e) {
@@ -107,7 +109,9 @@ async function main() {
   }
   const day = [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? 1 : -1))[0]?.[0];
   if (!day) throw new Error('no price data');
-  console.log(`latest trading day ${day}; ${failed} failed`);
+  // When PSX refuses most downloads, everything below is built on old prices: say so in the feed.
+  const stale = staleCount + failed > refresh.length / 2;
+  console.log(`latest trading day ${day}; ${failed} failed, ${staleCount} from saved copies${stale ? ' (STALE)' : ''}`);
 
   // 3. Score earlier picks.
   const bySymbol = new Map(universe.map((u) => [u.symbol, u.candles]));
@@ -156,6 +160,7 @@ async function main() {
       stats: statsOf(closed, since),
       weakStats: statsOf(closed, since, true),
       rules: { hold: RULES.hold, wait: WAIT_DAYS },
+      ...(stale ? { stale: true } : {}),
     };
     let body = JSON.stringify(feed);
     while (body.length > 3900 && feed.recent.length) {
@@ -223,6 +228,7 @@ async function main() {
     generatedAt: new Date(now).toISOString(),
     breadth,
     indices,
+    ...(stale ? { stale: true } : {}),
     sectors: [...groups]
       .filter(([, g]) => g.r1m.length >= 2)
       .map(([name, g]) => [name, g.r1m.length, r3(mean(g.r1w)), r3(mean(g.r1m)), Math.round(mean(g.vol) * 100) / 100, r3(g.up / g.r1m.length)] as MarketFeed['sectors'][number])

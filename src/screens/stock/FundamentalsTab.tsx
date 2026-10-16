@@ -5,6 +5,7 @@ import { fmtCompact, fmtDay, fmtNum, fmtPct } from '../../format';
 import type { CompanyInfo, FinTable, Stock } from '../../psx/types';
 import { KV, Panel } from '../../ui/bits';
 import { balanceSheetFor, computeRatios } from '../../analysis/ratios';
+import { dataChecks } from '../../analysis/quality';
 import { Loading, Section, Segmented, T } from '../../ui/kit';
 import { FairValueCard } from '../../ui/FairValueCard';
 import { FairValue, MIN_PEERS } from '../../analysis/fairValue';
@@ -96,6 +97,10 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
   const [period, setPeriod] = useState<'annual' | 'quarterly'>('annual');
   const bs = useMemo(() => balanceSheetFor(company?.symbol ?? stock?.symbol ?? ''), [company?.symbol, stock?.symbol]);
   const r = useMemo(() => computeRatios(bs, company, stock), [bs, company, stock]);
+  const checks = useMemo(
+    () => (company ? dataChecks({ symbol: company.symbol, name: company.name, sector: stock?.sector ?? company.sector, company, balance: bs, ratios: r }).notes : []),
+    [company, stock, bs, r],
+  );
   if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Loading />;
 
   const fin = period === 'annual' ? company.financialsAnnual : company.financialsQuarterly;
@@ -105,6 +110,18 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
 
   return (
     <View style={{ gap: space.section }}>
+      {checks.length ? (
+        <View style={{ gap: 8 }}>
+          {checks.map((t) => (
+            <View key={t} style={{ backgroundColor: colors.goldSoft, borderRadius: 10, padding: 10 }}>
+              <T v="caption" style={{ color: colors.text2, lineHeight: 18 }}>
+                ⚠ {t}
+              </T>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <Section title="Fair value">
         {fair && price ? (
           <FairValueCard f={fair} price={price} />

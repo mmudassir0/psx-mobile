@@ -86,6 +86,27 @@ export interface PicksFeed {
   stats: Stats;
   weakStats: Stats;
   rules: { hold: number; wait: number };
+  /** PSX refused most downloads on this run, so prices may be out of date */
+  stale?: boolean;
+}
+
+/**
+ * The trading day whose close should be in the feed by now (Pakistan time):
+ * today after 17:30 on a weekday, otherwise the weekday before.
+ */
+export function expectedDay(now = Date.now()): string {
+  const d = new Date(now + 5 * 3600_000);
+  if (d.getUTCHours() * 60 + d.getUTCMinutes() < 17 * 60 + 30) d.setUTCDate(d.getUTCDate() - 1);
+  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** A warning when the feed is behind, or null. */
+export function freshness(f: { day: string; stale?: boolean } | null | undefined, now = Date.now()): string | null {
+  if (!f) return null;
+  if (f.stale) return `PSX blocked most of the last update, so these may be based on prices before ${f.day}.`;
+  if (f.day < expectedDay(now)) return `These are from the ${f.day} close; the update for ${expectedDay(now)} hasn't arrived yet (or it was a market holiday).`;
+  return null;
 }
 
 export const pkDay = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);

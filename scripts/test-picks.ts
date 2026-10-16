@@ -1,6 +1,6 @@
 import { playOut, Levels, PICK_COST, setupsAt } from '../src/analysis/picks';
 import { computeSeries } from '../src/analysis/signals';
-import { breadthOf, choosePicks, pickText, pkDay, scorePick, statsOf, Pick, ScoredPick } from '../src/picks/build';
+import { breadthOf, choosePicks, expectedDay, freshness, pickText, pkDay, scorePick, statsOf, Pick, ScoredPick } from '../src/picks/build';
 import { parseFeed, parseFeeds } from '../src/picks/feed';
 import type { Candle } from '../src/psx/types';
 
@@ -70,6 +70,15 @@ const lists = parseFeeds([
   JSON.stringify({ event: 'message', message: JSON.stringify({ v: 1, list: 'kmi30', picks: [], generatedAt: '2026-01-06T03:00:02Z', day: '2026-01-05' }) }),
 ].join('\n'));
 check('one feed per list; older feeds count as all shares', !!lists.all && lists.kse100?.picks.length === 1 && !!lists.kmi30);
+
+// Pakistan time = UTC+5. Fri 16 Oct 2026 18:00 PKT = 13:00 UTC.
+check('after 17:30 on a weekday, today\'s close is expected', expectedDay(Date.UTC(2026, 9, 16, 13)) === '2026-10-16');
+check('before 17:30, the previous trading day', expectedDay(Date.UTC(2026, 9, 16, 6)) === '2026-10-15');
+check('on Sunday, Friday', expectedDay(Date.UTC(2026, 9, 18, 6)) === '2026-10-16');
+check('Monday morning, Friday', expectedDay(Date.UTC(2026, 9, 19, 4)) === '2026-10-16');
+check('up to date: no warning', freshness({ day: '2026-10-16' }, Date.UTC(2026, 9, 18, 6)) === null);
+check('behind: a warning', /hasn't arrived/.test(freshness({ day: '2026-10-15' }, Date.UTC(2026, 9, 16, 13)) ?? ''));
+check('blocked run: a warning', /blocked/.test(freshness({ day: '2026-10-16', stale: true }, Date.UTC(2026, 9, 16, 13)) ?? ''));
 
 if (failed) {
   console.log(`\n${failed} picks check(s) failed`);

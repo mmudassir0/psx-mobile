@@ -8,6 +8,7 @@
  */
 import { Backtest, recordText, trackRecord } from '../analysis/backtest';
 import { FairValue, fairText } from '../analysis/fairValue';
+import { dataChecks } from '../analysis/quality';
 import type { CompanyInfo, Stock } from '../psx/types';
 import type { Analysis } from '../analysis/signals';
 import type { Technicals } from '../analysis/technicals';
@@ -124,6 +125,8 @@ export function stockContext(x: StockPack, compact = false): string {
     const pe = c.pe ?? s?.pe;
     L.push(`Valuation: P/E ${pe != null && pe > 0 ? n(pe) : 'n/a (loss or no earnings)'} (sector median ${n(peerPe)}), dividend yield ${p(s?.divYield)}, market cap ${big(c.marketCap)}.`);
   }
+  const dq = c ? dataChecks({ symbol: sym, name: c.name, sector: s?.sector ?? c.sector, company: c, balance: x.balance, ratios: x.ratios }) : null;
+  if (dq?.notes.length) L.push(`DATA CHECKS (numbers to treat with care): ${dq.notes.join(' ')}`);
   if (x.fair && price != null) {
     L.push('');
     L.push(compact ? fairText(x.fair, price).split('\n')[0] : fairText(x.fair, price));

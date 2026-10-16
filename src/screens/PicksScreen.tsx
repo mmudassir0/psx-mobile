@@ -10,6 +10,7 @@ import { ListId, LISTS, RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from 
 import { SETUP_NAMES } from '../analysis/picks';
 import { PickCard, RESULT_LABEL } from '../ui/PickCard';
 import { Panel } from '../ui/bits';
+import { StaleNote } from '../ui/StaleNote';
 import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
 const day = (d: string) => fmtDay(Date.parse(d + 'T12:00:00Z'));
@@ -83,6 +84,7 @@ export default function PicksScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
       >
         <Segmented options={LISTS.map((l) => ({ key: l.id, label: l.label }))} value={list} onChange={setList} />
+        <StaleNote feed={feed} />
         {!feed ? (
           loading ? (
             <Loading label="Loading today's picks" />

@@ -15,6 +15,7 @@ import type { Candle, CompanyInfo } from '../psx/types';
 import type { Analysis, SeriesSet } from '../analysis/signals';
 import type { FairValue } from '../analysis/fairValue';
 import type { Ratios } from '../analysis/ratios';
+import type { DataChecks } from '../analysis/quality';
 
 export type Action = 'Add more' | 'Hold' | 'Trim' | 'Review';
 
@@ -43,6 +44,8 @@ export interface ReviewInput {
   isBank: boolean;
   fair: FairValue | null;
   divYield: number | null;
+  /** warnings about numbers that may mislead (see analysis/quality.ts) */
+  checks?: DataChecks | null;
 }
 
 export interface Review {
@@ -54,6 +57,8 @@ export interface Review {
   bad: string[];
   fundamentalBreaks: string[];
   technicalBreaks: string[];
+  /** numbers to verify before acting on them */
+  checks: string[];
   value: number;
   pnl: number;
   pnlPct: number;
@@ -128,14 +133,16 @@ export function reviewHolding(x: ReviewInput): Review {
     const pe = c?.pe ?? null;
     const [p0, p1] = [profit[0], profit[1]];
     const years = c?.financialsAnnual?.periods ?? [];
-    const holdingCo = /inv\. banks|inv\. cos|holding/i.test(x.sector ?? '');
-    if (holdingCo) bad.push("A holding or investment company: PSX's standalone profit can swing with dividends from its subsidiaries, so check the group's consolidated results");
+    // A profit figure flagged by the data checks (holding-company standalone results, or a
+    // one-off-sized swing) is a reason to look, not on its own a reason to say Review.
+    const shaky = !!x.checks && (x.checks.holdingCompany || x.checks.profitSwing);
+    const breakOrBad = (t: string) => (shaky ? bad.push(`${t} (see the check below)`) : fundamentalBreaks.push(t));
     if ((pe != null && pe <= 0) || (p0 != null && p0 < 0)) fundamentalBreaks.push('The company is making a loss');
     else if (p0 != null && p1 != null && p1 > 0) {
       const ch = p0 / p1 - 1;
       const yoy = quarterYoY(c);
-      if (ch <= -0.3) fundamentalBreaks.push(`Profit fell ${pc(-ch)} in fiscal ${years[0]}`);
-      else if (ch <= -0.1 && yoy && yoy.change <= -0.25) fundamentalBreaks.push(`Earnings are falling: profit down ${pc(-ch)} in fiscal ${years[0]}, and ${yoy.now} EPS down ${pc(-yoy.change)} on ${yoy.then}`);
+      if (ch <= -0.3) breakOrBad(`Profit fell ${pc(-ch)} in fiscal ${years[0]}`);
+      else if (ch <= -0.1 && yoy && yoy.change <= -0.25) breakOrBad(`Earnings are falling: profit down ${pc(-ch)} in fiscal ${years[0]}, and ${yoy.now} EPS down ${pc(-yoy.change)} on ${yoy.then}`);
       else if (ch <= -0.1) bad.push(`Profit fell ${pc(-ch)} in fiscal ${years[0]}`);
       else if (ch >= 0.15) good.push(`Profit grew ${pc(ch)} in fiscal ${years[0]}`);
       if (yoy && yoy.change <= -0.25 && ch > -0.1) bad.push(`${yoy.now} EPS down ${pc(-yoy.change)} on ${yoy.then}`);
@@ -145,7 +152,7 @@ export function reviewHolding(x: ReviewInput): Review {
     if (x.hasBalanceSheet && r?.roe != null) {
       if (r.roe >= 0.15) good.push(`Return on equity ${pc(r.roe, 1)}`);
       else if (r.roe < 0.08) bad.push(`Weak return on equity (${pc(r.roe, 1)})`);
-      if (!x.isBank && r.debtToEquity != null && r.debtToEquity > 1.5) bad.push(`Heavy borrowing: debt is ${pc(r.debtToEquity)} of equity`);
+      if (!x.isBank && r.debtToEquity != null && r.debtToEquity > 1.5) bad.push(`Heavy borrowing: debt is ${pc(r.debtToEquity)} of equity${x.checks?.debtOdd ? ' (see the check below)' : ''}`);
     }
     if (x.divYield != null && x.divYield >= 6) good.push(`Dividend yield ${x.divYield.toFixed(1)}%`);
   }
@@ -203,6 +210,7 @@ export function reviewHolding(x: ReviewInput): Review {
     bad,
     fundamentalBreaks,
     technicalBreaks,
+    checks: x.checks?.notes ?? [],
     value,
     pnl: value - cost,
     pnlPct: cost > 0 ? value / cost - 1 : 0,

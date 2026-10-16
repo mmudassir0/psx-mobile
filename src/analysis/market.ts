@@ -165,6 +165,7 @@ export interface MarketFeed {
   generatedAt: string;
   breadth: number | null;
   indices: Record<string, { regime: Regime; since: number; days: number; close: number; r1m: number | null; fromHigh: number }>;
+  stale?: boolean;
   /** compact rows: [name, n, r1w, r1m, vol, up] */
   sectors: [string, number, number, number, number, number][];
 }
