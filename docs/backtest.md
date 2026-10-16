@@ -85,3 +85,34 @@ Liquid stocks, next 12 months:
 
 So the verdict counts fair value as one ordinary fundamental point (weight 1,
 replacing the plain P/E-vs-sector point), not more.
+
+# Backtest of daily trade picks (WhatsApp-group style)
+
+`npx tsx scripts/picks-study.ts <history dir>` (env ZONE, STOP, TP1, TP2, HOLD,
+BREADTH change the rules). Every liquid stock-day with a setup (pullback in an
+uptrend, breakout on 1.5× volume, Sahm strong-bullish score) becomes a pick:
+buy zone half an ATR under the close, stop under the zone, half sold at TP1
+(stop then moves to entry), rest at TP2, stop or time. Bought only if the zone
+trades within 3 days. Stop assumed first when a day touches both. 0.3% costs.
+"any-day" is the same trade on random liquid days, with no setup.
+
+Average return per trade, after costs (October 2026):
+
+| rules | period | any day | pullback | breakout | momentum |
+|---|---|---|---|---|---|
+| stop 1 ATR, TP 1R/2R, 10 days (group style) | 2017–21 | −0.56% | −0.74% | −0.46% | −0.61% |
+| | 2022+ | −0.37% | −0.41% | −0.51% | −0.29% |
+| stop 2 ATR, TP 1R/3R, 20 days | 2017–21 | −0.85% | −1.02% | −0.45% | −0.64% |
+| | 2022+ | −0.02% | +0.23% | −0.37% | +0.38% |
+| stop 3 ATR, TP 2R/4R, 40 days | 2017–21 | −1.28% | −0.79% | +0.37% | −0.10% |
+| | 2022+ | +1.37% | +2.19% | +1.19% | +2.34% |
+
+- Group-style picks (tight stop, quick targets) lost money in every test, even
+  with a 50–56% "win rate": wins and losses are about the same size and costs
+  tip it negative.
+- Longer, wider trades made money only in the 2022+ bull market, where buying
+  any liquid stock on any day also did; setups added about one point at most,
+  and did not hold up in 2017–21.
+- A market filter (trade only when at least half of liquid stocks are above
+  their 200-day average) kept out of most of 2017–21 but did not make the
+  trades it allowed profitable.
