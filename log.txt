@@ -1,0 +1,14 @@
+561 stocks saved
+KSE100: 100 members
+KMI30: 30 members
+refreshing 256 stocks
+latest trading day 2026-10-16; 0 failed, 1 from saved copies
+breadth 27% (weak: watch only)
+published All shares to ntfy: 200
+published KSE-100 to ntfy: 200
+published KMI-30 to ntfy: 200
+KSE100: Sideways for 34 days
+KMI30: Sideways for 33 days
+ALLSHR: Sideways for 33 days
+sectors: TEXTILE SPINNING 18.3%, REFINERY 16.9%, PAPER, BOARD & PACKAGING 6.7% … REAL ESTATE INVESTMENT TRUST -9.6%, POWER GENERATION & DISTRIBUTION -9.7%
+published market report to ntfy: 200
