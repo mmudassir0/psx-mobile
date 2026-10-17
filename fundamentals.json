@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-16T17:56:31+00:00",
+ "generatedAt": "2026-10-17T05:59:41+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -613,6 +613,30 @@
     "method": "text"
    }
   },
+  "FHAM": {
+   "periodEnd": "2026-06-30",
+   "statement": "standalone",
+   "isBank": false,
+   "equity": 6231025320,
+   "assets": 41727095490,
+   "liabilities": 35496070170,
+   "currentAssets": 16435854905,
+   "currentLiabilities": 35452425390,
+   "borrowings": 10932008831.0,
+   "cash": 577857800,
+   "warnings": [
+    "ignored non-borrowing line 'Certificates of investment (musharaka)'"
+   ],
+   "source": {
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/282703.pdf",
+    "date": "2026-09-15",
+    "pages": [
+     223
+    ],
+    "method": "text"
+   }
+  },
   "GADT": {
    "periodEnd": "2026-06-30",
    "statement": "standalone",
@@ -688,7 +712,7 @@
    "liabilities": 17884004000,
    "currentAssets": 28529912000,
    "currentLiabilities": 17810560000,
-   "borrowings": null,
+   "borrowings": 3733000.0,
    "cash": 1009372000,
    "warnings": [],
    "source": {
@@ -2050,40 +2074,6 @@
     "url": "https://dps.psx.com.pk/download/document/276153.pdf"
    }
   },
-  "FHAM": {
-   "reason": "ignored non-borrowing line 'Certificates of investment (musharaka)'; missing equity or total assets",
-   "report": {
-    "kind": "annual",
-    "date": "2026-09-15",
-    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
-    "url": "https://dps.psx.com.pk/download/document/282703.pdf"
-   },
-   "pages": [
-    223
-   ],
-   "model": {
-    "statement": "standalone",
-    "period_end": "2026-06-30",
-    "unit": 1,
-    "is_bank": false,
-    "total_equity": null,
-    "total_assets": "41,727,095,490",
-    "total_liabilities": null,
-    "current_assets": "16,435,854,905",
-    "current_liabilities": "35,452,425,390",
-    "borrowing_lines": [
-     {
-      "label": "Certificates of investment (musharaka)",
-      "amount": "22,261,256,971"
-     },
-     {
-      "label": "Running Musharaka",
-      "amount": "10,932,008,831"
-     }
-    ],
-    "cash": "577,857,800"
-   }
-  },
   "HCAR": {
    "reason": "balance sheet page not found",
    "report": {
@@ -2143,7 +2133,7 @@
    }
   },
   "POL": {
-   "reason": "total_equity 86,939 is in the comparative (prior period) column; total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
+   "reason": "total_equity 89,778 is in the comparative (prior period) column; total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2158,7 +2148,7 @@
     "period_end": "2026-12-31",
     "unit": 1000000,
     "is_bank": false,
-    "total_equity": "86,939",
+    "total_equity": "89,778",
     "total_assets": "196,163",
     "total_liabilities": null,
     "current_assets": "162,294",
