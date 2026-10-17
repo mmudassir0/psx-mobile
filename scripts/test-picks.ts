@@ -1,7 +1,7 @@
 import { playOut, Levels, PICK_COST, setupsAt } from '../src/analysis/picks';
 import { computeSeries } from '../src/analysis/signals';
 import { breadthOf, choosePicks, expectedDay, freshness, pickText, pkDay, scorePick, statsOf, Pick, ScoredPick } from '../src/picks/build';
-import { parseFeed, parseFeeds } from '../src/picks/feed';
+import { parseFeed, parseFeeds, readFeedFiles } from '../src/picks/feed';
 import type { Candle } from '../src/psx/types';
 
 let failed = 0;
@@ -72,13 +72,33 @@ const lists = parseFeeds([
 check('one feed per list; older feeds count as all shares', !!lists.all && lists.kse100?.picks.length === 1 && !!lists.kmi30);
 
 // Pakistan time = UTC+5. Fri 16 Oct 2026 18:00 PKT = 13:00 UTC.
-check('after 17:30 on a weekday, today\'s close is expected', expectedDay(Date.UTC(2026, 9, 16, 13)) === '2026-10-16');
-check('before 17:30, the previous trading day', expectedDay(Date.UTC(2026, 9, 16, 6)) === '2026-10-15');
+check('after 18:30 on a weekday, today\'s close is expected', expectedDay(Date.UTC(2026, 9, 16, 14)) === '2026-10-16');
+check('at 17:45 the job may still be running: no warning yet', expectedDay(Date.UTC(2026, 9, 16, 12, 45)) === '2026-10-15');
+check('before 18:30, the previous trading day', expectedDay(Date.UTC(2026, 9, 16, 6)) === '2026-10-15');
 check('on Sunday, Friday', expectedDay(Date.UTC(2026, 9, 18, 6)) === '2026-10-16');
 check('Monday morning, Friday', expectedDay(Date.UTC(2026, 9, 19, 4)) === '2026-10-16');
 check('up to date: no warning', freshness({ day: '2026-10-16' }, Date.UTC(2026, 9, 18, 6)) === null);
-check('behind: a warning', /hasn't arrived/.test(freshness({ day: '2026-10-15' }, Date.UTC(2026, 9, 16, 13)) ?? ''));
+check('behind: a warning', /hasn't arrived/.test(freshness({ day: '2026-10-15' }, Date.UTC(2026, 9, 16, 14)) ?? ''));
 check('blocked run: a warning', /blocked/.test(freshness({ day: '2026-10-16', stale: true }, Date.UTC(2026, 9, 16, 13)) ?? ''));
+
+const ff = readFeedFiles(
+  { all: { v: 1, day: '2026-10-16', picks: [], generatedAt: 'x' }, kse100: { v: 1, day: '2026-10-16', picks: [] }, evil: { v: 1, day: 'd', picks: [] }, kmi30: { v: 2, picks: [] } },
+  { v: 1, kind: 'market', sectors: [] },
+);
+check('feed files: known lists with the right shape only, plus the market report', !!ff.all && !!ff.kse100 && !ff.kmi30 && !('evil' in ff) && !!ff.market);
+check('feed files: nothing usable', Object.keys(readFeedFiles(null, { kind: 'x' })).length === 0);
+
+// dividends while holding, and a gap below the stop
+{
+  const seq = [bar(1, 101, 101, 99, 100), bar(2, 99, 100, 93, 94)];
+  const base = playOut(seq, L, 3, 20);
+  const withDiv = playOut(seq, L, 3, 20, [{ exT: bar(2, 0, 0, 0, 0).t, dps: 2 }]);
+  const before = playOut(seq, L, 3, 20, [{ exT: bar(1, 0, 0, 0, 0).t, dps: 2 }]);
+  check('a dividend earned while holding is added to the return', base.ret != null && withDiv.ret != null && Math.abs(withDiv.ret - base.ret - 2 / 100) < 0.001, { base: base.ret, withDiv: withDiv.ret });
+  check('no dividend when it went ex on the day of buying', before.ret === base.ret);
+  const gap = playOut([bar(1, L.stop - 1, L.stop, L.stop - 2, L.stop - 1)], L, 3, 20);
+  check('opening below the stop before buying is no trade', gap.result === 'no-fill' && gap.ret == null, gap);
+}
 
 if (failed) {
   console.log(`\n${failed} picks check(s) failed`);

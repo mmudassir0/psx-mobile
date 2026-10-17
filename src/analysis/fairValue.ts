@@ -204,7 +204,11 @@ export function fairValue(x: FairInput): FairValue | null {
         how: `Book value ${rs(bv)} × (ROE ${pc(roe)} − growth ${pc(g)}) ÷ (required return ${pc(r)} − growth ${pc(g)}) = ${x1(mult)} book`,
       });
     } else {
-      flags.push(`Return on equity (${pc(x.roe)}) is below long-run growth, so the business is not earning its cost of capital.`);
+      flags.push(
+        x.roe <= g
+          ? `Return on equity (${pc(x.roe)}) is below long-run growth, so the business is not earning its cost of capital.`
+          : `Return on equity (${pc(x.roe)}) is barely above long-run growth (${pc(g)}) and well below the ${pc(r)} investors require, so the return-on-equity method isn't used.`,
+      );
     }
   }
 

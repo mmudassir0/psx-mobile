@@ -25,7 +25,7 @@ import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode, ChartLevel, ChartLine, ChartMarker, ChartPanes } from '../ui/SkiaChart';
 import { usePicksFeed } from '../picks/feed';
-import { relativeReturn } from '../analysis/market';
+import { BENCHMARK, relativeReturn } from '../analysis/market';
 import { load as loadPref, save as savePref } from '../storage';
 import { analyze, computeSeries } from '../analysis/signals';
 import { Backtest, backtest } from '../analysis/backtest';
@@ -148,7 +148,7 @@ export default function StockScreen() {
   const [kse, setKse] = useState<SeriesPoint[] | null>(null);
   const [kmi, setKmi] = useState<SeriesPoint[] | null>(null);
   useEffect(() => {
-    cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).then(setKse).catch(() => {});
+    cached<SeriesPoint[]>(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true }).then(setKse).catch(() => {});
   }, []);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyErr, setCompanyErr] = useState<string | null>(null);

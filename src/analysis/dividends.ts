@@ -107,7 +107,13 @@ export function dividends(
   }));
   const ttm = list.filter((p) => now - p.announced < YEAR).reduce((s, p) => s + p.dps, 0);
   const byFy = new Map<string, number>();
-  for (const p of list) if (p.period) byFy.set(fyOf(p.period, opts.fiscalEndMonth), (byFy.get(fyOf(p.period, opts.fiscalEndMonth)) ?? 0) + p.dps);
+  const bonusFy = new Map<string, number>();
+  for (const p of list) {
+    if (!p.period) continue;
+    const fy = fyOf(p.period, opts.fiscalEndMonth);
+    byFy.set(fy, (byFy.get(fy) ?? 0) + p.dps);
+    if (p.bonusPct > 0) bonusFy.set(fy, (bonusFy.get(fy) ?? 0) + p.bonusPct);
+  }
   const years = [...byFy].map(([fy, dps]) => ({ fy, dps })).sort((a, b) => (a.fy < b.fy ? 1 : -1));
   let cut: string | null = null;
   let lower: string | null = null;
@@ -121,8 +127,12 @@ export function dividends(
     // Only judge once the latest year's final results (YR) are out, so interims aren't mistaken for a cut.
     const finalOut = list.some((p) => p.periodType === 'YR' && p.period && fyOf(p.period, opts.fiscalEndMonth) === latest);
     const resultsKnown = finalOut || (list.length > 0 && list.every((p) => !p.period || fyOf(p.period, opts.fiscalEndMonth) !== latest));
+    const bonus = bonusFy.get(latest) ?? 0;
     if (before > 0 && resultsKnown) {
-      if (now0 === 0) cut = `No cash dividend for fiscal ${latest}, after ${r(before)} a share for ${prevYear}`;
+      // Bonus shares are a payout too: paying in shares instead of cash is worth noting, not a cut.
+      if (now0 === 0 && bonus > 0) lower = `Paid ${bonus}% bonus shares instead of a cash dividend for fiscal ${latest} (cash was ${r(before)} a share for ${prevYear})`;
+      else if (now0 === 0) cut = `No cash dividend for fiscal ${latest}, after ${r(before)} a share for ${prevYear}`;
+      else if (now0 <= before * 0.5 && bonus > 0) lower = `Cash dividend down from ${r(before)} to ${r(now0)} a share, plus ${bonus}% bonus shares (fiscal ${prevYear} → ${latest})`;
       else if (now0 <= before * 0.5) cut = `Dividend cut from ${r(before)} to ${r(now0)} a share (fiscal ${prevYear} → ${latest})`;
       else if (now0 <= before * 0.8) lower = `Dividend lower: ${r(now0)} a share for fiscal ${latest}, against ${r(before)} the year before`;
     }
@@ -174,6 +184,20 @@ export function lastBuyDay(bookClosure: number): number {
     if (wd !== 0 && wd !== 6) left--;
   }
   return t;
+}
+
+/** The ex-date (first day without the payout): one working day before book closure, at the start of that day in Pakistan. */
+export function exDate(bookClosure: number): number {
+  let t = bookClosure;
+  do t -= DAY_MS;
+  while ([0, 6].includes(new Date(t + 5 * 3600_000).getUTCDay()));
+  const day = new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
+  return Date.parse(day + 'T00:00:00+05:00');
+}
+
+/** Cash dividends as ex-dates and Rs per share, for scoring trades held over them. */
+export function cashDividends(d: Dividends | null): { exT: number; dps: number }[] {
+  return (d?.list ?? []).filter((p) => p.dps > 0 && p.bookClosure != null).map((p) => ({ exT: exDate(p.bookClosure!), dps: p.dps }));
 }
 
 export interface UpcomingPayout {

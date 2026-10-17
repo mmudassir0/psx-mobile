@@ -89,9 +89,9 @@ export function computeRatios(bs: BalanceSheet | null, company: CompanyInfo | nu
 
 type Store = { generatedAt: string | null; companies: Record<string, BalanceSheet> };
 let store: Store | null = null;
+let live: Store | null = null;
 
-/** Balance sheet bundled with this build, or null when the company isn't covered yet. */
-export function balanceSheetFor(symbol: string): BalanceSheet | null {
+function bundled(): Store {
   if (!store) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -100,5 +100,26 @@ export function balanceSheetFor(symbol: string): BalanceSheet | null {
       store = { generatedAt: null, companies: {} };
     }
   }
-  return store.companies?.[symbol] ?? null;
+  return store;
+}
+
+/**
+ * Newer balance sheets downloaded at runtime (the fundamentals job runs daily);
+ * used over the copy bundled with the app when they are newer.
+ */
+export function setLiveFundamentals(s: Store | null) {
+  if (!s || typeof s !== 'object' || !s.companies || typeof s.companies !== 'object') return;
+  const b = bundled();
+  if (b.generatedAt && s.generatedAt && s.generatedAt < b.generatedAt) return;
+  live = s;
+}
+
+/** Balance sheet for a company (the newest Sahm has), or null when it isn't covered yet. */
+export function balanceSheetFor(symbol: string): BalanceSheet | null {
+  return live?.companies?.[symbol] ?? bundled().companies?.[symbol] ?? null;
+}
+
+/** When the balance sheets in use were extracted. */
+export function fundamentalsDate(): string | null {
+  return live?.generatedAt ?? bundled().generatedAt ?? null;
 }

@@ -1,4 +1,5 @@
 /** How today's holdings did in the KSE-100's biggest past falls, and how much they move with it. */
+import { BENCHMARK } from '../analysis/market';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
@@ -18,7 +19,7 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   useEffect(() => {
-    cached('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true })
+    cached(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true })
       .then(setIndex)
       .catch((e) => setErr((e as Error).message));
   }, []);

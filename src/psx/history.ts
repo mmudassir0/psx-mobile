@@ -10,6 +10,7 @@
  */
 import type { Candle } from './types';
 import { fetchDailyCandles, fetchMonthCandles } from './api';
+import { actionGapAt } from './parse';
 import { once, readEntry, writeEntry } from './cache';
 
 export const FRESH_MS = 30 * 60_000;
@@ -60,7 +61,18 @@ export function topUp(saved: Candle[], fresh: Candle[]): Candle[] | null {
   const aligned = overlap.every((b) => Math.abs(b.c / byT.get(b.t)!.c - 1) <= TOLERANCE);
   if (!aligned) return null;
   const first = fresh[0].t;
-  return [...saved.filter((b) => b.t < first), ...fresh];
+  const merged = [...saved.filter((b) => b.t < first), ...fresh];
+  // A bonus issue or split since the last download shows as a gap beyond PSX's daily limit:
+  // the saved days need PSX's adjusted prices, so download everything again.
+  const from = Math.max(1, merged.length - fresh.length);
+  for (let i = from; i < merged.length; i++) if (actionGapAt(merged, i) != null) return null;
+  return merged;
+}
+
+/** True when the last few weeks still contain a corporate-action gap (PSX hasn't adjusted its series yet). */
+export function recentGap(bars: Candle[], days = 15): boolean {
+  for (let i = Math.max(1, bars.length - days); i < bars.length; i++) if (actionGapAt(bars, i) != null) return true;
+  return false;
 }
 
 export type HistorySource = 'memory' | 'saved' | 'topped-up' | 'full' | 'stale';
@@ -94,7 +106,8 @@ export async function dailyCandles(symbol: string, opts: { force?: boolean } = {
       }
       const full = await deps.full(symbol);
       lastSource = 'full';
-      return save(full, now);
+      // If PSX hasn't adjusted for a fresh bonus issue yet, try a full download again in six hours.
+      return save(full, recentGap(full) ? now - FULL_EVERY_MS + 6 * 3600_000 : now);
     } catch (e) {
       if (hit) {
         lastSource = 'stale';

@@ -15,7 +15,9 @@ import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
 import { breadthOf, choosePicks, ListId, listOf, liveRecord, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
-import { fetchIndexConstituents, fetchSeries, fetchSymbols } from '../src/psx/api';
+import { fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
+import { cashDividends, dividends } from '../src/analysis/dividends';
+import { cached } from '../src/psx/cache';
 import { indexTrend, MarketFeed } from '../src/analysis/market';
 import { MIN_LIQUIDITY } from '../src/analysis/picks';
 import { WAIT_DAYS } from '../src/analysis/picks';
@@ -115,11 +117,20 @@ async function main() {
 
   // 3. Score earlier picks.
   const bySymbol = new Map(universe.map((u) => [u.symbol, u.candles]));
+  // Cash dividends of stocks with open picks, so a trade held over an ex-date gets its dividend.
+  const screener = new Map(((await fetchScreener().catch(() => [])) ?? []).map((r) => [r.symbol, r] as const));
+  const cashOf = new Map<string, { exT: number; dps: number }[]>();
+  for (const sym of new Set(history.filter((p) => p.result === 'open').map((p) => p.symbol))) {
+    const pay = await cached(`payouts:${sym}`, 20 * 3600_000, () => fetchPayouts(sym), { persist: true }).catch(() => null);
+    const c = bySymbol.get(sym);
+    if (pay && c?.length) cashOf.set(sym, cashDividends(dividends(pay, { price: c[c.length - 1].c, divYield: screener.get(sym)?.divYield ?? null, fiscalEndMonth: 11 })));
+    await sleep(300);
+  }
   for (let k = 0; k < history.length; k++) {
     const p = history[k];
     if (p.result !== 'open') continue;
     const c = bySymbol.get(p.symbol);
-    if (c) history[k] = scorePick(p, c);
+    if (c) history[k] = scorePick(p, c, cashOf.get(p.symbol) ?? []);
   }
 
   // 4. Today's picks for each list, once per trading day. The market check is market-wide.

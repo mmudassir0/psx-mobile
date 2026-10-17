@@ -1,6 +1,8 @@
 import { cached, clearMemory, memoryStore, setStorage } from '../src/psx/cache';
 import { dailyCandles, FULL_EVERY_MS, HistoryDeps, lastSource, monthsBetween, topUp } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
+import { actionGapAt, adjustCandles, adjustOldGaps } from '../src/psx/parse';
+import { recentGap } from '../src/psx/history';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -44,6 +46,14 @@ function check(label: string, ok: boolean, detail?: unknown) {
   check('new days are added after a matching overlap', merged?.length === 4 && merged[3].c === 103 && merged[2].c === 102.2);
   check('a split (prices no longer line up) forces a full download', topUp(saved, [bar(3, 20.4), bar(4, 20.6)]) === null);
   check('no overlap forces a full download', topUp(saved, [bar(10, 100)]) === null);
+  check('a bonus issue since the last download (a gap beyond the 10% daily limit) forces a full download', topUp(saved, [bar(3, 102), bar(4, 85)]) === null);
+  check('a normal fall within the daily limit is just added', topUp(saved, [bar(3, 102), bar(4, 93)])?.length === 4);
+  check('gap rule: beyond 10% and more than Rs 1', actionGapAt([bar(1, 100), bar(2, 80)], 1) === 0.8 && actionGapAt([bar(1, 100), bar(2, 91)], 1) === null && actionGapAt([bar(1, 5), bar(2, 4.2)], 1) === null);
+  const old = adjustOldGaps([bar(1, 120), bar(2, 120), bar(3, 100), bar(4, 101)], 4);
+  check('older bonus issues are adjusted from the gap', old[0].c === 100 && old[1].c === 100 && old[2].c === 100 && old[3].c === 101, old.map((b) => b.c));
+  const withEod = adjustCandles([bar(1, 120), bar(2, 100), bar(3, 101), bar(4, 102)], [{ t: bar(3, 0).t, v: 101, vol: 0 }, { t: bar(4, 0).t, v: 102, vol: 0 }]);
+  check('a gap before PSX\'s adjusted series starts is adjusted too', withEod[0].c === 100, withEod.map((b) => b.c));
+  check('recent unadjusted gap is noticed', recentGap([bar(1, 100), bar(2, 80)]) && !recentGap([bar(1, 100), bar(2, 95)]));
 
   // Daily history with fake PSX
   clearMemory();

@@ -95,13 +95,23 @@ export const HOLD_DAYS = 10;
  * Bought when a day trades into the zone (at the open if it opens inside or
  * below it). Half is sold at TP1 and the stop moves to the entry; the rest at
  * TP2, the stop, or the close after HOLD_DAYS. When a day touches both the
- * stop and a target, the stop is assumed first.
+ * stop and a target, the stop is assumed first. A day opening at or below the
+ * stop before the buy means no trade. Cash dividends earned while holding are
+ * added to the return (the shares fall by about the dividend on the ex-date).
  */
-export function playOut(after: Candle[], L: Levels, wait = WAIT_DAYS, hold = HOLD_DAYS): Outcome {
+/** A cash dividend: the first day the shares trade without it (ex-date) and Rs per share. */
+export interface CashDividend {
+  exT: number;
+  dps: number;
+}
+
+export function playOut(after: Candle[], L: Levels, wait = WAIT_DAYS, hold = HOLD_DAYS, cash: CashDividend[] = []): Outcome {
   let entry: number | null = null;
   let filledIdx = -1;
   for (let d = 0; d < Math.min(wait, after.length); d++) {
     const b = after[d];
+    // A day that opens at or below the stop gives no trade: the plan was already broken.
+    if (b.o > 0 && b.o <= L.stop) return { result: 'no-fill', ret: null, r: null, filledAt: null, closedAt: null, hitTp1: false };
     if (b.l <= L.entryHigh) {
       entry = b.o > 0 ? Math.min(b.o, L.entryHigh) : L.entryHigh;
       filledIdx = d;
@@ -113,13 +123,16 @@ export function playOut(after: Candle[], L: Levels, wait = WAIT_DAYS, hold = HOL
   let stop = L.stop;
   let half = 0; // proceeds per share from the half sold at TP1
   let hitTp1 = false;
+  // Dividends earned while holding: shares bought before the ex-date and still held on it.
+  let divs = 0;
   const done = (res: Result, exit: number, d: number): Outcome => {
-    const gross = hitTp1 ? (half + exit / 2) / entry! - 1 : exit / entry! - 1;
+    const gross = (hitTp1 ? (half + exit / 2) / entry! - 1 : exit / entry! - 1) + divs / entry!;
     const ret = gross - PICK_COST;
     return { result: res, ret, r: risk > 0 ? (ret * entry!) / risk : null, filledAt: after[filledIdx].t, closedAt: after[d].t, hitTp1 };
   };
   for (let d = filledIdx; d < after.length && d <= filledIdx + hold; d++) {
     const b = after[d];
+    if (d > filledIdx) for (const x of cash) if (x.exT > after[d - 1].t && x.exT <= b.t) divs += x.dps * (hitTp1 ? 0.5 : 1);
     const open = d === filledIdx ? entry : b.o > 0 ? b.o : b.c;
     if (b.l <= stop) return done(hitTp1 ? 'tp1-then-even' : 'stop', Math.min(open, stop), d);
     if (!hitTp1 && b.h >= L.tp1) {

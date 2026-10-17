@@ -1,4 +1,5 @@
 /** Sahm's own track record: verdicts and holding decisions you were shown, scored against KSE-100. */
+import { BENCHMARK } from '../analysis/market';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +32,7 @@ export default function RecordScreen() {
       const all = await entries();
       if (!alive) return;
       setList(all);
-      const index = await cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).catch(() => null);
+      const index = await cached<SeriesPoint[]>(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true }).catch(() => null);
       // Only stocks with entries at least a month old need prices.
       const due = [...new Set(all.filter((e) => Date.now() - Date.parse(e.day + 'T12:00:00Z') > 28 * 864e5).map((e) => e.symbol))];
       const candles: Record<string, Candle[]> = {};

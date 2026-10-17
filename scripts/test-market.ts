@@ -1,3 +1,4 @@
+import { isMarketOpen } from '../src/market-hours';
 import { relativeReturn } from '../src/analysis/market';
 import { passes, roeOf, debtOf, screen, screenLine } from '../src/analysis/screener';
 import { indexTrend, rawRegime, regimes, trendTriggers } from '../src/analysis/market';
@@ -64,6 +65,9 @@ check('portfolio beta is value-weighted over holdings with data', Math.abs(st.be
   check('screener: lowest P/E first, no P/E last', list.map((x: { symbol: string }) => x.symbol).join() === 'B,A,C');
   check('screener: row line', screenLine(st({}), bs({})) === 'P/E 5.0 · div 9.0% · ROE 40% · debt 20% of equity', screenLine(st({}), bs({})));
 }
+
+// Friday 12:00-14:30 break (Pakistan time = UTC+5)
+check('market hours: Friday prayer break is closed, sessions either side open', !isMarketOpen(Date.UTC(2026, 9, 16, 8)) && isMarketOpen(Date.UTC(2026, 9, 16, 6)) && isMarketOpen(Date.UTC(2026, 9, 16, 10)) && isMarketOpen(Date.UTC(2026, 9, 15, 8)));
 
 if (failed) {
   console.log(`\n${failed} market check(s) failed`);

@@ -23,7 +23,8 @@ import { analyze, computeSeries } from '../src/analysis/signals';
 import { computeRatios } from '../src/analysis/ratios';
 import { valueStock } from '../src/analysis/valuation';
 import { dataChecks } from '../src/analysis/quality';
-import { dividends } from '../src/analysis/dividends';
+import { cashDividends, dividends } from '../src/analysis/dividends';
+const pkDayOf = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
 import { fiscalEndMonth } from '../src/analysis/fairValue';
 import { reviewHolding, Review } from '../src/portfolio/review';
 import { resultsLine, resultsStatus } from '../src/analysis/results';
@@ -71,6 +72,9 @@ async function main() {
     if (!candles || candles.length < 30) continue;
     checked++;
     const scr = screener.get(sym);
+    const peers = scr
+      ? [...screener.values()].filter((r) => r.sectorCode === scr.sectorCode && r.symbol !== sym).map((r) => ({ symbol: r.symbol, pe: r.pe, marketCap: r.marketCap, price: r.price }) as Stock)
+      : [];
     const review = (c: Candle[], co: CompanyInfo | null): Review => {
       const price = c[c.length - 1].c;
       const stock = { symbol: sym, name: co?.name ?? sym, sector: co?.sector ?? '', price, pe: co?.pe ?? scr?.pe ?? null, divYield: scr?.divYield ?? null, marketCap: co?.shares ? price * co.shares : null } as Stock;
@@ -93,7 +97,8 @@ async function main() {
         ratios,
         hasBalanceSheet: !!balance,
         isBank: !!balance?.isBank || /commercial bank/i.test(co?.sector ?? ''),
-        fair: co && !fundLike ? valueStock({ symbol: sym, stock, company: co, ratios, balance, peers: [], daily: c }) : null,
+        // Same sector peers as the app uses, so the alert and the app agree on fair value.
+        fair: co && !fundLike ? valueStock({ symbol: sym, stock, company: co, ratios, balance, peers, daily: c }, (s) => fund[s] ?? null) : null,
         divYield: scr?.divYield ?? null,
         dividends: dv,
         checks: co ? dataChecks({ symbol: sym, name: co.name, sector: co.sector, company: co, balance, ratios }) : null,
@@ -110,8 +115,13 @@ async function main() {
     const had = (list: string[], t: string) => list.some((x) => kind(x) === kind(t));
     for (const t of today.technicalBreaks) if (!had(before.technicalBreaks, t)) notes.push(`chart: ${t}`);
     for (const t of today.fundamentalBreaks) if (!had(before.fundamentalBreaks, t)) notes.push(`business: ${t}`);
-    if (Math.abs(move) >= 0.05) notes.push(`${move > 0 ? 'up' : 'down'} ${(Math.abs(move) * 100).toFixed(1)}% today`);
     const lastBar = candles[n].t;
+    if (Math.abs(move) >= 0.05) {
+      // On the ex-date the price drops by about the dividend; that isn't a loss for holders.
+      const dvToday = payouts && company ? cashDividends(dividends(payouts, { price: candles[n].c, divYield: scr?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd) })).find((x) => pkDayOf(x.exT) === pkDayOf(lastBar)) : null;
+      if (dvToday && move < 0) notes.push(`down ${(Math.abs(move) * 100).toFixed(1)}% today, mostly because it went ex-dividend (Rs ${dvToday.dps.toFixed(2)} a share, which holders receive)`);
+      else notes.push(`${move > 0 ? 'up' : 'down'} ${(Math.abs(move) * 100).toFixed(1)}% today`);
+    }
     for (const p of payouts ?? []) {
       if (p.announced > lastBar - 2 * DAY && p.items.length) notes.push(`announced ${p.items.map((i) => `${i.pct}%${i.tag ? `(${i.tag})` : ''} ${i.type === 'D' ? 'cash dividend' : i.type === 'B' ? 'bonus shares' : 'right shares'}`).join(' + ')}`);
       if (p.bookClosure && p.bookClosure > lastBar && p.bookClosure - lastBar <= 4 * DAY) notes.push(`book closure starts ${new Date(p.bookClosure).toISOString().slice(0, 10)}: hold the shares before then to get the payout`);

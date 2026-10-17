@@ -14,5 +14,7 @@ export function isMarketOpen(now = Date.now()): boolean {
   if (day === 0 || day === 6) return false;
   const open = 9 * 60 + 15;
   const close = day === 5 ? 16 * 60 + 45 : 15 * 60 + 45;
+  // Friday prayer break: trading stops at 12:00 and resumes at 14:30.
+  if (day === 5 && minutes > 12 * 60 + 15 && minutes < 14 * 60 + 15) return false;
   return minutes >= open && minutes <= close;
 }

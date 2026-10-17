@@ -5,7 +5,7 @@
  */
 import type { Candle } from '../psx/types';
 import { computeSeries, rulesAt, SeriesSet } from '../analysis/signals';
-import { levelsAt, Levels, liquidityAt, MIN_LIQUIDITY, Outcome, playOut, Result, setupsAt, SetupId, SETUP_NAMES, WAIT_DAYS } from '../analysis/picks';
+import { CashDividend, levelsAt, Levels, liquidityAt, MIN_LIQUIDITY, Outcome, playOut, Result, setupsAt, SetupId, SETUP_NAMES, WAIT_DAYS } from '../analysis/picks';
 
 /**
  * The published rules: the wider swing version from the backtest (stop two ATR
@@ -149,11 +149,12 @@ export function liveVerdict(r: SetupRecord, id: LiveSetup): { tone: 'early' | 'o
 
 /**
  * The trading day whose close should be in the feed by now (Pakistan time):
- * today after 17:30 on a weekday, otherwise the weekday before.
+ * today after 18:30 on a weekday (the job starts at 17:13 and GitHub often runs
+ * it late), otherwise the weekday before.
  */
 export function expectedDay(now = Date.now()): string {
   const d = new Date(now + 5 * 3600_000);
-  if (d.getUTCHours() * 60 + d.getUTCMinutes() < 17 * 60 + 30) d.setUTCDate(d.getUTCDate() - 1);
+  if (d.getUTCHours() * 60 + d.getUTCMinutes() < 18 * 60 + 30) d.setUTCDate(d.getUTCDate() - 1);
   while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
 }
@@ -209,9 +210,9 @@ export function choosePicks(stocks: Universe[], day: string): Pick[] {
 }
 
 /** Plays a pick forward through the bars after its day. */
-export function scorePick(p: Pick, candles: Candle[]): ScoredPick {
+export function scorePick(p: Pick, candles: Candle[], cash: CashDividend[] = []): ScoredPick {
   const after = candles.filter((b) => pkDay(b.t) > p.day);
-  const o: Outcome = playOut(after, p.levels, WAIT_DAYS, RULES.hold);
+  const o: Outcome = playOut(after, p.levels, WAIT_DAYS, RULES.hold, cash);
   return { ...p, result: o.result, ret: o.ret, filled: o.filledAt != null, closedDay: o.closedAt != null ? pkDay(o.closedAt) : o.result === 'no-fill' ? pkDay(after[WAIT_DAYS - 1].t) : null };
 }
 

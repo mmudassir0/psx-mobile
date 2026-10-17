@@ -1,9 +1,9 @@
-/** Reads the latest picks feed from Sahm's ntfy channel, keeping the last copy on the phone. */
+/** Reads the latest picks feed from the repo's picks branch, keeping the last copy on the phone. */
 import { useCallback, useEffect, useState } from 'react';
 import { cached } from '../psx/cache';
 import { ListId, listOf, PicksFeed } from './build';
 import type { MarketFeed } from '../analysis/market';
-import { FEED_TOPIC, NTFY } from './config';
+import { FEED_BASE } from './config';
 
 export type Feeds = Partial<Record<ListId, PicksFeed>> & { market?: MarketFeed };
 
@@ -37,12 +37,30 @@ export const parseFeed = (ndjson: string): PicksFeed | null => {
   return (Object.values(lists) as PicksFeed[]).sort((a, b) => (a.generatedAt < b.generatedAt ? 1 : -1))[0] ?? null;
 };
 
+/** Checks the shape of the files written by the daily job (latest.json: one feed per list; market.json). */
+export function readFeedFiles(latest: unknown, market: unknown): Feeds {
+  const out: Feeds = {};
+  if (latest && typeof latest === 'object') {
+    for (const [id, f] of Object.entries(latest as Record<string, PicksFeed>)) {
+      if (f?.v !== 1 || !Array.isArray(f.picks) || typeof f.day !== 'string') continue;
+      if (id === 'all' || id === 'kse100' || id === 'kmi30') out[id] = f;
+    }
+  }
+  const m = market as MarketFeed | null;
+  if (m?.v === 1 && m.kind === 'market' && Array.isArray(m.sectors)) out.market = m;
+  return out;
+}
+
 export async function fetchFeeds(): Promise<Feeds> {
-  const res = await fetch(`${NTFY}/${FEED_TOPIC}/json?poll=1&since=all`);
-  if (!res.ok) throw new Error(`Picks channel answered ${res.status}`);
-  const f = parseFeeds(await res.text());
-  // ntfy keeps messages about 12 hours; without one, the saved copy is used.
-  if (!f.all) throw new Error('No new picks published yet');
+  const get = async (name: string) => {
+    // a query string skips stale CDN copies after each run
+    const res = await fetch(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
+    if (!res.ok) throw new Error(`Picks answered ${res.status}`);
+    return res.json();
+  };
+  const [latest, market] = await Promise.all([get('latest.json'), get('market.json').catch(() => null)]);
+  const f = readFeedFiles(latest, market);
+  if (!f.all) throw new Error('No picks published yet');
   return f;
 }
 

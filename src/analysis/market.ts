@@ -7,6 +7,14 @@ import type { Candle, SeriesPoint } from '../psx/types';
 import { ema } from './indicators';
 import { findLevels } from './levels';
 
+/**
+ * What stocks are compared with. KSE-100 itself is a total-return index (it
+ * adds back dividends) while Sahm's stock prices don't, so comparisons use
+ * PSX's price-only KSE-100 (KSE100PR); otherwise every stock looks about 6% a
+ * year worse than it did.
+ */
+export const BENCHMARK = 'KSE100PR';
+
 export type Regime = 'Uptrend' | 'Downtrend' | 'Sideways';
 
 export interface IndexTrend {

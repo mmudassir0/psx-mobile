@@ -38,6 +38,13 @@ const base = { holding: { symbol: 'X', shares: 10, avgCost: 50 }, price: 50, wei
 check('a dividend cut makes a holding Review', reviewHolding({ ...base, dividends: c }).action === 'Review');
 check('high trailing yield is a plus', reviewHolding({ ...base, price: 10, dividends: dividends(cutP, { price: 10, divYield: null, fiscalEndMonth: 11, latestFiscalYear: '2024', now: Date.UTC(2025, 6, 1) }) }).good.some((t) => /Dividend yield/.test(t)));
 
+const bonusOnly = parsePayouts(table([
+  row('February 20, 2026 3:00 PM', '31/12/2025', 'YR', '15%(B)'),
+  row('February 22, 2025 3:00 PM', '31/12/2024', 'YR', '30%(F) (D)'),
+]));
+const bo = dividends(bonusOnly, { price: 50, divYield: null, fiscalEndMonth: 11, latestFiscalYear: '2025', now: Date.UTC(2026, 2, 1) });
+check('a year paid in bonus shares is not a dividend cut', !bo.cut && /bonus shares instead/.test(bo.lower ?? ''), bo);
+
 // --- tax and upcoming payouts
 check('tax: filer 15%, non-filer 30%, power producers 7.5% / 15%', dividendTaxRate('filer') === 0.15 && dividendTaxRate('non-filer') === 0.3 && dividendTaxRate('filer', 'power') === 0.075 && dividendTaxRate('non-filer', 'power') === 0.15);
 check('tax: kind from PSX sector', payerKind('POWER GENERATION & DISTRIBUTION') === 'power' && payerKind('CEMENT') === 'stock' && payerKind('Exchange Traded Funds') === 'fund');

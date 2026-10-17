@@ -16,6 +16,7 @@ on:
       - 'metro.config.js'
       - 'tsconfig.json'
       - '.github/workflows/android.yml'
+      - 'scripts/release-signing.js'
   workflow_dispatch:
 
 permissions:
@@ -96,9 +97,37 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install 2>&1 | tee /tmp/build.log
 
+      - name: Signing key
+        # Sahm's own key, kept encrypted on the signing branch with the SAHM_SIGNING_PASSWORD
+        # secret; made on the first build that has the secret. Without the secret the
+        # template's public test key is used, as before.
+        env:
+          SAHM_SIGNING_PASSWORD: ${{ secrets.SAHM_SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$SAHM_SIGNING_PASSWORD" ]; then echo "No SAHM_SIGNING_PASSWORD secret: signing with the test key"; exit 0; fi
+          if git fetch -q origin signing 2>/dev/null; then
+            git show origin/signing:release.keystore.enc > /tmp/ks.enc
+          else
+            keytool -genkeypair -storetype PKCS12 -keystore /tmp/release.keystore -alias sahm -keyalg RSA -keysize 4096 -validity 36500 \
+              -storepass:env SAHM_SIGNING_PASSWORD -keypass:env SAHM_SIGNING_PASSWORD -dname "CN=Sahm, O=Sahm, C=PK"
+            openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -in /tmp/release.keystore -out /tmp/ks.enc -pass env:SAHM_SIGNING_PASSWORD
+            rm /tmp/release.keystore
+            mkdir -p /tmp/sig && cp /tmp/ks.enc /tmp/sig/release.keystore.enc
+            cd /tmp/sig && git init -q && git checkout -q -b signing
+            git config user.name "ci" && git config user.email "ci@users.noreply.github.com"
+            git add . && git commit -qm "Sahm release key (encrypted)"
+            # no force: if another build made the key first, this fails instead of replacing it
+            git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" signing
+            cd "$GITHUB_WORKSPACE"
+            echo "Created Sahm's release key"
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in /tmp/ks.enc -out android/app/release.keystore -pass env:SAHM_SIGNING_PASSWORD
+          node scripts/release-signing.js
+
       - name: Build release APK
         working-directory: android
         env:
+          SAHM_SIGNING_PASSWORD: ${{ secrets.SAHM_SIGNING_PASSWORD }}
           EXPO_PUBLIC_BUILD: ${{ github.run_number }}
           CMAKE_C_COMPILER_LAUNCHER: ccache
           CMAKE_CXX_COMPILER_LAUNCHER: ccache

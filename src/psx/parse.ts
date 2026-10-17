@@ -361,10 +361,25 @@ export function parseHistorical(html: string): Candle[] {
  * PSX's /historical prices are raw: a 5:1 split shows as an 80% crash. The
  * /timeseries/eod closes are adjusted, and both use the same day timestamps,
  * so each day's factor is eodClose / rawClose. Days before the EOD series
- * starts reuse its earliest factor.
+ * starts reuse its earliest factor, and are then checked for older gaps.
  */
+/**
+ * A day whose open is further below the previous close than PSX's daily price
+ * limit allows (10%, and more than Rs 1): the reference price was reset
+ * overnight by a corporate action (bonus issue, split, rights issue) or a large
+ * cash dividend. Either way the drop isn't a market move.
+ */
+export function actionGapAt(c: Candle[], i: number): number | null {
+  if (i < 1) return null;
+  const prev = c[i - 1].c;
+  const open = c[i].o > 0 ? c[i].o : c[i].c;
+  if (!(prev > 0) || !(open > 0)) return null;
+  return open < prev * 0.89 && prev - open > 1 ? open / prev : null;
+}
+
 export function adjustCandles(raw: Candle[], eod: SeriesPoint[]): Candle[] {
-  if (!raw.length || !eod.length) return raw;
+  if (!raw.length) return raw;
+  if (!eod.length) return adjustOldGaps(raw, raw.length);
   const adjClose = new Map(eod.map((p) => [p.t, p.v]));
   const factors: (number | null)[] = raw.map((c) => {
     const a = adjClose.get(c.t);
@@ -384,11 +399,33 @@ export function adjustCandles(raw: Candle[], eod: SeriesPoint[]): Candle[] {
     else factors[i] = prev ?? 1;
   }
   const r = (v: number) => Math.round(v * 100) / 100;
-  return raw.map((c, i) => {
+  const out = raw.map((c, i) => {
     const f = factors[i] as number;
     if (Math.abs(f - 1) < 0.002) return c;
     return { t: c.t, o: r(c.o * f), h: r(c.h * f), l: r(c.l * f), c: r(c.c * f), v: Math.round(c.v / f) };
   });
+  // PSX's adjusted series covers about five years; older bonus issues and splits are found from the price gap.
+  const firstKnown = raw.findIndex((c) => adjClose.has(c.t));
+  return adjustOldGaps(out, firstKnown < 0 ? raw.length : firstKnown);
+}
+
+/**
+ * Adjusts bars before `until` for gaps beyond the daily limit (see actionGapAt),
+ * newest first, so old bonus issues, splits and large dividends don't look like
+ * crashes. Used where PSX's own adjusted series doesn't reach.
+ */
+export function adjustOldGaps(bars: Candle[], until: number): Candle[] {
+  const out = bars.slice();
+  const r = (v: number) => Math.round(v * 100) / 100;
+  for (let i = Math.min(until, out.length - 1); i >= 1; i--) {
+    const f = actionGapAt(out, i);
+    if (f == null) continue;
+    for (let j = 0; j < i; j++) {
+      const c = out[j];
+      out[j] = { t: c.t, o: r(c.o * f), h: r(c.h * f), l: r(c.l * f), c: r(c.c * f), v: Math.round(c.v / f) };
+    }
+  }
+  return out;
 }
 
 /** Group a series of ticks [price, cumulative-trade volume] into fixed bars. */

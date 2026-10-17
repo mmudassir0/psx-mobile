@@ -39,9 +39,12 @@ import AIScreen from './src/screens/AIScreen';
 import StockScreen from './src/screens/StockScreen';
 import IndexScreen from './src/screens/IndexScreen';
 import OrderScreen from './src/screens/OrderScreen';
+import { loadLiveFundamentals } from './src/psx/fundamentals';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 setStorage(diskStore);
+// Newer balance sheets than the ones bundled with this build, when online.
+loadLiveFundamentals();
 
 const Stack = createNativeStackNavigator<RootParams>();
 const Tab = createBottomTabNavigator<TabParams>();
