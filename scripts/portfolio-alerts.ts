@@ -23,8 +23,16 @@ import { analyze, computeSeries } from '../src/analysis/signals';
 import { computeRatios } from '../src/analysis/ratios';
 import { valueStock } from '../src/analysis/valuation';
 import { dataChecks } from '../src/analysis/quality';
-import { cashDividends, dividends } from '../src/analysis/dividends';
+import { cashDividends, dividends, exDate, lastBuyDay } from '../src/analysis/dividends';
 const pkDayOf = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
+const nice = (t: number) => new Date(t + 5 * 3600_000).toUTCString().slice(0, 11).replace(',', '');
+/** The working day after a candle's day, as YYYY-MM-DD (Pakistan). */
+const nextWorkday = (t: number) => {
+  let d = t + 12 * 3600_000;
+  do d += 864e5;
+  while ([0, 6].includes(new Date(d + 5 * 3600_000).getUTCDay()));
+  return pkDayOf(d);
+};
 import { fiscalEndMonth } from '../src/analysis/fairValue';
 import { reviewHolding, Review } from '../src/portfolio/review';
 import { resultsLine, resultsStatus } from '../src/analysis/results';
@@ -116,6 +124,7 @@ async function main() {
     for (const t of today.technicalBreaks) if (!had(before.technicalBreaks, t)) notes.push(`chart: ${t}`);
     for (const t of today.fundamentalBreaks) if (!had(before.fundamentalBreaks, t)) notes.push(`business: ${t}`);
     const lastBar = candles[n].t;
+    const dvNow = payouts && company ? dividends(payouts, { price: candles[n].c, divYield: scr?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd) }) : null;
     if (Math.abs(move) >= 0.05) {
       // On the ex-date the price drops by about the dividend; that isn't a loss for holders.
       const dvToday = payouts && company ? cashDividends(dividends(payouts, { price: candles[n].c, divYield: scr?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd) })).find((x) => pkDayOf(x.exT) === pkDayOf(lastBar)) : null;
@@ -124,7 +133,15 @@ async function main() {
     }
     for (const p of payouts ?? []) {
       if (p.announced > lastBar - 2 * DAY && p.items.length) notes.push(`announced ${p.items.map((i) => `${i.pct}%${i.tag ? `(${i.tag})` : ''} ${i.type === 'D' ? 'cash dividend' : i.type === 'B' ? 'bonus shares' : 'right shares'}`).join(' + ')}`);
-      if (p.bookClosure && p.bookClosure > lastBar && p.bookClosure - lastBar <= 4 * DAY) notes.push(`book closure starts ${new Date(p.bookClosure).toISOString().slice(0, 10)}: hold the shares before then to get the payout`);
+      // Once, the evening before the last day to buy: that's when there is still time to act.
+      if (p.bookClosure && p.bookClosure > lastBar && pkDayOf(lastBuyDay(p.bookClosure)) === nextWorkday(lastBar)) {
+        const what = p.items.map((i) => `${i.pct}% ${i.type === 'D' ? 'cash dividend' : i.type === 'B' ? 'bonus shares' : 'right shares'}`).join(' + ');
+        const cashRs = dvNow?.list.find((x) => x.bookClosure === p.bookClosure)?.dps ?? 0;
+        notes.push(
+          `${what}${cashRs > 0 ? ` (about Rs ${cashRs.toFixed(2)} a share before tax)` : ''}: tomorrow (${nice(lastBuyDay(p.bookClosure))}) is the last day to buy and still get it. ` +
+            `You already hold it, so you'll get it if you don't sell by tomorrow's close; selling from ${nice(exDate(p.bookClosure))} keeps the payout. Book closure starts ${nice(p.bookClosure)}.`,
+        );
+      }
     }
     // Results season: the review above already uses the new numbers when PSX has updated them.
     const rs = company ? resultsStatus(company, lastBar + DAY) : null;
