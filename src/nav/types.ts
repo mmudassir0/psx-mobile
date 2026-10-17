@@ -3,7 +3,7 @@ import type { Side } from '../paper/engine';
 
 export type TabParams = {
   Home: undefined;
-  Market: undefined;
+  Market: { autoFocusSearch?: boolean } | undefined;
   Trade: undefined;
   Portfolio: undefined;
   AI: undefined;

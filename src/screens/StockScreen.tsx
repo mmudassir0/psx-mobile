@@ -25,6 +25,7 @@ import { useUser } from '../store/user';
 import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode, ChartLevel, ChartLine, ChartMarker, ChartPanes } from '../ui/SkiaChart';
 import { usePicksFeed } from '../picks/feed';
+import { useHoldings } from '../portfolio/holdings';
 import { BENCHMARK, relativeReturn } from '../analysis/market';
 import { load as loadPref, save as savePref } from '../storage';
 import { analyze, computeSeries } from '../analysis/signals';
@@ -106,16 +107,17 @@ function Ohlc({ c, unit }: { c: Candle; unit: string }) {
   );
 }
 
-type Tab = 'overview' | 'ai' | 'technicals' | 'fundamentals' | 'news' | 'profile' | 'peers';
+type Tab = 'overview' | 'ai' | 'fundamentals' | 'technicals' | 'news';
+// Five tabs that fit the screen: the company profile is at the end of Overview, peers at the end of Financials.
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'ai', label: 'AI' },
+  { key: 'fundamentals', label: 'Financials' },
   { key: 'technicals', label: 'Technicals' },
-  { key: 'fundamentals', label: 'Fundamentals' },
-  { key: 'news', label: 'Announcements' },
-  { key: 'profile', label: 'Profile' },
-  { key: 'peers', label: 'Peers' },
+  { key: 'news', label: 'News' },
 ];
+type Extra = 'ma' | 'bb' | 'levels' | 'w52' | 'pick' | 'cross' | 'rsi' | 'macd' | 'fair';
+const MORE_EXTRAS: Extra[] = ['bb', 'w52', 'cross', 'rsi', 'macd'];
 
 function More({ label, onPress }: { label: string; onPress: () => void }) {
   return (
@@ -134,7 +136,7 @@ export default function StockScreen() {
   const [range, setRange] = useState<Range>('1M');
   const [mode, setMode] = useState<ChartMode>('candle');
   // Chart extras, remembered between stocks
-  type Extra = 'ma' | 'bb' | 'levels' | 'w52' | 'pick' | 'cross' | 'rsi' | 'macd' | 'fair';
+  const [moreOpen, setMoreOpen] = useState(false);
   const [extras, setExtras] = useState<Extra[]>([]);
   useEffect(() => {
     loadPref<Extra[]>('chart.extras', []).then(setExtras);
@@ -310,6 +312,15 @@ export default function StockScreen() {
     };
   }, [series, dailyRange, extras, align]);
   const lastCross = crosses?.length ? crosses[crosses.length - 1] : null;
+  // one compact line for whatever is switched on
+  const legend: { text: string; color: string }[] = [];
+  if (dailyRange) {
+    if (extras.includes('ma')) legend.push({ text: '━ 20d', color: colors.muted }, { text: '━ 50d', color: colors.gold }, { text: '━ 200d', color: colors.shariah });
+    if (extras.includes('bb')) legend.push({ text: '━ Bollinger', color: colors.text2 });
+    if (extras.includes('cross')) legend.push({ text: lastCross ? `▲▼ crosses (last ${lastCross.kind === 'up' ? 'golden' : 'death'} ${fmtDay(lastCross.t).replace(/ \d{4}$/, '')})` : '▲▼ crosses (none)', color: colors.text2 });
+    if (extras.includes('fair')) legend.push({ text: pack.fair ? '▒ fair value (rough)' : 'no fair value', color: colors.up });
+    if (extras.includes('pick') && pick) legend.push({ text: `pick of ${fmtDay(Date.parse(pick.day + 'T12:00:00Z')).replace(/ \d{4}$/, '')}`, color: colors.gold });
+  }
 
   // --- this stock against the market over the range ---
   useEffect(() => {
@@ -345,6 +356,23 @@ export default function StockScreen() {
     '5Y': 'past 5 years',
     Max: 'since 2016',
   };
+
+  // Sahm's view in a glance: the chart reading, fair value, and what Sahm says about it if you hold it.
+  const { holdings } = useHoldings();
+  const held = holdings.find((h) => h.symbol === symbol);
+  const view = useMemo(() => {
+    const out: { label: string; fg: string; bg: string; tab: Tab }[] = [];
+    if (analysis) {
+      const st = analysis.stance;
+      const up = st === 'Bullish' || st === 'Strong bullish';
+      const down = st === 'Bearish' || st === 'Strong bearish';
+      out.push({ label: `Chart: ${st}`, fg: up ? colors.up : down ? colors.downText : colors.text2, bg: up ? colors.upSoft : down ? colors.downSoft : colors.surface2, tab: 'technicals' });
+    }
+    const f = pack.fair;
+    if (f?.label) out.push({ label: f.label, fg: f.label === 'Undervalued' ? colors.up : f.label === 'Overvalued' ? colors.downText : colors.text2, bg: f.label === 'Undervalued' ? colors.upSoft : f.label === 'Overvalued' ? colors.downSoft : colors.surface2, tab: 'fundamentals' });
+    if (held) out.push({ label: `You hold ${fmtNum(held.shares, 0)}`, fg: colors.gold, bg: colors.goldSoft, tab: 'overview' });
+    return out;
+  }, [analysis, pack.fair, held]);
 
   const subline = (
     <T v="caption" style={{ color: changeColor(change), fontSize: 13, marginLeft: 4, lineHeight: 18 }} numberOfLines={2}>
@@ -435,62 +463,65 @@ export default function StockScreen() {
           </Pressable>
         </View>
         {dailyRange ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.extras}>
-            {(
-              [
-                ['ma', '20, 50 & 200-day'],
-                ['bb', 'Bollinger Bands'],
-                ['levels', 'Support & resistance'],
-                ['w52', '52-week high/low'],
-                ...(pick ? ([['pick', 'Pick levels']] as const) : []),
-                ['cross', 'Golden/death cross'],
-                ['rsi', 'RSI'],
-                ['macd', 'MACD'],
-                ['fair', 'Fair value'],
-              ] as const
-            ).map(([k, label]) => {
-              const on = extras.includes(k);
-              return (
-                <Pressable key={k} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleExtra(k)} style={[styles.extra, on && styles.extraOn]}>
-                  <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>{label}</T>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-        {dailyRange ? (
-          <View style={{ paddingHorizontal: space.gutter, gap: 3 }}>
-            {extras.includes('ma') || extras.includes('bb') ? (
-              <T v="caption" style={{ fontSize: 12 }}>
-                {extras.includes('ma') ? (
-                  <>
-                    <T v="caption" style={{ color: colors.muted, fontSize: 12 }}>━ 20-day</T>
-                    {'   '}
-                    <T v="caption" style={{ color: colors.gold, fontSize: 12 }}>━ 50-day</T>
-                    {'   '}
-                    <T v="caption" style={{ color: colors.shariah, fontSize: 12 }}>━ 200-day</T>
-                    {'   '}
-                  </>
-                ) : null}
-                {extras.includes('bb') ? <T v="caption" style={{ color: colors.text2, fontSize: 12 }}>━ Bollinger (20-day ± 2 SD)</T> : null}
-              </T>
+          <View style={{ gap: 8 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.extras}>
+              {(
+                [
+                  ['ma', 'Averages'],
+                  ['levels', 'Key levels'],
+                  ['fair', 'Fair value'],
+                  ...(pick ? ([['pick', 'Pick levels']] as const) : []),
+                ] as [Extra, string][]
+              ).map(([k, label]) => {
+                const on = extras.includes(k);
+                return (
+                  <Pressable key={k} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleExtra(k)} style={[styles.extra, on && styles.extraOn]}>
+                    <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>{label}</T>
+                  </Pressable>
+                );
+              })}
+              {(() => {
+                const n = extras.filter((e) => MORE_EXTRAS.includes(e)).length;
+                return (
+                  <Pressable accessibilityRole="button" accessibilityState={{ expanded: moreOpen }} onPress={() => setMoreOpen((v) => !v)} style={[styles.extra, (moreOpen || n > 0) && styles.extraOn]}>
+                    <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: moreOpen || n > 0 ? colors.text : colors.faint }}>
+                      More{n ? ` (${n})` : ''} {moreOpen ? '▴' : '▾'}
+                    </T>
+                  </Pressable>
+                );
+              })()}
+            </ScrollView>
+            {moreOpen ? (
+              <View style={styles.moreGrid}>
+                {(
+                  [
+                    ['bb', 'Bollinger Bands'],
+                    ['w52', '52-week high/low'],
+                    ['cross', 'Golden/death cross'],
+                    ['rsi', 'RSI'],
+                    ['macd', 'MACD'],
+                  ] as [Extra, string][]
+                ).map(([k, label]) => {
+                  const on = extras.includes(k);
+                  return (
+                    <Pressable key={k} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleExtra(k)} style={[styles.extra, on && styles.extraOn]}>
+                      <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>
+                        {on ? '✓ ' : ''}
+                        {label}
+                      </T>
+                    </Pressable>
+                  );
+                })}
+              </View>
             ) : null}
-            {extras.includes('pick') && pick ? (
-              <T v="caption" style={{ fontSize: 12 }}>
-                Pick from {fmtDay(Date.parse(pick.day + 'T12:00:00Z'))}: buy only inside the zone; sell half at TP1, the rest at TP2 or the stop.
-              </T>
-            ) : null}
-            {extras.includes('cross') ? (
-              <T v="caption" style={{ fontSize: 12 }}>
-                <T v="caption" style={{ color: colors.up, fontSize: 12 }}>▲</T> golden cross (50-day rises above 200-day){'  '}
-                <T v="caption" style={{ color: colors.down, fontSize: 12 }}>▼</T> death cross
-                {lastCross ? `. Last: ${lastCross.kind === 'up' ? 'golden' : 'death'} cross on ${fmtDay(lastCross.t)}` : '. None in this history'}.
-              </T>
-            ) : null}
-            {extras.includes('rsi') ? <T v="caption" style={{ fontSize: 12 }}>RSI over 70 is stretched up, under 30 stretched down.</T> : null}
-            {extras.includes('fair') ? (
-              <T v="caption" style={{ fontSize: 12 }}>
-                {pack.fair ? "Shaded: Sahm's fair value range, a rough guide (see Fundamentals)." : 'No fair value for this stock.'}
+            {legend.length ? (
+              <T v="caption" style={{ paddingHorizontal: space.gutter, fontSize: 12 }} numberOfLines={2}>
+                {legend.map((l, i) => (
+                  <T key={i} v="caption" style={{ fontSize: 12, color: l.color }}>
+                    {i ? '   ' : ''}
+                    {l.text}
+                  </T>
+                ))}
               </T>
             ) : null}
           </View>
@@ -607,21 +638,44 @@ export default function StockScreen() {
 
   const pad = { paddingHorizontal: space.gutter };
   let content: React.ReactNode;
-  if (tab === 'overview') content = overview;
+  if (tab === 'overview')
+    content = (
+      <View style={{ gap: 26 }}>
+        {overview}
+        <View style={pad}>
+          <Section title="About the company">
+            <ProfileTab company={company} err={companyErr} />
+          </Section>
+        </View>
+      </View>
+    );
   else if (tab === 'ai') content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
   else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} /></View>;
-  else if (tab === 'fundamentals') content = <View style={pad}><FundamentalsTab company={company} stock={stock} err={companyErr} fair={pack.fair} /></View>;
-  else if (tab === 'news') content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;
-  else if (tab === 'profile') content = <View style={pad}><ProfileTab company={company} err={companyErr} /></View>;
-  else content = <View style={pad}><PeersTab stock={stock} /></View>;
+  else if (tab === 'fundamentals')
+    content = (
+      <View style={[pad, { gap: 26 }]}>
+        <FundamentalsTab company={company} stock={stock} err={companyErr} fair={pack.fair} />
+        <Section title="Sector peers">
+          <PeersTab stock={stock} />
+        </Section>
+      </View>
+    );
+  else content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <View style={styles.topbar}>
         <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          {symbol}
-        </T>
+        <View style={{ alignItems: 'center' }}>
+          <T v="title" style={{ fontSize: 16 }}>
+            {symbol}
+          </T>
+          {price != null ? (
+            <T v="mono" style={{ fontSize: 12.5, color: changeColor(changePct) }}>
+              {fmtPrice(price)} {changePct != null ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : ''}
+            </T>
+          ) : null}
+        </View>
         <IconButton
           name={watched ? 'starFilled' : 'star'}
           label={watched ? 'Remove from watchlist' : 'Add to watchlist'}
@@ -649,6 +703,15 @@ export default function StockScreen() {
             </T>
             <Change pct={changePct} pill />
           </View>
+          {view.length ? (
+            <View style={styles.viewRow}>
+              {view.map((v) => (
+                <Pressable key={v.label} accessibilityRole="button" onPress={() => setTab(v.tab)} style={[styles.viewPill, { backgroundColor: v.bg }]}>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: v.fg }}>{v.label}</T>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {tab !== 'overview' ? subline : null}
         </View>
         <TabStrip tabs={TABS} value={tab} onChange={setTab} />
@@ -693,6 +756,9 @@ const styles = themed(() => StyleSheet.create({
   extras: { gap: 8, paddingHorizontal: space.gutter },
   extra: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
   extraOn: { backgroundColor: colors.surface2, borderColor: colors.line },
+  moreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: space.gutter },
+  viewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  viewPill: { paddingHorizontal: 10, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
   range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   rangeOn: { backgroundColor: colors.line },

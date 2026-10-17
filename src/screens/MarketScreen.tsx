@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { TabParams } from '../nav/types';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtNum, fmtPct } from '../format';
 import { INDEX_NAMES, MAIN_INDICES } from '../psx/api';
@@ -59,6 +60,17 @@ export default function MarketScreen() {
   };
   const [sector, setSector] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const searchRef = useRef<TextInput>(null);
+  const route = useRoute<RouteProp<TabParams, 'Market'>>();
+  // Opened from the search bar on Home: put the cursor in the box.
+  useEffect(() => {
+    if (!route.params?.autoFocusSearch) return;
+    const id = setTimeout(() => {
+      searchRef.current?.focus();
+      nav.setParams({ autoFocusSearch: undefined } as never);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [route.params?.autoFocusSearch, nav]);
   const [allIndices, setAllIndices] = useState(false);
   const [limit, setLimit] = useState(10);
   const sparks = useIndexSeries(MAIN_INDICES);
@@ -111,6 +123,7 @@ export default function MarketScreen() {
           <View style={styles.search}>
             <Icon name="search" size={18} color={colors.faint} />
             <TextInput
+              ref={searchRef}
               value={query}
               onChangeText={setQuery}
               placeholder="Search a stock by symbol or name"
@@ -294,6 +307,7 @@ export default function MarketScreen() {
                       <StockRow
                         key={s.symbol}
                         stock={s}
+                        highlight={mode === 'all' && (filters.length > 0 || sort !== 'cap')}
                         sub={mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || undefined : undefined}
                         last={i === shown.length - 1}
                         onPress={() => open(s.symbol)}

@@ -16,6 +16,12 @@ import { StockRow, volumeLabel } from '../ui/StockRow';
 import { Sparkline } from '../ui/PriceChart';
 import { pkNow } from '../market-hours';
 import { UpdateBanner, VersionRow } from '../ui/UpdateBanner';
+import { useHoldings } from '../portfolio/holdings';
+import { useReviews } from '../portfolio/useReviews';
+import { usePicksFeed } from '../picks/feed';
+import { appliedBonusesPref } from '../portfolio/prefs';
+import { todoItems, usePortfolioTotals } from '../portfolio/summary';
+import { Icon } from '../ui/kit';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 
@@ -53,6 +59,13 @@ export default function HomeScreen() {
   const { name, watchlist, account } = useUser();
   const [movers, setMovers] = useState<'gainers' | 'losers' | 'active'>('gainers');
   const sparks = useIndexSeries(HOME_INDICES);
+  const { holdings, loaded: holdingsLoaded } = useHoldings();
+  const { feed } = usePicksFeed();
+  const { rows, loading: reviewing } = useReviews(holdings, stocks, bySymbol, feed?.breadth ?? null);
+  const real = usePortfolioTotals(rows, bySymbol);
+  const applied = appliedBonusesPref.use();
+  const todo = useMemo(() => (reviewing ? [] : todoItems(rows, applied)), [rows, applied, reviewing]);
+  const hasReal = holdingsLoaded && holdings.length > 0;
 
   const val = valuePortfolio(account, (s) => bySymbol.get(s));
   const homeIdx = HOME_INDICES.map((c) => indices.find((i) => i.code === c)).filter(Boolean) as typeof indices;
@@ -84,11 +97,18 @@ export default function HomeScreen() {
               {name || 'Investor'}
             </T>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <IconButton name="search" label="Search stocks" onPress={() => nav.navigate('Tabs', { screen: 'Market' })} />
-            <IconButton name="settings" label="Settings" onPress={() => nav.navigate('Settings')} />
-          </View>
+          <IconButton name="settings" label="Settings" onPress={() => nav.navigate('Settings')} />
         </View>
+
+        <Pressable
+          accessibilityRole="search"
+          accessibilityLabel="Search stocks"
+          onPress={() => nav.navigate('Tabs', { screen: 'Market', params: { autoFocusSearch: true } })}
+          style={({ pressed }) => [styles.search, pressed && { opacity: 0.8 }]}
+        >
+          <Icon name="search" size={18} color={colors.muted} />
+          <T style={{ color: colors.faint, fontSize: 15 }}>Search symbol or company…</T>
+        </Pressable>
 
         <View style={[styles.pad, { gap: 10 }]}>
           <MarketStatus />
@@ -97,30 +117,61 @@ export default function HomeScreen() {
 
         <UpdateBanner />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
-          {homeIdx.length === 0 && !ready ? <Loading /> : null}
-          {homeIdx.map((i) => (
-            <Pressable
-              key={i.code}
-              style={({ pressed }) => [styles.index, pressed && { opacity: 0.8 }]}
-              accessibilityRole="button"
-              accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}
-              onPress={() => nav.navigate('Index', { code: i.code })}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text2 }}>{INDEX_NAMES[i.code] ?? i.code}</T>
-                <Change pct={i.changePct} style={{ fontSize: 12.5 }} />
+        {hasReal ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })}
+            style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <T v="label">My portfolio</T>
+              <T v="caption">{holdings.length} holdings ›</T>
+            </View>
+            <T v="monoXl">{fmtPkr(real.total)}</T>
+            <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
+              <View style={{ gap: 2 }}>
+                <T v="caption">Today</T>
+                <T v="mono" style={{ color: changeColor(real.today) }}>
+                  {fmtSigned(real.today, 0)} ({fmtPct(real.todayPct * 100)})
+                </T>
               </View>
-              <T v="monoLg">{fmtNum(i.current)}</T>
-              <Sparkline values={sparks[i.code] ?? []} width={148} height={34} />
-              <T v="caption" style={{ color: changeColor(i.change) }}>
-                {fmtSigned(i.change)} pts
-              </T>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <Pressable
+              <View style={{ gap: 2 }}>
+                <T v="caption">Total P&L</T>
+                <T v="mono" style={{ color: changeColor(real.pnl) }}>
+                  {fmtSigned(real.pnl, 0)} ({fmtPct(real.pnlPct * 100)})
+                </T>
+              </View>
+              <View style={{ gap: 2 }}>
+                <T v="caption">Invested</T>
+                <T v="mono">{fmtNum(real.invested, 0)}</T>
+              </View>
+            </View>
+            {todo.length ? (
+              <View style={styles.todo}>
+                {todo.map((t) => (
+                  <Pressable
+                    key={t.key}
+                    accessibilityRole="button"
+                    hitSlop={4}
+                    onPress={() => (t.symbol ? open(t.symbol) : nav.navigate('Tabs', { screen: 'Portfolio' }))}
+                    style={styles.todoRow}
+                  >
+                    <View style={[styles.todoDot, { backgroundColor: t.tone === 'down' ? colors.down : t.tone === 'gold' ? colors.gold : t.tone === 'up' ? colors.up : colors.faint }]} />
+                    <T v="body" style={{ flex: 1, fontSize: 13.5 }} numberOfLines={1}>
+                      {t.text}
+                    </T>
+                    <T v="caption">›</T>
+                  </Pressable>
+                ))}
+              </View>
+            ) : reviewing ? (
+              <T v="caption">Checking your holdings…</T>
+            ) : (
+              <T v="caption">Nothing needs your attention today.</T>
+            )}
+          </Pressable>
+        ) : (
+          <Pressable
           accessibilityRole="button"
           onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })}
           style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}
@@ -149,6 +200,35 @@ export default function HomeScreen() {
             </View>
           </View>
         </Pressable>
+        )}
+        {!hasReal && holdingsLoaded ? (
+          <Pressable accessibilityRole="link" onPress={() => nav.navigate('EditHoldings')} style={styles.pad} hitSlop={6}>
+            <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Add your real holdings ›</T>
+          </Pressable>
+        ) : null}
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
+          {homeIdx.length === 0 && !ready ? <Loading /> : null}
+          {homeIdx.map((i) => (
+            <Pressable
+              key={i.code}
+              style={({ pressed }) => [styles.index, pressed && { opacity: 0.8 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}
+              onPress={() => nav.navigate('Index', { code: i.code })}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text2 }}>{INDEX_NAMES[i.code] ?? i.code}</T>
+                <Change pct={i.changePct} style={{ fontSize: 12.5 }} />
+              </View>
+              <T v="monoLg">{fmtNum(i.current)}</T>
+              <Sparkline values={sparks[i.code] ?? []} width={148} height={34} />
+              <T v="caption" style={{ color: changeColor(i.change) }}>
+                {fmtSigned(i.change)} pts
+              </T>
+            </Pressable>
+          ))}
+        </ScrollView>
 
         <View style={styles.pad}>
           <PicksHomeCard />
@@ -213,5 +293,9 @@ const styles = themed(() => StyleSheet.create({
     borderColor: colors.line,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  search: { marginHorizontal: space.gutter, marginTop: -8, height: 48, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.hairline, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
+  todo: { borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 10, gap: 8 },
+  todoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  todoDot: { width: 7, height: 7, borderRadius: 4 },
   error: { backgroundColor: colors.downSoft, borderRadius: 12, padding: 12 },
 }));

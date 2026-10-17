@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,6 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
-import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
 import { colors, fonts } from './src/theme';
 import type { RootParams, TabParams } from './src/nav/types';
 import { MarketProvider } from './src/store/market';
@@ -122,6 +121,18 @@ function Root() {
   );
 }
 
+/** Links from notifications: sahm://portfolio, sahm://stock/LUCK, sahm://picks */
+const linking: LinkingOptions<RootParams> = {
+  prefixes: ['sahm://'],
+  config: {
+    screens: {
+      Tabs: { screens: { Portfolio: 'portfolio', Market: 'market', Home: 'home' } },
+      Stock: 'stock/:symbol',
+      Picks: 'picks',
+    },
+  },
+};
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
     Manrope_400Regular,
@@ -129,9 +140,6 @@ export default function App() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
-    IBMPlexMono_400Regular,
-    IBMPlexMono_500Medium,
-    IBMPlexMono_600SemiBold,
   });
   const ready = fontsLoaded || !!fontError;
 
@@ -161,7 +169,7 @@ function Themed() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ground }}>
       <SafeAreaProvider>
-        <NavigationContainer theme={navThemeFor(name === 'dark')}>
+        <NavigationContainer theme={navThemeFor(name === 'dark')} linking={linking}>
           <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
           <Root />
         </NavigationContainer>

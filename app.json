@@ -2,7 +2,8 @@
   "expo": {
     "name": "Sahm",
     "slug": "sahm-app",
-    "version": "0.22.2",
+    "scheme": "sahm",
+    "version": "0.23.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

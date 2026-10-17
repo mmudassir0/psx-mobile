@@ -107,6 +107,26 @@ export function TabStrip<K extends string>({
   value: K;
   onChange: (k: K) => void;
 }) {
+  // Up to five tabs share the width evenly; more scroll sideways.
+  const fit = tabs.length <= 5;
+  const items = tabs.map((t) => {
+    const on = t.key === value;
+    return (
+      <Pressable
+        key={t.key}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: on }}
+        onPress={() => onChange(t.key)}
+        style={[styles.tab, fit && { flex: 1, paddingHorizontal: 4 }]}
+      >
+        <T style={{ fontFamily: on ? fonts.bold : fonts.semibold, fontSize: 14, color: on ? colors.text : colors.faint }} numberOfLines={1}>
+          {t.label}
+        </T>
+        <View style={[styles.underline, on && { backgroundColor: colors.gold }]} />
+      </Pressable>
+    );
+  });
+  if (fit) return <View style={[styles.strip, { flexDirection: 'row', paddingHorizontal: 8 }]}>{items}</View>;
   return (
     <View style={styles.strip}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
@@ -159,6 +179,6 @@ const styles = themed(() =>
     strip: { backgroundColor: colors.ground, borderBottomWidth: 1, borderBottomColor: colors.hairline },
     tab: { paddingHorizontal: 10, paddingTop: 12, alignItems: 'center' },
     underline: { height: 3, borderRadius: 2, alignSelf: 'stretch', marginTop: 10, backgroundColor: 'transparent' },
-    panel: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 4 },
+    panel: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.hairline },
   }),
 );

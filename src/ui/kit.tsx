@@ -346,7 +346,7 @@ export function IconButton({
 }
 
 const styles = themed(() => StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18 },
+  card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.hairline },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, alignSelf: 'center' },
   badgeText: { fontFamily: fonts.bold, fontSize: 11 },
   pill: { minWidth: 76, paddingHorizontal: 8, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },

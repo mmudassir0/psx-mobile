@@ -154,10 +154,12 @@ async function main() {
   // Local testing only: never set in the workflow, whose logs are public.
   if (process.env.PRINT_ALERTS === '1') console.log(lines.join('\n'));
   if (!lines.length || process.env.PRINT_ALERTS === '1') return;
+  // Tapping the notification opens the app (v0.23+) at the holding, or at the portfolio when there are several.
+  const only = lines.length === 1 ? lines[0].slice(0, lines[0].indexOf(':')) : '';
   const res = await fetch(`${NTFY}/${topic}`, {
     method: 'POST',
     body: lines.join('\n'),
-    headers: { Title: `Sahm: ${lines.length} holding${lines.length > 1 ? 's' : ''} to look at`, Tags: 'chart_with_downwards_trend' },
+    headers: { Title: `Sahm: ${lines.length} holding${lines.length > 1 ? 's' : ''} to look at`, Tags: 'chart_with_downwards_trend', Click: only ? `sahm://stock/${only}` : 'sahm://portfolio' },
   });
   console.log(`Portfolio alerts sent: ${res.status}`);
 }
