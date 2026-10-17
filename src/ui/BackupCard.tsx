@@ -8,9 +8,14 @@ import { setHoldings } from '../portfolio/holdings';
 import { appliedBonusesPref, taxStatusPref } from '../portfolio/prefs';
 import { reloadJournal } from '../journal/store';
 import type { Holding } from '../portfolio/review';
+import { useUser } from '../store/user';
+import { useTheme } from '../store/theme';
+import type { ThemePref } from '../theme';
 import { Button, T } from './kit';
 
 export function BackupCard() {
+  const { reload } = useUser();
+  const { setPref } = useTheme();
   const [msg, setMsg] = useState<string | null>(null);
   const [pasting, setPasting] = useState(false);
   const [text, setText] = useState('');
@@ -34,9 +39,13 @@ export function BackupCard() {
     if (r.data['user.taxStatus']) await taxStatusPref.set(r.data['user.taxStatus'] as 'filer' | 'non-filer');
     if (r.data['real.appliedBonuses']) await appliedBonusesPref.set(r.data['real.appliedBonuses'] as string[]);
     reloadJournal();
+    // the screens already open take the restored data now, so nothing old is saved over it
+    await reload();
+    const theme = r.data['sahm:theme'];
+    if (theme === 'system' || theme === 'light' || theme === 'dark') setPref(theme as ThemePref);
     setPasting(false);
     setText('');
-    setMsg('Restored. Close and reopen Sahm so your watchlist and practice account load too.');
+    setMsg('Restored: holdings, watchlist, practice account, track record and settings.');
   };
 
   return (

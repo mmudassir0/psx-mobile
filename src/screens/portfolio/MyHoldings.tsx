@@ -78,7 +78,11 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onO
                 <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
                   Next payout: {up.dps > 0 ? `about Rs ${fmtNum(net, 0)} after tax on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
                   {up.dps > 0 && up.bonusPct > 0 ? ' plus ' : ''}
-                  {up.bonusPct > 0 ? `${up.bonusPct}% bonus shares (about ${fmtNum(Math.floor((r.holding.shares * up.bonusPct) / 100), 0)})` : ''}. Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
+                  {up.bonusPct > 0
+                    ? Math.floor((r.holding.shares * up.bonusPct) / 100) >= 1
+                      ? `${up.bonusPct}% bonus shares (about ${fmtNum(Math.floor((r.holding.shares * up.bonusPct) / 100), 0)})`
+                      : `${up.bonusPct}% bonus shares (under one share on your holding, so paid in cash)`
+                    : ''}. Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
                 </T>
               </View>
             );
@@ -86,7 +90,8 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onO
           {(() => {
             const b = recentBonus(r.dividends);
             const key = b ? `${r.holding.symbol}:${b.key}` : '';
-            if (!b || applied.includes(key)) return null;
+            // under one whole share there's nothing to add: the fraction is paid in cash
+            if (!b || applied.includes(key) || Math.floor((r.holding.shares * b.pct) / 100) < 1) return null;
             return (
               <View style={styles.payout}>
                 <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>

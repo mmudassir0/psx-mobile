@@ -76,6 +76,7 @@ export function applyBonus(h: Holding[], symbol: string, bonusPct: number): Hold
   const cur = h.find((x) => x.symbol === symbol);
   if (!cur || !(bonusPct > 0)) return h;
   const shares = Math.floor(cur.shares * (1 + bonusPct / 100));
+  if (shares <= cur.shares) return h; // under one whole share: the fraction is paid in cash
   const avgCost = Math.round(((cur.shares * cur.avgCost) / shares) * 100) / 100;
   return h.map((x) => (x.symbol === symbol ? { ...x, shares, avgCost } : x));
 }

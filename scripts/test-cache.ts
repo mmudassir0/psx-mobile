@@ -43,7 +43,12 @@ function check(label: string, ok: boolean, detail?: unknown) {
   const bar = (d: number, c: number): Candle => ({ t: Date.UTC(2026, 8, d) - 5 * 3600e3, o: c, h: c, l: c, c, v: 100 });
   const saved = [bar(1, 100), bar(2, 101), bar(3, 102)];
   const merged = topUp(saved, [bar(2, 101), bar(3, 102.2), bar(4, 103)]);
-  check('new days are added after a matching overlap', merged?.length === 4 && merged[3].c === 103 && merged[2].c === 102.2);
+  check('new days are added after the last saved day matches', merged?.length === 4 && merged[3].c === 103 && merged[2].c === 102);
+  const afterSplit = [bar(1, 50), bar(2, 51), bar(3, 52)]; // saved after a full download adjusted a split on day 3
+  check('a split earlier this month (already adjusted) doesn\'t force a download every time', topUp(afterSplit, [bar(1, 100), bar(2, 102), bar(3, 52), bar(4, 53)])?.length === 4);
+  const afterDiv = [bar(1, 100), bar(2, 85), bar(3, 86)]; // a big dividend gap already saved
+  check('an old gap that is already saved doesn\'t force a download every time', topUp(afterDiv, [bar(1, 100), bar(2, 85), bar(3, 86), bar(4, 87)])?.length === 4);
+  check('the last saved day not in the new data forces a full download', topUp(saved, [bar(4, 103)]) === null);
   check('a split (prices no longer line up) forces a full download', topUp(saved, [bar(3, 20.4), bar(4, 20.6)]) === null);
   check('no overlap forces a full download', topUp(saved, [bar(10, 100)]) === null);
   check('a bonus issue since the last download (a gap beyond the 10% daily limit) forces a full download', topUp(saved, [bar(3, 102), bar(4, 85)]) === null);
@@ -53,7 +58,7 @@ function check(label: string, ok: boolean, detail?: unknown) {
   check('older bonus issues are adjusted from the gap', old[0].c === 100 && old[1].c === 100 && old[2].c === 100 && old[3].c === 101, old.map((b) => b.c));
   const withEod = adjustCandles([bar(1, 120), bar(2, 100), bar(3, 101), bar(4, 102)], [{ t: bar(3, 0).t, v: 101, vol: 0 }, { t: bar(4, 0).t, v: 102, vol: 0 }]);
   check('a gap before PSX\'s adjusted series starts is adjusted too', withEod[0].c === 100, withEod.map((b) => b.c));
-  check('recent unadjusted gap is noticed', recentGap([bar(1, 100), bar(2, 80)]) && !recentGap([bar(1, 100), bar(2, 95)]));
+  check('recent unadjusted gap is noticed, an older one is not retried', recentGap([bar(1, 100), bar(2, 80)]) && !recentGap([bar(1, 100), bar(2, 95)]) && !recentGap([bar(1, 100), bar(2, 80), bar(3, 81), bar(4, 82)]));
 
   // Daily history with fake PSX
   clearMemory();

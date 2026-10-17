@@ -94,6 +94,9 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
   // same byte when it comes back.
   const dl = useRef<FileSystem.DownloadResumable | null>(null);
   const pausing = useRef(false);
+  /** Sahm came back while the paused download was still winding down: resume once it has. */
+  const wantResume = useRef(false);
+  const downloadRef = useRef<() => Promise<void>>(async () => {});
   const [paused, setPaused] = useState(false);
 
   const download = useCallback(async () => {
@@ -102,6 +105,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     setStatus('downloading');
     setError(null);
     setPaused(false);
+    let resuming = false;
     try {
       const dest = `${FileSystem.cacheDirectory}Sahm-${latest.version}-${latest.build}.apk`;
       const info = await FileSystem.getInfoAsync(dest);
@@ -112,6 +116,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
         };
         let out: FileSystem.FileSystemDownloadResult | undefined;
         if (dl.current) {
+          resuming = true;
           out = await dl.current.resumeAsync();
         } else {
           setProgress(0);
@@ -123,7 +128,12 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
           if (pausing.current) return;
           throw new Error('Download stopped');
         }
-        if (out.status !== 200 && out.status !== 206) throw new Error(`Download failed (${out.status})`);
+        if (out.status !== 200 && out.status !== 206) {
+          // a server error isn't fixed by resuming the same download: the next try starts fresh
+          dl.current = null;
+          await FileSystem.deleteAsync(dest, { idempotent: true });
+          throw new Error(`Download failed (${out.status})`);
+        }
         const done = await FileSystem.getInfoAsync(dest);
         if (done.exists && latest.size && done.size !== latest.size) {
           dl.current = null;
@@ -137,14 +147,14 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       setStatus('ready');
       await openInstaller(dest);
     } catch (e) {
-      // A paused download keeps what it has; one that failed outright starts over.
-      const resumable = !!dl.current?.savable().resumeData;
-      if (!resumable) dl.current = null;
       if (pausing.current) {
         // the connection was cut as Sahm went to the background: carry on when it's back
         setPaused(true);
         return;
       }
+      // A download cut off part-way can carry on once; a resume that fails starts over next time.
+      const resumable = !resuming && !!dl.current?.savable().resumeData;
+      if (!resumable) dl.current = null;
       setError(
         resumable
           ? `${(e as Error).message}. Try again carries on from ${Math.round(progressRef.current * 100)}%.`
@@ -153,8 +163,13 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       setStatus('error');
     } finally {
       busy.current = false;
+      if (wantResume.current) {
+        wantResume.current = false;
+        setTimeout(() => downloadRef.current(), 0);
+      }
     }
   }, [latest]);
+  downloadRef.current = download;
 
   const progressRef = useRef(0);
   useEffect(() => {
@@ -174,7 +189,9 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       } else if (s === 'active' && pausing.current) {
         pausing.current = false;
         setPaused(false);
-        download();
+        // still winding down from the pause: resume as soon as it has finished
+        if (busy.current) wantResume.current = true;
+        else download();
       }
     });
     return () => sub.remove();

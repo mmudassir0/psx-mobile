@@ -24,6 +24,8 @@ interface UserState {
   placeOrder: (input: OrderInput) => PlaceResult;
   cancelOrder: (id: string) => void;
   resetAccount: () => void;
+  /** Re-read name, watchlist and practice account from the phone (after a backup is restored). */
+  reload: () => Promise<void>;
 }
 
 const Ctx = createContext<UserState | null>(null);
@@ -37,19 +39,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const accountRef = useRef(account);
   accountRef.current = account;
 
-  useEffect(() => {
-    (async () => {
-      const [n, w, a] = await Promise.all([
-        load<string | null>('user.name', null),
-        load<string[]>('user.watchlist', DEFAULT_WATCHLIST),
-        load<Account | null>('paper.account', null),
-      ]);
-      setNameState(n);
-      setWatchlist(w);
-      if (a) setAccount(a);
-      setLoaded(true);
-    })();
+  const reload = useCallback(async () => {
+    const [n, w, a] = await Promise.all([
+      load<string | null>('user.name', null),
+      load<string[]>('user.watchlist', DEFAULT_WATCHLIST),
+      load<Account | null>('paper.account', null),
+    ]);
+    setNameState(n);
+    setWatchlist(w);
+    if (a) {
+      accountRef.current = a;
+      setAccount(a);
+    }
+    setLoaded(true);
   }, []);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const commit = useCallback((next: Account) => {
     accountRef.current = next;
@@ -103,8 +109,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       placeOrder,
       cancelOrder,
       resetAccount,
+      reload,
     }),
-    [loaded, name, setName, watchlist, toggleWatch, account, placeOrder, cancelOrder, resetAccount],
+    [loaded, name, setName, watchlist, toggleWatch, account, placeOrder, cancelOrder, resetAccount, reload],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -104,6 +104,8 @@ check('stats: Bullish that beat the index is right, Bearish that beat it is wron
 const bon = applyBonus([{ symbol: 'LUCK', shares: 205, avgCost: 400 }, { symbol: 'X', shares: 1, avgCost: 1 }], 'LUCK', 10);
 check('bonus: 10% more shares, fractions dropped, same total cost', bon[0].shares === 225 && Math.abs(bon[0].avgCost - Math.round(((205 * 400) / 225) * 100) / 100) < 1e-9 && bon[1].shares === 1, bon);
 check('bonus: unknown symbol changes nothing', applyBonus(bon, 'NONE', 10) === bon);
+const tiny = [{ symbol: 'A', shares: 5, avgCost: 100 }];
+check('bonus: under one whole share changes nothing', applyBonus(tiny, 'A', 10) === tiny);
 
 // --- Backup
 const bk = makeBackup({ 'real.holdings': [{ symbol: 'LUCK', shares: 200, avgCost: 419.11 }], 'user.watchlist': ['OGDC'], 'journal.v1': [{ symbol: 'A', day: '2026-10-01', kind: 'verdict', call: 'Bullish', price: 1 }], 'user.taxStatus': 'filer', 'paper.account': null }, new Date('2026-10-17T00:00:00Z'));

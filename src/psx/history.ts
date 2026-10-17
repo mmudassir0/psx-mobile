@@ -52,25 +52,33 @@ export function monthsBetween(from: number, to: number): { year: number; month: 
   return out;
 }
 
-/** New raw bars merged onto saved (adjusted) ones, or null when they don't line up. */
+/**
+ * Days newer than the last saved one, added to the saved (adjusted) history,
+ * or null when a full download is needed instead.
+ *
+ * Only the last saved day is compared: earlier days in the same month may
+ * have been adjusted by an earlier full download (after a split or bonus
+ * issue) and would never match PSX's raw monthly bars again. Only the new days
+ * are checked for a gap beyond the daily limit (a fresh bonus issue or split),
+ * so an old gap that is already saved doesn't trigger a download every time.
+ */
 export function topUp(saved: Candle[], fresh: Candle[]): Candle[] | null {
   if (!saved.length || !fresh.length) return null;
-  const byT = new Map(saved.map((b) => [b.t, b]));
-  const overlap = fresh.filter((b) => byT.has(b.t));
-  if (!overlap.length) return null;
-  const aligned = overlap.every((b) => Math.abs(b.c / byT.get(b.t)!.c - 1) <= TOLERANCE);
-  if (!aligned) return null;
-  const first = fresh[0].t;
-  const merged = [...saved.filter((b) => b.t < first), ...fresh];
-  // A bonus issue or split since the last download shows as a gap beyond PSX's daily limit:
-  // the saved days need PSX's adjusted prices, so download everything again.
-  const from = Math.max(1, merged.length - fresh.length);
-  for (let i = from; i < merged.length; i++) if (actionGapAt(merged, i) != null) return null;
+  const last = saved[saved.length - 1];
+  const same = fresh.find((b) => b.t === last.t);
+  if (!same || Math.abs(same.c / last.c - 1) > TOLERANCE) return null;
+  const added = fresh.filter((b) => b.t > last.t);
+  const merged = [...saved, ...added];
+  for (let i = saved.length; i < merged.length; i++) if (actionGapAt(merged, i) != null) return null;
   return merged;
 }
 
-/** True when the last few weeks still contain a corporate-action gap (PSX hasn't adjusted its series yet). */
-export function recentGap(bars: Candle[], days = 15): boolean {
+/**
+ * True when one of the last two days has a gap beyond the daily limit: on the
+ * ex-date of a bonus issue PSX may not have adjusted its series yet. (A gap that
+ * stays is a large cash dividend, which PSX never adjusts, so it isn't retried.)
+ */
+export function recentGap(bars: Candle[], days = 2): boolean {
   for (let i = Math.max(1, bars.length - days); i < bars.length; i++) if (actionGapAt(bars, i) != null) return true;
   return false;
 }
