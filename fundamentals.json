@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-17T05:59:41+00:00",
+ "generatedAt": "2026-10-18T06:18:05+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -704,23 +704,23 @@
    }
   },
   "GHNI": {
-   "periodEnd": "2026-03-31",
+   "periodEnd": "2026-06-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 18391315000,
-   "assets": 36275319000,
-   "liabilities": 17884004000,
-   "currentAssets": 28529912000,
-   "currentLiabilities": 17810560000,
-   "borrowings": 3733000.0,
-   "cash": 1009372000,
+   "equity": 46268569000,
+   "assets": 46268569000,
+   "liabilities": 0,
+   "currentAssets": 35745302000,
+   "currentLiabilities": null,
+   "borrowings": null,
+   "cash": 2030861000,
    "warnings": [],
    "source": {
-    "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026",
-    "url": "https://dps.psx.com.pk/download/document/275012.pdf",
-    "date": "2026-04-23",
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/283092.pdf",
+    "date": "2026-09-21",
     "pages": [
-     5
+     110
     ],
     "method": "text"
    }
@@ -1260,16 +1260,16 @@
    "currentAssets": 17362693000,
    "currentLiabilities": 15665557000,
    "borrowings": 10049696000.0,
-   "cash": 3925953000,
+   "cash": 3525553000,
    "warnings": [],
    "source": {
-    "title": "Transmission of Quarterly Report for the Period Ended March 31, 2026 REVOKED",
-    "url": "https://dps.psx.com.pk/download/document/276045.pdf",
-    "date": "2026-04-30",
+    "title": "Transmission of Quarterly Report for the Period Ended MARCH 31, 2026",
+    "url": "https://dps.psx.com.pk/download/document/276546.pdf",
+    "date": "2026-05-04",
     "pages": [
-     16
+     15
     ],
-    "method": "ocr"
+    "method": "text"
    }
   },
   "NBP": {
@@ -2133,7 +2133,7 @@
    }
   },
   "POL": {
-   "reason": "total_equity 89,778 is in the comparative (prior period) column; total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
+   "reason": "total_equity 89,778 is in the comparative (prior period) column; total_assets 196,163 is in the comparative (prior period) column; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2153,12 +2153,7 @@
     "total_liabilities": null,
     "current_assets": "162,294",
     "current_liabilities": "69,464",
-    "borrowing_lines": [
-     {
-      "label": "Long term deposits",
-      "amount": "1,078"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "86,263"
    }
   },
@@ -2211,7 +2206,12 @@
     "total_liabilities": null,
     "current_assets": "879,972,713",
     "current_liabilities": null,
-    "borrowing_lines": [],
+    "borrowing_lines": [
+     {
+      "label": "Long term loans",
+      "amount": "450,895"
+     }
+    ],
     "cash": "2,057,463"
    }
   },
