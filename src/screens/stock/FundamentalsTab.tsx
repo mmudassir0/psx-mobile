@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, space, tabular, themed } from '../../theme';
 import { fmtCompact, fmtDay, fmtNum, fmtPct } from '../../format';
@@ -7,7 +8,7 @@ import { KV, Panel } from '../../ui/bits';
 import { balanceSheetFor, computeRatios } from '../../analysis/ratios';
 import { dataChecks } from '../../analysis/quality';
 import { DividendsCard } from '../../ui/DividendsCard';
-import { Loading, Section, Segmented, T } from '../../ui/kit';
+import { Section, Segmented, T } from '../../ui/kit';
 import { FairValueCard } from '../../ui/FairValueCard';
 import { FairValue, MIN_PEERS } from '../../analysis/fairValue';
 
@@ -102,7 +103,7 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
     () => (company ? dataChecks({ symbol: company.symbol, name: company.name, sector: stock?.sector ?? company.sector, company, balance: bs, ratios: r }).notes : []),
     [company, stock, bs, r],
   );
-  if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Loading />;
+  if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Skeleton n={7} />;
 
   const fin = period === 'annual' ? company.financialsAnnual : company.financialsQuarterly;
   const annualEps = company.financialsAnnual?.rows.find((r) => /^EPS$/i.test(r.label))?.values[0] ?? null;

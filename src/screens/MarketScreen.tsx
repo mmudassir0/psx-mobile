@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -10,7 +11,7 @@ import { useMarket } from '../store/market';
 import { useIndexSeries } from '../store/indexSeries';
 import type { Stock } from '../psx/types';
 import { shortSector } from '../sectors';
-import { Change, Empty, Icon, Loading, Section, T } from '../ui/kit';
+import { Change, Empty, Icon, Section, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
 import { Sparkline } from '../ui/PriceChart';
 import { MarketStatus } from './HomeScreen';
@@ -150,7 +151,9 @@ export default function MarketScreen() {
             )}
           </View>
         ) : !ready ? (
-          <Loading label="Loading PSX prices" />
+          <View style={styles.pad}>
+            <Skeleton kind="rows" n={8} label="Loading PSX prices" />
+          </View>
         ) : (
           <>
             <View style={styles.pad}>

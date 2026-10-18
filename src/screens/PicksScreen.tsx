@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +12,7 @@ import { SETUP_NAMES } from '../analysis/picks';
 import { PickCard, RESULT_LABEL } from '../ui/PickCard';
 import { Panel } from '../ui/bits';
 import { StaleNote } from '../ui/StaleNote';
-import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
 
 const day = (d: string) => fmtDay(Date.parse(d + 'T12:00:00Z'));
 const pct = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
@@ -116,7 +117,7 @@ export default function PicksScreen() {
         <StaleNote feed={feed} />
         {!feed ? (
           loading ? (
-            <Loading label="Loading today's picks" />
+            <Skeleton kind="cards" n={3} label="Loading today's picks" />
           ) : (
             <Empty
               title={feeds ? `No ${label} picks yet` : 'No picks yet'}

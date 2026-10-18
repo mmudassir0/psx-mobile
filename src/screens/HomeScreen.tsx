@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +12,7 @@ import { useIndexSeries } from '../store/indexSeries';
 import { PicksHomeCard } from '../ui/PicksHomeCard';
 import { MarketLine } from '../ui/MarketLine';
 import { valuePortfolio } from '../paper/engine';
-import { Change, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Change, Empty, IconButton, Section, Segmented, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
 import { Sparkline } from '../ui/PriceChart';
 import { pkNow } from '../market-hours';
@@ -208,7 +209,7 @@ export default function HomeScreen() {
         ) : null}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
-          {homeIdx.length === 0 && !ready ? <Loading /> : null}
+          {homeIdx.length === 0 && !ready ? <Skeleton kind="chips" n={3} /> : null}
           {homeIdx.map((i) => (
             <Pressable
               key={i.code}
@@ -237,7 +238,7 @@ export default function HomeScreen() {
         <View style={styles.pad}>
           <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
             {!ready ? (
-              <Loading label="Loading PSX prices" />
+              <Skeleton kind="rows" n={5} label="Loading PSX prices" />
             ) : watched.length === 0 ? (
               <Empty title="Nothing on your watchlist" body="Open any stock and tap the star to follow it here." />
             ) : (

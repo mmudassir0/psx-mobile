@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, space, themed } from '../../theme';
 import type { CompanyInfo } from '../../psx/types';
 import { Panel } from '../../ui/bits';
-import { Icon, Loading, Section, T } from '../../ui/kit';
+import { Icon, Section, T } from '../../ui/kit';
 
 function Item({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
   return (
@@ -16,7 +17,7 @@ function Item({ label, children, last }: { label: string; children: React.ReactN
 
 export function ProfileTab({ company, err }: { company: CompanyInfo | null; err: string | null }) {
   const [open, setOpen] = useState(false);
-  if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Loading />;
+  if (!company) return err ? <T v="caption">Couldn't load company data: {err}</T> : <Skeleton n={6} />;
   const site = company.website;
 
   return (

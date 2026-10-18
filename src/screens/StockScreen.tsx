@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -22,7 +23,7 @@ import { groupCandles, ticksToCandles } from '../psx/parse';
 import type { Candle, CompanyInfo, SeriesPoint } from '../psx/types';
 import { useMarket, useStock } from '../store/market';
 import { useUser } from '../store/user';
-import { Badge, Button, Change, Icon, IconButton, Loading, Section, T } from '../ui/kit';
+import { Badge, Button, Change, Icon, IconButton, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode, ChartLevel, ChartLine, ChartMarker, ChartPanes } from '../ui/SkiaChart';
 import { usePicksFeed } from '../picks/feed';
 import { useHoldings } from '../portfolio/holdings';
@@ -425,9 +426,7 @@ export default function StockScreen() {
         <View style={{ paddingLeft: space.gutter - 4, paddingRight: 4 }}>
           {loadingChart || bars.length < 2 ? <View style={{ minHeight: 24, marginBottom: 12, justifyContent: 'center' }}>{subline}</View> : null}
           {loadingChart ? (
-            <View style={{ height: 316, justifyContent: 'center' }}>
-              <Loading />
-            </View>
+            <Skeleton kind="chart" height={316} />
           ) : bars.length < 2 ? (
             <View style={{ height: 316, justifyContent: 'center', alignItems: 'center', gap: 6 }}>
               <T v="body" style={{ color: colors.muted }}>

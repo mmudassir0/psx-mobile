@@ -1,4 +1,5 @@
 import React from 'react';
+import { Skeleton } from '../../ui/Skeleton';
 import { StyleSheet, View } from 'react-native';
 import { colors, space, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPrice } from '../../format';
@@ -8,7 +9,7 @@ import { SignalsCard } from '../../ui/SignalsCard';
 import { BacktestCard } from '../../ui/BacktestCard';
 import type { Backtest } from '../../analysis/backtest';
 import { ActionChip, Panel } from '../../ui/bits';
-import { Loading, Section, T } from '../../ui/kit';
+import { Section, T } from '../../ui/kit';
 
 function ReadingRow({ r, last }: { r: Reading; last?: boolean }) {
   return (
@@ -49,7 +50,7 @@ export function TechnicalsTab({
   backtest: Backtest | null;
   loading: boolean;
 }) {
-  if (loading) return <Loading />;
+  if (loading) return <Skeleton n={6} />;
   if (!tech) return <T v="caption">Not enough trading history for technical indicators yet.</T>;
   const s = tech.summary;
   const smas = tech.averages.filter((a) => a.name === 'SMA');

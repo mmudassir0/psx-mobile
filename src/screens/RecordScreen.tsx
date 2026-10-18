@@ -1,5 +1,6 @@
 /** Sahm's own track record: verdicts and holding decisions you were shown, scored against KSE-100. */
 import { BENCHMARK } from '../analysis/market';
+import { Skeleton } from '../ui/Skeleton';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +15,7 @@ import { claim, Entry, H, HORIZONS, scoreEntry, Scored, statsByCall } from '../j
 import { entries } from '../journal/store';
 import { eachLimit } from '../limit';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
 
 const pc = (v: number | null | undefined) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
 const LABEL: Record<H, string> = { 21: 'After 1 month', 63: 'After 3 months' };
@@ -77,11 +78,11 @@ export default function RecordScreen() {
         />
         <Segmented options={HORIZONS.map((x) => ({ key: String(x), label: LABEL[x] }))} value={String(h)} onChange={(v) => setH(Number(v) as H)} />
         {!list ? (
-          <Loading />
+          <Skeleton kind="cards" n={3} />
         ) : total === 0 ? (
           <Empty title="Nothing recorded yet" body={kind === 'verdict' ? "Open any stock's AI tab and its verdict is recorded." : 'Your holdings are recorded each day you open My holdings.'} />
         ) : !scored ? (
-          <Loading label="Checking prices since then" />
+          <Skeleton kind="rows" n={4} label="Checking prices since then" />
         ) : (
           <>
             <T v="body" style={{ fontSize: 14 }}>

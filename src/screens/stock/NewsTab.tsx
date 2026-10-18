@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { colors, fonts, themed } from '../../theme';
 import { fmtDay } from '../../format';
 import type { Announcement } from '../../psx/types';
-import { Empty, Icon, Loading, T } from '../../ui/kit';
+import { Empty, Icon, T } from '../../ui/kit';
 
 const day = (a: Announcement) => fmtDay(Date.parse(a.date + 'T12:00:00Z'));
 
@@ -16,7 +17,7 @@ export function NewsTab({ items, loading }: { items: Announcement[]; loading: bo
   }, [items]);
   const [cat, setCat] = useState('All');
   const [limit, setLimit] = useState(25);
-  if (loading) return <Loading />;
+  if (loading) return <Skeleton kind="rows" n={4} />;
   if (!items.length) return <Empty title="No announcements" body="PSX has no filings listed for this company." />;
 
   const shown = (cat === 'All' ? items : items.filter((a) => a.category === cat)).slice(0, limit);

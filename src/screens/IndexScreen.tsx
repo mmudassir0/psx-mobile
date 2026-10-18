@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -15,7 +16,7 @@ import { SectorsCard } from '../ui/SectorsCard';
 import { ticksToCandles } from '../psx/parse';
 import type { Candle, Constituent, SeriesPoint } from '../psx/types';
 import { useMarket } from '../store/market';
-import { Change, Empty, IconButton, Loading, Section, T } from '../ui/kit';
+import { Change, Empty, IconButton, Section, T } from '../ui/kit';
 import { SkiaChart, ChartMode, ChartUnit } from '../ui/SkiaChart';
 
 type Range = '1D' | '1M' | '3M' | '1Y' | '5Y';
@@ -251,9 +252,7 @@ export default function IndexScreen() {
 
         <View style={{ paddingLeft: space.gutter - 4, paddingRight: 4 }}>
           {loadingChart ? (
-            <View style={{ height: 352, justifyContent: 'center' }}>
-              <Loading />
-            </View>
+            <Skeleton kind="chart" height={352} />
           ) : bars.length < 2 ? (
             <View style={{ height: 352, justifyContent: 'center', alignItems: 'center' }}>
               <T v="caption">No chart data for this range yet.</T>
@@ -367,7 +366,7 @@ export default function IndexScreen() {
               <T v="caption">Index points each stock added or took away today. They add up to the index's change.</T>
             ) : null}
             {cons == null && !consErr ? (
-              <Loading label="Loading index stocks" />
+              <Skeleton kind="rows" n={6} label="Loading index stocks" />
             ) : consErr ? (
               <Empty title="Couldn't load the stocks" body={`${consErr}. Pull down to retry.`} />
             ) : shown.length === 0 ? (

@@ -1,5 +1,6 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from "react";
+import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { changeColor, colors, fonts, themed } from "../../theme";
@@ -25,7 +26,7 @@ import { PlanCard } from "../../ui/PlanCard";
 import { resultsLine } from "../../analysis/results";
 import { TradeSheet } from "../../ui/TradeSheet";
 import { pkToday, record } from "../../journal/store";
-import { Button, Empty, Loading, Section, Segmented, T } from "../../ui/kit";
+import { Button, Empty, Section, Segmented, T } from "../../ui/kit";
 import { SectorMix } from "../../ui/SectorMix";
 
 const ORDER: Action[] = ["Review", "Trim", "Add more", "Hold"];
@@ -424,7 +425,7 @@ export function MyHoldings() {
       }),
     [rows],
   );
-  if (!loaded) return <Loading />;
+  if (!loaded) return <View style={styles.content}><Skeleton kind="cards" n={4} /></View>;
   if (!holdings.length)
     return (
       <ScrollView contentContainerStyle={styles.content}>

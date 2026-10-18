@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Skeleton } from '../../ui/Skeleton';
 import { Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space } from '../../theme';
@@ -14,7 +15,7 @@ import { Md } from '../../ui/Md';
 import { Panel } from '../../ui/bits';
 import { VerdictCard } from '../../ui/VerdictCard';
 import { pkToday, record } from '../../journal/store';
-import { Button, Loading, Section, T } from '../../ui/kit';
+import { Button, Section, T } from '../../ui/kit';
 
 interface Saved {
   day: string;
@@ -79,7 +80,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
 
   const shown = running ? text : saved?.text ?? text;
 
-  if (!ready) return <Loading />;
+  if (!ready) return <Skeleton n={5} />;
 
   return (
     <View style={{ gap: space.section }}>
