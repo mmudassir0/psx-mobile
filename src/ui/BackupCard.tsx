@@ -7,6 +7,7 @@ import { applyRestore, exportBackup, readBackup } from '../backup';
 import { setHoldings } from '../portfolio/holdings';
 import { appliedBonusesPref, taxStatusPref } from '../portfolio/prefs';
 import { reloadJournal } from '../journal/store';
+import { reloadSnapshots } from '../portfolio/track';
 import type { Holding } from '../portfolio/review';
 import { useUser } from '../store/user';
 import { useTheme } from '../store/theme';
@@ -39,6 +40,7 @@ export function BackupCard() {
     if (r.data['user.taxStatus']) await taxStatusPref.set(r.data['user.taxStatus'] as 'filer' | 'non-filer');
     if (r.data['real.appliedBonuses']) await appliedBonusesPref.set(r.data['real.appliedBonuses'] as string[]);
     reloadJournal();
+    reloadSnapshots();
     // the screens already open take the restored data now, so nothing old is saved over it
     await reload();
     const theme = r.data['sahm:theme'];

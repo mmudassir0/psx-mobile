@@ -84,3 +84,45 @@ export function usePicksFeed() {
   }, [load]);
   return { feeds, feed: feeds?.all ?? null, market: feeds?.market ?? null, error, loading, reload: () => load(true) };
 }
+
+/**
+ * Another file the daily job writes (mood.json, calendar.json), cached for an
+ * hour and kept on the phone so it still shows offline. `check` rejects
+ * anything that isn't the expected shape.
+ */
+export function useFeedFile<T>(name: string, check: (raw: unknown) => raw is T) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(
+    async (force = false) => {
+      setLoading(true);
+      try {
+        const raw = await cached(
+          `feed:${name}`,
+          60 * 60_000,
+          async () => {
+            const res = await fetch(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
+            if (!res.ok) throw new Error(res.status === 404 ? 'Not published yet' : `Feed answered ${res.status}`);
+            const j = await res.json();
+            if (!check(j)) throw new Error('Unexpected feed file');
+            return j;
+          },
+          { persist: true, force },
+        );
+        setData(raw);
+        setError(null);
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [name],
+  );
+  useEffect(() => {
+    load();
+  }, [load]);
+  return { data, error, loading, reload: () => load(true) };
+}

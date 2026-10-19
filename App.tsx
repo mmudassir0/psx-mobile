@@ -28,6 +28,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import PicksScreen from './src/screens/PicksScreen';
 import EditHoldingsScreen from './src/screens/EditHoldingsScreen';
 import RecordScreen from './src/screens/RecordScreen';
+import DividendsScreen from './src/screens/DividendsScreen';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -117,6 +118,7 @@ function Root() {
       <Stack.Screen name="Picks" component={PicksScreen} />
       <Stack.Screen name="EditHoldings" component={EditHoldingsScreen} />
       <Stack.Screen name="Record" component={RecordScreen} />
+      <Stack.Screen name="Dividends" component={DividendsScreen} />
     </Stack.Navigator>
   );
 }
@@ -129,6 +131,7 @@ const linking: LinkingOptions<RootParams> = {
       Tabs: { screens: { Portfolio: 'portfolio', Market: 'market', Home: 'home' } },
       Stock: 'stock/:symbol',
       Picks: 'picks',
+      Dividends: 'dividends',
     },
   },
 };

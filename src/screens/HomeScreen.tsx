@@ -23,6 +23,8 @@ import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
+import { MoodCard } from '../ui/MoodCard';
+import { useTrackSnapshot } from '../portfolio/track';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 
@@ -63,6 +65,7 @@ export default function HomeScreen() {
   const { holdings, loaded: holdingsLoaded } = useHoldings();
   const { feed } = usePicksFeed();
   const { rows, loading: reviewing } = useReviews(holdings, stocks, bySymbol, feed?.breadth ?? null);
+  useTrackSnapshot(rows, reviewing);
   const real = usePortfolioTotals(rows, bySymbol);
   const applied = appliedBonusesPref.use();
   const todo = useMemo(() => (reviewing ? [] : todoItems(rows, applied)), [rows, applied, reviewing]);
@@ -231,6 +234,18 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
+        <View style={[styles.pad, { gap: 10 }]}>
+          <MoodCard />
+          <Pressable accessibilityRole="button" onPress={() => nav.navigate('Dividends')} style={styles.link}>
+            <T style={{ fontSize: 18 }}>💸</T>
+            <View style={{ flex: 1 }}>
+              <T style={{ fontFamily: fonts.bold, fontSize: 14.5 }}>Dividend calendar</T>
+              <T v="caption">Upcoming payouts across the PSX, with the last day to buy</T>
+            </View>
+            <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
+          </Pressable>
+        </View>
+
         <View style={styles.pad}>
           <PicksHomeCard />
         </View>
@@ -294,6 +309,7 @@ const styles = themed(() => StyleSheet.create({
     borderColor: colors.line,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  link: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.hairline },
   search: { marginHorizontal: space.gutter, marginTop: -8, height: 48, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.hairline, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
   todo: { borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 10, gap: 8 },
   todoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

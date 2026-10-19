@@ -176,6 +176,8 @@ export interface MarketFeed {
   stale?: boolean;
   /** compact rows: [name, n, r1w, r1m, vol, up] */
   sectors: [string, number, number, number, number, number][];
+  /** market mood, 0 extreme fear … 100 extreme greed (see mood.ts) */
+  mood?: { score: number; parts: (number | null)[]; day: string };
 }
 
 export const sectorRows = (f: MarketFeed): SectorStat[] => f.sectors.map(([name, n, r1w, r1m, vol, up]) => ({ name, n, r1w, r1m, vol, up }));

@@ -17,6 +17,7 @@ export const BACKUP_KEYS = [
   'sahm:theme',
   'plan.amount',
   'chart.extras',
+  'real.snapshots',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -43,6 +44,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'sahm:theme': (x) => typeof x === 'string',
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,
+  'real.snapshots': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.day === 'string' && typeof e.value === 'number' && isObj(e.pos)),
 };
 
 export function makeBackup(values: Partial<Record<Key, unknown>>, now = new Date()): string {

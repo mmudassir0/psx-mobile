@@ -22,6 +22,9 @@ import { indexTrend, MarketFeed } from '../src/analysis/market';
 import { MIN_LIQUIDITY } from '../src/analysis/picks';
 import { WAIT_DAYS } from '../src/analysis/picks';
 import { FEED_TOPIC, NTFY } from '../src/picks/config';
+import { moodHistory, moodLabel, moodOutcomes, MoodFeed } from '../src/analysis/mood';
+import type { CalendarFeed, CalendarRow } from '../src/analysis/calendar';
+import type { SeriesPoint } from '../src/psx/types';
 
 const [stateDir, historyDir] = process.argv.slice(2);
 const cacheDir = join(stateDir, 'cache');
@@ -211,8 +214,10 @@ async function main() {
     writeFileSync(sectorsPath, JSON.stringify(sectorOf));
   }
   const indices: MarketFeed['indices'] = {};
+  let kse: SeriesPoint[] | null = null;
   for (const code of ['KSE100', 'KMI30', 'ALLSHR']) {
     const pts = await retry(() => fetchSeries('eod', code));
+    if (code === 'KSE100') kse = pts;
     const t = pts ? indexTrend(pts) : null;
     if (t) indices[code] = { regime: t.regime, since: t.since, days: t.days, close: Math.round(t.close), r1m: t.returns.m1 == null ? null : Math.round(t.returns.m1 * 1000) / 1000, fromHigh: Math.round(t.fromHigh * 1000) / 1000 };
     console.log(`${code}: ${t ? `${t.regime} for ${t.days} days` : 'no data'}`);
@@ -246,6 +251,46 @@ async function main() {
       .map(([name, g]) => [name, g.r1m.length, r3(mean(g.r1w)), r3(mean(g.r1m)), Math.round(mean(g.vol) * 100) / 100, r3(g.up / g.r1m.length)] as MarketFeed['sectors'][number])
       .sort((a, b) => b[3] - a[3]),
   };
+  // 7. Market mood (0 fear … 100 greed) from the liquid stocks and the KSE-100, with what followed each mood.
+  if (kse && kse.length > 400) {
+    const hist = moodHistory(kse, universe, { minLiquidity: MIN_LIQUIDITY });
+    const last = hist[hist.length - 1];
+    if (last) {
+      market.mood = { score: last.score, parts: last.parts, day: last.day };
+      const feed: MoodFeed = {
+        v: 1,
+        kind: 'mood',
+        day: last.day,
+        generatedAt: new Date(now).toISOString(),
+        now: last,
+        history: hist.slice(-520).map((h) => [h.day, h.score]),
+        since: hist[0].day,
+        outcomes: moodOutcomes(hist, kse).map((o) => ({ ...o, avg: r3(o.avg), upShare: r3(o.upShare) })),
+      };
+      writeFileSync(join(stateDir, 'mood.json'), JSON.stringify(feed));
+      console.log(`mood ${last.score} (${moodLabel(last.score)}) from ${hist.length} days`);
+    }
+  }
+
+  // 8. Dividend calendar: upcoming book closures of every stock refreshed today.
+  const rows: CalendarRow[] = [];
+  let checked = 0;
+  for (const u of universe) {
+    const pay = await cached(`payouts:${u.symbol}`, 20 * 3600_000, () => fetchPayouts(u.symbol), { persist: true }).catch(() => null);
+    if (!pay) continue;
+    checked++;
+    const price = u.candles[u.candles.length - 1].c;
+    const dv = dividends(pay, { price, divYield: screener.get(u.symbol)?.divYield ?? null, fiscalEndMonth: 11 });
+    for (const x of dv.list) {
+      if (x.bookClosure == null || x.bookClosure < now - DAY || !(x.dps > 0 || x.bonusPct > 0)) continue;
+      rows.push([u.symbol, x.bookClosure, Math.round(x.dps * 100) / 100, x.bonusPct, x.announced, price]);
+    }
+    await sleep(250);
+  }
+  const calendar: CalendarFeed = { v: 1, kind: 'calendar', day, generatedAt: new Date(now).toISOString(), checked, rows: rows.sort((a, b) => a[1] - b[1]) };
+  writeFileSync(join(stateDir, 'calendar.json'), JSON.stringify(calendar));
+  console.log(`dividend calendar: ${rows.length} upcoming from ${checked} stocks`);
+
   let mbody = JSON.stringify(market);
   while (mbody.length > 3900 && market.sectors.length) {
     // drop the smallest sectors first

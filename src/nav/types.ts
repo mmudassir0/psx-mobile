@@ -19,6 +19,7 @@ export type RootParams = {
   Picks: undefined;
   EditHoldings: undefined;
   Record: undefined;
+  Dividends: undefined;
 };
 
 declare global {

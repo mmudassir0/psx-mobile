@@ -8,11 +8,14 @@ import { planMoney } from '../portfolio/plan';
 import type { Row } from '../portfolio/useReviews';
 import { Panel } from './bits';
 import { T } from './kit';
+import { moodColor, useMood } from './MoodCard';
+import { moodLabel } from '../analysis/mood';
 
 const KEY = 'plan.amount';
 
 export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | null }) {
   const [text, setText] = useState('');
+  const { data: mood } = useMood();
   useEffect(() => {
     load<string>(KEY, '').then((v) => v && setText(v));
   }, []);
@@ -47,6 +50,14 @@ export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | nul
           accessibilityLabel="Money to invest in rupees"
         />
       </View>
+      {mood ? (
+        <T v="caption" style={{ lineHeight: 18 }}>
+          Market mood today: <T v="caption" style={{ color: moodColor(mood.now.score), fontFamily: fonts.bold }}>{mood.now.score}, {moodLabel(mood.now.score)}</T>.{' '}
+          {mood.outcomes.length && mood.outcomes.every((o) => o.avg > 0)
+            ? 'In the last few years every mood was followed by gains six months later on average, so the plan doesn\'t wait for a better moment: the same amount each month evens out the price you pay.'
+            : 'Shown for context; the plan doesn\'t try to time the market.'}
+        </T>
+      ) : null}
       {!plan ? (
         <T v="caption" style={{ lineHeight: 18 }}>
           Enter what you're adding this month. Sahm splits it across holdings you already own, skipping any marked Review or Trim, any with a
