@@ -14,7 +14,7 @@
  * repository secrets. Quantities are never used, so size-based Trim can't be
  * judged here; the app does that.
  */
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KeyValueStore, setStorage } from '../src/psx/cache';
 import { dailyCandles } from '../src/psx/history';
@@ -72,6 +72,7 @@ async function main() {
 
   const lines: string[] = [];
   let checked = 0;
+  let lastDay = 0;
   for (const sym of symbols) {
     const candles = await dailyCandles(sym).catch(() => null);
     const company = await retry(() => fetchCompany(sym));
@@ -124,6 +125,7 @@ async function main() {
     for (const t of today.technicalBreaks) if (!had(before.technicalBreaks, t)) notes.push(`chart: ${t}`);
     for (const t of today.fundamentalBreaks) if (!had(before.fundamentalBreaks, t)) notes.push(`business: ${t}`);
     const lastBar = candles[n].t;
+    if (lastBar > lastDay) lastDay = lastBar;
     const dvNow = payouts && company ? dividends(payouts, { price: candles[n].c, divYield: scr?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd) }) : null;
     if (Math.abs(move) >= 0.05) {
       // On the ex-date the price drops by about the dividend; that isn't a loss for holders.
@@ -154,6 +156,13 @@ async function main() {
   // Local testing only: never set in the workflow, whose logs are public.
   if (process.env.PRINT_ALERTS === '1') console.log(lines.join('\n'));
   if (!lines.length || process.env.PRINT_ALERTS === '1') return;
+  // The evening run can be started twice (GitHub's schedule and a manual start): send once per trading day.
+  const sentPath = join(stateDir, 'alerts-sent.txt');
+  const dayKey = lastDay ? pkDayOf(lastDay) : '';
+  if (dayKey && existsSync(sentPath) && readFileSync(sentPath, 'utf8').trim() === dayKey) {
+    console.log('Portfolio alerts: already sent for this trading day');
+    return;
+  }
   // Tapping the notification opens the app (v0.23+) at the holding, or at the portfolio when there are several.
   const only = lines.length === 1 ? lines[0].slice(0, lines[0].indexOf(':')) : '';
   const res = await fetch(`${NTFY}/${topic}`, {
@@ -162,6 +171,7 @@ async function main() {
     headers: { Title: `Sahm: ${lines.length} holding${lines.length > 1 ? 's' : ''} to look at`, Tags: 'chart_with_downwards_trend', Click: only ? `sahm://stock/${only}` : 'sahm://portfolio' },
   });
   console.log(`Portfolio alerts sent: ${res.status}`);
+  if (res.ok && dayKey) writeFileSync(sentPath, dayKey);
 }
 main().catch((e) => {
   // keep the log free of holdings

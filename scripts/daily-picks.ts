@@ -40,8 +40,18 @@ const DAY = 864e5;
 interface Saved { fullAt: number; bars: number[][] }
 const toCandles = (rows: number[][]): Candle[] => rows.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v }));
 
+/** Mon–Fri 09:00–16:30 Pakistan time: today's prices are still moving, so nothing is downloaded. */
+function inSession(t: number) {
+  const d = new Date(t + 5 * 3600_000);
+  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return d.getUTCDay() >= 1 && d.getUTCDay() <= 5 && m >= 9 * 60 && m < 16 * 60 + 30;
+}
+
 async function main() {
   const now = Date.now();
+  // A late or manual start during trading would save a half-finished day as if it were the close.
+  const session = inSession(now) && process.env.ALLOW_SESSION !== '1';
+  if (session) console.log('market is trading: using saved closes only, no new price downloads');
   // 1. Symbols: everything saved, seeded from the price-history branch the first time.
   const symbols = new Set<string>(readdirSync(cacheDir).filter((f) => f.startsWith('daily_3A')).map((f) => decodeURIComponent(f.replace(/_/g, '%').replace(/\.json$/, '')).slice(6)));
   if (historyDir && existsSync(historyDir)) {
@@ -96,15 +106,16 @@ async function main() {
   let staleCount = 0;
   for (const sym of refresh) {
     try {
-      const candles = await dailyCandles(sym);
-      if (lastSource === 'stale') staleCount++;
+      const saved = session ? await readEntry<Saved>(`daily:${sym}`, true) : null;
+      const candles = saved ? toCandles(saved.data.bars) : await dailyCandles(sym);
+      if (!saved && lastSource === 'stale') staleCount++;
       if (!candles.length) continue;
       universe.push({ symbol: sym, candles, series: computeSeries(candles) });
     } catch (e) {
       failed++;
       console.log(`${sym}: ${(e as Error).message}`);
     }
-    await sleep(300);
+    if (!session) await sleep(300);
   }
   // The latest trading day = the most common last-bar day among liquid stocks.
   const counts = new Map<string, number>();
@@ -216,7 +227,8 @@ async function main() {
   const indices: MarketFeed['indices'] = {};
   let kse: SeriesPoint[] | null = null;
   for (const code of ['KSE100', 'KMI30', 'ALLSHR']) {
-    const pts = await retry(() => fetchSeries('eod', code));
+    const today = pkDay(now);
+    const pts = (await retry(() => fetchSeries('eod', code)))?.filter((p) => !session || pkDay(p.t) < today) ?? null;
     if (code === 'KSE100') kse = pts;
     const t = pts ? indexTrend(pts) : null;
     if (t) indices[code] = { regime: t.regime, since: t.since, days: t.days, close: Math.round(t.close), r1m: t.returns.m1 == null ? null : Math.round(t.returns.m1 * 1000) / 1000, fromHigh: Math.round(t.fromHigh * 1000) / 1000 };

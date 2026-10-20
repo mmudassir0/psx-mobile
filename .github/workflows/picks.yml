@@ -6,6 +6,11 @@ on:
     - cron: '13 12 * * 1-5' # 17:13 Pakistan time
     - cron: '13 3 * * 1-5' # 08:13 Pakistan time
   workflow_dispatch:
+    inputs:
+      alerts:
+        description: Also send the evening holdings alert (sent at most once per trading day)
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -31,7 +36,7 @@ jobs:
         run: npx tsx scripts/daily-picks.ts /tmp/state /tmp/history 2>&1 | tee /tmp/state/log.txt
       - name: Portfolio alerts
         # Symbols and the alert channel are secrets; the script prints counts only (public logs).
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '13 12 * * 1-5'
+        if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
         env:
           HOLDINGS_SYMBOLS: ${{ secrets.HOLDINGS_SYMBOLS }}
           NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
