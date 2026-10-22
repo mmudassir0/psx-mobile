@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-21T06:23:33+00:00",
+ "generatedAt": "2026-10-22T06:27:32+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -2041,7 +2041,7 @@
  },
  "failures": {
   "AHCL": {
-   "reason": "missing equity or total assets",
+   "reason": "ignored non-borrowing line 'Long term loan to related party'; missing equity or total assets",
    "report": {
     "kind": "quarterly",
     "date": "2026-04-30",
@@ -2061,7 +2061,12 @@
     "total_liabilities": null,
     "current_assets": "4,535,461,152",
     "current_liabilities": null,
-    "borrowing_lines": [],
+    "borrowing_lines": [
+     {
+      "label": "Long term loan to related party",
+      "amount": "280,000,000"
+     }
+    ],
     "cash": "205,776,104"
    }
   },
@@ -2133,7 +2138,7 @@
    }
   },
   "POL": {
-   "reason": "total_assets 196,163 is in the comparative (prior period) column; missing equity or total assets",
+   "reason": "total_equity 89,778 is in the comparative (prior period) column; total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2148,12 +2153,17 @@
     "period_end": "2026-12-31",
     "unit": 1000000,
     "is_bank": false,
-    "total_equity": null,
+    "total_equity": "89,778",
     "total_assets": "196,163",
     "total_liabilities": null,
-    "current_assets": "162,294",
-    "current_liabilities": "69,464",
-    "borrowing_lines": [],
+    "current_assets": null,
+    "current_liabilities": null,
+    "borrowing_lines": [
+     {
+      "label": "Long term deposits",
+      "amount": "1,078"
+     }
+    ],
     "cash": "86,263"
    }
   },
