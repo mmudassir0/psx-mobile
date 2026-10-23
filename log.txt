@@ -1,0 +1,17 @@
+561 stocks saved
+KSE100: 100 members
+KMI30: 30 members
+refreshing 256 stocks
+latest trading day 2026-10-23; 0 failed, 44 from saved copies
+KMI-30: none
+breadth 20% (weak: watch only)
+published All shares to ntfy: 200
+published KSE-100 to ntfy: 200
+published KMI-30 to ntfy: 200
+KSE100: Sideways for 39 days
+KMI30: Sideways for 38 days
+ALLSHR: Sideways for 38 days
+mood 17 (Extreme fear) from 972 days
+dividend calendar: 10 upcoming from 245 stocks
+sectors: TEXTILE SPINNING 23.4%, REFINERY -1.7%, LEATHER & TANNERIES -1.7% … MISCELLANEOUS -13.0%, CABLE & ELECTRICAL GOODS -13.8%
+published market report to ntfy: 200
