@@ -18,17 +18,18 @@ export const RESULT_LABEL: Record<ScoredPick['result'], string> = {
   time: 'Closed at the time limit',
 };
 
-/** Where the live price sits against today's levels. */
-export function liveStatus(p: Pick, price: number | null, bought: boolean): { text: string; tone: string } {
+/** Where the live price sits against the pick's levels, in plain words: what to do now. */
+export function liveStatus(p: Pick, price: number | null, bought: boolean): { text: string; tone: string; dead?: boolean } {
   if (price == null) return { text: '', tone: colors.muted };
   const L = p.levels;
-  if (price <= L.stop) return { text: 'Below the stop loss', tone: colors.downText };
+  if (price <= L.stop) return { text: bought ? 'Stop loss hit: the plan was to sell' : 'Fell below the stop: the setup failed, skip it', tone: colors.downText, dead: true };
   if (price >= L.tp2) return { text: 'Above TP2', tone: colors.up };
-  if (price >= L.tp1) return { text: 'Above TP1', tone: colors.up };
-  if (bought) return { text: `Bought; ${(((price - L.entryHigh) / L.entryHigh) * 100).toFixed(1)}% from the top of the buy zone`, tone: colors.text2 };
-  if (price > L.entryHigh) return { text: `Waiting: ${(((price - L.entryHigh) / L.entryHigh) * 100).toFixed(1)}% above the buy zone`, tone: colors.muted };
-  if (price >= L.entryLow) return { text: 'In the buy zone now', tone: colors.gold };
-  return { text: 'Below the buy zone, above the stop', tone: colors.text2 };
+  if (price >= L.tp1) return { text: bought ? 'Above TP1: the plan was to sell half' : 'Already above TP1: too late', tone: colors.up, dead: !bought };
+  if (bought) return { text: `Bought; ${(((price - L.entryHigh) / L.entryHigh) * 100).toFixed(1)}% from the top of the buy zone`, tone: price < L.entryLow ? colors.downText : colors.text2 };
+  if (price > L.entryHigh * 1.03) return { text: `Ran ${(((price - L.entryHigh) / L.entryHigh) * 100).toFixed(1)}% above the zone: don't chase`, tone: colors.muted, dead: true };
+  if (price > L.entryHigh) return { text: `Just above the buy zone (${(((price - L.entryHigh) / L.entryHigh) * 100).toFixed(1)}%)`, tone: colors.muted };
+  if (price >= L.entryLow) return { text: p.weak ? 'In the zone, but the market is weak: watch only' : 'In the buy zone now', tone: p.weak ? colors.muted : colors.gold };
+  return { text: 'Fell through the buy zone: the setup is failing, wait', tone: colors.downText, dead: true };
 }
 
 function Row({ icon, label, value, tone }: { icon: string; label: string; value: string; tone?: string }) {
@@ -49,7 +50,7 @@ export function PickCard({ p, price, bought, onOpen }: { p: Pick; price: number 
   const L = p.levels;
   const s = liveStatus(p, price, !!bought);
   return (
-    <Panel style={{ paddingVertical: 14, gap: 10 }}>
+    <Panel style={{ paddingVertical: 14, gap: 10, opacity: s.dead && !bought ? 0.6 : 1 }}>
       <Pressable accessibilityRole="button" onPress={onOpen} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <View style={{ flex: 1 }}>
           <T style={{ fontFamily: fonts.heavy, fontSize: 18 }}>{p.symbol}</T>
@@ -65,7 +66,7 @@ export function PickCard({ p, price, bought, onOpen }: { p: Pick; price: number 
         </View>
       </Pressable>
       <View style={styles.levels}>
-        <Row icon="🟢" label="Buy zone" value={`${fmtPrice(L.entryLow)} – ${fmtPrice(L.entryHigh)}`} />
+        <Row icon={p.weak ? '⚪' : '🟢'} label={p.weak ? 'Zone (watch only)' : 'Buy zone'} value={`${fmtPrice(L.entryLow)} – ${fmtPrice(L.entryHigh)}`} tone={p.weak ? colors.muted : undefined} />
         <Row icon="🎯" label="TP1" value={fmtPrice(L.tp1)} tone={colors.up} />
         <Row icon="🎯" label="TP2" value={fmtPrice(L.tp2)} tone={colors.up} />
         <Row icon="🛑" label="Stop loss" value={fmtPrice(L.stop)} tone={colors.downText} />

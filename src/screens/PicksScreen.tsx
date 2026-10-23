@@ -91,6 +91,7 @@ export default function PicksScreen() {
   const feed = feeds?.[list] ?? null;
   const label = LISTS.find((l) => l.id === list)!.label;
   const [how, setHow] = useState(false);
+  const [showWeak, setShowWeak] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
     setRefreshing(true);
@@ -142,7 +143,19 @@ export default function PicksScreen() {
             </View>
 
             <Section title={`${feed.marketOk ? "Today's picks" : 'Setups to watch'}: ${label}`}>
-              {feed.picks.length === 0 ? (
+              {!feed.marketOk && !showWeak ? (
+                <Panel style={{ paddingVertical: 14, gap: 8 }}>
+                  <T v="body" style={{ fontSize: 14, lineHeight: 20, color: colors.text2 }}>
+                    No trades today. {feed.weakStats.bought ? `In this weak market ${feed.weakStats.won} of the last ${feed.weakStats.bought} setups that reached their buy zone made money.` : ''} The
+                    setups are kept and scored so the record stays honest, but they aren't suggestions to buy.
+                  </T>
+                  {feed.picks.length ? (
+                    <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setShowWeak(true)}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Show the {feed.picks.length} setups anyway ›</T>
+                    </Pressable>
+                  ) : null}
+                </Panel>
+              ) : feed.picks.length === 0 ? (
                 <Empty title="No setups today" body={list === 'all' ? 'No liquid stock met the rules at the last close.' : `No ${label} stock met the rules at the last close.`} />
               ) : (
                 feed.picks.map((p) => <PickCard key={p.symbol} p={p} price={price(p.symbol)} onOpen={() => open(p.symbol)} />)

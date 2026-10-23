@@ -158,7 +158,9 @@ async function main() {
   };
   for (const L of LISTS) {
     if (history.some((p) => p.day === day && listOf(p) === L.id)) continue;
-    const picks = choosePicks(universeFor(L.id), day).map((p) => ({ ...p, list: L.id, ...(marketOk ? {} : { weak: true }) }));
+    // a stock that already has a pick in play isn't picked again (the same trade, counted twice)
+    const busy = new Set(history.filter((p) => p.result === 'open' && listOf(p) === L.id).map((p) => p.symbol));
+    const picks = choosePicks(universeFor(L.id).filter((u) => !busy.has(u.symbol)), day).map((p) => ({ ...p, list: L.id, ...(marketOk ? {} : { weak: true }) }));
     for (const p of picks) history.push({ ...p, result: 'open', ret: null, closedDay: null });
     console.log(`${L.label}: ${picks.map((p) => p.symbol).join(', ') || 'none'}`);
   }
