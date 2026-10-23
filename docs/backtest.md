@@ -116,3 +116,19 @@ Average return per trade, after costs (October 2026):
 - A market filter (trade only when at least half of liquid stocks are above
   their 200-day average) kept out of most of 2017–21 but did not make the
   trades it allowed profitable.
+
+# Backtest of a long-term buy list (October 2026)
+
+`npx tsx scripts/longterm-study.ts <history dir> <companies dir>` (env TOP,
+LAG, DETAIL). Monthly lists of liquid stocks, next 6 and 12 months against the
+average liquid stock (price only, survivors only).
+
+- Price-only rules (12- or 6-month momentum, low volatility, near the 52-week
+  high, momentum ÷ volatility) did not beat the average in both 2017–21 and
+  2022+.
+- "Profit grew last year, P/E below the sector median, price above the 200-day
+  average, cheapest 10" (`src/analysis/longterm.ts`) beat the average in 16 of
+  17 monthly lists from May 2024 to September 2025 (about +20 to +28 points
+  over six months), then lost to it in all 6 lists from October 2025 to March
+  2026 (−6 points) as the market turned. Two per sector made no difference.
+- Only three years of results exist, so it is not in the app as advice.
