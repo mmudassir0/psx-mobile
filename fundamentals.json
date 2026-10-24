@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-23T06:22:13+00:00",
+ "generatedAt": "2026-10-24T06:15:43+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -2133,7 +2133,7 @@
    }
   },
   "POL": {
-   "reason": "total_assets 196,163 is in the comparative (prior period) column; missing equity or total assets",
+   "reason": "total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2151,9 +2151,14 @@
     "total_equity": null,
     "total_assets": "196,163",
     "total_liabilities": null,
-    "current_assets": "162,294",
+    "current_assets": null,
     "current_liabilities": "69,464",
-    "borrowing_lines": [],
+    "borrowing_lines": [
+     {
+      "label": "Long term deposits",
+      "amount": "1,078"
+     }
+    ],
     "cash": "86,263"
    }
   },
@@ -2206,7 +2211,12 @@
     "total_liabilities": null,
     "current_assets": "879,972,713",
     "current_liabilities": null,
-    "borrowing_lines": [],
+    "borrowing_lines": [
+     {
+      "label": "Long term loans",
+      "amount": "450,895"
+     }
+    ],
     "cash": "2,057,463"
    }
   },
