@@ -24,28 +24,13 @@ import { UserProvider, useUser } from './src/store/user';
 import { UpdateProvider } from './src/store/update';
 import { ThemeProvider, useTheme } from './src/store/theme';
 import { AiProvider } from './src/store/ai';
-import SettingsScreen from './src/screens/SettingsScreen';
 import PicksScreen from './src/screens/PicksScreen';
-import EditHoldingsScreen from './src/screens/EditHoldingsScreen';
-import RecordScreen from './src/screens/RecordScreen';
-import DividendsScreen from './src/screens/DividendsScreen';
-import SummaryScreen from './src/screens/SummaryScreen';
-import AlertsScreen from './src/screens/AlertsScreen';
-import NewsScreen from './src/screens/NewsScreen';
-import FindScreen from './src/screens/FindScreen';
 import { layoutPref, TABS_FOR } from './src/nav/layout';
 import { useFlags } from './src/flags';
 import { MenuButton } from './src/ui/SideMenu';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
-import MarketScreen from './src/screens/MarketScreen';
-import TradeScreen from './src/screens/TradeScreen';
-import PortfolioScreen from './src/screens/PortfolioScreen';
-import AIScreen from './src/screens/AIScreen';
-import StockScreen from './src/screens/StockScreen';
-import IndexScreen from './src/screens/IndexScreen';
-import OrderScreen from './src/screens/OrderScreen';
 import { loadLiveFundamentals } from './src/psx/fundamentals';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -83,6 +68,7 @@ const TAB_ICONS: Record<keyof TabParams, IconName> = {
 
 const IdeasTab = () => <PicksScreen asTab />;
 
+/** Screens other than Home load the first time they're opened (getComponent), so the app starts faster. */
 function Tabs() {
   const insets = useSafeAreaInsets();
   const layout = layoutPref.use();
@@ -93,6 +79,8 @@ function Tabs() {
       tabBar={layout === 'menu' ? (props) => <MenuButton {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
+        // a tab you're not looking at doesn't redraw on every live price update
+        freezeOnBlur: true,
         // every screen stays registered so tools, menu and search can reach it; the layout picks which get a tab button
         ...(shown.includes(route.name) ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } }),
         tabBarActiveTintColor: colors.gold,
@@ -109,11 +97,11 @@ function Tabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Market" component={MarketScreen} />
-      <Tab.Screen name="Portfolio" component={PortfolioScreen} />
+      <Tab.Screen name="Market" getComponent={() => require('./src/screens/MarketScreen').default} />
+      <Tab.Screen name="Portfolio" getComponent={() => require('./src/screens/PortfolioScreen').default} />
       <Tab.Screen name="Ideas" component={IdeasTab} />
-      <Tab.Screen name="AI" component={AIScreen} />
-      <Tab.Screen name="Trade" component={TradeScreen} options={{ title: 'Practice' }} />
+      <Tab.Screen name="AI" getComponent={() => require('./src/screens/AIScreen').default} />
+      <Tab.Screen name="Trade" getComponent={() => require('./src/screens/TradeScreen').default} options={{ title: 'Practice' }} />
     </Tab.Navigator>
   );
 }
@@ -124,22 +112,22 @@ function Root() {
   return (
     <Stack.Navigator
       initialRouteName={name ? 'Tabs' : 'Welcome'}
-      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground }, animation: 'slide_from_right' }}
+      screenOptions={{ headerShown: false, freezeOnBlur: true, contentStyle: { backgroundColor: colors.ground }, animation: 'slide_from_right' }}
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Tabs" component={Tabs} />
-      <Stack.Screen name="Stock" component={StockScreen} />
-      <Stack.Screen name="Index" component={IndexScreen} />
-      <Stack.Screen name="Order" component={OrderScreen} options={{ animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Stock" getComponent={() => require('./src/screens/StockScreen').default} />
+      <Stack.Screen name="Index" getComponent={() => require('./src/screens/IndexScreen').default} />
+      <Stack.Screen name="Order" getComponent={() => require('./src/screens/OrderScreen').default} options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="Settings" getComponent={() => require('./src/screens/SettingsScreen').default} />
       <Stack.Screen name="Picks" component={PicksScreen} />
-      <Stack.Screen name="EditHoldings" component={EditHoldingsScreen} />
-      <Stack.Screen name="Record" component={RecordScreen} />
-      <Stack.Screen name="Dividends" component={DividendsScreen} />
-      <Stack.Screen name="Summary" component={SummaryScreen} />
-      <Stack.Screen name="Alerts" component={AlertsScreen} />
-      <Stack.Screen name="News" component={NewsScreen} />
-      <Stack.Screen name="Find" component={FindScreen} />
+      <Stack.Screen name="EditHoldings" getComponent={() => require('./src/screens/EditHoldingsScreen').default} />
+      <Stack.Screen name="Record" getComponent={() => require('./src/screens/RecordScreen').default} />
+      <Stack.Screen name="Dividends" getComponent={() => require('./src/screens/DividendsScreen').default} />
+      <Stack.Screen name="Summary" getComponent={() => require('./src/screens/SummaryScreen').default} />
+      <Stack.Screen name="Alerts" getComponent={() => require('./src/screens/AlertsScreen').default} />
+      <Stack.Screen name="News" getComponent={() => require('./src/screens/NewsScreen').default} />
+      <Stack.Screen name="Find" getComponent={() => require('./src/screens/FindScreen').default} />
     </Stack.Navigator>
   );
 }

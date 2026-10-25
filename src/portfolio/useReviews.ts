@@ -33,6 +33,22 @@ export interface Row {
 
 const FUND = /etf|exchange traded|mutual fund/i;
 
+/**
+ * The chart analysis depends only on the candles, which change a few times a day at most,
+ * while live prices arrive every 30 seconds. Keyed on the candle list itself, so every screen
+ * that reviews the same holding shares one computation.
+ */
+const charts = new WeakMap<Candle[], { series: ReturnType<typeof computeSeries>; analysis: ReturnType<typeof analyze> }>();
+function chartOf(candles: Candle[]) {
+  let c = charts.get(candles);
+  if (!c) {
+    const series = computeSeries(candles);
+    c = { series, analysis: analyze(candles, series) };
+    charts.set(candles, c);
+  }
+  return c;
+}
+
 export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<string, Stock>, breadth: number | null) {
   const [data, setData] = useState<Record<string, { company: CompanyInfo | null; candles: Candle[] | null; payouts: Payout[] | null }>>({});
   const key = holdings.map((h) => h.symbol).join(',');
@@ -72,7 +88,8 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
     const rows: Row[] = base.map((r) => {
       const d = data[r.holding.symbol];
       if (!d) return { ...r, weight: r.value / total, review: null, dividends: null, fund: FUND.test(r.stock?.sector ?? ''), results: null, zakatable: null };
-      const series = d.candles?.length ? computeSeries(d.candles) : null;
+      const chart = d.candles?.length ? chartOf(d.candles) : null;
+      const series = chart?.series ?? null;
       const balance = balanceSheetFor(r.holding.symbol);
       const ratios = d.company ? computeRatios(balance, d.company, r.stock) : null;
       const peers = r.stock ? stocks.filter((x) => x.sector === r.stock!.sector && x.symbol !== r.holding.symbol) : [];
@@ -90,7 +107,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         breadth,
         fund,
         series,
-        analysis: d.candles && series ? analyze(d.candles, series) : null,
+        analysis: chart?.analysis ?? null,
         company: d.company,
         ratios,
         hasBalanceSheet: !!balance,

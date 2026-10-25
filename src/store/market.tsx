@@ -39,10 +39,12 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const screenerAt = useRef(0);
   const symbolsAt = useRef(0);
   const busy = useRef(false);
+  const lastAt = useRef(0);
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
+    lastAt.current = Date.now();
     setRefreshing(true);
     setMarketOpen(isMarketOpen());
     try {
@@ -118,7 +120,12 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       else setMarketOpen(isMarketOpen());
     }, LIVE_MS);
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') refresh();
+      if (s !== 'active') return;
+      // back in the app: prices move only while the market is open, so after the close
+      // a quick look at the phone doesn't need another download
+      const age = Date.now() - lastAt.current;
+      if (isMarketOpen() ? age > 20_000 : age > 15 * 60_000) refresh();
+      else setMarketOpen(isMarketOpen());
     });
     return () => {
       clearInterval(id);

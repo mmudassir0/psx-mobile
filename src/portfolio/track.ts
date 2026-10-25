@@ -171,6 +171,16 @@ export function mixReturns(items: { shares: number; candles: Candle[]; cash: { e
 
 let chain: Promise<unknown> = Promise.resolve();
 let cache: Snap[] | null = null;
+let savedAt = 0;
+const SAVE_EVERY_MS = 15 * 60_000;
+
+/** Same day and the same shares and costs: only prices moved. */
+function onlyPrices(a: Snap | undefined, b: Snap): boolean {
+  if (!a || a.day !== b.day) return false;
+  const ka = Object.keys(a.pos);
+  if (ka.length !== Object.keys(b.pos).length) return false;
+  return ka.every((k) => b.pos[k] && b.pos[k][0] === a.pos[k][0] && Math.abs(b.pos[k][1] - a.pos[k][1]) < 0.5);
+}
 const listeners = new Set<(s: Snap[]) => void>();
 
 export async function snapshots(): Promise<Snap[]> {
@@ -183,6 +193,10 @@ export function recordSnapshot(rows: TrackInput[], now = Date.now()) {
     const cur = await snapshots();
     const next = addSnapshot(cur, rows, pkToday(now));
     if (next === cur) return;
+    // live prices change every 30 seconds while the market is open; the saved history only needs
+    // today's latest value now and then (the day's last snapshot is kept whenever the app is reopened)
+    if (onlyPrices(cur[cur.length - 1], next[next.length - 1]) && now - savedAt < SAVE_EVERY_MS) return;
+    savedAt = now;
     cache = next;
     await save(TRACK_KEY, next);
     listeners.forEach((l) => l(next));
@@ -193,6 +207,7 @@ export function recordSnapshot(rows: TrackInput[], now = Date.now()) {
 /** After a backup is restored. */
 export async function reloadSnapshots() {
   cache = null;
+  savedAt = 0;
   const s = await snapshots();
   listeners.forEach((l) => l(s));
 }
