@@ -3,7 +3,7 @@
     "name": "Sahm",
     "slug": "sahm-app",
     "scheme": "sahm",
-    "version": "0.35.0",
+    "version": "0.35.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -41,7 +41,19 @@
         "expo-build-properties",
         {
           "android": {
-            "useLegacyPackaging": true
+            "useLegacyPackaging": true,
+            "packagingOptions": {
+              "exclude": [
+                "**/librnllama_v8_2.so",
+                "**/librnllama_jni_v8_2.so",
+                "**/librnllama_v8_2_i8mm.so",
+                "**/librnllama_jni_v8_2_i8mm.so",
+                "**/librnllama_v8_2_dotprod_i8mm.so",
+                "**/librnllama_jni_v8_2_dotprod_i8mm.so",
+                "**/librnllama_v8_2_dotprod_i8mm_hexagon_opencl.so",
+                "**/librnllama_jni_v8_2_dotprod_i8mm_hexagon_opencl.so"
+              ]
+            }
           }
         }
       ],
