@@ -6,6 +6,8 @@ import { fmtNum } from '../format';
 import { applyTrade, setHoldings, useHoldings } from '../portfolio/holdings';
 import { boughtPref, taxStatusPref } from '../portfolio/prefs';
 import { heldSince2023, saleLine, saleTax } from '../portfolio/tax';
+import { logTrade } from '../portfolio/trades';
+import { pkToday } from '../journal/store';
 import { Panel } from './bits';
 import { Button, Segmented, T } from './kit';
 
@@ -28,6 +30,8 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
   const after = preview.error ? null : preview.holdings.find((h) => h.symbol === sym.trim().toUpperCase());
   const save = async () => {
     if (preview.error) return setMsg(preview.error);
+    const symU = sym.trim().toUpperCase();
+    await logTrade({ day: pkToday(), symbol: symU, side, shares: n(shares), price: n(px), avgCost: held?.avgCost ?? n(px), realised: preview.realised });
     await setHoldings(preview.holdings);
     onDone();
   };

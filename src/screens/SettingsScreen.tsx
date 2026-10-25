@@ -119,8 +119,15 @@ export default function SettingsScreen() {
             onChange={(v: TaxStatus) => taxStatusPref.set(v)}
           />
           <T v="caption" style={{ lineHeight: 18 }}>
-            Used for dividends after tax. On the FBR Active Taxpayers List (a filer): 15% on dividends, 7.5% from power producers. Not on
+            Used for dividends and selling tax. On the FBR Active Taxpayers List (a filer): 15% on dividends, 7.5% from power producers. Not on
             it: 30% and 15%. Rates for 2026-27; your broker's statement shows what was actually withheld.
+          </T>
+        </Section>
+
+        <Section title="Price alerts">
+          <Button label="Set up price alerts" tone="ghost" onPress={() => nav.navigate('Alerts')} />
+          <T v="caption" style={{ lineHeight: 18 }}>
+            A notification the evening any stock closes past a price or its 200-day average.
           </T>
         </Section>
 

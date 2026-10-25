@@ -30,6 +30,7 @@ import EditHoldingsScreen from './src/screens/EditHoldingsScreen';
 import RecordScreen from './src/screens/RecordScreen';
 import DividendsScreen from './src/screens/DividendsScreen';
 import SummaryScreen from './src/screens/SummaryScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -121,6 +122,7 @@ function Root() {
       <Stack.Screen name="Record" component={RecordScreen} />
       <Stack.Screen name="Dividends" component={DividendsScreen} />
       <Stack.Screen name="Summary" component={SummaryScreen} />
+      <Stack.Screen name="Alerts" component={AlertsScreen} />
     </Stack.Navigator>
   );
 }
@@ -135,6 +137,7 @@ const linking: LinkingOptions<RootParams> = {
       Picks: 'picks',
       Dividends: 'dividends',
       Summary: 'summary',
+      Alerts: 'alerts',
     },
   },
 };

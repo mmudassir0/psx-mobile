@@ -10,6 +10,11 @@ import { lastBuyDay, exDate, rightsMaths } from '../src/analysis/dividends';
 import { longTermList } from '../src/analysis/longterm';
 import { goalStatus, monthsUntil, needed, project } from '../src/portfolio/goal';
 import { lastMonth, summarizeMonth } from '../src/portfolio/monthly';
+import { crossedToday, parseRules, rulesText } from '../src/analysis/watch';
+import { lossOffsets, taxYearOf, taxYearSummary } from '../src/portfolio/trades';
+import { healthCheck } from '../src/portfolio/health';
+import type { Row } from '../src/portfolio/useReviews';
+import type { Stock } from '../src/psx/types';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -167,6 +172,37 @@ const ms = summarizeMonth([...snapsM, ...sm], '2026-10', null)!;
 check('month: return excludes the money added', near(ms.ret, 0.1) && near(ms.flow, 1000) && !ms.partial && ms.from === '2026-09-30', ms);
 check('month: movers', ms.movers[0].symbol === 'ABC' && near(ms.movers[0].change, 0.1));
 check('month with no snapshots: nothing', summarizeMonth(sm, '2026-08', null) === null);
+
+// ------------------------------------------------------------ price alerts
+const pr = parseRules('SYS<100, mebl > 600\nLUCK>200d; bad rule');
+check('rules parse, bad ones reported', pr.rules.length === 3 && pr.bad.length === 1 && pr.rules[2].level === 'ma200' && rulesText(pr.rules) === 'SYS<100, MEBL>600, LUCK>200d', pr);
+check('alert only on the crossing day', crossedToday({ symbol: 'X', dir: '<', level: 100 }, [105, 99]) && !crossedToday({ symbol: 'X', dir: '<', level: 100 }, [98, 97]));
+const up200 = [...Array.from({ length: 200 }, () => 100), 99, 101];
+check('crossing the 200-day average', crossedToday({ symbol: 'X', dir: '>', level: 'ma200' }, up200));
+
+// ------------------------------------------------------- tax year, offsets
+check('tax year runs July to June', taxYearOf('2026-07-01') === 2027 && taxYearOf('2026-06-30') === 2026);
+const ty = taxYearSummary(
+  [
+    { day: '2026-08-01', symbol: 'A', side: 'sell', shares: 10, price: 120, avgCost: 100, realised: 200 },
+    { day: '2026-09-01', symbol: 'B', side: 'sell', shares: 10, price: 90, avgCost: 100, realised: -50 },
+    { day: '2026-05-01', symbol: 'C', side: 'sell', shares: 10, price: 200, avgCost: 100, realised: 1000 },
+  ],
+  2027,
+);
+check('this year only: gains, losses, net', ty.gains === 200 && ty.losses === 50 && ty.net === 150 && ty.sales === 2, ty);
+const off = lossOffsets([{ symbol: 'L1', shares: 10, avgCost: 100, price: 90 }, { symbol: 'L2', shares: 10, avgCost: 100, price: 80 }, { symbol: 'W', shares: 10, avgCost: 100, price: 120 }], 150, 0.15);
+check('biggest loss first, savings capped by the gain', off.length === 2 && off[0].symbol === 'L2' && near(off[0].saves, 150 * 0.15) && off[1].saves === 0, off);
+
+// ---------------------------------------------------------- health check
+const hr = (symbol: string, value: number, sector: string, action: string | null = 'Hold') =>
+  ({ holding: { symbol, shares: 1, avgCost: value }, stock: { symbol, sector, indexes: [] } as unknown as Stock, price: value, value, weight: 0, review: action ? { action } : null, dividends: null, fund: false, results: null }) as unknown as Row;
+const rowsH = [hr('BIG', 300, 'CEMENT'), hr('B', 200, 'OIL'), hr('C', 200, 'OIL'), hr('D', 280, 'FERT'), hr('T', 10, 'PHARMA', 'Review'), hr('E', 10, 'TECH')];
+const idxStocks = [{ symbol: 'BANK1', sector: 'COMMERCIAL BANKS', marketCap: 500, indexes: ['KMI30'] }, { symbol: 'B', sector: 'OIL', marketCap: 500, indexes: ['KMI30'] }] as unknown as Stock[];
+const hc = healthCheck(rowsH, idxStocks, 'KMI30');
+const keys = hc.map((x) => x.key);
+check('health: big stock, big sector, tiny, review, index gap', keys.includes('stock-BIG') && keys.includes('sector-OIL') && keys.includes('tiny') && keys.includes('review') && keys.includes('gap-COMMERCIAL BANKS'), keys);
+check('health: worst first', hc[0].level === 'bad');
 
 if (failed) {
   console.log(`\n${failed} failed`);

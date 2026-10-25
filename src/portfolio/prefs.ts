@@ -7,3 +7,6 @@ export const taxStatusPref = makePref<TaxStatus>('user.taxStatus', 'filer');
 export const appliedBonusesPref = makePref<string[]>('real.appliedBonuses', []);
 /** when each holding was bought, for capital gains tax (symbol → period); unset = from July 2024 */
 export const boughtPref = makePref<Record<string, 'recent' | '2022-24' | '2013-22' | 'pre2013'>>('real.bought', {});
+/** which index your returns are compared with */
+export const benchmarkPref = makePref<'KSE100' | 'KMI30'>('real.benchmark', 'KSE100');
+export const BENCH_LABEL = { KSE100: 'KSE-100', KMI30: 'KMI-30' } as const;

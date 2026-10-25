@@ -14,6 +14,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { useReviews } from '../portfolio/useReviews';
 import { upcomingPayout } from '../analysis/dividends';
+import { BENCH_LABEL, benchmarkPref } from '../portfolio/prefs';
 import { Panel } from '../ui/bits';
 import { GoalCard } from '../ui/GoalCard';
 import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -34,11 +35,15 @@ export default function SummaryScreen() {
   useEffect(() => {
     snapshots().then(setSnaps);
     const off = onSnapshots(setSnaps);
-    cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true })
-      .then(setIndex)
-      .catch(() => setIndex([]));
     return off;
   }, []);
+  const bench = benchmarkPref.use();
+  useEffect(() => {
+    setIndex(null);
+    cached<SeriesPoint[]>(`eod:${bench}`, 30 * 60_000, () => fetchSeries('eod', bench), { persist: true })
+      .then(setIndex)
+      .catch(() => setIndex([]));
+  }, [bench]);
   const s = useMemo(() => (snaps ? summarizeMonth(snaps, month, index) : null), [snaps, month, index]);
   const hasPrev = useMemo(() => !!snaps?.some((x) => monthOf(x.day) === prev), [snaps, prev]);
   useEffect(() => {
@@ -87,7 +92,9 @@ export default function SummaryScreen() {
                   </T>
                 </View>
                 <View style={{ gap: 2 }}>
-                  <T v="caption">KSE-100</T>
+                  <T v="caption" style={{ color: colors.gold }} onPress={() => benchmarkPref.set(bench === 'KSE100' ? 'KMI30' : 'KSE100')}>
+                    {BENCH_LABEL[bench]} ⇄
+                  </T>
                   <T v="monoLg">{pc(s.index)}</T>
                 </View>
               </View>

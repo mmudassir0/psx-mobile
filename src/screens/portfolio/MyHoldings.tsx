@@ -26,6 +26,8 @@ import { SectorMix } from '../../ui/SectorMix';
 import { PerformanceCard } from '../../ui/PerformanceCard';
 import { ZakatCard } from '../../ui/ZakatCard';
 import { GoalCard } from '../../ui/GoalCard';
+import { HealthCard } from '../../ui/HealthCard';
+import { TaxYearCard } from '../../ui/TaxYearCard';
 import { useTrackSnapshot } from '../../portfolio/track';
 
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
@@ -543,7 +545,10 @@ export function MyHoldings() {
 
       {view === 'risk' ? (
         <>
-          <Section title="How you're doing vs KSE-100">
+          <Section title="Health check">
+            {loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}
+          </Section>
+          <Section title="How you're doing">
             <PerformanceCard rows={rows} candles={candles} loading={loading} />
           </Section>
           <SectorMix
@@ -573,6 +578,10 @@ export function MyHoldings() {
                 </View>
               ))}
             </Panel>
+          </Section>
+
+          <Section title="Tax on sales this year">
+            <TaxYearCard rows={rows} />
           </Section>
 
           <Section title="Zakat on your shares">

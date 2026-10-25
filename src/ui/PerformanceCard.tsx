@@ -1,4 +1,4 @@
-/** Your return against the KSE-100: your real return since tracking began, and what your current mix did. */
+/** Your return against the KSE-100 or KMI-30: your real return since tracking began, and what your current mix did. */
 import React, { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -11,11 +11,10 @@ import { cashDividends } from '../analysis/dividends';
 import type { Row } from '../portfolio/useReviews';
 import { indexReturns, mixReturns, onSnapshots, snapshots, trackReturns, type Snap } from '../portfolio/track';
 import { Panel } from './bits';
+import { BENCH_LABEL, benchmarkPref } from '../portfolio/prefs';
 import { Segmented, T } from './kit';
 import { Skeleton } from './Skeleton';
 
-/** KSE-100 adds back dividends, as the returns here do. */
-const INDEX = 'KSE100';
 const pkDay = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
 const pc = (v: number | null | undefined, d = 1) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(d)}%`);
@@ -64,7 +63,7 @@ function CompareChart({ mine, index, height = 120 }: { mine: (number | null)[]; 
   );
 }
 
-function Legend({ mine, index, mineLabel }: { mine: number | null; index: number | null; mineLabel: string }) {
+function Legend({ mine, index, mineLabel, indexLabel }: { mine: number | null; index: number | null; mineLabel: string; indexLabel: string }) {
   const diff = mine != null && index != null ? mine - index : null;
   return (
     <View style={{ gap: 6 }}>
@@ -80,7 +79,7 @@ function Legend({ mine, index, mineLabel }: { mine: number | null; index: number
         </View>
         <View style={{ gap: 2 }}>
           <T v="caption">
-            <T style={{ color: colors.faint, fontSize: 13 }}>━ </T>KSE-100
+            <T style={{ color: colors.faint, fontSize: 13 }}>━ </T>{indexLabel}
           </T>
           <T v="mono" style={{ fontSize: 18 }}>
             {pc(index)}
@@ -108,14 +107,17 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
   const [index, setIndex] = useState<SeriesPoint[] | null>(null);
   const [view, setView] = useState<View_ | null>(null);
   const [range, setRange] = useState('252');
+  const bench = benchmarkPref.use();
   useEffect(() => {
     snapshots().then(setSnaps);
-    const off = onSnapshots(setSnaps);
-    cached<SeriesPoint[]>(`eod:${INDEX}`, 30 * 60_000, () => fetchSeries('eod', INDEX), { persist: true })
+    return onSnapshots(setSnaps);
+  }, []);
+  useEffect(() => {
+    setIndex(null);
+    cached<SeriesPoint[]>(`eod:${bench}`, 30 * 60_000, () => fetchSeries('eod', bench), { persist: true })
       .then(setIndex)
       .catch(() => setIndex([]));
-    return off;
-  }, []);
+  }, [bench]);
   const tracked = useMemo(() => {
     if (!snaps || snaps.length < 2) return null;
     const pts = trackReturns(snaps);
@@ -145,6 +147,14 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
         onChange={setView}
       />
       {v === 'mix' ? <Segmented options={RANGES} value={range} onChange={setRange} /> : null}
+      <Segmented
+        options={[
+          { key: 'KSE100', label: 'vs KSE-100' },
+          { key: 'KMI30', label: 'vs KMI-30 (Shariah)' },
+        ]}
+        value={bench}
+        onChange={(k) => benchmarkPref.set(k)}
+      />
       {v === 'actual' && !tracked ? (
         <T v="caption" style={{ lineHeight: 18 }}>
           {firstDay
@@ -155,7 +165,7 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
         <Skeleton kind="chart" height={120} />
       ) : (
         <>
-          <Legend mine={last(shown.mine)} index={last(shown.index)} mineLabel={v === 'actual' ? 'You' : 'Your stocks'} />
+          <Legend mine={last(shown.mine)} index={last(shown.index)} mineLabel={v === 'actual' ? 'You' : 'Your stocks'} indexLabel={BENCH_LABEL[bench]} />
           <CompareChart mine={shown.mine} index={shown.index} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <T v="caption">{fmtDay(dayT(shown.days[0]))}</T>
@@ -165,7 +175,7 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
       )}
       <T v="caption" style={{ lineHeight: 18 }}>
         {v === 'actual'
-          ? 'Money you add or take out isn\'t counted as gain or loss: buys, sales and bonus shares are worked out from how your holdings change between days. Cash dividends count, before tax, as they do in the KSE-100. Each day is linked to the next, the way funds report returns.'
+          ? 'Money you add or take out isn\'t counted as gain or loss: buys, sales and bonus shares are worked out from how your holdings change between days. Cash dividends count, before tax, as they do in the KSE-100. The KMI-30 is the fairer yardstick if you only buy Shariah-compliant shares. Each day is linked to the next, the way funds report returns.'
           : 'If you had owned the shares you hold now for the whole period, dividends included. Not your actual return (you may have bought later), but a fair check of the stocks you chose against simply owning the index.'}
       </T>
     </Panel>

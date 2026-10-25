@@ -43,6 +43,13 @@ jobs:
         run: |
           git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/fund.json 2>/dev/null || echo '{}' > /tmp/fund.json
           npx tsx scripts/portfolio-alerts.ts /tmp/state /tmp/fund.json
+      - name: Price alerts
+        # Rules and the alert channel are secrets; the script prints counts only (public logs).
+        if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
+        env:
+          WATCH_ALERTS: ${{ secrets.WATCH_ALERTS }}
+          NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: npx tsx scripts/watch-alerts.ts /tmp/state
       - name: Save state
         if: always()
         run: |
