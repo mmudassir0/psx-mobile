@@ -14,6 +14,7 @@ import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
 import { LAYOUTS, layoutPref } from '../nav/layout';
 import { FLAGS, flagsPref, isOn, type Flag } from '../flags';
 import { Panel } from '../ui/bits';
+import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
@@ -154,6 +155,10 @@ export default function SettingsScreen() {
             ))}
           </Panel>
           <T v="caption">Switched off means hidden everywhere. Nothing you saved is deleted; switch it back on and it returns.</T>
+        </Section>
+
+        <Section title="Updates">
+          <UpdatesCard />
         </Section>
 
         <Section title="Appearance">

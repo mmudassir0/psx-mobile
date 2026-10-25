@@ -11,6 +11,10 @@ on:
         description: Also send the evening holdings alert (sent at most once per trading day)
         type: boolean
         default: false
+      again:
+        description: Send alerts again even if today's were already sent
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -39,6 +43,7 @@ jobs:
         if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
         env:
           HOLDINGS_SYMBOLS: ${{ secrets.HOLDINGS_SYMBOLS }}
+          FORCE_ALERTS: ${{ inputs.again && '1' || '' }}
           NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
         run: |
           git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/fund.json 2>/dev/null || echo '{}' > /tmp/fund.json
@@ -48,6 +53,7 @@ jobs:
         if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
         env:
           WATCH_ALERTS: ${{ secrets.WATCH_ALERTS }}
+          FORCE_ALERTS: ${{ inputs.again && '1' || '' }}
           NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
         run: npx tsx scripts/watch-alerts.ts /tmp/state
       - name: Save state

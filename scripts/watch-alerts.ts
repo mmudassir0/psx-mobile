@@ -42,7 +42,7 @@ async function main() {
   // the evening run can start twice (GitHub's schedule and a manual start): send once per trading day
   const sentPath = join(stateDir, 'watch-sent.txt');
   const dayKey = new Date(lastT + 5 * 3600_000).toISOString().slice(0, 10);
-  if (existsSync(sentPath) && readFileSync(sentPath, 'utf8').trim() === dayKey) return console.log('Price alerts: already sent for this trading day');
+  if (existsSync(sentPath) && readFileSync(sentPath, 'utf8').trim() === dayKey && process.env.FORCE_ALERTS !== '1') return console.log('Price alerts: already sent for this trading day');
   const only = hits.length === 1 ? rules.find((r) => hits[0].startsWith(r.symbol))?.symbol : undefined;
   const res = await fetch(`${NTFY}/${topic}`, {
     method: 'POST',

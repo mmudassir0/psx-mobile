@@ -161,7 +161,7 @@ async function main() {
   // The evening run can be started twice (GitHub's schedule and a manual start): send once per trading day.
   const sentPath = join(stateDir, 'alerts-sent.txt');
   const dayKey = lastDay ? pkDayOf(lastDay) : '';
-  if (dayKey && existsSync(sentPath) && readFileSync(sentPath, 'utf8').trim() === dayKey) {
+  if (dayKey && existsSync(sentPath) && readFileSync(sentPath, 'utf8').trim() === dayKey && process.env.FORCE_ALERTS !== '1') {
     console.log('Portfolio alerts: already sent for this trading day');
     return;
   }
