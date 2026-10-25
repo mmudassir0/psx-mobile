@@ -11,6 +11,8 @@ import { ModelCard } from '../ui/ModelCard';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { LAYOUTS, layoutPref } from '../nav/layout';
+import { Panel } from '../ui/bits';
 import { BackupCard } from '../ui/BackupCard';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
@@ -34,6 +36,7 @@ const THEMES: { key: ThemePref; label: string }[] = [
 
 export default function SettingsScreen() {
   const nav = useNavigation();
+  const layout = layoutPref.use();
   const taxStatus = taxStatusPref.use();
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
@@ -104,6 +107,29 @@ export default function SettingsScreen() {
         <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
+        <Section title="Layout">
+          <Panel style={{ paddingVertical: 4 }}>
+            {LAYOUTS.map((l, i) => (
+              <Pressable
+                key={l.key}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: layout === l.key }}
+                onPress={() => layoutPref.set(l.key)}
+                style={[styles.layoutRow, i < LAYOUTS.length - 1 && styles.layoutBorder]}
+              >
+                <View style={[styles.radio, layout === l.key && styles.radioOn]} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>{l.label}</T>
+                  <T v="caption" style={{ lineHeight: 17 }}>
+                    {l.desc}
+                  </T>
+                </View>
+              </Pressable>
+            ))}
+          </Panel>
+          <T v="caption">Every screen is in every layout; only the way you reach them changes. Try each for a day.</T>
+        </Section>
+
         <Section title="Appearance">
           <Segmented options={THEMES} value={pref} onChange={setPref} />
           <T v="caption">“Phone” follows your phone's light or dark mode.</T>
@@ -277,6 +303,10 @@ export default function SettingsScreen() {
 
 const styles = themed(() =>
   StyleSheet.create({
+    layoutRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+    layoutBorder: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.line },
+    radioOn: { borderColor: colors.gold, backgroundColor: colors.gold },
     root: { flex: 1, backgroundColor: colors.ground },
     topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: space.section },

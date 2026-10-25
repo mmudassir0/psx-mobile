@@ -13,17 +13,20 @@ import type { Stock } from '../psx/types';
 import { shortSector } from '../sectors';
 import { Change, Empty, Icon, Section, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
+import { useUser } from '../store/user';
+import { MoodCard } from '../ui/MoodCard';
 import { Sparkline } from '../ui/PriceChart';
 import { MarketStatus } from './HomeScreen';
 import { FILTERS, FilterId, passes, screenLine, SortId, SORTS, screen } from '../analysis/screener';
 import { balanceSheetFor } from '../analysis/ratios';
 
-type Mode = 'gainers' | 'losers' | 'active' | 'all';
+type Mode = 'gainers' | 'losers' | 'active' | 'all' | 'watch';
 const MODES: { key: Mode; label: string }[] = [
   { key: 'gainers', label: 'Top gainers' },
   { key: 'losers', label: 'Top losers' },
   { key: 'active', label: 'Most active' },
   { key: 'all', label: 'All stocks' },
+  { key: 'watch', label: '★ Watchlist' },
 ];
 
 interface SectorTile {
@@ -72,6 +75,15 @@ export default function MarketScreen() {
     }, 250);
     return () => clearTimeout(id);
   }, [route.params?.autoFocusSearch, nav]);
+  // opened on a given list (e.g. the watchlist from a tile or menu)
+  useEffect(() => {
+    const m = route.params?.mode;
+    if (!m) return;
+    setMode(m);
+    setLimit(m === 'watch' ? 200 : 10);
+    nav.setParams({ mode: undefined } as never);
+  }, [route.params?.mode, nav]);
+  const { watchlist } = useUser();
   const [allIndices, setAllIndices] = useState(false);
   const [limit, setLimit] = useState(10);
   const sparks = useIndexSeries(MAIN_INDICES);
@@ -102,12 +114,13 @@ export default function MarketScreen() {
 
   const list = useMemo(() => {
     let l = stocks.filter((s) => (!shariahOnly || s.shariah) && (!sector || s.sector === sector) && filters.every((f) => passes(f, s, balanceSheetFor(s.symbol))));
+    if (mode === 'watch') return watchlist.map((w) => l.find((s) => s.symbol === w)).filter((s): s is (typeof l)[number] => !!s);
     if (mode === 'all') return screen(l, [], sort, balanceSheetFor);
     if (mode === 'active') return l.filter((s) => (s.volume ?? 0) > 0).sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
     l = l.filter((s) => s.changePct != null && (s.volume ?? 0) >= 10_000);
     l.sort((a, b) => (b.changePct as number) - (a.changePct as number));
     return mode === 'gainers' ? l.filter((s) => (s.changePct as number) > 0) : l.reverse().filter((s) => (s.changePct as number) < 0);
-  }, [stocks, mode, shariahOnly, sector, filters, sort]);
+  }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist]);
   const shown = list.slice(0, limit);
   const open = (symbol: string) => nav.navigate('Stock', { symbol });
 
@@ -156,6 +169,9 @@ export default function MarketScreen() {
           </View>
         ) : (
           <>
+            <View style={styles.pad}>
+              <MoodCard />
+            </View>
             <View style={styles.pad}>
               <Section
                 title="Indices"

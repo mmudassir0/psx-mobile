@@ -3,9 +3,10 @@ import type { Side } from '../paper/engine';
 
 export type TabParams = {
   Home: undefined;
-  Market: { autoFocusSearch?: boolean } | undefined;
+  Market: { autoFocusSearch?: boolean; mode?: 'gainers' | 'losers' | 'active' | 'all' | 'watch' } | undefined;
   Trade: undefined;
-  Portfolio: undefined;
+  Portfolio: { tab?: 'real' | 'paper'; view?: 'holdings' | 'invest' | 'risk' } | undefined;
+  Ideas: undefined;
   AI: undefined;
 };
 
@@ -23,6 +24,7 @@ export type RootParams = {
   Summary: undefined;
   Alerts: { symbol?: string } | undefined;
   News: undefined;
+  Find: undefined;
 };
 
 declare global {

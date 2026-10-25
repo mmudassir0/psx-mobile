@@ -9,7 +9,6 @@ import { INDEX_NAMES } from '../psx/api';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
 import { useIndexSeries } from '../store/indexSeries';
-import { PicksHomeCard } from '../ui/PicksHomeCard';
 import { MarketLine } from '../ui/MarketLine';
 import { valuePortfolio } from '../paper/engine';
 import { Change, Empty, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -24,9 +23,14 @@ import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
+import { layoutPref } from '../nav/layout';
+import { ToolsGrid } from '../ui/ToolsGrid';
+import { TodayList } from '../ui/TodayList';
+import { MoodLine } from '../ui/MoodLine';
+import { StoryDeck } from '../ui/StoryDeck';
+import { weekOver } from '../portfolio/weekly';
 import { moodLabel } from '../analysis/mood';
 import { updateWidget } from '../widget/update';
-import { lastMonth, monthName } from '../portfolio/monthly';
 import { EventsCard } from '../ui/EventsCard';
 import { NewsHomeCard } from '../ui/NewsHomeCard';
 import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
@@ -78,6 +82,10 @@ export default function HomeScreen() {
   const todo = useMemo(() => (reviewing ? [] : todoItems(rows, applied)), [rows, applied, reviewing]);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();
+  const layout = layoutPref.use();
+  const isTabs = layout === 'tabs';
+  const compact = layout === 'briefing' || layout === 'menu';
+  const stories = layout === 'stories';
   // keep the home screen widget current (only once real prices are in)
   useEffect(() => {
     if (!hasReal || reviewing || !ready || !(real.total > 0)) return;
@@ -119,22 +127,24 @@ export default function HomeScreen() {
 
         <Pressable
           accessibilityRole="search"
-          accessibilityLabel="Search stocks"
-          onPress={() => nav.navigate('Tabs', { screen: 'Market', params: { autoFocusSearch: true } })}
+          accessibilityLabel="Search stocks and tools"
+          onPress={() => nav.navigate('Find')}
           style={({ pressed }) => [styles.search, pressed && { opacity: 0.8 }]}
         >
           <Icon name="search" size={18} color={colors.muted} />
-          <T style={{ color: colors.faint, fontSize: 15 }}>Search symbol or company…</T>
+          <T style={{ color: colors.faint, fontSize: 15 }}>Search stocks or tools…</T>
         </Pressable>
 
         <View style={[styles.pad, { gap: 10 }]}>
           <MarketStatus />
-          <MarketLine />
+          {isTabs ? <MarketLine /> : null}
         </View>
 
         <UpdateBanner />
 
-        {hasReal ? (
+        {stories ? <StoryDeck rows={rows} todo={todo} totals={real} hasReal={hasReal} /> : null}
+
+        {stories ? null : hasReal ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })}
@@ -218,12 +228,22 @@ export default function HomeScreen() {
           </View>
         </Pressable>
         )}
-        {!hasReal && holdingsLoaded ? (
+        {!hasReal && holdingsLoaded && !stories ? (
           <Pressable accessibilityRole="link" onPress={() => nav.navigate('EditHoldings')} style={styles.pad} hitSlop={6}>
             <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Add your real holdings ›</T>
           </Pressable>
         ) : null}
 
+        {compact ? (
+          <View style={[styles.pad, { gap: 12 }]}>
+            {hasReal ? <TodayList rows={rows} todo={todo} loading={reviewing} /> : null}
+            <MoodLine />
+          </View>
+        ) : null}
+        {compact && hasReal && weekOver() ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
+
+        {isTabs ? (
+        <>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
           {homeIdx.length === 0 && !ready ? <Skeleton kind="chips" n={3} /> : null}
           {homeIdx.map((i) => (
@@ -249,24 +269,6 @@ export default function HomeScreen() {
 
         <View style={[styles.pad, { gap: 10 }]}>
           <MoodCard />
-          <Pressable accessibilityRole="button" onPress={() => nav.navigate('Dividends')} style={styles.link}>
-            <T style={{ fontSize: 18 }}>💸</T>
-            <View style={{ flex: 1 }}>
-              <T style={{ fontFamily: fonts.bold, fontSize: 14.5 }}>Dividend calendar</T>
-              <T v="caption">Upcoming payouts across the PSX, with the last day to buy</T>
-            </View>
-            <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
-          </Pressable>
-          {hasReal ? (
-            <Pressable accessibilityRole="button" onPress={() => nav.navigate('Summary')} style={styles.link}>
-              <T style={{ fontSize: 18 }}>📅</T>
-              <View style={{ flex: 1 }}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 14.5 }}>Monthly summary and goal</T>
-                <T v="caption">How {monthName(lastMonth())} went against the KSE-100, and whether you're on course</T>
-              </View>
-              <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
-            </Pressable>
-          ) : null}
         </View>
 
         {hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
@@ -274,9 +276,6 @@ export default function HomeScreen() {
         <EventsCard rows={rows} padded />
         <AlertsHomeCard padded />
 
-        <View style={styles.pad}>
-          <PicksHomeCard />
-        </View>
 
         <View style={styles.pad}>
           <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
@@ -314,6 +313,15 @@ export default function HomeScreen() {
             {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
           </Section>
         </View>
+
+        </>
+        ) : null}
+
+        {layout !== 'menu' ? (
+          <View style={styles.pad}>
+            <ToolsGrid />
+          </View>
+        ) : null}
 
         <VersionRow />
       </ScrollView>

@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRoute, type RouteProp } from '@react-navigation/native';
+import type { TabParams } from '../nav/types';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -136,7 +138,21 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
 
 export default function PortfolioScreen() {
   const { holdings, loaded } = useHoldings();
+  const nav = useNavigation();
+  const route = useRoute<RouteProp<TabParams, 'Portfolio'>>();
   const [tab, setTab] = useState<'real' | 'paper'>('real');
+  const [view, setView] = useState<'holdings' | 'invest' | 'risk' | undefined>(undefined);
+  // opened from a tile, menu or link that names a part of the portfolio
+  useEffect(() => {
+    const p = route.params;
+    if (!p?.tab && !p?.view) return;
+    if (p.tab) setTab(p.tab);
+    if (p.view) {
+      setTab('real');
+      setView(p.view);
+    }
+    nav.setParams({ tab: undefined, view: undefined } as never);
+  }, [route.params, nav]);
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
@@ -150,7 +166,7 @@ export default function PortfolioScreen() {
           onChange={setTab}
         />
       </View>
-      {tab === 'real' ? <MyHoldings /> : <PaperPortfolio />}
+      {tab === 'real' ? <MyHoldings view={view} onView={setView} /> : <PaperPortfolio />}
     </SafeAreaView>
   );
 }

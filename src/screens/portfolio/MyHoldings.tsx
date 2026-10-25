@@ -359,7 +359,7 @@ function HoldingCard({
   );
 }
 
-export function MyHoldings() {
+export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'invest' | 'risk'; onView?: (v: 'holdings' | 'invest' | 'risk') => void } = {}) {
   const nav = useNavigation();
   const { stocks, bySymbol } = useMarket();
   const { holdings, loaded } = useHoldings();
@@ -367,7 +367,9 @@ export function MyHoldings() {
   const applied = appliedBonusesPref.use();
   const { feed } = usePicksFeed();
   const [newTrade, setNewTrade] = useState(false);
-  const [view, setView] = useState<'holdings' | 'invest' | 'risk'>('holdings');
+  const [ownView, setOwnView] = useState<'holdings' | 'invest' | 'risk'>('holdings');
+  const view = viewProp ?? ownView;
+  const setView = (v: 'holdings' | 'invest' | 'risk') => (onView ? onView(v) : setOwnView(v));
   const breadth = feed?.breadth ?? null;
   const { rows, total, sectors, loading, candles } = useReviews(holdings, stocks, bySymbol, breadth);
   // Keep a record of each holding decision shown, to score it later.

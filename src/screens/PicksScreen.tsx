@@ -84,7 +84,7 @@ function ResultRow({ p, last }: { p: ScoredPick; last: boolean }) {
   );
 }
 
-export default function PicksScreen() {
+export default function PicksScreen({ asTab }: { asTab?: boolean } = {}) {
   const nav = useNavigation();
   const { bySymbol } = useMarket();
   const { feeds, error, loading, reload } = usePicksFeed();
@@ -105,9 +105,9 @@ export default function PicksScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
+        {asTab ? <View style={{ width: 44 }} /> : <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />}
         <T v="title" style={{ fontSize: 16 }}>
-          Daily picks
+          {asTab ? 'Ideas' : 'Daily picks'}
         </T>
         <View style={{ width: 44 }} />
       </View>

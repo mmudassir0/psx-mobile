@@ -32,6 +32,9 @@ import DividendsScreen from './src/screens/DividendsScreen';
 import SummaryScreen from './src/screens/SummaryScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import NewsScreen from './src/screens/NewsScreen';
+import FindScreen from './src/screens/FindScreen';
+import { layoutPref, TABS_FOR } from './src/nav/layout';
+import { MenuButton } from './src/ui/SideMenu';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -73,15 +76,23 @@ const TAB_ICONS: Record<keyof TabParams, IconName> = {
   Market: 'market',
   Trade: 'trade',
   Portfolio: 'portfolio',
+  Ideas: 'star',
   AI: 'ai',
 };
 
+const IdeasTab = () => <PicksScreen asTab />;
+
 function Tabs() {
   const insets = useSafeAreaInsets();
+  const layout = layoutPref.use();
+  const shown = TABS_FOR[layout];
   return (
     <Tab.Navigator
+      tabBar={layout === 'menu' ? (props) => <MenuButton {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
+        // every screen stays registered so tools, menu and search can reach it; the layout picks which get a tab button
+        ...(shown.includes(route.name) ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } }),
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.faint,
         tabBarStyle: {
@@ -97,9 +108,10 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Market" component={MarketScreen} />
-      <Tab.Screen name="Trade" component={TradeScreen} />
       <Tab.Screen name="Portfolio" component={PortfolioScreen} />
+      <Tab.Screen name="Ideas" component={IdeasTab} />
       <Tab.Screen name="AI" component={AIScreen} />
+      <Tab.Screen name="Trade" component={TradeScreen} options={{ title: 'Practice' }} />
     </Tab.Navigator>
   );
 }
@@ -125,6 +137,7 @@ function Root() {
       <Stack.Screen name="Summary" component={SummaryScreen} />
       <Stack.Screen name="Alerts" component={AlertsScreen} />
       <Stack.Screen name="News" component={NewsScreen} />
+      <Stack.Screen name="Find" component={FindScreen} />
     </Stack.Navigator>
   );
 }
@@ -141,6 +154,7 @@ const linking: LinkingOptions<RootParams> = {
       Summary: 'summary',
       Alerts: 'alerts',
       News: 'news',
+      Find: 'find',
     },
   },
 };
