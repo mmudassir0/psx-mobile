@@ -1,5 +1,6 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFlags } from '../../flags';
 import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -152,6 +153,7 @@ function HoldingCard({
   applied: string[];
   holdingsAll: Row['holding'][];
 }) {
+  const flags = useFlags();
   const [open, setOpen] = useState(false);
   const [trading, setTrading] = useState(false);
   const rv = r.review;
@@ -190,7 +192,7 @@ function HoldingCard({
             </T>
           </View>
           {!open ? <Pills r={r} taxRate={taxRate} onPress={() => setOpen(true)} /> : null}
-          <RightsBox r={r} />
+          {flags('rights') ? <RightsBox r={r} /> : null}
           {open &&
             (() => {
               const up = upcomingPayout(r.dividends);
@@ -323,7 +325,7 @@ function HoldingCard({
                 </T>
               ) : null}
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
-              <SaleTaxLine r={r} />
+              {flags('tax') ? <SaleTaxLine r={r} /> : null}
             </View>
           ) : null}
           <View style={{ flexDirection: 'row', gap: 22 }}>
@@ -367,6 +369,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   const applied = appliedBonusesPref.use();
   const { feed } = usePicksFeed();
   const [newTrade, setNewTrade] = useState(false);
+  const on = useFlags();
   const [ownView, setOwnView] = useState<'holdings' | 'invest' | 'risk'>('holdings');
   const view = viewProp ?? ownView;
   const setView = (v: 'holdings' | 'invest' | 'risk') => (onView ? onView(v) : setOwnView(v));
@@ -487,7 +490,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
           ) : null}
 
           {!loading && upcoming.length ? (
-            <Section title="Upcoming payouts" action="All companies" onAction={() => nav.navigate('Dividends')}>
+            <Section title="Upcoming payouts" action={on('dividends') ? 'All companies' : undefined} onAction={() => nav.navigate('Dividends')}>
               <Panel style={{ paddingVertical: 6 }}>
                 {upcoming.map(({ r, up }, i) => (
                   <View key={r.holding.symbol} style={[styles.upRow, i < upcoming.length - 1 && styles.upBorder]}>
@@ -536,9 +539,11 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
       {view === 'invest' ? (
         <>
-        <Section title="Your goal" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
-          <GoalCard value={total} tracked={null} />
-        </Section>
+        {on('summary') ? (
+          <Section title="Your goal" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
+            <GoalCard value={total} tracked={null} />
+          </Section>
+        ) : null}
         <Section title="Where should new money go?">
           {loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}
         </Section>
@@ -547,12 +552,16 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
       {view === 'risk' ? (
         <>
-          <Section title="Health check">
-            {loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}
-          </Section>
-          <Section title="How you're doing">
-            <PerformanceCard rows={rows} candles={candles} loading={loading} />
-          </Section>
+          {on('health') ? (
+            <>
+              <Section title="Health check">
+                {loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}
+              </Section>
+              <Section title="How you're doing">
+                <PerformanceCard rows={rows} candles={candles} loading={loading} />
+              </Section>
+            </>
+          ) : null}
           <SectorMix
             items={rows.map((r) => ({
               sector: r.stock?.sector ?? 'Other',
@@ -582,17 +591,23 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
             </Panel>
           </Section>
 
-          <Section title="Tax on sales this year">
-            <TaxYearCard rows={rows} />
-          </Section>
+          {on('tax') ? (
+            <Section title="Tax on sales this year">
+              <TaxYearCard rows={rows} />
+            </Section>
+          ) : null}
 
-          <Section title="Zakat on your shares">
-            {loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}
-          </Section>
+          {on('zakat') ? (
+            <Section title="Zakat on your shares">
+              {loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}
+            </Section>
+          ) : null}
 
-          <Section title="Stress test">
-            {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
-          </Section>
+          {on('health') ? (
+            <Section title="Stress test">
+              {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
+            </Section>
+          ) : null}
         </>
       ) : null}
       <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>

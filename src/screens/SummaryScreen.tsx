@@ -1,5 +1,6 @@
 /** Last month (or this month so far) for your real portfolio: return vs KSE-100, money in and out, dividends, movers, goal. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFlag } from '../flags';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -38,6 +39,7 @@ export default function SummaryScreen() {
     return off;
   }, []);
   const bench = benchmarkPref.use();
+  const goalOn = useFlag('summary');
   useEffect(() => {
     setIndex(null);
     cached<SeriesPoint[]>(`eod:${bench}`, 30 * 60_000, () => fetchSeries('eod', bench), { persist: true })
@@ -135,7 +137,7 @@ export default function SummaryScreen() {
             </Panel>
           </Section>
         ) : null}
-        {rows.length ? (
+        {rows.length && goalOn ? (
           <Section title="Your goal">
             <GoalCard value={value} tracked={snaps ? trackedYearly(snaps) : null} />
           </Section>

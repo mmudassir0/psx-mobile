@@ -5,6 +5,7 @@
  * that are close.
  */
 import React from 'react';
+import { useFlags } from '../flags';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, themed } from '../theme';
@@ -39,17 +40,18 @@ export function useTodayItems(rows: Row[], todo: TodoItem[], max = 7): Item[] {
   const { items: news } = useNews();
   const rules = watchRulesPref.use();
   const { bySymbol } = useMarket();
+  const on = useFlags();
   const held = new Set(rows.map((r) => r.holding.symbol));
   const toPortfolio = () => nav.navigate('Tabs', { screen: 'Portfolio', params: { view: 'holdings' } });
   const out: Item[] = todo.map((t) => ({ key: `todo-${t.key}`, emoji: DOT[t.tone], text: t.text, onPress: () => (t.symbol ? nav.navigate('Stock', { symbol: t.symbol }) : toPortfolio()) }));
-  for (const e of eventsFor(rows, Date.now(), 7)) {
+  for (const e of on('comingUp') ? eventsFor(rows, Date.now(), 7) : []) {
     // payouts already in the to-dos aren't repeated
     if (e.kind === 'exdate' && out.some((o) => e.symbol && o.text.startsWith(e.symbol + ':'))) continue;
     out.push({ key: `ev-${e.kind}${e.symbol ?? ''}${e.day}`, emoji: ICON[e.kind], text: e.title, sub: e.kind === 'results' ? 'Any day now' : dayName(e.day), onPress: () => (e.symbol ? nav.navigate('Stock', { symbol: e.symbol }) : nav.navigate('Tabs', { screen: 'Market' })) });
   }
-  for (const n of news.filter((x) => x.symbols.some((s) => held.has(s)) && Date.now() - x.t < 2 * 864e5).slice(0, 2))
+  for (const n of (on('news') ? news : []).filter((x) => x.symbols.some((s) => held.has(s)) && Date.now() - x.t < 2 * 864e5).slice(0, 2))
     out.push({ key: `news-${n.url}`, emoji: '📰', text: n.title, sub: `${n.source} · ${ago(n.t)}`, onPress: () => Linking.openURL(n.url).catch(() => {}) });
-  for (const r of rules) {
+  for (const r of on('alerts') ? rules : []) {
     const p = bySymbol.get(r.symbol)?.price;
     if (p == null || r.level === 'ma200') continue;
     const gap = Math.abs(p / r.level - 1);

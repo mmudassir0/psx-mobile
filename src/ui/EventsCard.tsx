@@ -1,5 +1,6 @@
 /** "Coming up": the next two weeks' days when bigger moves are likely, for the market and your holdings. */
 import React, { useMemo, useState } from 'react';
+import { useFlag } from '../flags';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed } from '../theme';
@@ -67,12 +68,13 @@ export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent
 }
 
 export function EventsCard({ rows, padded }: { rows: Row[]; padded?: boolean }) {
+  const enabled = useFlag('comingUp');
   const nav = useNavigation();
   const [open, setOpen] = useState<string | null>(null);
   const now = Date.now();
   const today = pkDay(now);
   const list = useMemo(() => eventsFor(rows, now), [rows, now]);
-  if (!list.length) return null;
+  if (!list.length || !enabled) return null;
   return (
     <View style={padded ? { paddingHorizontal: space.gutter } : undefined}>
       <Section title="Coming up">

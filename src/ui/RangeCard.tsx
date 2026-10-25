@@ -1,5 +1,6 @@
 /** Where the price is likely to be in a day, a week and a month: an 80% range, not a forecast of direction. */
 import React from 'react';
+import { useFlag } from '../flags';
 import { Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { watchRulesPref } from '../portfolio/prefs';
@@ -17,11 +18,13 @@ const H = [
 ];
 
 export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; price: number | null; kind: 'stock' | 'index'; symbol?: string }) {
+  const enabled = useFlag('range');
   const nav = useNavigation();
   const rules = watchRulesPref.use();
+  const alertsOn = useFlag('alerts');
   const anchor = price ?? closes[closes.length - 1];
   const rows = H.map((h) => ({ ...h, r: priceRange(closes, h.days, kind) })).filter((x) => x.r);
-  if (!rows.length || !(anchor > 0)) return null;
+  if (!enabled || !rows.length || !(anchor > 0)) return null;
   const fmt = kind === 'index' ? (v: number) => fmtNum(Math.round(v)) : fmtPrice;
   const mpc = nextRateDecision(Date.now(), 3);
   return (
@@ -49,7 +52,7 @@ export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; p
           </View>
         );
       })}
-      {symbol && kind === 'stock' ? (
+      {symbol && kind === 'stock' && alertsOn ? (
         (() => {
           const m = rows.find((x) => x.days === 21)?.r;
           if (!m) return null;

@@ -4,12 +4,14 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, fonts, themed } from '../theme';
-import { FEATURES, GROUPS } from '../nav/features';
+import { GROUPS, visibleFeatures } from '../nav/features';
+import { useFlags } from '../flags';
 import { T } from './kit';
 
 export function MenuButton({ navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  const features = visibleFeatures(useFlags());
   return (
     <>
       <Pressable
@@ -30,12 +32,12 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}>
-              {GROUPS.map((g) => (
+              {GROUPS.filter((g) => features.some((f) => f.group === g)).map((g) => (
                 <View key={g} style={{ marginTop: 10 }}>
                   <T v="caption" style={{ fontFamily: fonts.bold, paddingHorizontal: 10, paddingBottom: 4 }}>
                     {g}
                   </T>
-                  {FEATURES.filter((f) => f.group === g).map((f) => (
+                  {features.filter((f) => f.group === g).map((f) => (
                     <Pressable
                       key={f.key}
                       accessibilityRole="button"

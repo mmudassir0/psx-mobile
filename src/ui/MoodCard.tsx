@@ -1,5 +1,6 @@
 /** Market mood: a 0–100 fear/greed gauge from the daily job, with what followed each mood in the past. */
 import React, { useState } from 'react';
+import { useFlag } from '../flags';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, themed } from '../theme';
@@ -54,9 +55,10 @@ function History({ f, width = 300, height = 60 }: { f: MoodFeed; width?: number;
 }
 
 export function MoodCard() {
+  const enabled = useFlag('mood');
   const { data: f } = useMood();
   const [open, setOpen] = useState(false);
-  if (!f) return null;
+  if (!f || !enabled) return null;
   const s = f.now.score;
   const week = ago(f, 5);
   const month = ago(f, 21);

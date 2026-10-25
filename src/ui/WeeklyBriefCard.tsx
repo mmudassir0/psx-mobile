@@ -1,5 +1,6 @@
 /** Home: a short AI-written note on your holdings' week, written once the week's trading is over (or on request). */
 import React, { useEffect, useRef, useState } from 'react';
+import { useFlag } from '../flags';
 import { Pressable, View } from 'react-native';
 import { colors, fonts, space } from '../theme';
 import type { Candle, SeriesPoint } from '../psx/types';
@@ -14,6 +15,9 @@ import { Panel } from './bits';
 import { Section, T } from './kit';
 
 export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]; candles: Record<string, Candle[] | null>; breadth: number | null; ready: boolean }) {
+  const briefOn = useFlag('brief');
+  const aiOn = useFlag('ai');
+  const enabled = briefOn && aiOn;
   const ai = useAi();
   const brief = briefPref.use();
   const { data: mood } = useMood();
@@ -51,13 +55,13 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
 
   // once the week's trading is over, write it the first time Home opens with everything loaded
   useEffect(() => {
-    if (!ready || current || tried.current || !weekOver() || !ai.available || !rows.length) return;
+    if (!enabled || !ready || current || tried.current || !weekOver() || !ai.available || !rows.length) return;
     tried.current = true;
     write();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, current, ai.available, rows.length]);
 
-  if (!rows.length) return null;
+  if (!rows.length || !enabled) return null;
   const shown = writing || current?.text || '';
   return (
     <View style={{ paddingHorizontal: space.gutter }}>

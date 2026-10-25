@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFlag } from '../flags';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,6 +85,7 @@ export default function MarketScreen() {
     nav.setParams({ mode: undefined } as never);
   }, [route.params?.mode, nav]);
   const { watchlist } = useUser();
+  const watchOn = useFlag('watchlist');
   const [allIndices, setAllIndices] = useState(false);
   const [limit, setLimit] = useState(10);
   const sparks = useIndexSeries(MAIN_INDICES);
@@ -264,7 +266,7 @@ export default function MarketScreen() {
             <View style={styles.pad}>
               <Section title={sector ? `${shortSector(sector)} stocks` : 'Stocks'}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {MODES.map((m) => (
+                  {MODES.filter((m) => m.key !== 'watch' || watchOn).map((m) => (
                     <Pressable
                       key={m.key}
                       accessibilityRole="tab"

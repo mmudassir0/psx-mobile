@@ -24,6 +24,7 @@ import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
 import { layoutPref } from '../nav/layout';
+import { useFlags } from '../flags';
 import { ToolsGrid } from '../ui/ToolsGrid';
 import { TodayList } from '../ui/TodayList';
 import { MoodLine } from '../ui/MoodLine';
@@ -84,6 +85,7 @@ export default function HomeScreen() {
   const { data: mood } = useMood();
   const layout = layoutPref.use();
   const isTabs = layout === 'tabs';
+  const on = useFlags();
   const compact = layout === 'briefing' || layout === 'menu';
   const stories = layout === 'stories';
   // keep the home screen widget current (only once real prices are in)
@@ -197,7 +199,7 @@ export default function HomeScreen() {
               <T v="caption">Nothing needs your attention today.</T>
             )}
           </Pressable>
-        ) : (
+        ) : !on('practice') ? null : (
           <Pressable
           accessibilityRole="button"
           onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })}
@@ -267,9 +269,11 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        <View style={[styles.pad, { gap: 10 }]}>
-          <MoodCard />
-        </View>
+        {on('mood') ? (
+          <View style={styles.pad}>
+            <MoodCard />
+          </View>
+        ) : null}
 
         {hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
         <NewsHomeCard />
@@ -277,6 +281,8 @@ export default function HomeScreen() {
         <AlertsHomeCard padded />
 
 
+        {on('watchlist') ? (
+        <>
         <View style={styles.pad}>
           <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
             {!ready ? (
@@ -313,6 +319,8 @@ export default function HomeScreen() {
             {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
           </Section>
         </View>
+        </>
+        ) : null}
 
         </>
         ) : null}

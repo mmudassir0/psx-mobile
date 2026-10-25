@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed, ThemePref } from '../theme';
@@ -12,6 +12,7 @@ import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
 import { LAYOUTS, layoutPref } from '../nav/layout';
+import { FLAGS, flagsPref, isOn, type Flag } from '../flags';
 import { Panel } from '../ui/bits';
 import { BackupCard } from '../ui/BackupCard';
 import { taxStatusPref } from '../portfolio/prefs';
@@ -37,6 +38,8 @@ const THEMES: { key: ThemePref; label: string }[] = [
 export default function SettingsScreen() {
   const nav = useNavigation();
   const layout = layoutPref.use();
+  const flags = flagsPref.use();
+  const flagOn = (k: Flag) => isOn(flags, k);
   const taxStatus = taxStatusPref.use();
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
@@ -130,6 +133,29 @@ export default function SettingsScreen() {
           <T v="caption">Every screen is in every layout; only the way you reach them changes. Try each for a day.</T>
         </Section>
 
+        <Section title="Features">
+          <Panel style={{ paddingVertical: 4 }}>
+            {FLAGS.map((f, i) => (
+              <View key={f.key} style={[styles.layoutRow, i < FLAGS.length - 1 && styles.layoutBorder]}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 14.5 }}>{f.label}</T>
+                  <T v="caption" style={{ lineHeight: 17 }}>
+                    {f.desc}
+                  </T>
+                </View>
+                <Switch
+                  value={flagOn(f.key)}
+                  onValueChange={(v) => flagsPref.set({ ...flags, [f.key]: v })}
+                  trackColor={{ true: colors.gold, false: colors.line }}
+                  thumbColor={colors.surface}
+                  accessibilityLabel={f.label}
+                />
+              </View>
+            ))}
+          </Panel>
+          <T v="caption">Switched off means hidden everywhere. Nothing you saved is deleted; switch it back on and it returns.</T>
+        </Section>
+
         <Section title="Appearance">
           <Segmented options={THEMES} value={pref} onChange={setPref} />
           <T v="caption">“Phone” follows your phone's light or dark mode.</T>
@@ -150,12 +176,14 @@ export default function SettingsScreen() {
           </T>
         </Section>
 
+        {flagOn('alerts') ? (
         <Section title="Price alerts">
           <Button label="Set up price alerts" tone="ghost" onPress={() => nav.navigate('Alerts')} />
           <T v="caption" style={{ lineHeight: 18 }}>
             A notification the evening any stock closes past a price or its 200-day average.
           </T>
         </Section>
+        ) : null}
 
         <Section title="Your data">
           <BackupCard />

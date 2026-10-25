@@ -26,6 +26,7 @@ export const BACKUP_KEYS = [
   'real.watchAlertsCopied',
   'real.weeklyBrief',
   'ui.layout',
+  'ui.flags',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -52,6 +53,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'sahm:theme': (x) => typeof x === 'string',
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,
+  'ui.flags': (x) => isObj(x) && Object.values(x).every((v) => typeof v === 'boolean'),
   'ui.layout': (x) => x === 'tabs' || x === 'briefing' || x === 'menu' || x === 'stories',
   'real.weeklyBrief': (x) => x === null || (isObj(x) && typeof x.week === 'string' && typeof x.text === 'string'),
   'real.watchAlertsCopied': (x) => typeof x === 'string',

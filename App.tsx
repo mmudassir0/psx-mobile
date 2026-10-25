@@ -34,6 +34,7 @@ import AlertsScreen from './src/screens/AlertsScreen';
 import NewsScreen from './src/screens/NewsScreen';
 import FindScreen from './src/screens/FindScreen';
 import { layoutPref, TABS_FOR } from './src/nav/layout';
+import { useFlags } from './src/flags';
 import { MenuButton } from './src/ui/SideMenu';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -85,7 +86,8 @@ const IdeasTab = () => <PicksScreen asTab />;
 function Tabs() {
   const insets = useSafeAreaInsets();
   const layout = layoutPref.use();
-  const shown = TABS_FOR[layout];
+  const on = useFlags();
+  const shown = TABS_FOR[layout].filter((t) => (t !== 'Ideas' || on('ideas')) && (t !== 'AI' || on('ai')));
   return (
     <Tab.Navigator
       tabBar={layout === 'menu' ? (props) => <MenuButton {...props} /> : undefined}

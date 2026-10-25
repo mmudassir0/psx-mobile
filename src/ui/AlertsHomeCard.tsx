@@ -1,5 +1,6 @@
 /** Home: your price alerts, how far each stock is from its line, and whether GitHub has the latest list. */
 import React from 'react';
+import { useFlag } from '../flags';
 import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space } from '../theme';
@@ -10,11 +11,12 @@ import { Panel } from './bits';
 import { Section, T } from './kit';
 
 export function AlertsHomeCard({ padded }: { padded?: boolean }) {
+  const enabled = useFlag('alerts');
   const nav = useNavigation();
   const rules = watchRulesPref.use();
   const copied = watchCopiedPref.use();
   const { bySymbol } = useMarket();
-  if (!rules.length) return null;
+  if (!rules.length || !enabled) return null;
   const rows = rules
     .map((r) => {
       const now = bySymbol.get(r.symbol)?.price ?? null;

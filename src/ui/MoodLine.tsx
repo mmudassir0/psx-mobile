@@ -1,5 +1,6 @@
 /** One line of market mood and the KSE-100; tap for the market. */
 import React from 'react';
+import { useFlag } from '../flags';
 import { Pressable, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, themed } from '../theme';
@@ -11,7 +12,9 @@ import { T } from './kit';
 
 export function MoodLine() {
   const nav = useNavigation();
-  const { data: mood } = useMood();
+  const moodOn = useFlag('mood');
+  const { data: moodData } = useMood();
+  const mood = moodOn ? moodData : null;
   const { indices } = useMarket();
   const kse = indices.find((i) => i.code === 'KSE100');
   if (!mood && !kse) return null;

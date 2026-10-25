@@ -1,5 +1,6 @@
 /** Swipe stories: today's check as a deck of cards: your money, what needs a look, news, the market, done. */
 import React, { useState } from 'react';
+import { useFlags } from '../flags';
 import { Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, space, themed } from '../theme';
@@ -31,15 +32,17 @@ export function StoryDeck({
   const [page, setPage] = useState(0);
   const items = useTodayItems(rows, todo, 5);
   const { items: news } = useNews();
-  const { data: mood } = useMood();
+  const on = useFlags();
+  const { data: moodData } = useMood();
+  const mood = on('mood') ? moodData : null;
   const { indices } = useMarket();
   const kse = indices.find((i) => i.code === 'KSE100');
   const held = new Set(rows.map((r) => r.holding.symbol));
   const mine = news.filter((n) => n.symbols.some((s) => held.has(s)));
   const headlines = (mine.length ? mine : news.filter((n) => n.market)).slice(0, 3);
-  const next = eventsFor(rows, Date.now(), 14)[0];
+  const next = on('comingUp') ? eventsFor(rows, Date.now(), 14)[0] : undefined;
 
-  const cards: React.ReactNode[] = [
+  const all: (React.ReactNode | null)[] = [
     <View key="money" style={{ gap: 14 }}>
       <T v="label">Your money</T>
       {hasReal ? (
@@ -83,7 +86,7 @@ export function StoryDeck({
         </T>
       )}
     </View>,
-    <View key="news" style={{ gap: 12 }}>
+    !on('news') ? null : <View key="news" style={{ gap: 12 }}>
       <T v="label">{mine.length ? 'In the news: your stocks' : 'In the news'}</T>
       {headlines.length ? (
         headlines.map((n) => (
@@ -131,6 +134,7 @@ export function StoryDeck({
     </View>,
   ];
 
+  const cards = all.filter(Boolean) as React.ReactNode[];
   return (
     <View style={{ gap: 10 }}>
       <ScrollView

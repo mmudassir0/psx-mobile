@@ -1,5 +1,6 @@
 /** "Where should this month's money go?": enter an amount, see how Sahm would split it across your holdings. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFlag } from '../flags';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtNum, fmtPrice } from '../format';
@@ -15,7 +16,9 @@ const KEY = 'plan.amount';
 
 export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | null }) {
   const [text, setText] = useState('');
-  const { data: mood } = useMood();
+  const moodOn = useFlag('mood');
+  const { data: moodData } = useMood();
+  const mood = moodOn ? moodData : null;
   useEffect(() => {
     load<string>(KEY, '').then((v) => v && setText(v));
   }, []);

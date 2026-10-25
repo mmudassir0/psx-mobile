@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFlag } from '../flags';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -136,6 +137,10 @@ export default function StockScreen() {
   const stock = useStock(symbol);
   const { isWatched, toggleWatch, account } = useUser();
   const [tab, setTab] = useState<Tab>('overview');
+  const aiOn = useFlag('ai');
+  useEffect(() => {
+    if (!aiOn && tab === 'ai') setTab('overview');
+  }, [aiOn, tab]);
   const [range, setRange] = useState<Range>('1M');
   const [mode, setMode] = useState<ChartMode>('candle');
   // Chart extras, remembered between stocks
@@ -656,7 +661,7 @@ export default function StockScreen() {
         </View>
       </View>
     );
-  else if (tab === 'ai') content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
+  else if (tab === 'ai' && aiOn) content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
   else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} /></View>;
   else if (tab === 'fundamentals')
     content = (
@@ -721,7 +726,7 @@ export default function StockScreen() {
           ) : null}
           {tab !== 'overview' ? subline : null}
         </View>
-        <TabStrip tabs={TABS} value={tab} onChange={setTab} />
+        <TabStrip tabs={aiOn ? TABS : TABS.filter((t) => t.key !== 'ai')} value={aiOn || tab !== 'ai' ? tab : 'overview'} onChange={setTab} />
         <View style={{ paddingTop: 18 }}>{content}</View>
         <T v="caption" style={{ paddingHorizontal: space.gutter, paddingTop: 24 }}>
           Data from the PSX data portal{company?.asOf ? `, ${company.asOf.replace(/^As of /, 'as of ')}` : ''}. Market

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFlag } from '../flags';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import type { TabParams } from '../nav/types';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -141,6 +142,7 @@ export default function PortfolioScreen() {
   const nav = useNavigation();
   const route = useRoute<RouteProp<TabParams, 'Portfolio'>>();
   const [tab, setTab] = useState<'real' | 'paper'>('real');
+  const practiceOn = useFlag('practice');
   const [view, setView] = useState<'holdings' | 'invest' | 'risk' | undefined>(undefined);
   // opened from a tile, menu or link that names a part of the portfolio
   useEffect(() => {
@@ -157,16 +159,18 @@ export default function PortfolioScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
         <T v="h1">Portfolio</T>
-        <Segmented
-          options={[
-            { key: 'real', label: `My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
-            { key: 'paper', label: 'Practice' },
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
+        {practiceOn ? (
+          <Segmented
+            options={[
+              { key: 'real', label: `My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
+              { key: 'paper', label: 'Practice' },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
+        ) : null}
       </View>
-      {tab === 'real' ? <MyHoldings view={view} onView={setView} /> : <PaperPortfolio />}
+      {tab === 'real' || !practiceOn ? <MyHoldings view={view} onView={setView} /> : <PaperPortfolio />}
     </SafeAreaView>
   );
 }

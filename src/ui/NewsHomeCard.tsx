@@ -1,5 +1,6 @@
 /** Home: headlines about your holdings first, then the market's. */
 import React from 'react';
+import { useFlag } from '../flags';
 import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { space } from '../theme';
@@ -9,10 +10,11 @@ import { Section, T } from './kit';
 import { NewsRows, useNews } from './NewsList';
 
 export function NewsHomeCard() {
+  const enabled = useFlag('news');
   const nav = useNavigation();
   const { items } = useNews();
   const { holdings } = useHoldings();
-  if (!items.length) return null;
+  if (!items.length || !enabled) return null;
   const held = new Set(holdings.map((h) => h.symbol));
   const mine = items.filter((n) => n.symbols.some((s) => held.has(s)) && Date.now() - n.t < 3 * 864e5);
   const shown = mine.length ? [...mine.slice(0, 3), ...items.filter((n) => n.market && !mine.includes(n)).slice(0, 2)] : items.filter((n) => n.market).slice(0, 4);

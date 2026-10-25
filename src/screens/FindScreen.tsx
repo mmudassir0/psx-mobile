@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { colors, fonts, space, themed } from '../theme';
 import { findFeatures } from '../nav/features';
+import { useFlags } from '../flags';
 import { useMarket } from '../store/market';
 import { StockRow } from '../ui/StockRow';
 import { Panel } from '../ui/bits';
@@ -15,7 +16,7 @@ export default function FindScreen() {
   const nav = useNavigation<NavigationProp<ParamListBase>>();
   const { stocks } = useMarket();
   const [q, setQ] = useState('');
-  const features = findFeatures(q);
+  const features = findFeatures(q, useFlags());
   const found = useMemo(() => {
     const u = q.trim().toUpperCase();
     if (!u) return [];

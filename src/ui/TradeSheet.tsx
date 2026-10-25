@@ -1,5 +1,6 @@
 /** Record a buy or sell in a few taps; updates shares and average price. */
 import React, { useEffect, useState } from 'react';
+import { useFlag } from '../flags';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtNum } from '../format';
@@ -19,6 +20,7 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
   const [px, setPx] = useState(price ? price.toFixed(2) : '');
   const [msg, setMsg] = useState<string | null>(null);
   const tax = taxStatusPref.use();
+  const taxOn = useFlag('tax');
   const bought = boughtPref.use();
   useEffect(() => {
     if (price) setPx(price.toFixed(2));
@@ -26,7 +28,7 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
   const n = (s: string) => Number(s.replace(/,/g, ''));
   const preview = applyTrade(holdings, { symbol: sym, side, shares: n(shares), price: n(px) });
   const held = holdings.find((h) => h.symbol === sym.trim().toUpperCase());
-  const sale = side === 'sell' && held && n(shares) > 0 && n(px) > 0 && !preview.error ? saleTax(n(shares), n(px), held.avgCost, tax, bought[held.symbol], heldSince2023()) : null;
+  const sale = taxOn && side === 'sell' && held && n(shares) > 0 && n(px) > 0 && !preview.error ? saleTax(n(shares), n(px), held.avgCost, tax, bought[held.symbol], heldSince2023()) : null;
   const after = preview.error ? null : preview.holdings.find((h) => h.symbol === sym.trim().toUpperCase());
   const save = async () => {
     if (preview.error) return setMsg(preview.error);
