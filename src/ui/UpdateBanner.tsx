@@ -8,7 +8,7 @@ const mb = (b: number) => `${(b / 1048576).toFixed(1)} MB`;
 
 /** Shown on Home when a newer build is on GitHub. */
 export function UpdateBanner() {
-  const { status, latest, progress, error, download, install, paused, openInBrowser } = useUpdate();
+  const { status, latest, progress, error, download, install, paused, openInBrowser, redownload } = useUpdate();
   if (!latest || !['available', 'downloading', 'ready', 'error'].includes(status)) return null;
   if (status === 'error' && progress === 0 && latest.build <= BUILD) return null;
   const notes = latest.notes.split('\n')[0];
@@ -46,7 +46,18 @@ export function UpdateBanner() {
         </Pressable>
       ) : null}
       {status === 'ready' ? (
-        <T v="caption">If Android asks, allow Sahm to install apps, then come back and tap Install update.</T>
+        <>
+          <T v="caption">If Android asks, allow Sahm to install apps, then come back and tap Install update.</T>
+          <T v="caption">Android says the package is invalid? The download got damaged:</T>
+          <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
+            <Pressable accessibilityRole="button" onPress={redownload} hitSlop={8}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Download again ›</T>
+            </Pressable>
+            <Pressable accessibilityRole="link" onPress={openInBrowser} hitSlop={8}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Download in browser ›</T>
+            </Pressable>
+          </View>
+        </>
       ) : null}
     </View>
   );

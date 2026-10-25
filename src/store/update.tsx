@@ -58,6 +58,8 @@ interface UpdateState {
   paused: boolean;
   /** hand the download to the phone's browser, which keeps going in the background */
   openInBrowser: () => void;
+  /** delete the downloaded file and start again from scratch */
+  redownload: () => Promise<void>;
 }
 
 const Ctx = createContext<UpdateState | null>(null);
@@ -141,6 +143,12 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
           throw new Error('The download was incomplete; tap Try again');
         }
       }
+      // a file of the right size can still be damaged (an interrupted resume): check it before handing it to Android
+      if (!(await looksWhole(dest, latest.size))) {
+        dl.current = null;
+        await FileSystem.deleteAsync(dest, { idempotent: true });
+        throw new Error('The downloaded file was damaged and has been deleted; tap Try again');
+      }
       dl.current = null;
       setProgress(1);
       setFile(dest);
@@ -197,6 +205,16 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [download]);
 
+  /** Throws away the downloaded file and fetches it again from the start (no resume). */
+  const redownload = useCallback(async () => {
+    if (!latest || busy.current) return;
+    dl.current = null;
+    setFile(null);
+    await FileSystem.deleteAsync(`${FileSystem.cacheDirectory}Sahm-${latest.version}-${latest.build}.apk`, { idempotent: true }).catch(() => {});
+    setProgress(0);
+    await download();
+  }, [latest, download]);
+
   const openInBrowser = useCallback(() => {
     if (latest) Linking.openURL(latest.apkUrl);
   }, [latest]);
@@ -218,7 +236,23 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [check]);
 
-  return <Ctx.Provider value={{ status, latest, progress, error, check, download, install, paused, openInBrowser }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ status, latest, progress, error, check, download, install, paused, openInBrowser, redownload }}>{children}</Ctx.Provider>;
+}
+
+/**
+ * A cheap check that the APK arrived whole: it must start like a zip file and
+ * end with a zip directory record. Catches files cut off or mangled by an
+ * interrupted download, which Android reports as "package appears to be invalid".
+ */
+export async function looksWhole(fileUri: string, size: number): Promise<boolean> {
+  try {
+    const head = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64, position: 0, length: 4 });
+    const n = Math.min(size, 65_557);
+    const tail = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64, position: Math.max(0, size - n), length: n });
+    return atob(head).startsWith('PK\x03\x04') && atob(tail).includes('PK\x05\x06');
+  } catch {
+    return true; // can't read it here: let Android decide
+  }
 }
 
 async function openInstaller(fileUri: string) {
