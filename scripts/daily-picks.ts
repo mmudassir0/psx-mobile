@@ -14,8 +14,23 @@ import { dailyCandles, lastSource } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
-import { breadthOf, choosePicks, ListId, listOf, liveRecord, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
-import { fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
+import {
+  breadthOf,
+  choosePicks,
+  ListId,
+  listOf,
+  liveRecord,
+  LISTS,
+  PicksFeed,
+  pkDay,
+  RULES,
+  ScoredPick,
+  scorePick,
+  statsOf,
+  Universe,
+} from '../src/picks/build';
+import { fetchCompany, fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
+import { longTermList, monthReturn, LT, type LtFeed, type LtMonth } from '../src/analysis/longterm';
 import { cashDividends, dividends } from '../src/analysis/dividends';
 import { cached } from '../src/psx/cache';
 import { indexTrend, MarketFeed } from '../src/analysis/market';
@@ -37,7 +52,10 @@ const fileStore: KeyValueStore = {
 setStorage(fileStore);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DAY = 864e5;
-interface Saved { fullAt: number; bars: number[][] }
+interface Saved {
+  fullAt: number;
+  bars: number[][];
+}
 const toCandles = (rows: number[][]): Candle[] => rows.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v }));
 
 /** Mon–Fri 09:00–16:30 Pakistan time: today's prices are still moving, so nothing is downloaded. */
@@ -53,7 +71,11 @@ async function main() {
   const session = inSession(now) && process.env.ALLOW_SESSION !== '1';
   if (session) console.log('market is trading: using saved closes only, no new price downloads');
   // 1. Symbols: everything saved, seeded from the price-history branch the first time.
-  const symbols = new Set<string>(readdirSync(cacheDir).filter((f) => f.startsWith('daily_3A')).map((f) => decodeURIComponent(f.replace(/_/g, '%').replace(/\.json$/, '')).slice(6)));
+  const symbols = new Set<string>(
+    readdirSync(cacheDir)
+      .filter((f) => f.startsWith('daily_3A'))
+      .map((f) => decodeURIComponent(f.replace(/_/g, '%').replace(/\.json$/, '')).slice(6)),
+  );
   if (historyDir && existsSync(historyDir)) {
     for (const f of readdirSync(historyDir).filter((f) => f.endsWith('.json') && f !== 'index.json')) {
       const sym = f.replace('.json', '');
@@ -72,7 +94,8 @@ async function main() {
   // Index members, from PSX; the last good list if PSX doesn't answer.
   const membersPath = join(stateDir, 'indexes.json');
   const members: Record<string, string[]> = existsSync(membersPath) ? JSON.parse(readFileSync(membersPath, 'utf8')) : {};
-  if (!members.KSE100 && historyDir && existsSync(join(historyDir, 'index.json'))) members.KSE100 = JSON.parse(readFileSync(join(historyDir, 'index.json'), 'utf8')).sets?.KSE100 ?? [];
+  if (!members.KSE100 && historyDir && existsSync(join(historyDir, 'index.json')))
+    members.KSE100 = JSON.parse(readFileSync(join(historyDir, 'index.json'), 'utf8')).sets?.KSE100 ?? [];
   for (const code of ['KSE100', 'KMI30']) {
     for (let a = 0; a < 4; a++) {
       try {
@@ -137,7 +160,8 @@ async function main() {
   for (const sym of new Set(history.filter((p) => p.result === 'open').map((p) => p.symbol))) {
     const pay = await cached(`payouts:${sym}`, 20 * 3600_000, () => fetchPayouts(sym), { persist: true }).catch(() => null);
     const c = bySymbol.get(sym);
-    if (pay && c?.length) cashOf.set(sym, cashDividends(dividends(pay, { price: c[c.length - 1].c, divYield: screener.get(sym)?.divYield ?? null, fiscalEndMonth: 11 })));
+    if (pay && c?.length)
+      cashOf.set(sym, cashDividends(dividends(pay, { price: c[c.length - 1].c, divYield: screener.get(sym)?.divYield ?? null, fiscalEndMonth: 11 })));
     await sleep(300);
   }
   for (let k = 0; k < history.length; k++) {
@@ -160,7 +184,10 @@ async function main() {
     if (history.some((p) => p.day === day && listOf(p) === L.id)) continue;
     // a stock that already has a pick in play isn't picked again (the same trade, counted twice)
     const busy = new Set(history.filter((p) => p.result === 'open' && listOf(p) === L.id).map((p) => p.symbol));
-    const picks = choosePicks(universeFor(L.id).filter((u) => !busy.has(u.symbol)), day).map((p) => ({ ...p, list: L.id, ...(marketOk ? {} : { weak: true }) }));
+    const picks = choosePicks(
+      universeFor(L.id).filter((u) => !busy.has(u.symbol)),
+      day,
+    ).map((p) => ({ ...p, list: L.id, ...(marketOk ? {} : { weak: true }) }));
     for (const p of picks) history.push({ ...p, result: 'open', ret: null, closedDay: null });
     console.log(`${L.label}: ${picks.map((p) => p.symbol).join(', ') || 'none'}`);
   }
@@ -209,7 +236,7 @@ async function main() {
   writeFileSync(join(stateDir, 'latest.json'), JSON.stringify(feeds));
 
   // 6. The market report: each index's trend and how every sector is doing.
-  const retry = async <T,>(f: () => Promise<T>): Promise<T | null> => {
+  const retry = async <T>(f: () => Promise<T>): Promise<T | null> => {
     for (let a = 0; a < 4; a++) {
       try {
         return await f();
@@ -233,7 +260,15 @@ async function main() {
     const pts = (await retry(() => fetchSeries('eod', code)))?.filter((p) => !session || pkDay(p.t) < today) ?? null;
     if (code === 'KSE100') kse = pts;
     const t = pts ? indexTrend(pts) : null;
-    if (t) indices[code] = { regime: t.regime, since: t.since, days: t.days, close: Math.round(t.close), r1m: t.returns.m1 == null ? null : Math.round(t.returns.m1 * 1000) / 1000, fromHigh: Math.round(t.fromHigh * 1000) / 1000 };
+    if (t)
+      indices[code] = {
+        regime: t.regime,
+        since: t.since,
+        days: t.days,
+        close: Math.round(t.close),
+        r1m: t.returns.m1 == null ? null : Math.round(t.returns.m1 * 1000) / 1000,
+        fromHigh: Math.round(t.fromHigh * 1000) / 1000,
+      };
     console.log(`${code}: ${t ? `${t.regime} for ${t.days} days` : 'no data'}`);
   }
   const groups = new Map<string, { r1w: number[]; r1m: number[]; vol: number[]; up: number }>();
@@ -262,7 +297,17 @@ async function main() {
     ...(stale ? { stale: true } : {}),
     sectors: [...groups]
       .filter(([, g]) => g.r1m.length >= 2)
-      .map(([name, g]) => [name, g.r1m.length, r3(mean(g.r1w)), r3(mean(g.r1m)), Math.round(mean(g.vol) * 100) / 100, r3(g.up / g.r1m.length)] as MarketFeed['sectors'][number])
+      .map(
+        ([name, g]) =>
+          [
+            name,
+            g.r1m.length,
+            r3(mean(g.r1w)),
+            r3(mean(g.r1m)),
+            Math.round(mean(g.vol) * 100) / 100,
+            r3(g.up / g.r1m.length),
+          ] as MarketFeed['sectors'][number],
+      )
       .sort((a, b) => b[3] - a[3]),
   };
   // 7. Market mood (0 fear … 100 greed) from the liquid stocks and the KSE-100, with what followed each mood.
@@ -301,18 +346,87 @@ async function main() {
     }
     await sleep(250);
   }
-  const calendar: CalendarFeed = { v: 1, kind: 'calendar', day, generatedAt: new Date(now).toISOString(), checked, rows: rows.sort((a, b) => a[1] - b[1]) };
+  const calendar: CalendarFeed = {
+    v: 1,
+    kind: 'calendar',
+    day,
+    generatedAt: new Date(now).toISOString(),
+    checked,
+    rows: rows.sort((a, b) => a[1] - b[1]),
+  };
   writeFileSync(join(stateDir, 'calendar.json'), JSON.stringify(calendar));
   console.log(`dividend calendar: ${rows.length} upcoming from ${checked} stocks`);
+
+  // 9. Long-term list (an experiment, shown as one): formed on the first run of each month, then scored.
+  try {
+    const ltItems = [];
+    for (const u of universe) {
+      const S = u.series!;
+      if (liquidityAt(S, S.c.length - 1) < LT.minLiquidity || pkDay(S.c[S.c.length - 1].t) !== day) continue;
+      const co = await cached(`company:${u.symbol}`, 3 * DAY, () => fetchCompany(u.symbol), { persist: true }).catch(() => null);
+      ltItems.push({ symbol: u.symbol, sector: co?.sector ?? sectorOf[u.symbol] ?? null, candles: u.candles, annual: co?.financialsAnnual ?? null });
+      await sleep(150);
+    }
+    const ltToday = longTermList(ltItems);
+    const ltPath = join(stateDir, 'longterm-lists.json');
+    const months: LtMonth[] = existsSync(ltPath) ? JSON.parse(readFileSync(ltPath, 'utf8')) : [];
+    const month = day.slice(0, 7);
+    if (!months.some((m) => m.month === month) && ltItems.length >= 40) {
+      months.push({
+        month,
+        day,
+        picks: ltToday.list.map((r) => [r.symbol, r.price]),
+        base: ltItems.map((x) => [x.symbol, x.candles[x.candles.length - 1].c] as [string, number]),
+        rows: ltToday.list,
+      });
+      writeFileSync(ltPath, JSON.stringify(months));
+    }
+    const closeOf = new Map(universe.map((u) => [u.symbol, u.candles[u.candles.length - 1].c]));
+    const thisMonth = months.find((m) => m.month === month) ?? months[months.length - 1];
+    if (thisMonth) {
+      const lt: LtFeed = {
+        v: 1,
+        kind: 'longterm',
+        day,
+        generatedAt: new Date(now).toISOString(),
+        month: thisMonth.month,
+        formed: thisMonth.day,
+        picks: thisMonth.picks,
+        list: thisMonth.rows ?? ltToday.list.filter((r) => thisMonth.picks.some(([s]) => s === r.symbol)),
+        today: ltToday,
+        record: months
+          .map((m) => ({ m, r: monthReturn(m, (s) => closeOf.get(s) ?? null) }))
+          .filter((x) => x.r && x.m.picks.length)
+          .map(({ m, r }) => ({ month: m.month, day: m.day, n: r!.n, ret: r3(r!.ret), base: r3(r!.base) })),
+      };
+      writeFileSync(join(stateDir, 'longterm.json'), JSON.stringify(lt));
+      console.log(
+        `long-term list ${thisMonth.month}: ${thisMonth.picks.length} stocks; today ${ltToday.list.length} pass of ${ltToday.valued} valued, ${ltToday.belowTrend} only below trend`,
+      );
+    }
+  } catch (e) {
+    console.log(`long-term list failed: ${(e as Error).message}`);
+  }
 
   let mbody = JSON.stringify(market);
   while (mbody.length > 3900 && market.sectors.length) {
     // drop the smallest sectors first
-    market.sectors.splice(market.sectors.reduce((k, x, i, a) => (x[1] < a[k][1] ? i : k), 0), 1);
+    market.sectors.splice(
+      market.sectors.reduce((k, x, i, a) => (x[1] < a[k][1] ? i : k), 0),
+      1,
+    );
     mbody = JSON.stringify(market);
   }
   writeFileSync(join(stateDir, 'market.json'), mbody);
-  console.log(`sectors: ${market.sectors.slice(0, 3).map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`).join(', ')} … ${market.sectors.slice(-2).map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`).join(', ')}`);
+  console.log(
+    `sectors: ${market.sectors
+      .slice(0, 3)
+      .map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`)
+      .join(', ')} … ${market.sectors
+      .slice(-2)
+      .map((x) => `${x[0]} ${(x[3] * 100).toFixed(1)}%`)
+      .join(', ')}`,
+  );
   if (process.env.PUBLISH === '1') {
     const res = await fetch(`${NTFY}/${FEED_TOPIC}`, { method: 'POST', body: mbody, headers: { Title: `Sahm market ${day}` } });
     console.log(`published market report to ntfy: ${res.status}`);

@@ -5,6 +5,9 @@ import { calendarItems, type CalendarFeed } from '../src/analysis/calendar';
 import type { Candle, SeriesPoint } from '../src/psx/types';
 import { ewmaVol, priceRange } from '../src/analysis/range';
 import { nextRateDecision, rateEvents } from '../src/analysis/events';
+import { saleTax, cgtRate } from '../src/portfolio/tax';
+import { lastBuyDay, exDate, rightsMaths } from '../src/analysis/dividends';
+import { longTermList } from '../src/analysis/longterm';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -100,6 +103,47 @@ check('index ranges use their own widths', priceRange(zig, 21, 'index')!.pct > p
 const oct20 = Date.UTC(2026, 9, 20, 6);
 check('rate decision on 26 Oct is coming up', rateEvents(oct20).some((e) => e.day === '2026-10-26'));
 check('next rate decision within 3 days only', nextRateDecision(oct20, 3) === null && nextRateDecision(Date.UTC(2026, 9, 24, 6), 3) === '2026-10-26');
+
+// ------------------------------------------------------------------- tax
+const st = saleTax(100, 120, 100, 'filer');
+check('filer pays 15% on the gain', near(st.gain, 2000) && near(st.tax, 300) && near(st.keep, 11700), st);
+check('a loss has no tax', saleTax(100, 80, 100, 'filer').tax === 0);
+check('old shares: 2013–22 12.5%, pre-2013 0%', cgtRate('filer', '2013-22').rate === 0.125 && cgtRate('filer', 'pre2013').rate === 0);
+check('2022–24 shares: falls with years held', cgtRate('filer', '2022-24', 0.5).rate === 0.15 && cgtRate('filer', '2022-24', 3.2).rate === 0.075 && cgtRate('filer', '2022-24', 7).rate === 0);
+check('non-filer pays more', cgtRate('non-filer').rate > cgtRate('filer').rate);
+
+// ------------------------------------------------------------- holidays
+const pk = (t: number) => new Date(t + 5 * 3600e3).toISOString().slice(0, 10);
+const bc = Date.UTC(2026, 10, 11, 7); // Wed 11 Nov 2026, Mon 9 Nov is Iqbal Day
+check('last day to buy skips the PSX holiday', pk(lastBuyDay(bc)) === '2026-11-06', pk(lastBuyDay(bc)));
+check('ex-date is the working day before book closure', pk(exDate(bc)) === '2026-11-10', pk(exDate(bc)));
+
+// ---------------------------------------------------------------- rights
+const rm = rightsMaths(1000, 25, 50, 20);
+check('rights: entitlement, cost, ex-rights price, value', rm.entitled === 250 && near(rm.cost, 5000) && near(rm.terp, 44) && near(rm.perRight, 24) && near(rm.valueOfRights, 6000), rm);
+check('rights above market are worth nothing', rightsMaths(100, 20, 10, 15).perRight === 0);
+
+// ------------------------------------------------------- long-term list
+const mk = (sym: string, sector: string, price: number, eps: [number, number], trendUp = true) => ({
+  symbol: sym,
+  sector,
+  candles: Array.from({ length: 260 }, (_, i) => {
+    const c = trendUp ? price * (0.8 + (0.2 * i) / 259) : price * (1.2 - (0.2 * i) / 259);
+    return { t: T0 + i * DAY, o: c, h: c, l: c, c, v: 1e6 };
+  }),
+  annual: { periods: ['2026', '2025'], rows: [{ label: 'EPS', values: [eps[0], eps[1]] }] },
+});
+const lt = longTermList([
+  mk('CHEAP', 'BANK', 50, [10, 8]),
+  mk('DEAR', 'BANK', 300, [10, 8]),
+  mk('DEAR2', 'BANK', 400, [10, 8]),
+  mk('DEAR3', 'BANK', 350, [10, 8]),
+  mk('MID', 'BANK', 100, [10, 8]),
+  mk('SHRINK', 'BANK', 40, [10, 12]),
+  mk('FALLING', 'BANK', 45, [10, 8], false),
+]);
+check('long-term: cheap vs sector, growing, above trend', lt.list.map((r) => r.symbol).join() === 'CHEAP', lt.list.map((r) => r.symbol));
+check('long-term: trend-only misses counted', lt.belowTrend === 1 && lt.valued === 7, lt);
 
 if (failed) {
   console.log(`\n${failed} failed`);

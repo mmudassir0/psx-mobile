@@ -1,13 +1,14 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '../../ui/Skeleton';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
-import { dividendTaxRate, payerKind, recentBonus, upcomingPayout, type Dividends } from '../../analysis/dividends';
+import { currentRights, dividendTaxRate, payerKind, recentBonus, rightsMaths, upcomingPayout, type Dividends } from '../../analysis/dividends';
 import { applyBonus, setHoldings } from '../../portfolio/holdings';
-import { appliedBonusesPref, taxStatusPref } from '../../portfolio/prefs';
+import { appliedBonusesPref, boughtPref, taxStatusPref } from '../../portfolio/prefs';
+import { BOUGHT_LABEL, heldSince2023, saleLine, saleTax, type Bought } from '../../portfolio/tax';
 import { useMarket } from '../../store/market';
 import { useHoldings } from '../../portfolio/holdings';
 import { Row, useReviews } from '../../portfolio/useReviews';
@@ -23,6 +24,7 @@ import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Section, Segmented, T } from '../../ui/kit';
 import { SectorMix } from '../../ui/SectorMix';
 import { PerformanceCard } from '../../ui/PerformanceCard';
+import { ZakatCard } from '../../ui/ZakatCard';
 import { useTrackSnapshot } from '../../portfolio/track';
 
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
@@ -66,6 +68,70 @@ function Pills({ r, taxRate, onPress }: { r: Row; taxRate: number; onPress: () =
           </T>
         </Pressable>
       ))}
+    </View>
+  );
+}
+
+const BOUGHT_ORDER: Bought[] = ['recent', '2022-24', '2013-22', 'pre2013'];
+
+/** "If you sold everything now": gain, capital gains tax and what you'd keep, with when the shares were bought. */
+function SaleTaxLine({ r }: { r: Row }) {
+  const status = taxStatusPref.use();
+  const bought = boughtPref.use();
+  const b = bought[r.holding.symbol] ?? 'recent';
+  const t = saleTax(r.holding.shares, r.price, r.holding.avgCost, status, b, heldSince2023());
+  return (
+    <View style={styles.taxBox}>
+      <T v="caption" style={{ fontFamily: fonts.bold, color: colors.text2 }}>
+        If you sold all of it now
+      </T>
+      <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+        {saleLine(t, (v) => fmtNum(v, 0))}
+      </T>
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => boughtPref.set({ ...bought, [r.holding.symbol]: BOUGHT_ORDER[(BOUGHT_ORDER.indexOf(b) + 1) % BOUGHT_ORDER.length] })}
+      >
+        <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+          Bought: {BOUGHT_LABEL[b]} ▾ (tap to change; older shares are taxed less)
+        </T>
+      </Pressable>
+    </View>
+  );
+}
+
+/** A rights issue on this holding: what you're entitled to, and with the offer price, what it costs and what the rights are worth. */
+function RightsBox({ r }: { r: Row }) {
+  const ri = currentRights(r.dividends);
+  const [offer, setOffer] = useState('');
+  if (!ri) return null;
+  const n = Math.floor((r.holding.shares * ri.pct) / 100);
+  const o = Number(offer.replace(/,/g, ''));
+  const m = o > 0 ? rightsMaths(r.holding.shares, ri.pct, r.price, o) : null;
+  return (
+    <View style={styles.rights}>
+      <T v="caption" style={{ fontFamily: fonts.bold, color: colors.text2 }}>
+        {ri.pct}% rights issue: {fmtNum(n, 0)} new shares offered to you
+      </T>
+      <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+        {ri.phase === 'before'
+          ? `Book closure ${fmtDay(ri.bookClosure)}: hold the shares by the end of ${fmtDay(ri.lastBuyDay)} to be offered them.`
+          : `Book closure was ${fmtDay(ri.bookClosure)}. You can pay for the new shares (subscribe) by the date in the company's notice, or sell the rights on PSX while they trade for a few days. Doing neither throws away whatever the rights are worth.`}
+      </T>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <T v="caption" style={{ flex: 1 }}>
+          Offer price from the company's notice (Rs)
+        </T>
+        <TextInput value={offer} onChangeText={setOffer} keyboardType="decimal-pad" placeholder="e.g. 10" placeholderTextColor={colors.faint} style={styles.offer} accessibilityLabel="Rights offer price" />
+      </View>
+      {m ? (
+        <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+          Subscribing costs Rs {fmtNum(m.cost, 0)} for {fmtNum(m.entitled, 0)} shares. Once the new shares exist the price should settle near Rs{' '}
+          {m.terp.toFixed(2)} (from {fmtPrice(r.price)}), so each right is worth about Rs {m.perRight.toFixed(2)}
+          {m.perRight > 0 ? `: Rs ${fmtNum(m.valueOfRights, 0)} in all, which you'd lose by doing nothing.` : '. The offer is above the market price, so subscribing costs more than buying on the market.'}
+        </T>
+      ) : null}
     </View>
   );
 }
@@ -121,6 +187,7 @@ function HoldingCard({
             </T>
           </View>
           {!open ? <Pills r={r} taxRate={taxRate} onPress={() => setOpen(true)} /> : null}
+          <RightsBox r={r} />
           {open &&
             (() => {
               const up = upcomingPayout(r.dividends);
@@ -253,6 +320,7 @@ function HoldingCard({
                 </T>
               ) : null}
               <T v="caption">Bought at an average of {fmtPrice(r.holding.avgCost)}. Your buy price isn't used in the decision.</T>
+              <SaleTaxLine r={r} />
             </View>
           ) : null}
           <View style={{ flexDirection: 'row', gap: 22 }}>
@@ -440,8 +508,8 @@ export function MyHoldings() {
                 ))}
               </Panel>
               <T v="caption" style={{ lineHeight: 18 }}>
-                "Buy by" counts two working days back from book closure, as PSX settles a day after the trade. Market holidays aren't counted, so
-                check the ex-date in your broker app if it's close.
+                "Buy by" counts two working days back from book closure, as PSX settles a day after the trade, skipping weekends and PSX
+                holidays. Moon-dependent holidays can move, so check the ex-date in your broker app if it's close.
               </T>
             </Section>
           ) : null}
@@ -501,6 +569,10 @@ export function MyHoldings() {
             </Panel>
           </Section>
 
+          <Section title="Zakat on your shares">
+            {loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}
+          </Section>
+
           <Section title="Stress test">
             {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
           </Section>
@@ -534,6 +606,9 @@ const styles = themed(() =>
       gap: 18,
       paddingBottom: 36,
     },
+    rights: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 8, gap: 4 },
+    offer: { width: 90, height: 36, borderRadius: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.ground, paddingHorizontal: 8, fontFamily: fonts.mono, color: colors.text },
+    taxBox: { backgroundColor: colors.surface2, borderRadius: 8, padding: 8, gap: 3 },
     check: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 8 },
     results: { backgroundColor: colors.surface2, borderRadius: 8, padding: 8 },
     payout: { backgroundColor: colors.upSoft, borderRadius: 8, padding: 8 },

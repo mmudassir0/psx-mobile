@@ -4,6 +4,8 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtNum } from '../format';
 import { applyTrade, setHoldings, useHoldings } from '../portfolio/holdings';
+import { boughtPref, taxStatusPref } from '../portfolio/prefs';
+import { heldSince2023, saleLine, saleTax } from '../portfolio/tax';
 import { Panel } from './bits';
 import { Button, Segmented, T } from './kit';
 
@@ -14,11 +16,15 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
   const [shares, setShares] = useState('');
   const [px, setPx] = useState(price ? price.toFixed(2) : '');
   const [msg, setMsg] = useState<string | null>(null);
+  const tax = taxStatusPref.use();
+  const bought = boughtPref.use();
   useEffect(() => {
     if (price) setPx(price.toFixed(2));
   }, [price]);
   const n = (s: string) => Number(s.replace(/,/g, ''));
   const preview = applyTrade(holdings, { symbol: sym, side, shares: n(shares), price: n(px) });
+  const held = holdings.find((h) => h.symbol === sym.trim().toUpperCase());
+  const sale = side === 'sell' && held && n(shares) > 0 && n(px) > 0 && !preview.error ? saleTax(n(shares), n(px), held.avgCost, tax, bought[held.symbol], heldSince2023()) : null;
   const after = preview.error ? null : preview.holdings.find((h) => h.symbol === sym.trim().toUpperCase());
   const save = async () => {
     if (preview.error) return setMsg(preview.error);
@@ -50,6 +56,11 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
           {preview.realised != null ? `; ${preview.realised >= 0 ? 'profit' : 'loss'} of Rs ${fmtNum(Math.abs(preview.realised), 0)} on these shares` : ''}
         </T>
       )}
+      {sale ? (
+        <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+          {saleLine(sale, (v) => fmtNum(v, 0))}
+        </T>
+      ) : null}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <View style={{ flex: 1 }}>
           <Button label="Cancel" tone="ghost" onPress={onDone} />

@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, themed } from '../theme';
 import { fmtNum } from '../format';
-import { rateEvents, type MarketEvent } from '../analysis/events';
-import { exDate, upcomingPayout } from '../analysis/dividends';
+import { holidayEvents, rateEvents, type MarketEvent } from '../analysis/events';
+import { currentRights, exDate, upcomingPayout } from '../analysis/dividends';
 import type { Row } from '../portfolio/useReviews';
 import { Panel } from './bits';
 import { Section, T } from './kit';
@@ -19,10 +19,10 @@ const label = (d: string, today: string) => {
   const name = d === today ? 'Today' : d === tomorrow ? 'Tomorrow' : WD[t.getUTCDay()];
   return `${name} ${t.getUTCDate()} ${MON[t.getUTCMonth()]}`;
 };
-const ICON: Record<MarketEvent['kind'], string> = { rates: '🏦', results: '📊', exdate: '💸', bookclosure: '📕' };
+const ICON: Record<MarketEvent['kind'], string> = { rates: '🏦', results: '📊', exdate: '💸', bookclosure: '📕', rights: '🧾', holiday: '🚫' };
 
 export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent[] {
-  const out: MarketEvent[] = [...rateEvents(now, days)];
+  const out: MarketEvent[] = [...rateEvents(now, days), ...holidayEvents(now, days)];
   const to = pkDay(now + days * 864e5);
   const today = pkDay(now);
   for (const r of rows) {
@@ -40,6 +40,18 @@ export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent
           detail: `The price usually drops by ${drop} at the open. Not a loss: you keep the payout${up.dps > 0 ? `, about Rs ${fmtNum(up.dps * r.holding.shares, 0)} before tax on your shares` : ''}.`,
         });
       }
+    }
+    const ri = currentRights(r.dividends, now);
+    if (ri && ri.phase === 'before') {
+      const d = pkDay(ri.lastBuyDay);
+      if (d >= today && d <= to)
+        out.push({
+          day: d,
+          kind: 'rights',
+          symbol: sym,
+          title: `${sym} rights: last day to qualify`,
+          detail: `A ${ri.pct}% rights issue: holding the shares at the end of this day gets you the offer of ${fmtNum(Math.floor((r.holding.shares * ri.pct) / 100), 0)} new shares. The holding card works out the cost once you enter the offer price.`,
+        });
     }
     if (r.results && !r.results.latest?.fresh && r.results.meetingNotice) {
       out.push({
@@ -79,9 +91,16 @@ export function EventsCard({ rows }: { rows: Row[] }) {
                 <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{e.title}</T>
                 <T v="caption">{e.kind === 'results' ? 'Any day now' : label(e.day, today)}</T>
                 {open === key ? (
-                  <T v="caption" style={{ lineHeight: 18, color: colors.text2, marginTop: 2 }}>
-                    {e.detail}
-                  </T>
+                  <>
+                    <T v="caption" style={{ lineHeight: 18, color: colors.text2, marginTop: 2 }}>
+                      {e.detail}
+                    </T>
+                    {e.symbol ? (
+                      <Pressable accessibilityRole="link" hitSlop={8} onPress={() => nav.navigate('Stock', { symbol: e.symbol! })}>
+                        <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold, marginTop: 4 }}>Open {e.symbol} ›</T>
+                      </Pressable>
+                    ) : null}
+                  </>
                 ) : null}
               </View>
               <T style={{ color: colors.faint }}>{open === key ? '▴' : '▾'}</T>
@@ -89,7 +108,7 @@ export function EventsCard({ rows }: { rows: Row[] }) {
           );
         })}
       </Panel>
-      <T v="caption">Days when prices tend to move more, not which way. Tap one for why.</T>
+      <T v="caption">Days when prices tend to move more (or the market is shut), not which way. Tap one for why.</T>
     </Section>
   );
 }

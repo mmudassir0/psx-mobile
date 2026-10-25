@@ -115,6 +115,8 @@ export interface LtMonth {
   picks: [string, number][];
   /** every liquid stock that day, to compare with: [symbol, price] */
   base: [string, number][];
+  /** the list's figures that day */
+  rows?: LtRow[];
 }
 
 export interface LtFeed {
@@ -125,6 +127,9 @@ export interface LtFeed {
   /** this month's list, as formed on its first trading day */
   month: string;
   formed: string;
+  /** this month's stocks and their price on the day the list was formed */
+  picks: [string, number][];
+  /** their figures that day (or today's, where the job no longer has that day's) */
   list: LtRow[];
   /** how today's prices and results judge the same stocks (they may have dropped out since) */
   today: LtResult;

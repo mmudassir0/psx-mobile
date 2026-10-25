@@ -27,6 +27,8 @@ export interface Row {
   fund: boolean;
   /** latest results and whether more are due */
   results: ResultsStatus | null;
+  /** current assets per share from the latest balance sheet (not for banks), for zakat */
+  zakatable?: number | null;
 }
 
 const FUND = /etf|exchange traded|mutual fund/i;
@@ -69,7 +71,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
     }
     const rows: Row[] = base.map((r) => {
       const d = data[r.holding.symbol];
-      if (!d) return { ...r, weight: r.value / total, review: null, dividends: null, fund: FUND.test(r.stock?.sector ?? ''), results: null };
+      if (!d) return { ...r, weight: r.value / total, review: null, dividends: null, fund: FUND.test(r.stock?.sector ?? ''), results: null, zakatable: null };
       const series = d.candles?.length ? computeSeries(d.candles) : null;
       const balance = balanceSheetFor(r.holding.symbol);
       const ratios = d.company ? computeRatios(balance, d.company, r.stock) : null;
@@ -98,7 +100,9 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
         dividends: dv,
         checks: dataChecks({ symbol: r.holding.symbol, name: r.stock?.name ?? d.company?.name, sector: r.stock?.sector ?? d.company?.sector, company: d.company, balance, ratios }),
       });
-      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null };
+      // the company's current assets (cash, receivables, stock in trade) per share, for zakat on shares held for income
+      const zakatable = balance && !balance.isBank && balance.currentAssets && d.company?.shares ? balance.currentAssets / d.company.shares : null;
+      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null, zakatable };
     });
     const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
     return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };

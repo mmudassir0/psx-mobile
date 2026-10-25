@@ -7,6 +7,8 @@
  * inferred: of the usual values (Rs 10, 5, 2, 1), the one that makes the
  * trailing payouts match PSX's own published dividend yield.
  */
+import { PSX_HOLIDAYS } from './events';
+
 export interface PayoutItem {
   pct: number;
   /** F final, i interim, etc., as PSX writes it */
@@ -78,7 +80,7 @@ export interface Dividends {
   /** cash dividend per share by fiscal year, newest first */
   years: { fy: string; dps: number }[];
   /** announcements, newest first, with Rs per share */
-  list: { announced: number; period: string | null; periodType: string | null; dps: number; bonusPct: number; bookClosure: number | null }[];
+  list: { announced: number; period: string | null; periodType: string | null; dps: number; bonusPct: number; rightsPct?: number; bookClosure: number | null }[];
   /** a cut of 50% or more, or no dividend for a year after paying one */
   cut: string | null;
   /** a smaller cut (20–50%) */
@@ -103,6 +105,7 @@ export function dividends(
     periodType: p.periodType,
     dps: (cashPct(p) / 100) * fv,
     bonusPct: p.items.filter((i) => i.type === 'B').reduce((s, i) => s + i.pct, 0),
+    rightsPct: p.items.filter((i) => i.type === 'R').reduce((s, i) => s + i.pct, 0),
     bookClosure: p.bookClosure,
   }));
   const ttm = list.filter((p) => now - p.announced < YEAR).reduce((s, p) => s + p.dps, 0);
@@ -168,20 +171,24 @@ export function payerKind(sector: string | null | undefined): PayerKind {
 // ------------------------------------------------------- upcoming payout ----
 
 const DAY_MS = 864e5;
+const HOLIDAY_SET = new Set(PSX_HOLIDAYS.map(([d]) => d));
 
 /**
  * The last day to buy and still get a payout: PSX settles trades the next
  * working day (T+1), and the register closes at the end of the day before book
  * closure starts, so a buy must be made two working days before it. Weekends
- * are skipped; PSX holidays are not known here, so the broker's ex-date wins.
+ * and the PSX holidays Sahm knows (events.ts) are skipped; the broker's ex-date wins.
  */
+const working = (t: number) => {
+  const d = new Date(t + 5 * 3600_000);
+  return d.getUTCDay() !== 0 && d.getUTCDay() !== 6 && !HOLIDAY_SET.has(d.toISOString().slice(0, 10));
+};
 export function lastBuyDay(bookClosure: number): number {
   let t = bookClosure;
   let left = 2;
   while (left > 0) {
     t -= DAY_MS;
-    const wd = new Date(t + 5 * 3600_000).getUTCDay();
-    if (wd !== 0 && wd !== 6) left--;
+    if (working(t)) left--;
   }
   return t;
 }
@@ -190,7 +197,7 @@ export function lastBuyDay(bookClosure: number): number {
 export function exDate(bookClosure: number): number {
   let t = bookClosure;
   do t -= DAY_MS;
-  while ([0, 6].includes(new Date(t + 5 * 3600_000).getUTCDay()));
+  while (!working(t));
   const day = new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
   return Date.parse(day + 'T00:00:00+05:00');
 }
@@ -222,4 +229,36 @@ export function recentBonus(d: Dividends | null, now = Date.now()): { pct: numbe
   if (!d) return null;
   const b = d.list.find((p) => p.bonusPct > 0 && p.bookClosure != null && p.bookClosure < now && now - p.bookClosure < 60 * DAY_MS);
   return b ? { pct: b.bonusPct, key: String(b.announced), bookClosure: b.bookClosure! } : null;
+}
+
+export interface RightsIssue {
+  /** new shares offered per 100 held */
+  pct: number;
+  bookClosure: number;
+  lastBuyDay: number;
+  announced: number;
+  /** before book closure you can still buy to qualify; after it, subscribe or sell the rights */
+  phase: 'before' | 'after';
+}
+
+/** A rights issue whose book closure is ahead, or passed in the last 45 days (subscription is usually still open). */
+export function currentRights(d: Dividends | null, now = Date.now()): RightsIssue | null {
+  if (!d) return null;
+  const r = d.list
+    .filter((p) => (p.rightsPct ?? 0) > 0 && p.bookClosure != null && p.bookClosure > now - 45 * DAY_MS)
+    .sort((a, b) => a.bookClosure! - b.bookClosure!)[0];
+  if (!r) return null;
+  return { pct: r.rightsPct!, bookClosure: r.bookClosure!, lastBuyDay: lastBuyDay(r.bookClosure!), announced: r.announced, phase: r.bookClosure! > now ? 'before' : 'after' };
+}
+
+/**
+ * The maths of a rights issue at an offer price: the price the shares should
+ * settle at once the new ones exist (theoretical ex-rights price) and what one
+ * right is worth (that price minus the offer price).
+ */
+export function rightsMaths(shares: number, pct: number, price: number, offer: number) {
+  const entitled = Math.floor((shares * pct) / 100);
+  const terp = (price * 100 + offer * pct) / (100 + pct);
+  const perRight = Math.max(0, terp - offer);
+  return { entitled, cost: entitled * offer, terp, perRight, valueOfRights: entitled * perRight };
 }

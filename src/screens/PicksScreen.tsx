@@ -10,6 +10,7 @@ import { usePicksFeed } from '../picks/feed';
 import { ListId, LISTS, LiveRecord, liveVerdict, RULES, ScoredPick, Stats, TESTED, TESTED_PERIODS } from '../picks/build';
 import { SETUP_NAMES } from '../analysis/picks';
 import { PickCard, RESULT_LABEL } from '../ui/PickCard';
+import { LongTermCard } from '../ui/LongTermCard';
 import { Panel } from '../ui/bits';
 import { StaleNote } from '../ui/StaleNote';
 import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -164,6 +165,10 @@ export default function PicksScreen() {
                 Buy only inside the zone within {feed.rules.wait} trading days. Sell half at TP1 and move the stop to your buy price;
                 sell the rest at TP2, the stop, or after {feed.rules.hold} trading days.
               </T>
+            </Section>
+
+            <Section title="Long-term list (experiment)">
+              <LongTermCard />
             </Section>
 
             {feed.open.length ? (

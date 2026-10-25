@@ -140,7 +140,7 @@ export default function DividendsScreen() {
           <T v="caption" style={{ lineHeight: 18 }}>
             From {data.checked} actively traded and index stocks, updated {fmtDay(Date.parse(data.generatedAt))}. Amounts are before tax
             per share; "% of price" is this one payout against the price when it was checked. "Buy by" counts two working days back
-            from book closure and doesn't know about market holidays, so check the ex-date in your broker app if it's close. Bonus
+            from book closure, skipping weekends and PSX holidays; check the ex-date in your broker app if it's close. Bonus
             shares lower the price by about the same amount, so they aren't income.
           </T>
         ) : null}
