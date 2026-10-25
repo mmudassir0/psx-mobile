@@ -23,6 +23,8 @@ export const BACKUP_KEYS = [
   'real.benchmark',
   'real.trades',
   'real.watchAlerts',
+  'real.watchAlertsCopied',
+  'real.weeklyBrief',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -49,6 +51,8 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'sahm:theme': (x) => typeof x === 'string',
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,
+  'real.weeklyBrief': (x) => x === null || (isObj(x) && typeof x.week === 'string' && typeof x.text === 'string'),
+  'real.watchAlertsCopied': (x) => typeof x === 'string',
   'real.watchAlerts': (x) => Array.isArray(x) && x.every((r) => isObj(r) && typeof r.symbol === 'string' && (r.dir === '<' || r.dir === '>')),
   'real.trades': (x) => Array.isArray(x) && x.every((t) => isObj(t) && typeof t.symbol === 'string' && typeof t.day === 'string' && typeof t.shares === 'number'),
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',

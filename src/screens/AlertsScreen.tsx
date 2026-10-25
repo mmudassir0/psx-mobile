@@ -5,22 +5,24 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { RootParams } from '../nav/types';
+import { watchCopiedPref, watchRulesPref } from '../portfolio/prefs';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtPrice } from '../format';
-import { makePref } from '../prefs';
-import { describeRule, rulesText, type WatchRule } from '../analysis/watch';
+import { describeRule, rulesText } from '../analysis/watch';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
 
-export const watchRulesPref = makePref<WatchRule[]>('real.watchAlerts', []);
 
 export default function AlertsScreen() {
   const nav = useNavigation();
   const rules = watchRulesPref.use();
+  const copied = watchCopiedPref.use();
+  const route = useRoute<RouteProp<RootParams, 'Alerts'>>();
   const { bySymbol } = useMarket();
-  const [sym, setSym] = useState('');
+  const [sym, setSym] = useState(route.params?.symbol ?? '');
   const [dir, setDir] = useState<'<' | '>'>('<');
   const [kind, setKind] = useState<'price' | 'ma200'>('price');
   const [px, setPx] = useState('');
@@ -111,7 +113,21 @@ export default function AlertsScreen() {
                 {text || 'Add an alert first'}
               </T>
             </View>
-            <Button label="Copy or share the list" tone="ghost" disabled={!text} onPress={() => Share.share({ message: text }).catch(() => {})} />
+            {text && text !== copied ? (
+              <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+                The list has changed since you last copied it: update the secret so the evening job checks the new one.
+              </T>
+            ) : null}
+            <Button
+              label="Copy or share the list"
+              tone="ghost"
+              disabled={!text}
+              onPress={() =>
+                Share.share({ message: text })
+                  .then((r) => (r.action !== Share.dismissedAction ? watchCopiedPref.set(text) : undefined))
+                  .catch(() => {})
+              }
+            />
             <T v="caption" style={{ lineHeight: 18 }}>
               The secret is private: GitHub never shows it in the public logs, and the job prints only how many alerts it checked.
             </T>

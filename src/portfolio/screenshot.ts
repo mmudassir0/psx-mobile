@@ -76,20 +76,20 @@ export function retryWait(message: string, header: string | null): number {
   return 20_000;
 }
 
-async function groqImages(key: string, images: ImagePart[]): Promise<string> {
+async function groqImages(key: string, images: ImagePart[], system = READ_SYSTEM, prompt = `Read the holdings from these ${images.length} screenshot(s).`, maxOut = GROQ_MAX_OUT): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: GROQ_VISION,
       temperature: 0,
-      max_tokens: GROQ_MAX_OUT,
+      max_tokens: maxOut,
       messages: [
-        { role: 'system', content: READ_SYSTEM },
+        { role: 'system', content: system },
         {
           role: 'user',
           content: [
-            { type: 'text', text: `Read the holdings from these ${images.length} screenshot(s).` },
+            { type: 'text', text: prompt },
             ...images.map((im) => ({ type: 'image_url', image_url: { url: `data:${im.mime};base64,${im.data}` } })),
           ],
         },
@@ -103,10 +103,10 @@ async function groqImages(key: string, images: ImagePart[]): Promise<string> {
   return j?.choices?.[0]?.message?.content ?? '';
 }
 
-async function groqWithWaits(key: string, images: ImagePart[], onStatus?: (s: string) => void): Promise<string> {
+async function groqWithWaits(key: string, images: ImagePart[], onStatus?: (s: string) => void, system?: string, prompt?: string, maxOut?: number): Promise<string> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await groqImages(key, images);
+      return await groqImages(key, images, system, prompt, maxOut);
     } catch (e) {
       // A daily limit asks for a wait of many minutes: give up and let Gemini try.
       if (!(e instanceof RateLimited) || attempt >= 3 || e.waitMs > 90_000) throw e;
@@ -160,4 +160,92 @@ async function readOne(keys: { groq?: string | null; gemini?: string | null }, i
     }
   }
   throw new Error(errors.join('; '));
+}
+
+// ------------------------------------------------------------ past trades ----
+
+export const TRADES_SYSTEM = `You read screenshots of a Pakistan Stock Exchange broker app's trade or order history (for example KTrade).
+Return JSON only: {"trades":[{"date":"2025-03-15","symbol":"LUCK","side":"buy","shares":50,"price":402.10}]}.
+Rules:
+- Only executed (filled) trades. Skip cancelled, rejected or pending orders, and skip deposits, withdrawals, fees and dividends.
+- date as YYYY-MM-DD; side "buy" or "sell"; shares a whole number; price the executed price per share, without commas.
+- A partly filled order counts with the filled quantity only.
+- Skip anything cut off at the top or bottom edge. Copy numbers exactly; don't guess missing ones.`;
+
+export interface ReadTrade {
+  date: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  shares: number;
+  price: number;
+}
+
+export function checkTrades(raw: string, known?: (symbol: string) => boolean, now = Date.now()): { trades: ReadTrade[]; rejected: string[] } {
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return { trades: [], rejected: ['The answer had no list of trades'] };
+  let list: Record<string, unknown>[] = [];
+  try {
+    list = JSON.parse(m[0]).trades ?? [];
+  } catch {
+    return { trades: [], rejected: ["Couldn't read the answer"] };
+  }
+  const trades: ReadTrade[] = [];
+  const rejected: string[] = [];
+  const today = new Date(now + 5 * 3600_000).toISOString().slice(0, 10);
+  for (const x of list) {
+    const symbol = String(x.symbol ?? '').trim().toUpperCase();
+    const date = String(x.date ?? '').trim();
+    const side = String(x.side ?? '').trim().toLowerCase();
+    const shares = Number(String(x.shares ?? '').replace(/,/g, ''));
+    const price = Number(String(x.price ?? '').replace(/,/g, ''));
+    const what = `${symbol || '?'} ${date || '?'}`;
+    if (!/^[A-Z][A-Z0-9.-]{1,11}$/.test(symbol)) rejected.push(`${what}: not a symbol`);
+    else if (known && !known(symbol)) rejected.push(`${what}: not a PSX symbol`);
+    else if (!/^20\d\d-\d\d-\d\d$/.test(date) || date > today || date < '2000-01-01') rejected.push(`${what}: date unreadable`);
+    else if (side !== 'buy' && side !== 'sell') rejected.push(`${what}: buy or sell unclear`);
+    else if (!(shares > 0) || !Number.isInteger(shares) || !(price > 0)) rejected.push(`${what}: shares or price missing`);
+    else trades.push({ date, symbol, side, shares, price });
+  }
+  return { trades, rejected };
+}
+
+const tradeKey = (t: ReadTrade) => `${t.date}|${t.symbol}|${t.side}|${t.shares}|${t.price}`;
+
+/** Reads trade-history screenshots one at a time; the same trade seen on two overlapping screenshots counts once. */
+export async function readTradeScreenshots(
+  keys: { groq?: string | null; gemini?: string | null },
+  images: ImagePart[],
+  known?: (s: string) => boolean,
+  onStatus?: (s: string) => void,
+): Promise<{ trades: ReadTrade[]; rejected: string[] }> {
+  if (!keys.groq && !keys.gemini) throw new Error('Add a Groq or Gemini key in Settings → AI to read screenshots');
+  const out = new Map<string, ReadTrade>();
+  const rejected: string[] = [];
+  for (let i = 0; i < images.length; i++) {
+    onStatus?.(`Reading screenshot ${i + 1} of ${images.length}…`);
+    const errors: string[] = [];
+    let raw: string | null = null;
+    if (keys.groq) {
+      try {
+        raw = await groqWithWaits(keys.groq, [images[i]], onStatus, TRADES_SYSTEM, 'Read the executed trades from this screenshot.', 900);
+      } catch (e) {
+        errors.push(`Groq: ${(e as Error).message}`);
+      }
+    }
+    if (raw == null && keys.gemini) {
+      try {
+        raw = await geminiImages(keys.gemini, FLASH.id, TRADES_SYSTEM, 'Read the executed trades from this screenshot.', [images[i]]);
+      } catch (e) {
+        errors.push(`Gemini: ${(e as Error).message}`);
+      }
+    }
+    if (raw == null) {
+      rejected.push(`screenshot ${i + 1}: ${errors.join('; ')}`);
+      continue;
+    }
+    const r = checkTrades(raw, known);
+    for (const t of r.trades) out.set(tradeKey(t), t);
+    rejected.push(...r.rejected);
+  }
+  return { trades: [...out.values()].sort((a, b) => a.date.localeCompare(b.date)), rejected: [...new Set(rejected)] };
 }

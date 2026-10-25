@@ -11,7 +11,9 @@ import { longTermList } from '../src/analysis/longterm';
 import { goalStatus, monthsUntil, needed, project } from '../src/portfolio/goal';
 import { lastMonth, summarizeMonth } from '../src/portfolio/monthly';
 import { crossedToday, parseRules, rulesText } from '../src/analysis/watch';
-import { lossOffsets, taxYearOf, taxYearSummary } from '../src/portfolio/trades';
+import { lossOffsets, replayTrades, taxYearOf, taxYearSummary } from '../src/portfolio/trades';
+import { checkTrades } from '../src/portfolio/screenshot';
+import { weekOf, weekOver, weeklyFacts } from '../src/portfolio/weekly';
 import { healthCheck } from '../src/portfolio/health';
 import type { Row } from '../src/portfolio/useReviews';
 import type { Stock } from '../src/psx/types';
@@ -173,6 +175,12 @@ check('month: return excludes the money added', near(ms.ret, 0.1) && near(ms.flo
 check('month: movers', ms.movers[0].symbol === 'ABC' && near(ms.movers[0].change, 0.1));
 check('month with no snapshots: nothing', summarizeMonth(sm, '2026-08', null) === null);
 
+// holdings typed in later, bought long ago at a higher price: no fake one-day loss
+let pasted: Snap[] = [];
+pasted = addSnapshot(pasted, row(10, 100, 100), day(0));
+pasted = addSnapshot(pasted, [...row(10, 100, 100), { symbol: 'OLD', shares: 100, avgCost: 120, price: 80, cash: [] }], day(1));
+check('adding existing holdings is not a gain or loss', near(trackReturns(pasted)[1].ret, 0), trackReturns(pasted));
+
 // ------------------------------------------------------------ price alerts
 const pr = parseRules('SYS<100, mebl > 600\nLUCK>200d; bad rule');
 check('rules parse, bad ones reported', pr.rules.length === 3 && pr.bad.length === 1 && pr.rules[2].level === 'ma200' && rulesText(pr.rules) === 'SYS<100, MEBL>600, LUCK>200d', pr);
@@ -193,6 +201,28 @@ const ty = taxYearSummary(
 check('this year only: gains, losses, net', ty.gains === 200 && ty.losses === 50 && ty.net === 150 && ty.sales === 2, ty);
 const off = lossOffsets([{ symbol: 'L1', shares: 10, avgCost: 100, price: 90 }, { symbol: 'L2', shares: 10, avgCost: 100, price: 80 }, { symbol: 'W', shares: 10, avgCost: 100, price: 120 }], 150, 0.15);
 check('biggest loss first, savings capped by the gain', off.length === 2 && off[0].symbol === 'L2' && near(off[0].saves, 150 * 0.15) && off[1].saves === 0, off);
+
+const hr0 = (symbol: string, value: number) => ({ holding: { symbol, shares: 1, avgCost: value }, price: value, value, weight: 0, review: null, dividends: null, fund: false, results: null }) as unknown as Row;
+// ------------------------------------------------------- imported trades
+const ct = checkTrades('{"trades":[{"date":"2024-03-15","symbol":"luck","side":"Buy","shares":"1,000","price":"402.10"},{"date":"15/03/24","symbol":"X","side":"buy","shares":1,"price":1},{"date":"2099-01-01","symbol":"OGDC","side":"sell","shares":5,"price":10}]}', undefined, Date.UTC(2026, 9, 25));
+check('trade screenshots: good rows kept, bad dates rejected', ct.trades.length === 1 && ct.trades[0].symbol === 'LUCK' && ct.trades[0].shares === 1000 && ct.rejected.length === 2, ct);
+const rp = replayTrades([
+  { date: '2023-01-10', symbol: 'A', side: 'buy', shares: 100, price: 10 },
+  { date: '2024-09-01', symbol: 'A', side: 'buy', shares: 100, price: 20 },
+  { date: '2025-01-05', symbol: 'A', side: 'sell', shares: 100, price: 30 },
+  { date: '2022-01-01', symbol: 'B', side: 'buy', shares: 50, price: 10 },
+  { date: '2025-02-01', symbol: 'C', side: 'sell', shares: 10, price: 5 },
+]);
+const sale = rp.records.find((r) => r.symbol === 'A' && r.side === 'sell')!;
+check('replay: profit on a sale at average cost', near(sale.realised!, (30 - 15) * 100), sale);
+check('replay: first in, first out for buy dates', rp.positions.get('A')!.shares === 100 && rp.bought.get('A') === 'recent' && rp.bought.get('B') === '2013-22', [...rp.bought]);
+check('replay: a sale without its buy is flagged', rp.incomplete.has('C') && rp.records.find((r) => r.symbol === 'C')!.realised === null);
+
+// ----------------------------------------------------------- weekly brief
+check('brief week: weekdays and weekend map to that Friday', weekOf(Date.UTC(2026, 9, 21, 7)) === '2026-10-23' && weekOf(Date.UTC(2026, 9, 25, 7)) === '2026-10-23');
+check('week over: Friday evening and weekend only', weekOver(Date.UTC(2026, 9, 23, 12)) && weekOver(Date.UTC(2026, 9, 24, 7)) && !weekOver(Date.UTC(2026, 9, 23, 6)));
+const facts = weeklyFacts([hr0('LUCK', 1000), hr0('OGDC', 500)], { LUCK: Array.from({ length: 10 }, (_, i) => ({ t: i, o: 1, h: 1, l: 1, c: 100 + i, v: 1 })), OGDC: null }, { mood: 17, indexWeek: -0.02, breadth: 0.2, now: Date.UTC(2026, 9, 23, 12) });
+check('brief facts: index, mood, holdings with weekly change', facts.includes('KSE-100 this week: -2.0%') && facts.includes('Extreme fear') && facts.includes('- LUCK, 66.7%, +4.8%') && facts.includes('- OGDC, 33.3%, n/a'), facts);
 
 // ---------------------------------------------------------- health check
 const hr = (symbol: string, value: number, sector: string, action: string | null = 'Hold') =>

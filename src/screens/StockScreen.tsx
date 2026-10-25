@@ -570,7 +570,7 @@ export default function StockScreen() {
 
         {daily && daily.length > 60 ? (
           <Section title="Likely range">
-            <RangeCard closes={daily.map((c) => c.c)} price={price ?? null} kind="stock" />
+            <RangeCard closes={daily.map((c) => c.c)} price={price ?? null} kind="stock" symbol={symbol} />
           </Section>
         ) : null}
 

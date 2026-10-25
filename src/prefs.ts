@@ -2,6 +2,13 @@
 import { useEffect, useState } from 'react';
 import { load, save } from './storage';
 
+const registry: { reload: () => Promise<void> }[] = [];
+
+/** Re-reads every setting from the phone (after a backup is restored), so nothing stale is saved over it. */
+export async function reloadAllPrefs() {
+  await Promise.all(registry.map((p) => p.reload()));
+}
+
 export function makePref<T>(key: string, fallback: T) {
   let current: T | null = null;
   const listeners = new Set<(v: T) => void>();
@@ -27,5 +34,11 @@ export function makePref<T>(key: string, fallback: T) {
     }, []);
     return v;
   };
-  return { key, get, set, use };
+  const reload = async () => {
+    current = await load<T>(key, fallback);
+    const v = current;
+    listeners.forEach((f) => f(v));
+  };
+  registry.push({ reload });
+  return { key, get, set, use, reload };
 }

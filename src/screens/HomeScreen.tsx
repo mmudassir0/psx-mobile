@@ -28,6 +28,8 @@ import { moodLabel } from '../analysis/mood';
 import { updateWidget } from '../widget/update';
 import { lastMonth, monthName } from '../portfolio/monthly';
 import { EventsCard } from '../ui/EventsCard';
+import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
+import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
@@ -68,7 +70,7 @@ export default function HomeScreen() {
   const sparks = useIndexSeries(HOME_INDICES);
   const { holdings, loaded: holdingsLoaded } = useHoldings();
   const { feed } = usePicksFeed();
-  const { rows, loading: reviewing } = useReviews(holdings, stocks, bySymbol, feed?.breadth ?? null);
+  const { rows, loading: reviewing, candles } = useReviews(holdings, stocks, bySymbol, feed?.breadth ?? null);
   useTrackSnapshot(rows, reviewing);
   const real = usePortfolioTotals(rows, bySymbol);
   const applied = appliedBonusesPref.use();
@@ -266,9 +268,9 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        <View style={styles.pad}>
-          <EventsCard rows={rows} />
-        </View>
+        {hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
+        <EventsCard rows={rows} padded />
+        <AlertsHomeCard padded />
 
         <View style={styles.pad}>
           <PicksHomeCard />

@@ -120,7 +120,7 @@ function RightsBox({ r }: { r: Row }) {
       <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
         {ri.phase === 'before'
           ? `Book closure ${fmtDay(ri.bookClosure)}: hold the shares by the end of ${fmtDay(ri.lastBuyDay)} to be offered them.`
-          : `Book closure was ${fmtDay(ri.bookClosure)}. You can pay for the new shares (subscribe) by the date in the company's notice, or sell the rights on PSX while they trade for a few days. Doing neither throws away whatever the rights are worth.`}
+          : `Book closure was ${fmtDay(ri.bookClosure)}. You can pay for the new shares (subscribe) by the date in the company's notice, or sell the rights on PSX while they trade for a few days. Doing neither throws away whatever the rights are worth. If you subscribe, record it with "Bought or sold" at the offer price once the new shares reach your account.`}
       </T>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <T v="caption" style={{ flex: 1 }}>

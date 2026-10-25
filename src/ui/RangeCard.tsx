@@ -1,6 +1,8 @@
 /** Where the price is likely to be in a day, a week and a month: an 80% range, not a forecast of direction. */
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { watchRulesPref } from '../portfolio/prefs';
 import { colors, fonts } from '../theme';
 import { fmtNum, fmtPrice } from '../format';
 import { priceRange } from '../analysis/range';
@@ -14,7 +16,9 @@ const H = [
   { days: 21, label: 'In a month' },
 ];
 
-export function RangeCard({ closes, price, kind }: { closes: number[]; price: number | null; kind: 'stock' | 'index' }) {
+export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; price: number | null; kind: 'stock' | 'index'; symbol?: string }) {
+  const nav = useNavigation();
+  const rules = watchRulesPref.use();
   const anchor = price ?? closes[closes.length - 1];
   const rows = H.map((h) => ({ ...h, r: priceRange(closes, h.days, kind) })).filter((x) => x.r);
   if (!rows.length || !(anchor > 0)) return null;
@@ -45,6 +49,35 @@ export function RangeCard({ closes, price, kind }: { closes: number[]; price: nu
           </View>
         );
       })}
+      {symbol && kind === 'stock' ? (
+        (() => {
+          const m = rows.find((x) => x.days === 21)?.r;
+          if (!m) return null;
+          const lo = Math.round((anchor / (1 + m.pct)) * 100) / 100;
+          const hi = Math.round(anchor * (1 + m.pct) * 100) / 100;
+          const has = rules.some((r) => r.symbol === symbol);
+          return (
+            <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={async () => {
+                  const rest = rules.filter((r) => r.symbol !== symbol);
+                  await watchRulesPref.set([...rest, { symbol, dir: '<', level: lo }, { symbol, dir: '>', level: hi }]);
+                  nav.navigate('Alerts', { symbol });
+                }}
+              >
+                <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>
+                  🔔 {has ? 'Reset alerts to this month\'s range' : `Alert me if it leaves this month's range`}
+                </T>
+              </Pressable>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => nav.navigate('Alerts', { symbol })}>
+                <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Other alert ›</T>
+              </Pressable>
+            </View>
+          );
+        })()
+      ) : null}
       {mpc ? (
         <T v="caption" style={{ lineHeight: 18, color: colors.gold, fontFamily: fonts.semibold }}>
           State Bank rate decision on {new Date(Date.parse(mpc + 'T12:00:00Z')).toUTCString().slice(0, 11).replace(',', '')}: moves around it have been about a fifth bigger than usual.

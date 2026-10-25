@@ -72,8 +72,11 @@ export function flowBetween(a: Snap, b: Snap): number {
     const [s0, c0, p0] = a.pos[sym] ?? [0, 0, 0];
     const [s1, c1, p1] = b.pos[sym] ?? [0, 0, p0];
     const d = s1 - s0;
+    // Shares in or out are valued at that day's price: a real trade happens close to it, and holdings
+    // typed in later (already owned) must not turn the gap between their old cost and today's price
+    // into a one-day gain or loss.
     if (d < 0) flow += d * (p1 || p0);
-    else if (d > 0 && c1 - c0 > 0.5) flow += Math.min(c1 - c0, d * (p1 || p0) * 1.5);
+    else if (d > 0 && c1 - c0 > 0.5) flow += d * (p1 || p0);
     // more shares at the same cost: bonus shares, nothing in or out
   }
   return flow;

@@ -11,6 +11,7 @@ import { Button, IconButton, T } from '../ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { readScreenshots } from '../portfolio/screenshot';
 import { aiKeys } from '../store/ai';
+import { TradeImport } from '../ui/TradeImport';
 
 export default function EditHoldingsScreen() {
   const nav = useNavigation();
@@ -108,6 +109,8 @@ export default function EditHoldingsScreen() {
         {unknown.length ? <T v="caption" style={{ color: colors.downText }}>Not found on PSX: {unknown.join(', ')}</T> : null}
         {dupes.length ? <T v="caption" style={{ color: colors.downText }}>Listed twice: {[...new Set(dupes)].join(', ')}</T> : null}
         <Button label="Save holdings" disabled={!!bad.length || !!dupes.length} onPress={save} />
+              <T style={{ fontFamily: fonts.bold, fontSize: 16, marginTop: 8 }}>Past trades</T>
+        <TradeImport />
       </ScrollView>
     </SafeAreaView>
   );

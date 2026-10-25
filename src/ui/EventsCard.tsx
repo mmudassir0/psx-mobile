@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { colors, fonts, themed } from '../theme';
+import { colors, fonts, space, themed } from '../theme';
 import { fmtNum } from '../format';
 import { holidayEvents, rateEvents, type MarketEvent } from '../analysis/events';
 import { currentRights, exDate, upcomingPayout } from '../analysis/dividends';
@@ -66,7 +66,7 @@ export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent
   return out.sort((a, b) => a.day.localeCompare(b.day) || (a.kind === 'rates' ? -1 : 1));
 }
 
-export function EventsCard({ rows }: { rows: Row[] }) {
+export function EventsCard({ rows, padded }: { rows: Row[]; padded?: boolean }) {
   const nav = useNavigation();
   const [open, setOpen] = useState<string | null>(null);
   const now = Date.now();
@@ -74,42 +74,44 @@ export function EventsCard({ rows }: { rows: Row[] }) {
   const list = useMemo(() => eventsFor(rows, now), [rows, now]);
   if (!list.length) return null;
   return (
-    <Section title="Coming up">
-      <Panel style={{ paddingVertical: 4 }}>
-        {list.slice(0, 6).map((e, i) => {
-          const key = `${e.kind}${e.symbol ?? ''}${e.day}`;
-          return (
-            <Pressable
-              key={key}
-              accessibilityRole="button"
-              onPress={() => setOpen((k) => (k === key ? null : key))}
-              onLongPress={() => e.symbol && nav.navigate('Stock', { symbol: e.symbol })}
-              style={[styles.row, i < Math.min(list.length, 6) - 1 && styles.border]}
-            >
-              <T style={{ fontSize: 17, width: 26 }}>{ICON[e.kind]}</T>
-              <View style={{ flex: 1, gap: 2 }}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{e.title}</T>
-                <T v="caption">{e.kind === 'results' ? 'Any day now' : label(e.day, today)}</T>
-                {open === key ? (
-                  <>
-                    <T v="caption" style={{ lineHeight: 18, color: colors.text2, marginTop: 2 }}>
-                      {e.detail}
-                    </T>
-                    {e.symbol ? (
-                      <Pressable accessibilityRole="link" hitSlop={8} onPress={() => nav.navigate('Stock', { symbol: e.symbol! })}>
-                        <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold, marginTop: 4 }}>Open {e.symbol} ›</T>
-                      </Pressable>
-                    ) : null}
-                  </>
-                ) : null}
-              </View>
-              <T style={{ color: colors.faint }}>{open === key ? '▴' : '▾'}</T>
-            </Pressable>
-          );
-        })}
-      </Panel>
-      <T v="caption">Days when prices tend to move more (or the market is shut), not which way. Tap one for why.</T>
-    </Section>
+    <View style={padded ? { paddingHorizontal: space.gutter } : undefined}>
+      <Section title="Coming up">
+        <Panel style={{ paddingVertical: 4 }}>
+          {list.slice(0, 6).map((e, i) => {
+            const key = `${e.kind}${e.symbol ?? ''}${e.day}`;
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                onPress={() => setOpen((k) => (k === key ? null : key))}
+                onLongPress={() => e.symbol && nav.navigate('Stock', { symbol: e.symbol })}
+                style={[styles.row, i < Math.min(list.length, 6) - 1 && styles.border]}
+              >
+                <T style={{ fontSize: 17, width: 26 }}>{ICON[e.kind]}</T>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{e.title}</T>
+                  <T v="caption">{e.kind === 'results' ? 'Any day now' : label(e.day, today)}</T>
+                  {open === key ? (
+                    <>
+                      <T v="caption" style={{ lineHeight: 18, color: colors.text2, marginTop: 2 }}>
+                        {e.detail}
+                      </T>
+                      {e.symbol ? (
+                        <Pressable accessibilityRole="link" hitSlop={8} onPress={() => nav.navigate('Stock', { symbol: e.symbol! })}>
+                          <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold, marginTop: 4 }}>Open {e.symbol} ›</T>
+                        </Pressable>
+                      ) : null}
+                    </>
+                  ) : null}
+                </View>
+                <T style={{ color: colors.faint }}>{open === key ? '▴' : '▾'}</T>
+              </Pressable>
+            );
+          })}
+        </Panel>
+        <T v="caption">Days when prices tend to move more (or the market is shut), not which way. Tap one for why.</T>
+      </Section>
+    </View>
   );
 }
 

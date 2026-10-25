@@ -154,6 +154,7 @@ async function main() {
   }
   console.log(`Portfolio alerts: ${checked} of ${symbols.length} holdings checked, ${lines.length} with news`);
   await monthlyReminder(lastDay);
+  await weeklyReminder(lastDay);
   // Local testing only: never set in the workflow, whose logs are public.
   if (process.env.PRINT_ALERTS === '1') console.log(lines.join('\n'));
   if (!lines.length || process.env.PRINT_ALERTS === '1') return;
@@ -192,6 +193,22 @@ async function monthlyReminder(lastDay: number) {
   });
   console.log(`Monthly reminder: ${res.status}`);
   if (res.ok) writeFileSync(path, month);
+}
+
+/** After Friday's close, once: the app writes the weekly brief when it is opened. */
+async function weeklyReminder(lastDay: number) {
+  if (!lastDay || process.env.PRINT_ALERTS === '1') return;
+  const day = pkDayOf(lastDay);
+  if (new Date(day + 'T12:00:00Z').getUTCDay() !== 5) return;
+  const path = join(stateDir, 'brief-sent.txt');
+  if (existsSync(path) && readFileSync(path, 'utf8').trim() === day) return;
+  const res = await fetch(`${NTFY}/${topic}`, {
+    method: 'POST',
+    body: "The week's trading is over: open Sahm for a short note on how your holdings did and what's coming next week.",
+    headers: { Title: 'Sahm: your weekly brief', Tags: 'memo', Click: 'sahm://home' },
+  });
+  console.log(`Weekly reminder: ${res.status}`);
+  if (res.ok) writeFileSync(path, day);
 }
 
 main().catch((e) => {
