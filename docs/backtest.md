@@ -132,3 +132,20 @@ average liquid stock (price only, survivors only).
   over six months), then lost to it in all 6 lists from October 2025 to March
   2026 (−6 points) as the market turned. Two per sector made no difference.
 - Only three years of results exist, so it is not in the app as advice.
+
+# Backtest of the expected range (October 2026)
+
+`MIX=0,0.3,0.6 Z=1.27,1.28,1.34 npx tsx scripts/range-study.ts <history dir> [kse100.json]`.
+80% ranges from an exponentially weighted volatility (λ 0.94), blended with
+the last year's for 5 and 21 days (30%, 60%). Multipliers chosen on 2017–21
+liquid stocks; on 2022–26 the ranges held the actual price 83.9% (1 day),
+83.2% (5 days) and 83.6% (21 days) of the time, 78–88% in every year. The
+KSE-100 trends more than single stocks: its own multipliers (1.16, 1.39,
+1.53) come from 2021–26 only.
+
+# Rate-decision days
+
+On 41 State Bank decisions from Nov 2021 to Sep 2026 the KSE-100 moved 1.07%
+on the decision day against 0.86% on a typical day; 12% of decision days moved
+over 2% (7% of all days). Dates before FY26 are from press reports and may be
+off by a day.

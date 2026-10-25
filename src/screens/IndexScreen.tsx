@@ -7,6 +7,7 @@ import type { RootParams } from '../nav/types';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtSigned } from '../format';
 import { fetchIndexConstituents, fetchSeries, INDEX_ABOUT, INDEX_NAMES } from '../psx/api';
+import { RangeCard } from '../ui/RangeCard';
 import { cached } from '../psx/cache';
 import { indexTrend, sectorRows } from '../analysis/market';
 import { marketContext } from '../ai/marketContext';
@@ -299,6 +300,13 @@ export default function IndexScreen() {
           <Stat label="Volume" value={stats ? fmtCompact(stats.volume) : '—'} />
           <Stat label="Market cap" value={stats ? fmtCompact(stats.mcap) : '—'} />
         </View>
+
+        {daily.length > 60 ? (
+          <View style={[styles.pad, { gap: 10 }]}>
+            <T style={{ fontFamily: fonts.bold, fontSize: 17 }}>Likely range</T>
+            <RangeCard closes={daily.map((c) => c.c)} price={quote?.current ?? null} kind="index" />
+          </View>
+        ) : null}
 
         {stats ? (
           <View style={[styles.pad, { gap: 8 }]}>

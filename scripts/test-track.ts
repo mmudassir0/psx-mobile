@@ -3,6 +3,8 @@ import { addSnapshot, flowBetween, indexReturns, mixReturns, trackReturns, type 
 import { moodHistory, moodLabel, moodOutcomes } from '../src/analysis/mood';
 import { calendarItems, type CalendarFeed } from '../src/analysis/calendar';
 import type { Candle, SeriesPoint } from '../src/psx/types';
+import { ewmaVol, priceRange } from '../src/analysis/range';
+import { nextRateDecision, rateEvents } from '../src/analysis/events';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -82,6 +84,22 @@ const items = calendarItems(feed, now);
 check('calendar: past book closures dropped, sorted by date', items.map((x) => x.symbol).join() === 'AAA,BBB', items.map((x) => x.symbol));
 check('calendar: yield and last buy day', near(items[0].yield!, 0.04) && items[0].lastBuyDay < items[0].bookClosure);
 check('calendar: bad file is empty', calendarItems({ v: 2 } as unknown as CalendarFeed, now).length === 0);
+
+// ----------------------------------------------------------------- range
+const zig = Array.from({ length: 300 }, (_, i) => 100 * Math.exp(i % 2 ? 0.01 : 0));
+check('volatility of ±1% swings is about 1%', near(ewmaVol(zig)!, 0.01, 1e-3), ewmaVol(zig));
+const r1 = priceRange(zig, 1)!;
+check('1-day 80% range is about ±1.3%', near(r1.pct, Math.exp(1.27 * 0.01) - 1, 1e-3) && r1.low < 100 * Math.exp(0.01) && r1.high > 100 * Math.exp(0.01), r1);
+check('a month is wider than a day', priceRange(zig, 21)!.pct > priceRange(zig, 5)!.pct && priceRange(zig, 5)!.pct > r1.pct);
+const wild = Array.from({ length: 300 }, (_, i) => 100 * Math.exp(i % 2 ? 0.2 : 0));
+check('1-day range capped at the 10% circuit', priceRange(wild, 1)!.pct <= 0.1 + 1e-9, priceRange(wild, 1));
+check('too little history: no range', priceRange(zig.slice(0, 30), 1) === null);
+check('index ranges use their own widths', priceRange(zig, 21, 'index')!.pct > priceRange(zig, 21, 'stock')!.pct);
+
+// ---------------------------------------------------------------- events
+const oct20 = Date.UTC(2026, 9, 20, 6);
+check('rate decision on 26 Oct is coming up', rateEvents(oct20).some((e) => e.day === '2026-10-26'));
+check('next rate decision within 3 days only', nextRateDecision(oct20, 3) === null && nextRateDecision(Date.UTC(2026, 9, 24, 6), 3) === '2026-10-26');
 
 if (failed) {
   console.log(`\n${failed} failed`);

@@ -24,6 +24,7 @@ import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
 import { MoodCard } from '../ui/MoodCard';
+import { EventsCard } from '../ui/EventsCard';
 import { useTrackSnapshot } from '../portfolio/track';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
@@ -244,6 +245,10 @@ export default function HomeScreen() {
             </View>
             <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
           </Pressable>
+        </View>
+
+        <View style={styles.pad}>
+          <EventsCard rows={rows} />
         </View>
 
         <View style={styles.pad}>

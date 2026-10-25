@@ -8,6 +8,7 @@ import { colors, changeColor, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtPrice, fmtSigned } from '../format';
 import { technicals } from '../analysis/technicals';
 import { ActionChip, KV, Panel, RangeBar, TabStrip } from '../ui/bits';
+import { RangeCard } from '../ui/RangeCard';
 import { TechnicalsTab } from './stock/TechnicalsTab';
 import { FundamentalsTab } from './stock/FundamentalsTab';
 import { NewsTab } from './stock/NewsTab';
@@ -566,6 +567,12 @@ export default function StockScreen() {
             <RangeBar lowLabel="52-week low" highLabel="52-week high" low={company?.week52Low ?? null} high={company?.week52High ?? null} value={price} />
           </Panel>
         </Section>
+
+        {daily && daily.length > 60 ? (
+          <Section title="Likely range">
+            <RangeCard closes={daily.map((c) => c.c)} price={price ?? null} kind="stock" />
+          </Section>
+        ) : null}
 
         <Section title="Circuit breakers">
           <Panel>
