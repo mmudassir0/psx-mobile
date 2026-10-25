@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-24T06:15:43+00:00",
+ "generatedAt": "2026-10-25T06:29:07+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -2151,7 +2151,7 @@
     "total_equity": null,
     "total_assets": "196,163",
     "total_liabilities": null,
-    "current_assets": null,
+    "current_assets": "162,294",
     "current_liabilities": "69,464",
     "borrowing_lines": [
      {
