@@ -7,7 +7,6 @@ import { technicals } from '../src/analysis/technicals';
 import { computeRatios } from '../src/analysis/ratios';
 import { analysisMessages, median, stockContext } from '../src/ai/context';
 import { comparison, mentionedSector, mentionedSymbols, ranking, screeningTable } from '../src/ai/chat';
-import { MODELS, modelById } from '../src/ai/models';
 import { decide, fundamentalPoints, verdictText } from '../src/ai/verdict';
 import { chain, parseSse, CloudError } from '../src/ai/cloud';
 import { geminiWithRetry, parseInteractionSse, testGeminiKey, toInteraction } from '../src/ai/gemini';
@@ -126,8 +125,6 @@ check('comparison lists both symbols with a verdict row', cmp.includes('measure 
 check('comparison stars the better 1-year return and the lower P/E', /1-year % \| -10\.1 ★ \| -23\.5$/m.test(cmp) && /P\/E \(lower = cheaper\) \| 12\.7 \| 7\.1 ★$/m.test(cmp), cmp.split('\n').slice(2, 6));
 const compactCtx = stockContext(pack, true);
 check('compact pack is much smaller and keeps the essentials', compactCtx.length < ctx.length * 0.7 && compactCtx.includes('TECHNICAL SCORE') && compactCtx.includes('Valuation:'), [compactCtx.length, ctx.length]);
-check('model catalog points at Qwen GGUF files on Hugging Face', MODELS.every((m) => /^https:\/\/huggingface.co\/(Qwen|unsloth)\/Qwen/.test(m.url) && m.url.endsWith('/' + m.file) && m.bytes > 5e8));
-check('model ids are unique and resolvable', new Set(MODELS.map((m) => m.id)).size === MODELS.length && modelById(MODELS[0].id) === MODELS[0] && modelById('nope') === null);
 
 const g = parseInteractionSse('event: step.delta\ndata: {"index":0,"delta":{"type":"text","text":"Hel"},"event_type":"step.delta"}\n\nevent: step.delta\ndata: {"index":0,"delta":{"type":"thought_summary","text":"x"},"event_type":"step.delta"}\ndata: {"index":0,"delta":{"type":"text","text":"lo"},"event_type":"step.delta"}\ndata: {"interaction":{"status":"completed"},"event_type":"interaction.completed"}\ndata: [DONE]\ndata: {"inde');
 check('Gemini stream: text deltas only, no thoughts, keeps partial line', g.text === 'Hello' && g.done && g.rest === 'data: {"inde' && !g.error, g);

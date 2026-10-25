@@ -140,9 +140,6 @@ jobs:
         run: |
           set -o pipefail
           ccache -z
-          # Qualcomm Hexagon DSP files for the on-phone AI: unused on this phone (and the matching
-          # engine build is left out in app.json), about 2 MB
-          rm -f ../node_modules/llama.rn/bin/arm64-v8a/libggml-htp-*.so
           ./gradlew assembleRelease --no-daemon --build-cache -PreactNativeArchitectures=arm64-v8a 2>&1 | tee -a /tmp/build.log
           ccache -s | tee -a /tmp/build.log
 

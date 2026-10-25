@@ -107,7 +107,7 @@ export function AiTab({ symbol, pack, ready }: { symbol: string; pack: StockPack
               </T>
             )}
             {running && !text ? (
-              <T v="caption">{ai.phase === 'loading' ? 'Loading the on-phone model…' : `Reading the data${engine ? ` · ${engine}` : ''}…`}</T>
+              <T v="caption">{`Reading the data${engine ? ` · ${engine}` : ''}…`}</T>
             ) : null}
             {error ? <T v="caption" style={{ color: colors.downText }}>Stopped: {error}</T> : null}
             {saved && !running ? (

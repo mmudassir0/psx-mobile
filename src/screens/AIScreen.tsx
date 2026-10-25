@@ -30,7 +30,7 @@ interface Turn {
   prompt?: ChatMessage[];
 }
 
-/** Market snapshot plus "Ask Sahm": questions answered by the on-phone model from live PSX data. */
+/** Market snapshot plus "Ask Sahm": questions answered by the online AI from live PSX data. */
 export default function AIScreen() {
   const { stocks, indices } = useMarket();
   const { market } = usePicksFeed();
@@ -108,7 +108,7 @@ export default function AIScreen() {
             </View>
           </View>
 
-          {!ai.available || ai.phase === 'downloading' || ai.phase === 'loading' ? <ModelCard /> : null}
+          {!ai.available ? <ModelCard /> : null}
 
           {turns.length === 0 ? (
             <>
@@ -179,7 +179,7 @@ export default function AIScreen() {
                   ) : t.a ? (
                     <Md text={t.a + (t.status === 'writing' ? ' ▍' : '')} size={14.5} />
                   ) : t.status === 'writing' ? (
-                    <T v="caption">{ai.phase === 'loading' ? 'Loading the model…' : 'Thinking…'}</T>
+                    <T v="caption">Thinking…</T>
                   ) : null}
                   {t.note ? (
                     <T v="caption" style={{ color: t.status === 'error' ? colors.downText : colors.faint }}>

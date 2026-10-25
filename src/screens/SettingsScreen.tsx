@@ -3,11 +3,9 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, TextInput, V
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed, ThemePref } from '../theme';
-import { gb, MODELS } from '../ai/models';
-import { AiMode, useAi } from '../store/ai';
+import { useAi } from '../store/ai';
 import { testKey } from '../ai/cloud';
 import { GEMINI_MODELS, testGeminiKey } from '../ai/gemini';
-import { ModelCard } from '../ui/ModelCard';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -18,17 +16,6 @@ import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
-
-const MODES: { key: AiMode; label: string }[] = [
-  { key: 'auto', label: 'Auto' },
-  { key: 'online', label: 'Online' },
-  { key: 'phone', label: 'On phone' },
-];
-const MODE_NOTE: Record<AiMode, string> = {
-  auto: 'Uses the online AI when you are connected and have a key, otherwise the on-phone model.',
-  online: 'Always uses the online AI. Needs internet and a Gemini or Groq key.',
-  phone: 'Always uses the downloaded model. Works offline; nothing leaves the phone.',
-};
 
 const THEMES: { key: ThemePref; label: string }[] = [
   { key: 'light', label: 'White' },
@@ -45,7 +32,6 @@ export default function SettingsScreen() {
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
   const ai = useAi();
-  const busy = ai.phase === 'downloading' || ai.phase === 'paused' || ai.phase === 'loading';
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
@@ -84,11 +70,6 @@ export default function SettingsScreen() {
       setTesting(false);
     }
   };
-  const confirmRemove = (id: string, name: string) =>
-    Alert.alert('Delete model?', `${name} will be removed from your phone. You can download it again later.`, [
-      { text: 'Keep', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => ai.remove(id) },
-    ]);
 
   const updateLine =
     upd.status === 'checking'
@@ -195,9 +176,8 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="AI">
-          <Segmented options={MODES} value={ai.mode} onChange={ai.setMode} />
           <T v="caption" style={{ lineHeight: 18 }}>
-            {MODE_NOTE[ai.mode]}
+            The AI works online. Groq is free; Gemini is optional and tried first when added.
           </T>
 
           <View style={styles.card}>
@@ -277,35 +257,6 @@ export default function SettingsScreen() {
             {keyMsg ? <T v="caption" style={{ color: keyMsg.startsWith('Key saved') ? colors.up : colors.downText }}>{keyMsg}</T> : null}
           </View>
 
-          <T v="body" style={{ fontFamily: fonts.semibold, marginTop: 6 }}>
-            On-phone model
-          </T>
-          <ModelCard inSettings />
-          <View style={styles.card}>
-            {MODELS.filter((m) => m.id !== 'qwen2.5-3b' || ai.installed[m.id]).map((m, i, list) => {
-              const have = ai.installed[m.id];
-              const active = ai.model?.id === m.id && have;
-              return (
-                <View key={m.id} style={[styles.modelRow, i < list.length - 1 && styles.border]}>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <T v="body" style={{ fontFamily: active ? fonts.bold : fonts.semibold, fontSize: 14.5 }}>
-                      {m.name}
-                      {active ? '  ✓' : ''}
-                    </T>
-                    <T v="caption">
-                      {gb(m.bytes)} · {have ? (active ? 'In use' : 'Downloaded') : 'Not downloaded'}
-                    </T>
-                  </View>
-                  {have && !active ? <Button label="Use" small tone="ghost" disabled={busy} onPress={() => ai.select(m.id)} /> : null}
-                  {have ? <Button label="Delete" small tone="ghost" disabled={busy} onPress={() => confirmRemove(m.id, m.name)} /> : null}
-                  {!have ? <Button label="Download" small disabled={busy} onPress={() => ai.startDownload(m.id)} /> : null}
-                </View>
-              );
-            })}
-          </View>
-          <T v="caption" style={{ lineHeight: 18 }}>
-            Qwen models from Hugging Face. They run fully on the phone; in On phone mode your questions never leave it.
-          </T>
         </Section>
 
         <Section title="App">

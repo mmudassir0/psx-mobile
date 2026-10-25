@@ -48,7 +48,7 @@ export class CloudError extends Error {
 
 function friendly(status: number, body: string): string {
   if (status === 401) return 'The Groq key was rejected. Check it in Settings → AI.';
-  if (status === 429) return 'Groq free limit reached for now. Try again in a minute, or use the on-phone model.';
+  if (status === 429) return 'Groq free limit reached for now. Try again in a minute.';
   try {
     const m = JSON.parse(body)?.error?.message;
     if (m) return `Groq: ${m}`;
