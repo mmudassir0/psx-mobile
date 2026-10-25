@@ -25,6 +25,7 @@ import { Button, Empty, Section, Segmented, T } from '../../ui/kit';
 import { SectorMix } from '../../ui/SectorMix';
 import { PerformanceCard } from '../../ui/PerformanceCard';
 import { ZakatCard } from '../../ui/ZakatCard';
+import { GoalCard } from '../../ui/GoalCard';
 import { useTrackSnapshot } from '../../portfolio/track';
 
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
@@ -530,9 +531,14 @@ export function MyHoldings() {
       ) : null}
 
       {view === 'invest' ? (
+        <>
+        <Section title="Your goal" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
+          <GoalCard value={total} tracked={null} />
+        </Section>
         <Section title="Where should new money go?">
           {loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}
         </Section>
+        </>
       ) : null}
 
       {view === 'risk' ? (

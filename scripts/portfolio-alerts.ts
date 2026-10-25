@@ -153,6 +153,7 @@ async function main() {
     if (notes.length) lines.push(`${sym}: ${notes.join('; ')}`);
   }
   console.log(`Portfolio alerts: ${checked} of ${symbols.length} holdings checked, ${lines.length} with news`);
+  await monthlyReminder(lastDay);
   // Local testing only: never set in the workflow, whose logs are public.
   if (process.env.PRINT_ALERTS === '1') console.log(lines.join('\n'));
   if (!lines.length || process.env.PRINT_ALERTS === '1') return;
@@ -173,6 +174,26 @@ async function main() {
   console.log(`Portfolio alerts sent: ${res.status}`);
   if (res.ok && dayKey) writeFileSync(sentPath, dayKey);
 }
+/** On the first trading day of a month, once: "your monthly summary is ready" (the numbers are worked out on the phone). */
+async function monthlyReminder(lastDay: number) {
+  if (!lastDay || process.env.PRINT_ALERTS === '1') return;
+  const month = pkDayOf(lastDay).slice(0, 7);
+  const path = join(stateDir, 'summary-sent.txt');
+  const sent = existsSync(path) ? readFileSync(path, 'utf8').trim() : '';
+  if (sent === month) return;
+  // the first time, just remember the month, so a new install isn't told about a month it didn't track
+  if (!sent) return writeFileSync(path, month);
+  const [y, m] = sent.split('-').map(Number);
+  const name = new Date(Date.UTC(y, m - 1, 15)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+  const res = await fetch(`${NTFY}/${topic}`, {
+    method: 'POST',
+    body: `How your portfolio did in ${name} against the KSE-100, dividends earned, payouts coming up and your goal. Tap to open.`,
+    headers: { Title: `Sahm: your ${name} summary`, Tags: 'calendar', Click: 'sahm://summary' },
+  });
+  console.log(`Monthly reminder: ${res.status}`);
+  if (res.ok) writeFileSync(path, month);
+}
+
 main().catch((e) => {
   // keep the log free of holdings
   console.log(`Portfolio alerts failed: ${(e as Error).message.replace(/[A-Z]{2,}/g, '…')}`);

@@ -8,6 +8,8 @@ import { nextRateDecision, rateEvents } from '../src/analysis/events';
 import { saleTax, cgtRate } from '../src/portfolio/tax';
 import { lastBuyDay, exDate, rightsMaths } from '../src/analysis/dividends';
 import { longTermList } from '../src/analysis/longterm';
+import { goalStatus, monthsUntil, needed, project } from '../src/portfolio/goal';
+import { lastMonth, summarizeMonth } from '../src/portfolio/monthly';
 
 let failed = 0;
 function check(label: string, ok: boolean, detail?: unknown) {
@@ -144,6 +146,27 @@ const lt = longTermList([
 ]);
 check('long-term: cheap vs sector, growing, above trend', lt.list.map((r) => r.symbol).join() === 'CHEAP', lt.list.map((r) => r.symbol));
 check('long-term: trend-only misses counted', lt.belowTrend === 1 && lt.valued === 7, lt);
+
+// ------------------------------------------------------------------ goal
+check('no growth: just add it up', near(project(1000, 100, 0, 12), 2200) && near(needed(1000, 2200, 0, 12), 100));
+const pm = needed(100000, 1000000, 0.15, 60);
+check('needed amount reaches the target', near(project(100000, pm, 0.15, 60), 1000000, 1), pm);
+check('months until the end of the target month', monthsUntil('2031-12', Date.UTC(2026, 9, 25)) === 62);
+const gs = goalStatus({ target: 1000000, by: '2031-12', rate: 0.15 }, 100000, 20000, Date.UTC(2026, 9, 25));
+check('goal status: on course with enough each month', gs.onTrack === true && gs.need < 20000 && gs.realTarget < 1000000, gs);
+check('last month wraps the year', lastMonth(Date.UTC(2027, 0, 10)) === '2026-12' && lastMonth(Date.UTC(2026, 9, 25)) === '2026-09');
+
+// -------------------------------------------------------- month summary
+const snapsM: Snap[] = [];
+let sm: Snap[] = [];
+const dayStr = (d: string) => d;
+sm = addSnapshot(sm, row(100, 10, 10), dayStr('2026-09-30'));
+sm = addSnapshot(sm, row(200, 10, 10), dayStr('2026-10-05')); // bought 100 at 10
+sm = addSnapshot(sm, row(200, 10, 11), dayStr('2026-10-30')); // +10%
+const ms = summarizeMonth([...snapsM, ...sm], '2026-10', null)!;
+check('month: return excludes the money added', near(ms.ret, 0.1) && near(ms.flow, 1000) && !ms.partial && ms.from === '2026-09-30', ms);
+check('month: movers', ms.movers[0].symbol === 'ABC' && near(ms.movers[0].change, 0.1));
+check('month with no snapshots: nothing', summarizeMonth(sm, '2026-08', null) === null);
 
 if (failed) {
   console.log(`\n${failed} failed`);

@@ -19,6 +19,7 @@ export const BACKUP_KEYS = [
   'chart.extras',
   'real.snapshots',
   'real.bought',
+  'real.goal',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -45,6 +46,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'sahm:theme': (x) => typeof x === 'string',
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,
+  'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
   'real.snapshots': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.day === 'string' && typeof e.value === 'number' && isObj(e.pos)),
 };

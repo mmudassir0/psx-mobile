@@ -24,6 +24,7 @@ import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
 import { MoodCard } from '../ui/MoodCard';
+import { lastMonth, monthName } from '../portfolio/monthly';
 import { EventsCard } from '../ui/EventsCard';
 import { useTrackSnapshot } from '../portfolio/track';
 
@@ -245,6 +246,16 @@ export default function HomeScreen() {
             </View>
             <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
           </Pressable>
+          {hasReal ? (
+            <Pressable accessibilityRole="button" onPress={() => nav.navigate('Summary')} style={styles.link}>
+              <T style={{ fontSize: 18 }}>📅</T>
+              <View style={{ flex: 1 }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 14.5 }}>Monthly summary and goal</T>
+                <T v="caption">How {monthName(lastMonth())} went against the KSE-100, and whether you're on course</T>
+              </View>
+              <T style={{ color: colors.faint, fontSize: 18 }}>›</T>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.pad}>
