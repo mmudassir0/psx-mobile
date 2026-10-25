@@ -46,7 +46,11 @@ function weekChange(c: Candle[] | null | undefined): number | null {
   return a > 0 ? c[c.length - 1].c / a - 1 : null;
 }
 
-export function weeklyFacts(rows: Row[], candles: Record<string, Candle[] | null>, opts: { mood: number | null; indexWeek: number | null; breadth: number | null; now?: number }): string {
+export function weeklyFacts(
+  rows: Row[],
+  candles: Record<string, Candle[] | null>,
+  opts: { mood: number | null; indexWeek: number | null; breadth: number | null; now?: number; news?: { t: number; title: string; source: string; symbols: string[]; market: boolean }[] },
+): string {
   const now = opts.now ?? Date.now();
   const total = rows.reduce((a, r) => a + r.value, 0);
   const lines: string[] = [];
@@ -67,6 +71,15 @@ export function weeklyFacts(rows: Row[], candles: Record<string, Candle[] | null
     else if (r.results?.meetingNotice) notes.push('board meeting called, results due soon');
     lines.push(`- ${r.holding.symbol}, ${((r.value / (total || 1)) * 100).toFixed(1)}%, ${w == null ? 'n/a' : pc(w)}${notes.length ? `; ${notes.join('; ')}` : ''}`);
   }
+  // headlines this week about the holdings, and the biggest market ones, so the note can say why things moved
+  const held = new Set(rows.map((r) => r.holding.symbol));
+  const week = (opts.news ?? []).filter((n) => now - n.t < 7 * 864e5);
+  const about = week.filter((n) => n.symbols.some((s) => held.has(s))).slice(0, 8);
+  const market = week.filter((n) => n.market && !about.includes(n)).slice(0, 6);
+  if (about.length || market.length) {
+    lines.push('Headlines this week (title only; the story itself was not read):');
+    for (const n of [...about, ...market]) lines.push(`- ${pkDay(n.t)} ${n.source}: ${n.title}${n.symbols.length ? ` [${n.symbols.join(', ')}]` : ''}`);
+  }
   return lines.join('\n');
 }
 
@@ -74,7 +87,7 @@ export const BRIEF_SYSTEM = `You write a short weekly note about the user's Paki
 The user invests for about five years. Use only the facts given; never invent prices, news or reasons. If a reason for a move isn't in the facts, don't guess one.
 Write in plain English, under 180 words, no headings, no tables:
 1. One or two sentences on the week: the portfolio against the KSE-100 and the market mood.
-2. The two or three things that mattered most: biggest movers, results out, anything rated Review or Trim.
+2. The two or three things that mattered most: biggest movers, results out, anything rated Review or Trim. If a headline clearly relates to a move, you may connect them, saying it was in the news; don't claim it caused the move.
 3. What to look at next week: payouts with their last day to buy, results due.
 Don't tell the user to buy or sell; say what Sahm's ratings say and what to check. Use Rs and %, round numbers.`;
 

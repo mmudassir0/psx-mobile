@@ -12,6 +12,7 @@ import { RangeCard } from '../ui/RangeCard';
 import { TechnicalsTab } from './stock/TechnicalsTab';
 import { FundamentalsTab } from './stock/FundamentalsTab';
 import { NewsTab } from './stock/NewsTab';
+import { StockPress } from '../ui/StockPress';
 import { ProfileTab } from './stock/ProfileTab';
 import { PeersTab } from './stock/PeersTab';
 import { AiTab } from './stock/AiTab';
@@ -666,7 +667,7 @@ export default function StockScreen() {
         </Section>
       </View>
     );
-  else content = <View style={pad}><NewsTab items={news} loading={!company && !companyErr} /></View>;
+  else content = <View style={pad}><StockPress symbol={symbol} /><NewsTab items={news} loading={!company && !companyErr} /></View>;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>

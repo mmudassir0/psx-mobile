@@ -22,6 +22,7 @@ export type RootParams = {
   Dividends: undefined;
   Summary: undefined;
   Alerts: { symbol?: string } | undefined;
+  News: undefined;
 };
 
 declare global {

@@ -103,6 +103,10 @@ export const ALIASES: Record<string, string[]> = {
 export const MARKET_WORDS =
   /\b(PSX|KSE[- ]?100|KMI[- ]?30|stock (market|exchange)|bourse|equities|shares (rose|fell|gain|lose|close)|SBP|State Bank|policy rate|interest rate|monetary policy|MPC|IMF|inflation|CPI|rupee|dollar rate|forex reserves|current account|remittances|budget|circular debt|T-?bills?|PIBs?|sukuk|petrol price|fuel prices?|gas prices?|electricity tariff|exports|imports|trade deficit|GDP|growth rate|Moody|Fitch|S&P)\b/i;
 
+/** A market story about another country (the Business Recorder markets feed carries many). */
+const FOREIGN = /\b(India|Indian|Singapore|Sri Lanka\w*|Japan\w*|BOJ|Fed|Federal Reserve|US|U\.S\.|America\w*|China|Chinese|UK|Britain|British|Europe\w*|euro|ECB|yen|yuan|Bangladesh\w*|Asian|Gulf|Saudi|global|world)\b/i;
+const PAKISTAN = /\b(Pakistan\w*|PSX|KSE|KMI|SBP|State Bank|Karachi|Lahore|Islamabad|federal government|govt)\b/i;
+
 const GENERIC = new Set(['pakistan', 'limited', 'ltd', 'company', 'co', 'corporation', 'corp', 'industries', 'the', 'and', '&', 'of', 'mills', 'bank', 'pak', 'international', 'group', 'holdings', 'textile', 'textiles', 'investment', 'investments', 'fund']);
 
 /** The distinctive start of a PSX company name, e.g. "Lucky Cement Limited" → "Lucky Cement". */
@@ -188,8 +192,9 @@ export function buildNews(collected: { source: number; item: RawItem }[], matche
     if (now - item.t > days * 864e5 || item.t > now + 3600_000) continue;
     const key = item.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').slice(0, 8).join(' ');
     if (seen.has(key) || seen.has(item.url)) continue;
-    const symbols = matcher.match(item.title + ' ' + item.snippet);
-    const market = MARKET_WORDS.test(item.title);
+    // PSX itself is listed as a company; its name in a headline means the market, not the stock
+    const symbols = matcher.match(item.title + ' ' + item.snippet).filter((s) => s !== 'PSX');
+    const market = MARKET_WORDS.test(item.title) && !(FOREIGN.test(item.title) && !PAKISTAN.test(item.title));
     if (!symbols.length && !market) continue;
     seen.add(key);
     seen.add(item.url);

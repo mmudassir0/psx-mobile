@@ -13,6 +13,7 @@ import { lastMonth, summarizeMonth } from '../src/portfolio/monthly';
 import { crossedToday, parseRules, rulesText } from '../src/analysis/watch';
 import { lossOffsets, replayTrades, taxYearOf, taxYearSummary } from '../src/portfolio/trades';
 import { checkTrades } from '../src/portfolio/screenshot';
+import { buildMatcher, buildNews, coreName, parseRss } from '../src/analysis/news';
 import { weekOf, weekOver, weeklyFacts } from '../src/portfolio/weekly';
 import { healthCheck } from '../src/portfolio/health';
 import type { Row } from '../src/portfolio/useReviews';
@@ -203,6 +204,21 @@ const off = lossOffsets([{ symbol: 'L1', shares: 10, avgCost: 100, price: 90 }, 
 check('biggest loss first, savings capped by the gain', off.length === 2 && off[0].symbol === 'L2' && near(off[0].saves, 150 * 0.15) && off[1].saves === 0, off);
 
 const hr0 = (symbol: string, value: number) => ({ holding: { symbol, shares: 1, avgCost: value }, price: value, value, weight: 0, review: null, dividends: null, fund: false, results: null }) as unknown as Row;
+// ------------------------------------------------------------------ news
+check('core names', coreName('Lucky Cement Limited') === 'Lucky Cement' && coreName('Pakistan Limited') === null && coreName('Lucky Limited') === null, [coreName('Lucky Cement Limited'), coreName('Interloop Limited')]);
+const mm = buildMatcher([
+  { symbol: 'LUCK', name: 'Lucky Cement Limited' },
+  { symbol: 'ILP', name: 'Interloop Limited' },
+  { symbol: 'OGDC', name: 'Oil & Gas Development Company Limited' },
+  { symbol: 'PSX', name: 'Pakistan Stock Exchange Limited' },
+]);
+check('matcher: names, aliases, symbols', mm.match("Pakistan's Interloop to expand").join() === 'ILP' && mm.match('OGDCL finds gas').join() === 'OGDC' && mm.match('Lucky cement sales up').join() === 'LUCK' && mm.match('lucky draw winners').length === 0, mm.match('OGDCL finds gas'));
+const rss = '<rss><channel><item><title><![CDATA[PSX down 4,045 points]]></title><link>https://x.pk/1</link><pubDate>Sat, 24 Oct 26 21:06:42 +0500</pubDate></item><item><title>Indian rupee falls as inflation bites</title><link>https://x.pk/2</link><pubDate>Sat, 24 Oct 2026 10:00:00 +0500</pubDate></item><item><title>Cricket: Pakistan win</title><link>https://x.pk/3</link><pubDate>Sat, 24 Oct 2026 10:00:00 +0500</pubDate></item><item><title>Lucky Cement profit rises &amp; dividend</title><link>https://x.pk/4</link><pubDate>Sat, 24 Oct 2026 09:00:00 +0500</pubDate></item></channel></rss>';
+const parsedRss = parseRss(rss);
+check('rss: parses titles, links, both date styles, entities', parsedRss.length === 4 && parsedRss[3].title === 'Lucky Cement profit rises & dividend' && new Date(parsedRss[0].t).getUTCFullYear() === 2026, parsedRss.map((x) => x.title));
+const built = buildNews(parsedRss.map((item) => ({ source: 0, item })), mm, Date.UTC(2026, 9, 25));
+check('news: market stories kept, foreign and off-topic dropped, PSX not a company tag', built.length === 2 && built.some((r) => r[2].startsWith('PSX') && r[5] && !r[4].length) && built.some((r) => r[4].join() === 'LUCK'), built.map((r) => [r[2], r[4], r[5]]));
+
 // ------------------------------------------------------- imported trades
 const ct = checkTrades('{"trades":[{"date":"2024-03-15","symbol":"luck","side":"Buy","shares":"1,000","price":"402.10"},{"date":"15/03/24","symbol":"X","side":"buy","shares":1,"price":1},{"date":"2099-01-01","symbol":"OGDC","side":"sell","shares":5,"price":10}]}', undefined, Date.UTC(2026, 9, 25));
 check('trade screenshots: good rows kept, bad dates rejected', ct.trades.length === 1 && ct.trades[0].symbol === 'LUCK' && ct.trades[0].shares === 1000 && ct.rejected.length === 2, ct);

@@ -28,6 +28,7 @@ import { moodLabel } from '../analysis/mood';
 import { updateWidget } from '../widget/update';
 import { lastMonth, monthName } from '../portfolio/monthly';
 import { EventsCard } from '../ui/EventsCard';
+import { NewsHomeCard } from '../ui/NewsHomeCard';
 import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
 import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
@@ -269,6 +270,7 @@ export default function HomeScreen() {
         </View>
 
         {hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
+        <NewsHomeCard />
         <EventsCard rows={rows} padded />
         <AlertsHomeCard padded />
 

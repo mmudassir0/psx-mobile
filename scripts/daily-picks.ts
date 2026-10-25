@@ -29,6 +29,7 @@ import {
   statsOf,
   Universe,
 } from '../src/picks/build';
+import { buildMatcher, buildNews, NEWS_FEEDS, parseRss, type NewsFeed, type RawItem } from '../src/analysis/news';
 import { fetchCompany, fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
 import { longTermList, monthReturn, LT, type LtFeed, type LtMonth } from '../src/analysis/longterm';
 import { cashDividends, dividends } from '../src/analysis/dividends';
@@ -406,6 +407,30 @@ async function main() {
     }
   } catch (e) {
     console.log(`long-term list failed: ${(e as Error).message}`);
+  }
+
+  // 10. News headlines from Pakistani business feeds, tagged to the companies they name.
+  try {
+    const companies = (syms ?? []).filter((x) => !/ETF|MODARABA|MUTUAL|FUND|BOND|TFC|SUKUK/i.test(x.sectorName ?? '')).map((x) => ({ symbol: x.symbol, name: x.name }));
+    const collected: { source: number; item: RawItem }[] = [];
+    for (let i = 0; i < NEWS_FEEDS.length; i++) {
+      const xml = await fetch(NEWS_FEEDS[i].url, { headers: { 'User-Agent': 'Mozilla/5.0 (Sahm news reader)' }, signal: AbortSignal.timeout(20_000) })
+        .then((r) => (r.ok ? r.text() : ''))
+        .catch(() => '');
+      for (const item of parseRss(xml)) collected.push({ source: i, item });
+    }
+    // keep stories already collected on earlier runs, so the last few days stay even when a feed only lists its newest items
+    const newsPath = join(stateDir, 'news.json');
+    const old: NewsFeed | null = existsSync(newsPath) ? JSON.parse(readFileSync(newsPath, 'utf8')) : null;
+    for (const r of old?.rows ?? []) collected.push({ source: r[1], item: { title: r[2], url: r[3], t: r[0], snippet: '' } });
+    const rows = companies.length ? buildNews(collected, buildMatcher(companies), now, 7) : [];
+    if (rows.length) {
+      const feed: NewsFeed = { v: 1, kind: 'news', generatedAt: new Date(now).toISOString(), sources: NEWS_FEEDS.map((f) => f.source), rows };
+      writeFileSync(newsPath, JSON.stringify(feed));
+    }
+    console.log(`news: ${rows.length} kept of ${collected.length}, ${rows.filter((r) => r[4].length).length} name a company`);
+  } catch (e) {
+    console.log(`news failed: ${(e as Error).message}`);
   }
 
   let mbody = JSON.stringify(market);

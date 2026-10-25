@@ -9,6 +9,7 @@ import { useAi } from '../store/ai';
 import type { Row } from '../portfolio/useReviews';
 import { briefMessages, briefPref, weekOf, weekOver, weeklyFacts } from '../portfolio/weekly';
 import { useMood } from './MoodCard';
+import { useNews } from './NewsList';
 import { Panel } from './bits';
 import { Section, T } from './kit';
 
@@ -16,6 +17,7 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
   const ai = useAi();
   const brief = briefPref.use();
   const { data: mood } = useMood();
+  const { items: news } = useNews();
   const [writing, setWriting] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
     try {
       const idx = await cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).catch(() => null);
       const indexWeek = idx && idx.length > 6 ? idx[idx.length - 1].v / idx[idx.length - 6].v - 1 : null;
-      const facts = weeklyFacts(rows, candles, { mood: mood?.now.score ?? null, indexWeek, breadth });
+      const facts = weeklyFacts(rows, candles, { mood: mood?.now.score ?? null, indexWeek, breadth, news });
       let text = '';
       const run = await ai.run(() => briefMessages(facts), (t) => {
         text += t;
