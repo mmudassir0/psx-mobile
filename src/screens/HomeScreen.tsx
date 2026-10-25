@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,7 +23,9 @@ import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { Icon } from '../ui/kit';
-import { MoodCard } from '../ui/MoodCard';
+import { MoodCard, useMood } from '../ui/MoodCard';
+import { moodLabel } from '../analysis/mood';
+import { updateWidget } from '../widget/update';
 import { lastMonth, monthName } from '../portfolio/monthly';
 import { EventsCard } from '../ui/EventsCard';
 import { useTrackSnapshot } from '../portfolio/track';
@@ -72,6 +74,12 @@ export default function HomeScreen() {
   const applied = appliedBonusesPref.use();
   const todo = useMemo(() => (reviewing ? [] : todoItems(rows, applied)), [rows, applied, reviewing]);
   const hasReal = holdingsLoaded && holdings.length > 0;
+  const { data: mood } = useMood();
+  // keep the home screen widget current (only once real prices are in)
+  useEffect(() => {
+    if (!hasReal || reviewing || !ready || !(real.total > 0)) return;
+    updateWidget({ value: real.total, today: real.today, todayPct: real.todayPct, pnlPct: real.pnlPct, mood: mood?.now.score ?? null, moodLabel: mood ? moodLabel(mood.now.score) : null, at: Date.now() });
+  }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood]);
 
   const val = valuePortfolio(account, (s) => bySymbol.get(s));
   const homeIdx = HOME_INDICES.map((c) => indices.find((i) => i.code === c)).filter(Boolean) as typeof indices;

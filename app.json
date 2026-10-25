@@ -3,7 +3,7 @@
     "name": "Sahm",
     "slug": "sahm-app",
     "scheme": "sahm",
-    "version": "0.28.0",
+    "version": "0.29.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -58,6 +58,25 @@
           "photosPermission": "Sahm reads your broker screenshots to fill in your holdings.",
           "cameraPermission": false,
           "microphonePermission": false
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Portfolio",
+              "label": "Sahm portfolio",
+              "description": "Your portfolio value, today's change and the market mood",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-preview.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
         }
       ]
     ]
