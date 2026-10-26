@@ -31,6 +31,15 @@ export default function RebalanceScreen() {
   const due = planDue(plan);
   const fromParams = Number(route.params?.cash) || 0;
   const [cashText, setCashText] = useState(String(fromParams || (due ? plan.amount : 50000)));
+  // the plan loads from the phone after the first draw: on plan day, start from its amount
+  const [planApplied, setPlanApplied] = useState(false);
+  React.useEffect(() => {
+    if (!planApplied && due && !fromParams) {
+      setCashText(String(plan.amount));
+      setMode('cash');
+      setPlanApplied(true);
+    }
+  }, [due, planApplied, fromParams, plan.amount]);
   const [extra, setExtra] = useState<string[]>([]);
   const [q, setQ] = useState('');
   const [draft, setDraft] = useState<Record<string, string>>({});

@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { sharesFromTrades, snapshotLookup, statementHtml, taxStatement } from '../src/portfolio/taxStatement';
 import { crossedToday, describeRule, parseRules, rulesText } from '../src/analysis/watch';
 import { nextPlanDays, planDayIn, planDue } from '../src/portfolio/planDates';
 import { dueNotes, inMonths, moved } from '../src/portfolio/noteDates';
@@ -162,6 +163,35 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('yield crosses 9% as the price falls', crossedToday(rules[0], [350, 340, 330], { ttmDps: 30 }) && !crossedToday(rules[0], [350, 330, 320], { ttmDps: 30 }));
   check('below the fair value range', crossedToday(rules[1], [105, 101, 99], { fair: { low: 100, high: 140 } }) && !crossedToday(rules[1], [105, 101, 99], {}));
   check('above the fair value range', crossedToday(rules[2], [130, 139, 141], { fair: { low: 100, high: 140 } }));
+}
+
+// tax statement
+{
+  const trades = [
+    { day: '2025-08-01', symbol: 'AAA', side: 'buy' as const, shares: 100, price: 50, avgCost: 50, realised: null },
+    { day: '2025-12-10', symbol: 'AAA', side: 'sell' as const, shares: 40, price: 80, avgCost: 50, realised: 1200 },
+    { day: '2026-02-01', symbol: 'BBB', side: 'sell' as const, shares: 10, price: 40, avgCost: 60, realised: -200 },
+    { day: '2026-08-01', symbol: 'AAA', side: 'sell' as const, shares: 10, price: 90, avgCost: 50, realised: 400 }, // next tax year
+  ];
+  check('shares at a date, walked back from today through the trades', sharesFromTrades(trades, 'AAA', '2025-11-30', 50) === 100 && sharesFromTrades(trades, 'AAA', '2026-01-01', 50) === 60 && sharesFromTrades(trades, 'ZZZ', '2026-01-01', 5) === null);
+  const bc = (d: string) => Date.parse(d + 'T00:00:00+05:00');
+  const div = (list: { dps: number; bookClosure: number }[]) => ({ faceValue: 10, ttm: 0, ttmYield: null, years: [], cut: null, lower: null, list: list.map((p) => ({ ...p, announced: p.bookClosure - 20 * 864e5, period: null, periodType: null, bonusPct: 0 })) });
+  const st = taxStatement({
+    year: 2026,
+    trades,
+    status: 'filer',
+    bought: {},
+    holdings: [
+      { symbol: 'AAA', shares: 50, sector: 'Cement', dividends: div([{ dps: 5, bookClosure: bc('2025-10-15') }, { dps: 3, bookClosure: bc('2026-03-01') }, { dps: 9, bookClosure: bc('2026-09-01') }]) },
+      { symbol: 'CCC', shares: 20, sector: 'Power Generation & Distribution', dividends: div([{ dps: 2, bookClosure: bc('2026-04-10') }]) },
+    ],
+    snapshotShares: snapshotLookup([{ day: '2026-04-01', pos: { CCC: [30, 0, 0] } }]),
+  });
+  check('sales in the tax year only, losses set off before tax', st.sales.length === 2 && st.gains === 1200 && st.losses === 200 && st.net === 1000 && Math.abs(st.cgt - 150) < 1e-9, st);
+  check('dividends on the shares held at book closure', st.dividends.length === 3 && st.dividends[0].shares === 100 && st.dividends[1].shares === 60 && st.dividends[2].symbol === 'CCC' && st.dividends[2].shares === 30, st.dividends);
+  check('tax withheld by payer (power 7.5%)', Math.abs(st.divWithheld - (500 * 0.15 + 180 * 0.15 + 60 * 0.075)) < 1e-9 && st.assumed.length === 0, st.divWithheld);
+  const html = statementHtml(st, { name: 'M & co', status: 'filer', made: '27 Oct 2026' });
+  check('statement page has the totals and escapes text', html.includes('tax year 2026') && html.includes('Rs 1,000') && html.includes('M &amp; co') && !html.includes('M & co'));
 }
 
 if (failed) {

@@ -95,7 +95,9 @@ export default function AlertsScreen() {
                   <View key={`${r.symbol}${r.dir}${r.level}`} style={[styles.row, i < rules.length - 1 && styles.border]}>
                     <View style={{ flex: 1, gap: 2 }}>
                       <T style={{ fontFamily: fonts.semibold, fontSize: 14 }}>{describeRule(r)}</T>
-                      {now != null ? (
+                      {r.yield ? (
+                        <T v="caption">Yield now {bySymbol.get(r.symbol)?.divYield != null ? `${bySymbol.get(r.symbol)!.divYield!.toFixed(1)}%` : 'not known'}</T>
+                      ) : now != null ? (
                         <T v="caption">
                           Now {fmtPrice(now)}
                           {gap != null ? ` · ${Math.abs(gap * 100).toFixed(1)}% ${gap >= 0 ? 'above' : 'below'} the line` : ''}

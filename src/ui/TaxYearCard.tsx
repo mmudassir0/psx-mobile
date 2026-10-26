@@ -1,6 +1,7 @@
 /** This tax year's share gains from sales you recorded, the tax on them, and losing holdings that could offset it. */
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { colors, fonts } from '../theme';
 import { fmtNum } from '../format';
 import type { Row } from '../portfolio/useReviews';
@@ -12,6 +13,7 @@ import { Panel } from './bits';
 import { T } from './kit';
 
 export function TaxYearCard({ rows }: { rows: Row[] }) {
+  const nav = useNavigation();
   const trades = tradesPref.use();
   const status = taxStatusPref.use();
   const year = taxYearOf(pkToday());
@@ -62,6 +64,9 @@ export function TaxYearCard({ rows }: { rows: Row[] }) {
         own the shares, so it's worth it only for holdings you'd sell anyway. NCCPL works out the actual tax through your broker; this
         uses the rate for shares bought from July 2024.
       </T>
+      <Pressable accessibilityRole="button" onPress={() => nav.navigate('TaxStatement')} hitSlop={6}>
+        <T style={{ fontFamily: fonts.semibold, color: colors.gold, fontSize: 13.5 }}>Full statement for your tax return (PDF) ›</T>
+      </Pressable>
     </Panel>
   );
 }

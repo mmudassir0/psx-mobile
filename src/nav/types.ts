@@ -29,6 +29,7 @@ export type RootParams = {
   Income: undefined;
   Rebalance: { cash?: number | string } | undefined;
   WhatIf: undefined;
+  TaxStatement: undefined;
 };
 
 declare global {
