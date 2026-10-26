@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { nextPlanDays, planDayIn, planDue } from '../src/portfolio/planDates';
 import { dueNotes, inMonths, moved } from '../src/portfolio/noteDates';
 import { breakEven, tradeCost } from '../src/portfolio/costs';
 import { moneyWeightedRate, whatIf } from '../src/analysis/whatif';
@@ -138,6 +139,16 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('review date months ahead, in Pakistan time', inMonths(6, now) === '2027-04-27' && inMonths(3, now) === '2027-01-27', inMonths(6, now));
   check('due notes: on or before today, oldest first', dueNotes({ A: { checkOn: '2026-10-27' }, B: { checkOn: '2026-09-01' }, C: { checkOn: '2026-10-28' }, D: { checkOn: null } }, now).join() === 'B,A');
   check('then → now', moved(12, 7.1, (v) => `${v.toFixed(1)}%`) === '12.0% → 7.1%' && moved(null, 3, String) === null);
+}
+
+// monthly plan
+{
+  check('plan day on a weekend moves to Monday', planDayIn(2026, 11, 5) === '2026-12-07'); // 5 Dec 2026 is a Saturday
+  check('plan day on a PSX holiday moves on', planDayIn(2026, 10, 9) === '2026-11-10'); // Iqbal Day
+  const now = Date.parse('2026-10-26T07:00:00Z');
+  check('next plan days from today', nextPlanDays(5, now).join() === '2026-11-05,2026-12-07,2027-01-05', nextPlanDays(5, now));
+  const plan = { on: true, amount: 20000, day: 5, doneMonth: null as string | null };
+  check('due after the day until marked done', planDue(plan, now) && !planDue({ ...plan, doneMonth: '2026-10' }, now) && !planDue({ ...plan, on: false }, now) && !planDue({ ...plan, day: 28 }, now));
 }
 
 if (failed) {

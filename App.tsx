@@ -36,6 +36,7 @@ import { loadLiveFundamentals } from './src/psx/fundamentals';
 import { maybeBackup } from './src/autoBackup';
 import { installReminderHandlers } from './src/notify';
 import { rescheduleNotes } from './src/portfolio/notes';
+import { schedulePlan } from './src/portfolio/monthlyPlan';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 setStorage(diskStore);
@@ -44,7 +45,7 @@ loadLiveFundamentals();
 // the weekly backup, once the app has settled (it reads everything it saves)
 setTimeout(() => maybeBackup(), 15_000);
 installReminderHandlers();
-setTimeout(() => rescheduleNotes(), 20_000);
+setTimeout(() => (rescheduleNotes(), schedulePlan()), 20_000);
 AppState.addEventListener('change', (st) => st === 'active' && maybeBackup());
 
 const Stack = createNativeStackNavigator<RootParams>();

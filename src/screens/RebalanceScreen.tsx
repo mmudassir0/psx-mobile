@@ -1,8 +1,10 @@
 /** Set your own target weights; Sahm works out exactly which shares to buy (or sell) to get back to them, with the tax on any sale. */
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { RootParams } from '../nav/types';
+import { markPlanDone, planDue, planPref, setPlan } from '../portfolio/monthlyPlan';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtNum } from '../format';
 import { useHoldings } from '../portfolio/holdings';
@@ -24,7 +26,11 @@ export default function RebalanceScreen() {
   const tax = taxStatusPref.use();
   const bought = boughtPref.use();
   const [mode, setMode] = useState<'cash' | 'both'>('cash');
-  const [cashText, setCashText] = useState('50000');
+  const route = useRoute<RouteProp<RootParams, 'Rebalance'>>();
+  const plan = planPref.use();
+  const due = planDue(plan);
+  const fromParams = Number(route.params?.cash) || 0;
+  const [cashText, setCashText] = useState(String(fromParams || (due ? plan.amount : 50000)));
   const [extra, setExtra] = useState<string[]>([]);
   const [q, setQ] = useState('');
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -142,6 +148,17 @@ export default function RebalanceScreen() {
               ))}
             </Section>
 
+            <PlanBox />
+            {due ? (
+              <Panel style={{ paddingVertical: 12, gap: 8, borderColor: colors.up, borderWidth: 1 }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>This month's Rs {fmtNum(plan.amount, 0)}</T>
+                <T v="caption" style={{ lineHeight: 17 }}>
+                  The list below shows what to buy with it. Once you've placed the orders, mark the month done and record the buys in Edit holdings.
+                </T>
+                <Button label="I've invested this month" small onPress={() => markPlanDone()} />
+              </Panel>
+            ) : null}
+
             <Section title="How">
               <Segmented
                 options={[
@@ -239,3 +256,64 @@ const styles = themed(() =>
     amount: { width: 130, height: 42, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12, fontSize: 15, color: colors.text, fontFamily: fonts.monoMedium, textAlign: 'right' },
   }),
 );
+
+/** The monthly plan: amount and day, with a reminder on that day. */
+function PlanBox() {
+  const plan = planPref.use();
+  const [amt, setAmt] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(null);
+  return (
+    <Section title="Monthly plan">
+      <Panel style={{ paddingVertical: 12, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <T v="body" style={{ flex: 1 }}>
+            Remind me every month
+          </T>
+          <Switch value={plan.on} onValueChange={(on) => setPlan({ ...plan, on })} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
+        </View>
+        {plan.on ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <T v="body" style={{ flex: 1, color: colors.text2 }}>
+                Amount (Rs)
+              </T>
+              <TextInput
+                value={amt ?? String(plan.amount)}
+                onChangeText={setAmt}
+                onBlur={() => {
+                  const v = Number((amt ?? '').replace(/[^\d]/g, ''));
+                  if (v > 0) setPlan({ ...plan, amount: v });
+                  setAmt(null);
+                }}
+                keyboardType="numeric"
+                style={styles.amount}
+                accessibilityLabel="Monthly amount"
+              />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <T v="body" style={{ flex: 1, color: colors.text2 }}>
+                Day of the month (1–28)
+              </T>
+              <TextInput
+                value={day ?? String(plan.day)}
+                onChangeText={setDay}
+                onBlur={() => {
+                  const v = Math.round(Number(day));
+                  if (v >= 1 && v <= 28) setPlan({ ...plan, day: v });
+                  setDay(null);
+                }}
+                keyboardType="numeric"
+                style={[styles.amount, { width: 70 }]}
+                accessibilityLabel="Day of the month"
+              />
+            </View>
+            <T v="caption" style={{ lineHeight: 17 }}>
+              On that day (the next trading day if the market is shut) your phone reminds you, and this screen shows what to buy with it from your
+              targets above.
+            </T>
+          </>
+        ) : null}
+      </Panel>
+    </Section>
+  );
+}

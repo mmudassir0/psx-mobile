@@ -11,6 +11,7 @@ import { reloadJournal } from '../journal/store';
 import { reloadSnapshots } from '../portfolio/track';
 import { reloadAllPrefs } from '../prefs';
 import { rescheduleNotes } from '../portfolio/notes';
+import { schedulePlan } from '../portfolio/monthlyPlan';
 import type { Holding } from '../portfolio/review';
 import { useUser } from '../store/user';
 import { useTheme } from '../store/theme';
@@ -47,6 +48,7 @@ export function BackupCard() {
     reloadJournal();
     reloadSnapshots();
     rescheduleNotes();
+    schedulePlan();
     await reloadAllPrefs();
     // the screens already open take the restored data now, so nothing old is saved over it
     await reload();

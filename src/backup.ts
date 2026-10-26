@@ -30,6 +30,7 @@ export const BACKUP_KEYS = [
   'real.targets',
   'real.costs',
   'real.notes',
+  'real.monthlyPlan',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -65,6 +66,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',
   'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
+  'real.monthlyPlan': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.amount === 'number' && typeof x.day === 'number',
   'real.notes': (x) => isObj(x) && Object.values(x).every((n) => isObj(n) && typeof n.why === 'string' && isObj(n.then)),
   'real.costs': (x) => isObj(x) && typeof x.brokerage === 'number' && typeof x.salesTax === 'number' && typeof x.minPerShare === 'number',
   'real.targets': (x) => isObj(x) && Object.values(x).every((v) => typeof v === 'number' && v >= 0),

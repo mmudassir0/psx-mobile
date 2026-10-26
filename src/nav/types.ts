@@ -27,7 +27,7 @@ export type RootParams = {
   Find: undefined;
   Compare: { symbols?: string[] } | undefined;
   Income: undefined;
-  Rebalance: undefined;
+  Rebalance: { cash?: number | string } | undefined;
   WhatIf: undefined;
 };
 
