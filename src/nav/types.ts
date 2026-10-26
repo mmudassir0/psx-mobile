@@ -34,6 +34,7 @@ export type RootParams = {
   Results: undefined;
   Sectors: undefined;
   Announcements: undefined;
+  Export: undefined;
 };
 
 declare global {

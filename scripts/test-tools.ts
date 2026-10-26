@@ -1,4 +1,6 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { colName, toBase64, xlsx } from '../src/xlsx';
+import { strFromU8, unzipSync } from 'fflate';
 import { inbox, kindOf } from '../src/analysis/announcements';
 import { addGroup, deleteGroup, groupsOf, renameGroup, toggleInGroup } from '../src/portfolio/watchGroups';
 import { goalsFrom, goalsStatus } from '../src/portfolio/goal';
@@ -278,6 +280,16 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const items = inbox({ LUCK: [a('2026-10-26', 'Material Information'), a('2026-10-20', 'Board Meeting', 'Board Meetings'), a('2026-07-01', 'Old')], MEBL: [a('2026-10-26', 'Credit of final cash dividend')] }, Date.parse('2026-10-21T07:00:00Z'), now);
   check('inbox: last 60 days, newest first, new since last look', items.length === 3 && items[0].symbol === 'LUCK' && items[1].symbol === 'MEBL' && items[0].fresh && !items[2].fresh, items);
   check('nothing is "new" the first time', inbox({ X: [a('2026-10-26', 'x')] }, 0, now)[0].fresh === false);
+}
+
+// excel
+{
+  check('column names', colName(0) === 'A' && colName(25) === 'Z' && colName(26) === 'AA' && colName(701) === 'ZZ');
+  check('base64', toBase64(new Uint8Array([77, 97, 110])) === 'TWFu' && toBase64(new Uint8Array([77])) === 'TQ==');
+  const z = unzipSync(xlsx([{ name: 'A/B', rows: [['h', 'n'], ['x & <y>', 1.5]] }, { name: 'A/B', rows: [] }]));
+  const wb = strFromU8(z['xl/workbook.xml']);
+  const sh = strFromU8(z['xl/worksheets/sheet1.xml']);
+  check('workbook: safe unique sheet names, escaped text, numbers as numbers', wb.includes('name="A B"') && wb.includes('name="A B 2"') && sh.includes('x &amp; &lt;y&gt;') && sh.includes('<v>1.5</v>') && !!z['xl/styles.xml'], wb);
 }
 
 if (failed) {

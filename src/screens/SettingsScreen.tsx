@@ -179,6 +179,7 @@ export default function SettingsScreen() {
 
         <Section title="Your data">
           <BackupCard />
+          <Button label="Export to Excel" tone="ghost" onPress={() => nav.navigate('Export')} />
         </Section>
 
         <Section title="AI">
