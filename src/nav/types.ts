@@ -25,6 +25,7 @@ export type RootParams = {
   Alerts: { symbol?: string } | undefined;
   News: undefined;
   Find: undefined;
+  Compare: { symbols?: string[] } | undefined;
 };
 
 declare global {

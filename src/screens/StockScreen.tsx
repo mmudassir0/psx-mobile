@@ -667,7 +667,7 @@ export default function StockScreen() {
     content = (
       <View style={[pad, { gap: 26 }]}>
         <FundamentalsTab company={company} stock={stock} err={companyErr} fair={pack.fair} />
-        <Section title="Sector peers">
+        <Section title="Sector peers" action="Compare" onAction={() => nav.navigate('Compare', { symbols: [symbol, ...pack.peers.slice(0, 1).map((p) => p.symbol)] })}>
           <PeersTab stock={stock} />
         </Section>
       </View>

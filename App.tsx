@@ -134,6 +134,7 @@ function Root() {
       <Stack.Screen name="Summary" getComponent={() => require('./src/screens/SummaryScreen').default} />
       <Stack.Screen name="Alerts" getComponent={() => require('./src/screens/AlertsScreen').default} />
       <Stack.Screen name="News" getComponent={() => require('./src/screens/NewsScreen').default} />
+      <Stack.Screen name="Compare" getComponent={() => require('./src/screens/CompareScreen').default} />
       <Stack.Screen name="Find" getComponent={() => require('./src/screens/FindScreen').default} />
     </Stack.Navigator>
   );
@@ -152,6 +153,7 @@ const linking: LinkingOptions<RootParams> = {
       Alerts: 'alerts',
       News: 'news',
       Find: 'find',
+      Compare: 'compare',
     },
   },
 };
