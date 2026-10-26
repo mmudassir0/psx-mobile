@@ -1,6 +1,6 @@
 /**
  * Evening price alerts (runs after the daily picks).
- *   WATCH_ALERTS="SYS<100, LUCK>200d" NTFY_ALERT_TOPIC=…  tsx scripts/watch-alerts.ts <state dir>
+ *   WATCH_ALERTS="SYS<100, LUCK>200d, MEBL yield>9, LUCK<fair" NTFY_ALERT_TOPIC=…  tsx scripts/watch-alerts.ts <state dir> [fundamentals.json]
  *
  * Sends one notification listing every rule whose line the close crossed
  * today. The repository and its Actions logs are public, so this prints counts
@@ -10,10 +10,16 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KeyValueStore, setStorage } from '../src/psx/cache';
 import { dailyCandles } from '../src/psx/history';
-import { crossedToday, describeRule, parseRules } from '../src/analysis/watch';
+import { crossedToday, describeRule, parseRules, type RuleContext, type WatchRule } from '../src/analysis/watch';
+import { fetchCompany, fetchPayouts, fetchScreener } from '../src/psx/api';
+import { dividends } from '../src/analysis/dividends';
+import { fiscalEndMonth } from '../src/analysis/fairValue';
+import { computeRatios } from '../src/analysis/ratios';
+import { valueStock } from '../src/analysis/valuation';
+import type { Stock } from '../src/psx/types';
 import { NTFY } from '../src/picks/config';
 
-const [stateDir] = process.argv.slice(2);
+const [stateDir, fundPath] = process.argv.slice(2);
 const topic = process.env.NTFY_ALERT_TOPIC ?? '';
 const { rules, bad } = parseRules(process.env.WATCH_ALERTS ?? '');
 
@@ -26,6 +32,28 @@ async function main() {
   const file = (k: string) => join(dir, encodeURIComponent(k).replace(/%/g, '_') + '.json');
   const store: KeyValueStore = { get: async (k) => (existsSync(file(k)) ? readFileSync(file(k), 'utf8') : null), set: async () => {} };
   setStorage(store);
+  const fund: Record<string, never> = fundPath && existsSync(fundPath) ? (JSON.parse(readFileSync(fundPath, 'utf8')).companies ?? {}) : {};
+  const needsMore = rules.some((r) => r.yield || r.level === 'fair');
+  const screener = needsMore ? new Map((await fetchScreener().catch(() => [])).map((r) => [r.symbol, r] as const)) : new Map();
+  /** Dividends and fair value, only for the rules that need them. */
+  const contextFor = async (r: WatchRule, price: number, daily: Parameters<typeof valueStock>[0]['daily']): Promise<RuleContext> => {
+    if (!r.yield && r.level !== 'fair') return {};
+    const company = await fetchCompany(r.symbol).catch(() => null);
+    const scr = screener.get(r.symbol);
+    if (r.yield) {
+      const payouts = await fetchPayouts(r.symbol).catch(() => null);
+      if (!payouts) return {};
+      const d = dividends(payouts, { price, divYield: scr?.divYield ?? null, fiscalEndMonth: fiscalEndMonth(company?.fiscalYearEnd), latestFiscalYear: company?.financialsAnnual?.periods[0] ?? null });
+      return { ttmDps: d.ttm };
+    }
+    if (!company) return {};
+    const stock = { symbol: r.symbol, name: company.name, sector: company.sector, price, pe: company.pe ?? scr?.pe ?? null, divYield: scr?.divYield ?? null, marketCap: company.shares ? price * company.shares : null } as Stock;
+    const balance = fund[r.symbol] ?? null;
+    const ratios = computeRatios(balance, company, stock);
+    const peers = scr ? [...screener.values()].filter((x) => x.sectorCode === scr.sectorCode && x.symbol !== r.symbol).map((x) => ({ symbol: x.symbol, pe: x.pe, marketCap: x.marketCap, price: x.price }) as Stock) : [];
+    const fair = valueStock({ symbol: r.symbol, stock, company, ratios, balance, peers, daily }, (s) => fund[s] ?? null);
+    return { fair: fair ? { low: fair.low, high: fair.high } : null };
+  };
   const hits: string[] = [];
   let checked = 0;
   let lastT = 0;
@@ -35,7 +63,12 @@ async function main() {
     checked++;
     lastT = Math.max(lastT, c[c.length - 1].t);
     const closes = c.map((b) => b.c);
-    if (crossedToday(r, closes)) hits.push(`${describeRule(r)}: closed at ${closes[closes.length - 1].toFixed(2)}`);
+    const last = closes[closes.length - 1];
+    const ctx = await contextFor(r, last, c).catch(() => ({}) as RuleContext);
+    if (crossedToday(r, closes, ctx)) {
+      const extra = r.yield && ctx.ttmDps ? `, yield ${((ctx.ttmDps / last) * 100).toFixed(1)}%` : r.level === 'fair' && ctx.fair ? `, fair value Rs ${ctx.fair.low.toFixed(0)}–${ctx.fair.high.toFixed(0)}` : '';
+      hits.push(`${describeRule(r)}: closed at ${last.toFixed(2)}${extra}`);
+    }
   }
   console.log(`Price alerts: ${checked} of ${rules.length} rules checked, ${hits.length} crossed, ${bad.length} unreadable`);
   if (!hits.length || process.env.PRINT_ALERTS === '1') return;

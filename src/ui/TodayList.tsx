@@ -12,7 +12,7 @@ import { colors, fonts, themed } from '../theme';
 import type { TodoItem } from '../portfolio/summary';
 import type { Row } from '../portfolio/useReviews';
 import { watchRulesPref } from '../portfolio/prefs';
-import { describeRule } from '../analysis/watch';
+import { describeRule, priceLine } from '../analysis/watch';
 import { useMarket } from '../store/market';
 import { eventsFor } from './EventsCard';
 import { useNews, ago } from './NewsList';
@@ -53,8 +53,9 @@ export function useTodayItems(rows: Row[], todo: TodoItem[], max = 7): Item[] {
     out.push({ key: `news-${n.url}`, emoji: '📰', text: n.title, sub: `${n.source} · ${ago(n.t)}`, onPress: () => Linking.openURL(n.url).catch(() => {}) });
   for (const r of on('alerts') ? rules : []) {
     const p = bySymbol.get(r.symbol)?.price;
-    if (p == null || r.level === 'ma200') continue;
-    const gap = Math.abs(p / r.level - 1);
+    const line = priceLine(r);
+    if (p == null || line == null) continue;
+    const gap = Math.abs(p / line - 1);
     if (gap < 0.02) out.push({ key: `alert-${r.symbol}${r.dir}${r.level}`, emoji: '🔔', text: `${describeRule(r)}: now ${p.toFixed(2)}`, sub: `${(gap * 100).toFixed(1)}% away`, onPress: () => nav.navigate('Alerts') });
   }
   return out.slice(0, max);

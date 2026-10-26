@@ -10,7 +10,7 @@ import type { RootParams } from '../nav/types';
 import { watchCopiedPref, watchRulesPref } from '../portfolio/prefs';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtPrice } from '../format';
-import { describeRule, rulesText } from '../analysis/watch';
+import { describeRule, priceLine, rulesText, type WatchRule } from '../analysis/watch';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
 import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
@@ -24,16 +24,18 @@ export default function AlertsScreen() {
   const { bySymbol } = useMarket();
   const [sym, setSym] = useState(route.params?.symbol ?? '');
   const [dir, setDir] = useState<'<' | '>'>('<');
-  const [kind, setKind] = useState<'price' | 'ma200'>('price');
+  const [kind, setKind] = useState<'price' | 'ma200' | 'yield' | 'fair'>('price');
   const [px, setPx] = useState('');
   const symU = sym.trim().toUpperCase();
   const known = bySymbol.get(symU);
-  const level = kind === 'ma200' ? 'ma200' : Number(px.replace(/,/g, ''));
-  const ok = !!known && (level === 'ma200' || (level as number) > 0);
+  const level: WatchRule['level'] = kind === 'ma200' ? 'ma200' : kind === 'fair' ? 'fair' : Number(px.replace(/[,%]/g, ''));
+  const ok = !!known && (level === 'ma200' || level === 'fair' || (level as number) > 0);
+  const isYield = kind === 'yield';
   const text = rulesText(rules);
   const add = async () => {
     if (!ok) return;
-    await watchRulesPref.set([...rules.filter((r) => !(r.symbol === symU && r.dir === dir && r.level === level)), { symbol: symU, dir, level }]);
+    const rule: WatchRule = isYield ? { symbol: symU, dir, level, yield: true } : { symbol: symU, dir, level };
+    await watchRulesPref.set([...rules.filter((r) => !(r.symbol === symU && r.dir === dir && r.level === level && !!r.yield === isYield)), rule]);
     setSym('');
     setPx('');
   };
@@ -48,30 +50,37 @@ export default function AlertsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <T v="caption" style={{ lineHeight: 18 }}>
-          Get a notification the evening a stock closes past a price or its 200-day average. Checked once a day after the close, so it's
-          reliable even when your phone kills apps in the background.
+          Get a notification the evening a stock closes past a price or its 200-day average, its dividend yield passes a level (a buy
+          zone: "MEBL yield above 9%"), or it falls below Sahm's fair value range. Checked once a day after the close, so it's reliable
+          even when your phone kills apps in the background.
         </T>
         <Section title="New alert">
           <Panel style={{ paddingVertical: 14, gap: 10 }}>
             <TextInput value={sym} onChangeText={setSym} placeholder="Symbol, e.g. SYS" autoCapitalize="characters" autoCorrect={false} placeholderTextColor={colors.faint} style={styles.input} />
-            {known ? <T v="caption">Now {fmtPrice(known.price)}</T> : symU.length >= 2 ? <T v="caption" style={{ color: colors.downText }}>Not a PSX symbol</T> : null}
+            {known ? <T v="caption">Now {fmtPrice(known.price)}{known.divYield != null ? ` · dividend yield ${known.divYield.toFixed(1)}%` : ''}</T> : symU.length >= 2 ? <T v="caption" style={{ color: colors.downText }}>Not a PSX symbol</T> : null}
             <Segmented
               options={[
-                { key: '<', label: 'Closes below' },
-                { key: '>', label: 'Closes above' },
-              ]}
-              value={dir}
-              onChange={setDir}
-            />
-            <Segmented
-              options={[
-                { key: 'price', label: 'A price' },
-                { key: 'ma200', label: '200-day average' },
+                { key: 'price', label: 'Price' },
+                { key: 'ma200', label: '200-day' },
+                { key: 'yield', label: 'Yield' },
+                { key: 'fair', label: 'Fair value' },
               ]}
               value={kind}
               onChange={setKind}
             />
-            {kind === 'price' ? <TextInput value={px} onChangeText={setPx} placeholder="Price (Rs)" keyboardType="decimal-pad" placeholderTextColor={colors.faint} style={styles.input} /> : null}
+            <Segmented
+              options={[
+                { key: '<', label: isYield ? 'Yield falls below' : 'Closes below' },
+                { key: '>', label: isYield ? 'Yield rises above' : 'Closes above' },
+              ]}
+              value={dir}
+              onChange={setDir}
+            />
+            {kind === 'price' || isYield ? (
+              <TextInput value={px} onChangeText={setPx} placeholder={isYield ? 'Dividend yield %, e.g. 9' : 'Price (Rs)'} keyboardType="decimal-pad" placeholderTextColor={colors.faint} style={styles.input} />
+            ) : null}
+            {isYield ? <T v="caption">The last 12 months' cash dividends against the close: a higher yield means a lower price.</T> : null}
+            {kind === 'fair' ? <T v="caption">{dir === '<' ? "When the close drops below the low end of Sahm's fair value range: possibly cheap." : 'When the close rises above the high end of the range: possibly expensive.'}</T> : null}
             <Button label="Add alert" onPress={add} disabled={!ok} />
           </Panel>
         </Section>
@@ -80,7 +89,8 @@ export default function AlertsScreen() {
             <Panel style={{ paddingVertical: 4 }}>
               {rules.map((r, i) => {
                 const now = bySymbol.get(r.symbol)?.price ?? null;
-                const gap = now != null && r.level !== 'ma200' ? now / r.level - 1 : null;
+                const line = priceLine(r);
+                const gap = now != null && line != null ? now / line - 1 : null;
                 return (
                   <View key={`${r.symbol}${r.dir}${r.level}`} style={[styles.row, i < rules.length - 1 && styles.border]}>
                     <View style={{ flex: 1, gap: 2 }}>

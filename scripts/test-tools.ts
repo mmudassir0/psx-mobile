@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { crossedToday, describeRule, parseRules, rulesText } from '../src/analysis/watch';
 import { nextPlanDays, planDayIn, planDue } from '../src/portfolio/planDates';
 import { dueNotes, inMonths, moved } from '../src/portfolio/noteDates';
 import { breakEven, tradeCost } from '../src/portfolio/costs';
@@ -149,6 +150,18 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('next plan days from today', nextPlanDays(5, now).join() === '2026-11-05,2026-12-07,2027-01-05', nextPlanDays(5, now));
   const plan = { on: true, amount: 20000, day: 5, doneMonth: null as string | null };
   check('due after the day until marked done', planDue(plan, now) && !planDue({ ...plan, doneMonth: '2026-10' }, now) && !planDue({ ...plan, on: false }, now) && !planDue({ ...plan, day: 28 }, now));
+}
+
+// buy-zone alerts
+{
+  const { rules, bad } = parseRules('MEBL yield>9, LUCK<fair, HUBC >fair, SYS<100, PPL<200d, X yield<200d, OGDC yield > 12.5%');
+  check('parse yield and fair rules', rules.length === 6 && bad.join() === 'X yield<200d' && rules[0].yield === true && rules[0].level === 9 && rules[1].level === 'fair' && rules[2].dir === '>' && rules[5].level === 12.5 && rules[5].symbol === 'OGDC', rules);
+  check('rules round-trip as text', rulesText(rules) === 'MEBL yield>9, LUCK<fair, HUBC>fair, SYS<100, PPL<200d, OGDC yield>12.5', rulesText(rules));
+  check('described in words', describeRule(rules[0]) === "MEBL's dividend yield goes above 9%" && describeRule(rules[1]) === "LUCK closes below Sahm's fair value range");
+  // Rs 30 a year in dividends: 9% at Rs 333; the close falls from 340 to 330
+  check('yield crosses 9% as the price falls', crossedToday(rules[0], [350, 340, 330], { ttmDps: 30 }) && !crossedToday(rules[0], [350, 330, 320], { ttmDps: 30 }));
+  check('below the fair value range', crossedToday(rules[1], [105, 101, 99], { fair: { low: 100, high: 140 } }) && !crossedToday(rules[1], [105, 101, 99], {}));
+  check('above the fair value range', crossedToday(rules[2], [130, 139, 141], { fair: { low: 100, high: 140 } }));
 }
 
 if (failed) {

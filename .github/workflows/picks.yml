@@ -79,7 +79,9 @@ jobs:
           WATCH_ALERTS: ${{ secrets.WATCH_ALERTS }}
           FORCE_ALERTS: ${{ inputs.again && '1' || '' }}
           NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
-        run: npx tsx scripts/watch-alerts.ts /tmp/state
+        run: |
+          [ -f /tmp/fund.json ] || { git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/fund.json 2>/dev/null || echo '{}' > /tmp/fund.json; }
+          npx tsx scripts/watch-alerts.ts /tmp/state /tmp/fund.json
       - name: Mark the evening done
         # only once today's close is in (PSX can publish late); otherwise the backup runs try again
         # a run started by hand with alerts (the app, or the Claude task) counts too

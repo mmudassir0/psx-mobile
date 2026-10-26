@@ -4,7 +4,7 @@ import { useFlag } from '../flags';
 import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space } from '../theme';
-import { describeRule, rulesText } from '../analysis/watch';
+import { describeRule, priceLine, rulesText } from '../analysis/watch';
 import { watchCopiedPref, watchRulesPref } from '../portfolio/prefs';
 import { useMarket } from '../store/market';
 import { Panel } from './bits';
@@ -20,7 +20,8 @@ export function AlertsHomeCard({ padded }: { padded?: boolean }) {
   const rows = rules
     .map((r) => {
       const now = bySymbol.get(r.symbol)?.price ?? null;
-      const gap = now != null && r.level !== 'ma200' ? now / r.level - 1 : null;
+      const line = priceLine(r);
+      const gap = now != null && line != null ? now / line - 1 : null;
       return { r, now, gap };
     })
     // closest to triggering first
