@@ -67,3 +67,32 @@ export function goalStatus(g: Goal, value: number, perMonth: number | null, now 
     realTarget: g.target / Math.pow(1 + INFLATION_GUESS, months / 12),
   };
 }
+
+// ---------------------------------------------------------- several goals ----
+
+export interface NamedGoal extends Goal {
+  id: string;
+  name: string;
+  /** the part of today's portfolio set aside for this goal, 0–1 */
+  share: number;
+  /** what you put in each month for it */
+  monthly: number;
+}
+
+export const goalsPref = makePref<NamedGoal[] | null>('real.goals', null);
+
+/** The goals list, starting from the single goal of earlier versions when there is one. */
+export function goalsFrom(list: NamedGoal[] | null, old: Goal | null, oldMonthly: number | null): NamedGoal[] {
+  if (list) return list;
+  return old ? [{ ...old, id: 'g1', name: 'My goal', share: 1, monthly: oldMonthly ?? 0 }] : [];
+}
+
+/** Each goal's slice of the portfolio and its status; shares above 100% in total are scaled down. */
+export function goalsStatus(goals: NamedGoal[], value: number, now = Date.now()) {
+  const sum = goals.reduce((a, g) => a + Math.max(0, g.share), 0);
+  const k = sum > 1 ? 1 / sum : 1;
+  return goals.map((g) => {
+    const v = value * Math.max(0, g.share) * k;
+    return { goal: g, value: v, status: goalStatus(g, v, g.monthly > 0 ? g.monthly : null, now), progress: g.target > 0 ? Math.min(1, v / g.target) : 0 };
+  });
+}

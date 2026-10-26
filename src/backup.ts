@@ -31,6 +31,7 @@ export const BACKUP_KEYS = [
   'real.costs',
   'real.notes',
   'real.monthlyPlan',
+  'real.goals',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -66,6 +67,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',
   'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
+  'real.goals': (x) => x === null || (Array.isArray(x) && x.every((g) => isObj(g) && typeof g.name === 'string' && typeof g.target === 'number' && typeof g.by === 'string' && typeof g.share === 'number')),
   'real.monthlyPlan': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.amount === 'number' && typeof x.day === 'number',
   'real.notes': (x) => isObj(x) && Object.values(x).every((n) => isObj(n) && typeof n.why === 'string' && isObj(n.then)),
   'real.costs': (x) => isObj(x) && typeof x.brokerage === 'number' && typeof x.salesTax === 'number' && typeof x.minPerShare === 'number',

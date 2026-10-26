@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { goalsFrom, goalsStatus } from '../src/portfolio/goal';
 import { nextResults, resultsShort } from '../src/analysis/results';
 import { normalVolume, volumeSpike } from '../src/analysis/activity';
 import { nested, squarify } from '../src/analysis/treemap';
@@ -232,6 +233,24 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const vols = [...Array(20).fill(100_000), 350_000];
   check('normal volume is the median of the 20 sessions before', normalVolume(vols) === 100_000);
   check('3.5× normal volume is unusual; small volumes are not', volumeSpike(vols) === 3.5 && volumeSpike([...Array(20).fill(5_000), 40_000]) === null && volumeSpike([...Array(20).fill(100_000), 200_000]) === null);
+}
+
+// several goals
+{
+  const now = Date.parse('2026-10-27T07:00:00Z');
+  const migrated = goalsFrom(null, { target: 2e6, by: '2031-12', rate: 0.15 }, 20000);
+  check('the old single goal becomes the first of the list', migrated.length === 1 && migrated[0].name === 'My goal' && migrated[0].share === 1 && migrated[0].monthly === 20000);
+  check('no goals before: empty list; a saved list wins', goalsFrom(null, null, null).length === 0 && goalsFrom([], { target: 1, by: '2030-12', rate: 0.1 }, null).length === 0);
+  const gs = goalsStatus(
+    [
+      { id: 'a', name: 'House', target: 5e6, by: '2032-12', rate: 0.12, share: 0.8, monthly: 30000 },
+      { id: 'b', name: 'Hajj', target: 2e6, by: '2028-12', rate: 0.1, share: 0.4, monthly: 0 },
+    ],
+    1e6,
+    now,
+  );
+  check('shares over 100% are scaled down', Math.abs(gs[0].value - 666666.67) < 1 && Math.abs(gs[1].value - 333333.33) < 1, gs.map((g) => g.value));
+  check('each goal gets its own monthly need and course check', gs[0].status.reach != null && gs[1].status.reach === null && gs[1].status.need > 0);
 }
 
 if (failed) {
