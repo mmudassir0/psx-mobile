@@ -87,6 +87,15 @@ Pick current ones from console.groq.com/docs/models.
 **4. A news feed moved.** News stops from one source. Feeds are listed in
 `src/analysis/news.ts` (`NEWS_FEEDS`); `scripts/probe-news.ts` tests them.
 
+**Economy figures stop updating.** The daily job reads the SBP homepage's
+"key indicators" box (policy rate, T-bills, PIBs, KIBOR, dollar, reserves),
+the inflation chart on the PBS homepage, and petrol prices from the business
+news feeds; parsers are in `src/analysis/macro.ts`, tested with the saved
+pages in `scripts/fixtures` (`sbp_home.txt`, `pbs_inflation_chart.txt`).
+`scripts/probe-macro.ts` (run with the Probe workflow) shows what each page
+returns. A missing figure keeps its last value, so the screen goes stale
+rather than blank.
+
 **5. Calendar needs a new year.** Every year, add PSX holidays and the
 State Bank's rate-decision dates to `src/analysis/events.ts` (`PSX_HOLIDAYS`,
 `MPC_DATES`). Rate decisions are listed to June 2027; holidays for 2026,
