@@ -27,6 +27,7 @@ export const FEATURES: Feature[] = [
   { key: 'portfolio', label: 'My holdings', emoji: '💼', group: 'My money', words: 'portfolio shares holdings review trim', go: tab('Portfolio', { view: 'holdings' }) },
   { key: 'plan', label: 'Invest cash & goal', emoji: '🎯', group: 'My money', words: 'plan goal new money monthly target', go: tab('Portfolio', { view: 'invest' }) },
   { key: 'insights', label: 'Returns & risk', emoji: '📈', group: 'My money', words: 'health check return kmi kse sector stress tax zakat insights performance', flags: ['health'], go: tab('Portfolio', { view: 'risk' }) },
+  { key: 'timeline', label: 'Timeline', emoji: '🕰️', group: 'My money', words: 'timeline history log events what happened journal', go: (nav) => nav.navigate('Timeline') },
   { key: 'sharecard', label: 'Share card', emoji: '🖼️', group: 'My money', words: 'share picture image whatsapp brag return card', go: (nav) => nav.navigate('ShareCard') },
   { key: 'summary', label: 'Monthly summary', emoji: '📅', group: 'My money', words: 'month report progress', flags: ['summary'], go: (nav) => nav.navigate('Summary') },
   { key: 'rebalance', label: 'Rebalance', emoji: '⚖️', group: 'My money', words: 'rebalance target weights allocation trim top up', go: (nav) => nav.navigate('Rebalance') },

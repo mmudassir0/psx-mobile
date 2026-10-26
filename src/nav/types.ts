@@ -36,6 +36,7 @@ export type RootParams = {
   Announcements: undefined;
   Export: undefined;
   ShareCard: undefined;
+  Timeline: undefined;
 };
 
 declare global {

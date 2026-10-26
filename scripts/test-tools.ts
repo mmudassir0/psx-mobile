@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { buildTimeline } from '../src/portfolio/timeline';
 import { position, stateOf, withTargetRules } from '../src/portfolio/targets';
 import { colName, toBase64, xlsx } from '../src/xlsx';
 import { strFromU8, unzipSync } from 'fflate';
@@ -302,6 +303,25 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const r1 = withTargetRules(rules, 'LUCK', { target: 450, rethink: null }, { target: 500, rethink: 300 });
   check('alert rules follow the targets: old one swapped, others kept', r1.length === 4 && !r1.some((r) => r.symbol === 'LUCK' && r.level === 450) && r1.some((r) => r.symbol === 'LUCK' && r.level === 500 && r.dir === '>') && r1.some((r) => r.symbol === 'LUCK' && r.level === 300 && r.dir === '<') && r1.some((r) => r.symbol === 'MEBL'), r1);
   check('clearing targets removes their alerts', withTargetRules(r1, 'LUCK', { target: 500, rethink: 300 }, { target: null, rethink: null }).filter((r) => r.symbol === 'LUCK').length === 1);
+}
+
+// timeline
+{
+  const D = 864e5;
+  const now = Date.parse('2026-10-27T07:00:00Z');
+  const snap = (day: string, value: number, shares: number, price: number) => ({ day, value, pos: { AAA: [shares, shares * 100, price] as [number, number, number] }, div: 0 });
+  const ev = buildTimeline({
+    trades: [{ day: '2026-10-01', symbol: 'AAA', side: 'buy', shares: 100, price: 100, avgCost: 100, realised: null }, { day: '2026-10-20', symbol: 'AAA', side: 'sell', shares: 20, price: 120, avgCost: 100, realised: 400 }],
+    holdings: [{ symbol: 'AAA', shares: 80, dividends: { faceValue: 10, ttm: 0, ttmYield: null, years: [], cut: null, lower: null, list: [{ announced: now - 30 * D, period: null, periodType: null, dps: 5, bonusPct: 0, bookClosure: Date.parse('2026-10-15T00:00:00+05:00') }, { announced: now - 400 * D, period: null, periodType: null, dps: 3, bonusPct: 0, bookClosure: now - 380 * D }] }, announcements: [{ date: '2026-10-22', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }] }],
+    notes: { AAA: { why: 'cheap', at: Date.parse('2026-10-02T07:00:00Z') } },
+    snaps: [snap('2026-10-01', 10000, 100, 100), snap('2026-10-02', 10500, 100, 105), snap('2026-10-03', 10400, 100, 104)],
+    sharesOn: (_s, day) => (day < '2026-10-20' ? 100 : 80),
+    now,
+  });
+  const kinds = ev.map((e) => e.kind).join();
+  check('timeline: newest first with every kind', kinds === 'results,sell,dividend,bigday,note,buy,start', kinds);
+  check('dividend on the shares held then; old payouts before tracking left out', ev.find((e) => e.kind === 'dividend')!.sub!.includes('Rs 500') && ev.filter((e) => e.kind === 'dividend').length === 1);
+  check('a 5% day is a big day; 1% is not', ev.filter((e) => e.kind === 'bigday').length === 1 && ev.find((e) => e.kind === 'bigday')!.tone === 1);
 }
 
 if (failed) {
