@@ -67,6 +67,9 @@ export default function TimelineScreen() {
           <Skeleton kind="rows" n={6} />
         ) : (
           <>
+            {!events.length ? (
+              <Empty title="Nothing here yet" body="Record trades with 'Bought or sold', write notes on stocks, and as dividends are paid and days go by they'll show up here." />
+            ) : null}
             {months.map(([month, list]) => (
               <View key={month} style={{ gap: 8 }}>
                 <T v="label">{monthName(month)}</T>

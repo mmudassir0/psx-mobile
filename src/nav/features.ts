@@ -43,6 +43,7 @@ export const FEATURES: Feature[] = [
   { key: 'watch', label: 'Watchlist', emoji: '⭐', group: 'Market', words: 'watch star favourite', flags: ['watchlist'], go: tab('Market', { mode: 'watch' }) },
   { key: 'kse', label: 'KSE-100', emoji: '📉', group: 'Market', words: 'index chart kse100', go: (nav) => nav.navigate('Index', { code: 'KSE100' }) },
   { key: 'kmi', label: 'KMI-30', emoji: '☪️', group: 'Market', words: 'shariah index kmi30', go: (nav) => nav.navigate('Index', { code: 'KMI30' }) },
+  { key: 'economy', label: 'Pakistan economy', emoji: '🏦', group: 'Market', words: 'economy policy rate interest inflation cpi dollar rupee usd pkr petrol t-bill bonds kibor reserves sbp macro', go: (nav) => nav.navigate('Economy') },
   { key: 'sectors', label: 'Sector strength', emoji: '🏁', group: 'Market', words: 'sectors leaders laggards rotation momentum strongest weakest', go: (nav) => nav.navigate('Sectors') },
   { key: 'heatmap', label: 'Market map', emoji: '🗺️', group: 'Market', words: 'heatmap heat map treemap sectors tiles overview', go: (nav) => nav.navigate('Heatmap') },
   { key: 'compare', label: 'Compare stocks', emoji: '🆚', group: 'Market', words: 'compare versus vs side by side peers', go: (nav) => nav.navigate('Compare') },
