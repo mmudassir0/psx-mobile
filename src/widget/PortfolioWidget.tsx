@@ -15,6 +15,8 @@ export interface WidgetData {
   nextDividend?: string | null;
   /** a reminder that's due, e.g. "Check your note on LUCK" */
   due?: string | null;
+  /** the app lock is on: show percentages, not rupees */
+  hidden?: boolean;
 }
 
 export const WIDGET_KEY = 'widget.data';
@@ -45,8 +47,11 @@ export function PortfolioWidget({ data }: { data: WidgetData | null }) {
       </FlexWidget>
       {data ? (
         <FlexWidget style={{ flexDirection: 'column' }}>
-          <TextWidget text={`Rs ${fmt(data.value)}`} style={{ fontSize: 24, fontWeight: 'bold', color: '#EDF1F5' }} />
-          <TextWidget text={`Today ${signed(data.today)} (${pct(data.todayPct)}) · All ${pct(data.pnlPct)}`} style={{ fontSize: 12.5, color: up ? '#22C38E' : '#FF8590' }} />
+          <TextWidget text={data.hidden ? `Today ${pct(data.todayPct)}` : `Rs ${fmt(data.value)}`} style={{ fontSize: 24, fontWeight: 'bold', color: data.hidden ? (up ? '#22C38E' : '#FF8590') : '#EDF1F5' }} />
+          <TextWidget
+            text={data.hidden ? `All ${pct(data.pnlPct)} · amounts hidden (app lock on)` : `Today ${signed(data.today)} (${pct(data.todayPct)}) · All ${pct(data.pnlPct)}`}
+            style={{ fontSize: 12.5, color: data.hidden ? '#97A3B2' : up ? '#22C38E' : '#FF8590' }}
+          />
         </FlexWidget>
       ) : (
         <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />

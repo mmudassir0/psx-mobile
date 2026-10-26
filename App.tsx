@@ -29,6 +29,7 @@ import { layoutPref, TABS_FOR } from './src/nav/layout';
 import { useFlags } from './src/flags';
 import { MenuButton } from './src/ui/SideMenu';
 import { ScreenBoundary } from './src/ui/ScreenBoundary';
+import { AppLock } from './src/ui/AppLock';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -222,10 +223,12 @@ function Themed() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ground }}>
       <SafeAreaProvider>
-        <NavigationContainer theme={navThemeFor(name === 'dark')} linking={linking}>
-          <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
-          <Root />
-        </NavigationContainer>
+        <AppLock>
+          <NavigationContainer theme={navThemeFor(name === 'dark')} linking={linking}>
+            <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
+            <Root />
+          </NavigationContainer>
+        </AppLock>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

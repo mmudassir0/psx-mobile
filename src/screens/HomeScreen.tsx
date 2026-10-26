@@ -21,6 +21,7 @@ import { useReviews } from '../portfolio/useReviews';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { annSeenPref } from '../analysis/announcements';
+import { lockPref } from '../ui/AppLock';
 import { activityItems, announcementItem, nextDividendLine, todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
@@ -92,6 +93,7 @@ export default function HomeScreen() {
   const applied = appliedBonusesPref.use();
   const reminders = useReminderTodos();
   const annSeen = annSeenPref.use();
+  const appLocked = lockPref.use();
   const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, candles, annSeen]);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();
@@ -111,10 +113,11 @@ export default function HomeScreen() {
       mood: mood?.now.score ?? null,
       moodLabel: mood ? moodLabel(mood.now.score) : null,
       at: Date.now(),
-      nextDividend: nextDividendLine(rows),
       due: reminders[0]?.text ?? null,
+      hidden: appLocked,
+      nextDividend: appLocked ? null : nextDividendLine(rows),
     });
-  }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood, rows, reminders]);
+  }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood, rows, reminders, appLocked]);
 
   const val = valuePortfolio(account, (s) => bySymbol.get(s));
   const homeIdx = HOME_INDICES.map((c) => indices.find((i) => i.code === c)).filter(Boolean) as typeof indices;

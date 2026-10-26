@@ -16,6 +16,7 @@ import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
 import { ProblemLogCard } from '../ui/ProblemLogCard';
 import { CostsCard } from '../ui/CostsCard';
+import { canLock, confirmIdentity, lockPref, lockSupported } from '../ui/AppLock';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
 
@@ -34,6 +35,8 @@ export default function SettingsScreen() {
   const { pref, setPref } = useTheme();
   const upd = useUpdate();
   const ai = useAi();
+  const locked = lockPref.use();
+  const [lockMsg, setLockMsg] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
@@ -171,6 +174,33 @@ export default function SettingsScreen() {
             A notification the evening any stock closes past a price or its 200-day average.
           </T>
         </Section>
+        ) : null}
+
+        {lockSupported ? (
+          <Section title="Privacy">
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T v="body">Lock Sahm</T>
+                  <T v="caption">Fingerprint, face or phone PIN when it opens, and after a minute away</T>
+                </View>
+                <Switch
+                  value={locked}
+                  onValueChange={async (v) => {
+                    if (v && !(await canLock())) return setLockMsg('Set up a fingerprint, face or screen lock on the phone first.');
+                    // check it's you before changing it either way
+                    if (await confirmIdentity(v ? 'Turn on the lock' : 'Turn off the lock')) {
+                      lockPref.set(v);
+                      setLockMsg(null);
+                    }
+                  }}
+                  trackColor={{ true: colors.gold, false: colors.line }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              {lockMsg ? <T v="caption" style={{ color: colors.downText }}>{lockMsg}</T> : null}
+            </View>
+          </Section>
         ) : null}
 
         <Section title="Trading costs">

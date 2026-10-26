@@ -7,7 +7,7 @@ import { PortfolioWidget, WIDGET_KEY, WIDGET_NAME, type WidgetData } from './Por
 let last = '';
 export async function updateWidget(data: WidgetData) {
   if (Platform.OS !== 'android') return;
-  const key = `${Math.round(data.value)}|${Math.round(data.today)}|${data.mood}|${data.nextDividend ?? ''}|${data.due ?? ''}`;
+  const key = `${Math.round(data.value)}|${Math.round(data.today)}|${data.mood}|${data.nextDividend ?? ''}|${data.due ?? ''}|${data.hidden ? 1 : 0}`;
   if (key === last) return;
   last = key;
   try {
