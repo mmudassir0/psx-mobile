@@ -2,9 +2,17 @@
 # because ntfy.sh keeps messages for about 12 hours). State lives on the picks branch.
 name: Daily picks
 on:
+  # GitHub often starts scheduled runs hours late, so each run has backups: the first one that
+  # gets to run does the work and the later ones see it's done and stop (a few seconds each).
+  # The evening alert is sent at most once a day whichever run sends it.
   schedule:
     - cron: '13 12 * * 1-5' # 17:13 Pakistan time
+    - cron: '47 12 * * 1-5' # 17:47, backup
+    - cron: '31 13 * * 1-5' # 18:31, backup
+    - cron: '17 14 * * 1-5' # 19:17, backup
+    - cron: '3 15 * * 1-5' # 20:03, backup
     - cron: '13 3 * * 1-5' # 08:13 Pakistan time
+    - cron: '41 3 * * 1-5' # 08:41, backup
   workflow_dispatch:
     inputs:
       alerts:
@@ -24,6 +32,9 @@ jobs:
   picks:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      # an after-the-close run (any of the evening times) also sends the alerts
+      EVENING: ${{ contains(fromJSON('["13 12 * * 1-5","47 12 * * 1-5","31 13 * * 1-5","17 14 * * 1-5","3 15 * * 1-5"]'), github.event.schedule) && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,13 +45,26 @@ jobs:
           mkdir -p /tmp/state /tmp/history
           if git fetch -q origin picks 2>/dev/null; then git archive origin/picks | tar -x -C /tmp/state; fi
           if [ ! -d /tmp/state/cache ]; then git fetch -q origin history && git archive origin/history | tar -x -C /tmp/history; fi
+      - name: Already done today?
+        # only scheduled runs skip; running it yourself (app or GitHub) always does the work
+        id: done
+        if: github.event_name == 'schedule'
+        run: |
+          today=$(TZ=Asia/Karachi date +%F)
+          if [ -n "$EVENING" ]; then
+            if [ "$(cat /tmp/state/evening-done.txt 2>/dev/null)" = "$today" ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Today's close is done and alerts checked: nothing to do"; fi
+          else
+            gen=$(node -e "try{const t=Date.parse(require('/tmp/state/latest.json').all.generatedAt);console.log(new Date(t+5*3600e3).toISOString().slice(0,10))}catch{}")
+            if [ "$gen" = "$today" ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Already ran today: nothing to do"; fi
+          fi
       - name: Picks
+        if: steps.done.outputs.skip != '1'
         env:
           PUBLISH: '1'
         run: npx tsx scripts/daily-picks.ts /tmp/state /tmp/history 2>&1 | tee /tmp/state/log.txt
       - name: Portfolio alerts
         # Symbols and the alert channel are secrets; the script prints counts only (public logs).
-        if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
+        if: steps.done.outputs.skip != '1' && (inputs.alerts || env.EVENING == '1')
         env:
           HOLDINGS_SYMBOLS: ${{ secrets.HOLDINGS_SYMBOLS }}
           FORCE_ALERTS: ${{ inputs.again && '1' || '' }}
@@ -50,14 +74,21 @@ jobs:
           npx tsx scripts/portfolio-alerts.ts /tmp/state /tmp/fund.json
       - name: Price alerts
         # Rules and the alert channel are secrets; the script prints counts only (public logs).
-        if: inputs.alerts || github.event.schedule == '13 12 * * 1-5'
+        if: steps.done.outputs.skip != '1' && (inputs.alerts || env.EVENING == '1')
         env:
           WATCH_ALERTS: ${{ secrets.WATCH_ALERTS }}
           FORCE_ALERTS: ${{ inputs.again && '1' || '' }}
           NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
         run: npx tsx scripts/watch-alerts.ts /tmp/state
+      - name: Mark the evening done
+        # only once today's close is in (PSX can publish late); otherwise the backup runs try again
+        if: success() && env.EVENING == '1' && steps.done.outputs.skip != '1'
+        run: |
+          today=$(TZ=Asia/Karachi date +%F)
+          day=$(node -e "try{console.log(require('/tmp/state/latest.json').all.day)}catch{}")
+          if [ "$day" = "$today" ]; then echo "$today" > /tmp/state/evening-done.txt; echo "Evening done"; else echo "Close for $today not in yet (latest is $day): a backup run will try again"; fi
       - name: Save state
-        if: always()
+        if: always() && steps.done.outputs.skip != '1'
         run: |
           cd /tmp/state
           [ -f latest.json ] || exit 0
@@ -65,3 +96,26 @@ jobs:
           git config user.name "picks" && git config user.email "picks@users.noreply.github.com"
           git add . && git commit -qm "Picks $(date -u +%F)"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" picks
+      - name: Tell me if this failed
+        # a notification on the same private channel as the alerts, so a breakage doesn't go unnoticed
+        if: failure() && github.event_name == 'schedule'
+        env:
+          NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          [ -n "$NTFY_ALERT_TOPIC" ] || exit 0
+          curl -s -o /dev/null -H "Title: Sahm: daily update failed" -H "Tags: warning" -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "The daily update didn't finish. Tap to see which step failed. If it fails again tomorrow, PSX may have changed its website: see docs/maintenance.md." \
+            "https://ntfy.sh/$NTFY_ALERT_TOPIC"
+      - name: Keep the schedule switched on
+        # GitHub turns off scheduled workflows in a public repo after 60 days without a commit.
+        # Once the last commit is 45 days old, this makes a tiny one (a date in a file no build watches).
+        if: steps.done.outputs.skip != '1'
+        run: |
+          git fetch -q --depth=1 origin main
+          last=$(git log -1 --format=%ct origin/main)
+          if [ $(( $(date +%s) - last )) -lt $(( 45 * 86400 )) ]; then echo "Last commit is recent: nothing to do"; exit 0; fi
+          git checkout -q -B keepalive origin/main
+          date -u +%F > .github/keepalive.txt
+          git config user.name "picks" && git config user.email "picks@users.noreply.github.com"
+          git add .github/keepalive.txt && git commit -qm "Keep the daily schedule on"
+          git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:main

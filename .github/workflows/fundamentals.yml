@@ -80,3 +80,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run android.yml --ref main
+      - name: Tell me if this failed
+        # a notification on the same private channel as the alerts, so a breakage doesn't go unnoticed
+        if: failure() && github.event_name == 'schedule'
+        env:
+          NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: |
+          [ -n "$NTFY_ALERT_TOPIC" ] || exit 0
+          curl -s -o /dev/null -H "Title: Sahm: balance-sheet update failed" -H "Tags: warning" -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -d "The balance-sheet update didn't finish. Tap to see which step failed. If it fails again tomorrow, PSX may have changed its website: see docs/maintenance.md." \
+            "https://ntfy.sh/$NTFY_ALERT_TOPIC"
