@@ -337,7 +337,7 @@ export default function IndexScreen() {
 
         {sectors.length && code !== 'KMI30' ? (
           <View style={styles.pad}>
-            <Section title="Sectors">
+            <Section title="Sectors" action="All sectors" onAction={() => nav.navigate('Sectors')}>
               <SectorsCard sectors={sectors} />
             </Section>
           </View>

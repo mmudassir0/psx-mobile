@@ -32,6 +32,7 @@ export type RootParams = {
   TaxStatement: undefined;
   Heatmap: undefined;
   Results: undefined;
+  Sectors: undefined;
 };
 
 declare global {
