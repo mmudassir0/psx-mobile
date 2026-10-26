@@ -28,6 +28,7 @@ import PicksScreen from './src/screens/PicksScreen';
 import { layoutPref, TABS_FOR } from './src/nav/layout';
 import { useFlags } from './src/flags';
 import { MenuButton } from './src/ui/SideMenu';
+import { ScreenBoundary } from './src/ui/ScreenBoundary';
 import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -76,6 +77,7 @@ function Tabs() {
   const shown = TABS_FOR[layout].filter((t) => (t !== 'Ideas' || on('ideas')) && (t !== 'AI' || on('ai')));
   return (
     <Tab.Navigator
+      screenLayout={({ children, route }) => <ScreenBoundary name={route.name}>{children}</ScreenBoundary>}
       tabBar={layout === 'menu' ? (props) => <MenuButton {...props} /> : undefined}
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -111,6 +113,7 @@ function Root() {
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
   return (
     <Stack.Navigator
+      screenLayout={({ children, route }) => <ScreenBoundary name={route.name}>{children}</ScreenBoundary>}
       initialRouteName={name ? 'Tabs' : 'Welcome'}
       screenOptions={{ headerShown: false, freezeOnBlur: true, contentStyle: { backgroundColor: colors.ground }, animation: 'slide_from_right' }}
     >

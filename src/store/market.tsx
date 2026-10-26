@@ -4,6 +4,7 @@ import { fetchBoard, fetchIndices, fetchScreener, fetchSymbols } from '../psx/ap
 import type { BoardQuote, IndexQuote, ScreenerRow, Stock, SymbolInfo } from '../psx/types';
 import { isMarketOpen } from '../market-hours';
 import { loadCached, saveCached } from '../storage';
+import { logProblem } from '../log';
 
 const LIVE_MS = 30_000;
 const SCREENER_MS = 30 * 60_000;
@@ -40,6 +41,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const symbolsAt = useRef(0);
   const busy = useRef(false);
   const lastAt = useRef(0);
+  const failed = useRef(false);
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
@@ -55,6 +57,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       saveCached('psx.board', brd);
       setUpdatedAt(Date.now());
       setError(null);
+      failed.current = false;
 
       // The symbol list and screener are fetched together, and one failing doesn't skip the other
       // or show an error: prices already loaded, and the saved lists stay in use.
@@ -78,7 +81,11 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
           : null,
       ]);
     } catch (e) {
-      setError((e as Error).message || 'Could not reach PSX');
+      const msg = (e as Error).message || 'Could not reach PSX';
+      setError(msg);
+      // no signal is normal; anything else (PSX slow, changed or down) is worth a look later
+      if (!failed.current && !/No connection/.test(msg)) logProblem('market prices', e);
+      failed.current = true;
     } finally {
       busy.current = false;
       setRefreshing(false);
@@ -116,7 +123,10 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   // Poll while the app is in front and the market is open.
   useEffect(() => {
     const id = setInterval(() => {
-      if (AppState.currentState === 'active' && isMarketOpen()) refresh();
+      const active = AppState.currentState === 'active';
+      if (active && isMarketOpen()) refresh();
+      // after a failed download, try again every minute until it works (the connection may be back)
+      else if (active && failed.current && Date.now() - lastAt.current > 60_000) refresh();
       else setMarketOpen(isMarketOpen());
     }, LIVE_MS);
     const sub = AppState.addEventListener('change', (s) => {

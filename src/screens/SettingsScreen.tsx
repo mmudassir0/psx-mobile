@@ -14,6 +14,7 @@ import { FLAGS, flagsPref, isOn, type Flag } from '../flags';
 import { Panel } from '../ui/bits';
 import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
+import { ProblemLogCard } from '../ui/ProblemLogCard';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
 
@@ -257,6 +258,10 @@ export default function SettingsScreen() {
             {keyMsg ? <T v="caption" style={{ color: keyMsg.startsWith('Key saved') ? colors.up : colors.downText }}>{keyMsg}</T> : null}
           </View>
 
+        </Section>
+
+        <Section title="Problem log">
+          <ProblemLogCard />
         </Section>
 
         <Section title="App">

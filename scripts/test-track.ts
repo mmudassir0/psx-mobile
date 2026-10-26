@@ -1,4 +1,5 @@
 /** Return tracking, market mood and the dividend calendar. */
+import { reportText, scrub } from '../src/log';
 import { addSnapshot, flowBetween, indexReturns, mixReturns, trackReturns, type Snap, type TrackInput } from '../src/portfolio/track';
 import { moodHistory, moodLabel, moodOutcomes } from '../src/analysis/mood';
 import { calendarItems, type CalendarFeed } from '../src/analysis/calendar';
@@ -249,6 +250,11 @@ const hc = healthCheck(rowsH, idxStocks, 'KMI30');
 const keys = hc.map((x) => x.key);
 check('health: big stock, big sector, tiny, review, index gap', keys.includes('stock-BIG') && keys.includes('sector-OIL') && keys.includes('tiny') && keys.includes('review') && keys.includes('gap-COMMERCIAL BANKS'), keys);
 check('health: worst first', hc[0].level === 'bad');
+
+// problem log
+check('log hides keys and tokens', scrub('bad key gsk_abcdefghijklmnop and AIzaSyABCDEFGH12345 at ntfy.sh/secret-topic?token=xyz') === 'bad key gsk_••• and AIza••• at ntfy.sh/•••?token=•••', scrub('bad key gsk_abcdefghijklmnop and AIzaSyABCDEFGH12345 at ntfy.sh/secret-topic?token=xyz'));
+const rep = reportText([{ t: Date.parse('2026-10-26T09:00:00Z'), where: 'market prices', msg: 'PSX took too long to respond' }, { t: Date.parse('2026-10-26T09:31:07Z'), where: 'screen Stock', msg: 'x is undefined', stack: 'at A\nat B' }], ['Sahm 0.37.0']);
+check('log report: header, newest first, Pakistan time, stack indented', rep.startsWith('Sahm 0.37.0\n2 problems logged') && rep.indexOf('screen Stock') < rep.indexOf('market prices') && rep.includes('26 Oct 14:31:07') && rep.includes('    at B'), rep);
 
 if (failed) {
   console.log(`\n${failed} failed`);

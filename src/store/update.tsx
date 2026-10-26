@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 import * as Application from 'expo-application';
+import { logProblem } from '../log';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 
@@ -162,6 +163,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       }
       // A download cut off part-way can carry on once; a resume that fails starts over next time.
       const resumable = !resuming && !!dl.current?.savable().resumeData;
+      logProblem('update download', e);
       if (!resumable) dl.current = null;
       setError(
         resumable
@@ -224,6 +226,7 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
     try {
       await openInstaller(file);
     } catch (e) {
+      logProblem('update install', e);
       setError((e as Error).message);
     }
   }, [file, download]);

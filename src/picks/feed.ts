@@ -4,6 +4,7 @@ import { cached } from '../psx/cache';
 import { ListId, listOf, PicksFeed } from './build';
 import type { MarketFeed } from '../analysis/market';
 import { FEED_BASE } from './config';
+import { getJson } from '../net';
 
 export type Feeds = Partial<Record<ListId, PicksFeed>> & { market?: MarketFeed };
 
@@ -54,9 +55,7 @@ export function readFeedFiles(latest: unknown, market: unknown): Feeds {
 export async function fetchFeeds(): Promise<Feeds> {
   const get = async (name: string) => {
     // a query string skips stale CDN copies after each run
-    const res = await fetch(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
-    if (!res.ok) throw new Error(`Picks answered ${res.status}`);
-    return res.json();
+    return getJson(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
   };
   const [latest, market] = await Promise.all([get('latest.json'), get('market.json').catch(() => null)]);
   const f = readFeedFiles(latest, market);
@@ -102,9 +101,7 @@ export function useFeedFile<T>(name: string, check: (raw: unknown) => raw is T) 
           `feed:${name}`,
           60 * 60_000,
           async () => {
-            const res = await fetch(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
-            if (!res.ok) throw new Error(res.status === 404 ? 'Not published yet' : `Feed answered ${res.status}`);
-            const j = await res.json();
+            const j = await getJson(`${FEED_BASE}/${name}?t=${Math.floor(Date.now() / 600_000)}`);
             if (!check(j)) throw new Error('Unexpected feed file');
             return j;
           },

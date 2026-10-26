@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, changeColor, fonts, space, themed } from '../theme';
-import { fmtNum, fmtPkr, fmtSigned, fmtTime, fmtPct } from '../format';
+import { fmtNum, fmtPkr, fmtSigned, fmtTime, fmtPct, fmtDateTime } from '../format';
 import { INDEX_NAMES } from '../psx/api';
 import { useMarket } from '../store/market';
 import { useUser } from '../store/user';
@@ -45,6 +45,14 @@ function greeting() {
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
 
+/** "14:31", or "Fri 15:30" when the prices aren't from today. */
+function pricesFrom(t: number) {
+  const day = (x: number) => new Date(x + 5 * 3600_000).toISOString().slice(0, 10);
+  if (day(t) === day(Date.now())) return fmtTime(t);
+  const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(t + 5 * 3600_000).getUTCDay()];
+  return Date.now() - t < 6 * 864e5 ? `${wd} ${fmtTime(t)}` : fmtDateTime(t);
+}
+
 export function MarketStatus() {
   const { marketOpen, updatedAt, error, refreshing } = useMarket();
   return (
@@ -53,14 +61,14 @@ export function MarketStatus() {
         <View style={[styles.dot, { backgroundColor: marketOpen ? colors.up : colors.faint }]} />
         <T v="caption" style={{ color: marketOpen ? colors.up : colors.muted }}>
           {marketOpen ? 'Market open' : 'Market closed'}
-          {updatedAt ? `, prices from ${fmtTime(updatedAt)}` : ''}
+          {updatedAt ? `, prices from ${pricesFrom(updatedAt)}` : ''}
           {refreshing ? ', refreshing' : ''}
         </T>
       </View>
       {error ? (
         <View style={styles.error}>
           <T v="caption" style={{ color: colors.downText }}>
-            {error}. Showing the last prices we had; pull down to retry.
+            {error}. Showing the last prices{updatedAt ? ` (from ${pricesFrom(updatedAt)})` : ''}; Sahm tries again every minute, or pull down.
           </T>
         </View>
       ) : null}

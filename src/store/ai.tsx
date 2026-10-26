@@ -12,6 +12,7 @@ import { Attempt, chain, groqAttempts } from '../ai/cloud';
 import { FLASH, geminiModel, geminiWithRetry, GeminiModel } from '../ai/gemini';
 import type { Tier } from '../ai/context';
 import { load as loadKey, save } from '../storage';
+import { logProblem } from '../log';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Run {
@@ -123,6 +124,8 @@ export function AiProvider({ children }: { children: React.ReactNode }) {
         label = l;
         listener?.(l);
       });
+      // every provider failed: worth seeing later (a side branch, the caller still gets the error)
+      gen.done.catch((e) => logProblem('AI answer', e));
       return { gen, engine: () => label, watch: (cb) => (listener = cb) };
     },
     [gemini],

@@ -3,6 +3,11 @@ import { Platform } from 'react-native';
 import { registerWidgetTaskHandler } from 'react-native-android-widget';
 import { widgetTaskHandler } from './src/widget/handler';
 
+import { installCrashLogging } from './src/log';
+
+// as early as possible, so a crash while starting is logged too
+installCrashLogging();
+
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

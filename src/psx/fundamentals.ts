@@ -2,6 +2,7 @@
 import { cached } from './cache';
 import { setLiveFundamentals } from '../analysis/ratios';
 import { DATA_BASE } from '../picks/config';
+import { getJson } from '../net';
 
 export async function loadLiveFundamentals(): Promise<void> {
   try {
@@ -9,13 +10,11 @@ export async function loadLiveFundamentals(): Promise<void> {
       'fundamentals:live',
       12 * 3600_000,
       async () => {
-        const res = await fetch(`${DATA_BASE}/fundamentals.json`);
-        if (!res.ok) throw new Error(`fundamentals ${res.status}`);
-        return res.json();
+        return getJson(`${DATA_BASE}/fundamentals.json`, 40_000);
       },
       { persist: true },
     );
-    setLiveFundamentals(s);
+    setLiveFundamentals(s as Parameters<typeof setLiveFundamentals>[0]);
   } catch {
     // offline: the copy bundled with the app is used
   }
