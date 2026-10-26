@@ -82,7 +82,8 @@ jobs:
         run: npx tsx scripts/watch-alerts.ts /tmp/state
       - name: Mark the evening done
         # only once today's close is in (PSX can publish late); otherwise the backup runs try again
-        if: success() && env.EVENING == '1' && steps.done.outputs.skip != '1'
+        # a run started by hand with alerts (the app, or the Claude task) counts too
+        if: success() && (env.EVENING == '1' || inputs.alerts) && steps.done.outputs.skip != '1'
         run: |
           today=$(TZ=Asia/Karachi date +%F)
           day=$(node -e "try{console.log(require('/tmp/state/latest.json').all.day)}catch{}")
