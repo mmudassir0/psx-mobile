@@ -57,6 +57,12 @@ export const PSX_HOLIDAYS: [string, string][] = [
   ['2026-08-25', 'Eid Milad-un-Nabi*'],
   ['2026-11-09', 'Allama Iqbal Day'],
   ['2026-12-25', 'Quaid-e-Azam Day'],
+  // 2027: the fixed-date weekday holidays. Eid, Ashura and Milad follow the moon; add them (with *) when PSX
+  // publishes the 2027 list in December.
+  ['2027-02-05', 'Kashmir Day'],
+  ['2027-03-23', 'Pakistan Day'],
+  ['2027-05-28', 'Youm-e-Takbeer'],
+  ['2027-11-09', 'Allama Iqbal Day'],
 ];
 
 export function holidayEvents(now = Date.now(), days = 21): MarketEvent[] {
