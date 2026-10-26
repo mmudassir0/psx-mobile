@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { normalise, rebalance } from '../src/portfolio/rebalance';
 import { incomeIdeas, incomePlan, nextMonths } from '../src/portfolio/income';
 import { changeOver, compareRows, maxDrawdown, rebased } from '../src/analysis/compare';
 
@@ -66,6 +67,25 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   );
   check('income ideas: index members, 5-18% yield, not owned, highest first', ideas.map((s) => s.symbol).join() === 'A,C', ideas);
   check('income ideas: Shariah keeps KMI-30 only', incomeIdeas([{ symbol: 'A', divYield: 12, indexes: ['KSE100'], price: 10 }, { symbol: 'C', divYield: 9, indexes: ['KMI30'], price: 10 }], new Set(), true).map((s) => s.symbol).join() === 'C');
+}
+
+// rebalance
+{
+  check('targets scale to 100%', JSON.stringify(normalise({ A: 30, B: 30 }, ['A', 'B', 'C'])) === JSON.stringify({ A: 0.5, B: 0.5, C: 0 }));
+  const pos = [
+    { symbol: 'A', shares: 100, price: 100 }, // 10,000
+    { symbol: 'B', shares: 100, price: 50 }, // 5,000
+    { symbol: 'C', shares: 0, price: 25 }, // new
+  ];
+  const r1 = rebalance(pos, { A: 1, B: 1, C: 1 }, 15000, false);
+  const t = (r: typeof r1, s: string) => r.trades.find((x) => x.symbol === s)?.shares ?? 0;
+  check('new money only: never sells, fills the gaps', r1.trades.every((x) => x.shares > 0) && t(r1, 'A') === 0 && t(r1, 'B') === 100 && t(r1, 'C') === 400 && r1.leftover < 100, r1);
+  const r2 = rebalance(pos, { A: 1, B: 1, C: 1 }, 0, true);
+  check('buy and sell: trims the overweight, buys the rest, weights close to target', t(r2, 'A') === -50 && t(r2, 'B') === 0 && t(r2, 'C') === 200 && r2.maxGap < 1.5 && r2.trades[0].shares < 0, r2);
+  const r3 = rebalance(pos, { A: 1, B: 1, C: 1 }, 1000, false);
+  check('too little cash: spread over the gaps, within the cash', r3.trades.reduce((a, x) => a + x.value, 0) <= 1000 + 1e-9 && t(r3, 'C') > 0 && r3.leftover >= 0 && r3.leftover < 50, r3);
+  const r4 = rebalance([{ symbol: 'A', shares: 10, price: 100 }, { symbol: 'B', shares: 10, price: 100 }], { A: 50, B: 50 }, 0, true);
+  check('already on target: nothing to do', r4.trades.length === 0 && r4.maxGap < 1e-9);
 }
 
 if (failed) {
