@@ -6,6 +6,13 @@ import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
 import { usePicksFeed } from '../picks/feed';
 import { chatContext } from '../ai/chat';
+import { PORTFOLIO_QUESTIONS, portfolioContext } from '../ai/portfolioContext';
+import { useHoldings } from '../portfolio/holdings';
+import { useReviews } from '../portfolio/useReviews';
+import { snapshots, trackReturns, indexReturns, type Snap } from '../portfolio/track';
+import { cached } from '../psx/cache';
+import { fetchSeries } from '../psx/api';
+import type { SeriesPoint } from '../psx/types';
 import { CHAT_SYSTEM } from '../ai/context';
 import type { ChatMessage, Generation } from '../ai/models';
 import { useAi } from '../store/ai';
@@ -28,11 +35,29 @@ interface Turn {
   note?: string;
   /** the full prompt, for "Ask in another app" */
   prompt?: ChatMessage[];
+  /** asked about my portfolio (follow-ups keep it) */
+  mine?: boolean;
 }
 
 /** Market snapshot plus "Ask Sahm": questions answered by the online AI from live PSX data. */
 export default function AIScreen() {
-  const { stocks, indices } = useMarket();
+  const { stocks, indices, bySymbol } = useMarket();
+  const { holdings } = useHoldings();
+  const { rows } = useReviews(holdings, stocks, bySymbol, null);
+  const [last30, setLast30] = useState<{ you: number | null; kse: number | null }>({ you: null, kse: null });
+  React.useEffect(() => {
+    // the last 30 days' tracked return against the KSE-100, for "how did I do" questions
+    (async () => {
+      const snaps: Snap[] = await snapshots();
+      const from = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+      const list = snaps.filter((s) => s.day >= from);
+      if (list.length < 2) return;
+      const tr = trackReturns(list);
+      const kse = await cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).catch(() => [] as SeriesPoint[]);
+      const ix = indexReturns(kse, tr.map((t) => t.day));
+      setLast30({ you: tr[tr.length - 1].ret, kse: ix[ix.length - 1] });
+    })().catch(() => {});
+  }, []);
   const { market } = usePicksFeed();
   const ai = useAi();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -60,16 +85,22 @@ export default function AIScreen() {
 
   const patch = (i: number, p: Partial<Turn>) => setTurns((ts) => ts.map((t, k) => (k === i ? { ...t, ...p } : t)));
 
-  const ask = async (question: string) => {
+  const ask = async (question: string, mine = false) => {
     const q = question.trim();
     if (!q || busy || !ai.available) return;
     const idx = turns.length;
     const history = turns.filter((t) => t.status === 'done').slice(-2);
-    setTurns((ts) => [...ts, { q, a: '', status: 'reading' }]);
+    // typed questions about "my portfolio / my holdings", and follow-ups to one, get the portfolio too
+    mine = mine || /\b(my|mine|i own|i hold)\b/i.test(q) || history.some((t) => t.mine);
+    setTurns((ts) => [...ts, { q, a: '', status: 'reading', mine }]);
     setInput('');
     setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     try {
-      const { text, compact, symbols } = await chatContext(q, stocks, indices, market);
+      const base = await chatContext(q, stocks, indices, market);
+      const mineText = mine && rows.length ? portfolioContext(rows, { tracked30: last30.you, index30: last30.kse }) : null;
+      const text = mineText ? `${mineText}\n\n${base.text}` : base.text;
+      const compact = mineText ? `${mineText}\n\n${base.compact}` : base.compact;
+      const symbols = base.symbols;
       patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
       const build = (tier: 'small' | 'large'): ChatMessage[] => {
         const m: ChatMessage[] = [{ role: 'system', content: `${CHAT_SYSTEM}\n----------\n${tier === 'small' ? compact : text}` }];
@@ -144,6 +175,30 @@ export default function AIScreen() {
                   </T>
                 ) : null}
               </Card>
+
+              {rows.length ? (
+                <View style={{ gap: 10 }}>
+                  <T v="title" style={{ fontSize: 15 }}>
+                    About my portfolio
+                  </T>
+                  <T v="caption">Your holdings, gains and Sahm's view of each are sent with the question.</T>
+                  {PORTFOLIO_QUESTIONS.map((sug) => (
+                    <Pressable
+                      key={sug}
+                      accessibilityRole="button"
+                      disabled={!ready}
+                      onPress={() => ask(sug, true)}
+                      style={({ pressed }) => [styles.suggestion, { borderWidth: 1, borderColor: colors.goldSoft }, (!ready || pressed) && { opacity: 0.55 }]}
+                    >
+                      <T style={{ fontSize: 15 }}>💼</T>
+                      <T v="body" style={{ fontSize: 14.5, flex: 1 }}>
+                        {sug}
+                      </T>
+                      <Icon name="chevron" size={16} color={colors.faint} />
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
 
               <View style={{ gap: 10 }}>
                 <T v="title" style={{ fontSize: 15 }}>
