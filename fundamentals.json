@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-25T06:29:07+00:00",
+ "generatedAt": "2026-10-26T06:36:41+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -1083,23 +1083,23 @@
    }
   },
   "LOTCHEM": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 20272999000,
-   "assets": 44477711000,
-   "liabilities": 24204712000,
-   "currentAssets": 36352006000,
-   "currentLiabilities": 17900472000,
-   "borrowings": 5515838000.0,
-   "cash": 798401000,
+   "equity": 18540792000,
+   "assets": 35878221000,
+   "liabilities": 17337429000,
+   "currentAssets": 28487548000,
+   "currentLiabilities": 10316787000,
+   "borrowings": 6502725000.0,
+   "cash": 1112272000,
    "warnings": [],
    "source": {
-    "title": "Transmission of Quarterly Financial Statements for the Period Ended 30-06-2026",
-    "url": "https://dps.psx.com.pk/download/document/280405.pdf",
-    "date": "2026-07-28",
+    "title": "Transmission of Quarterly Financial Statements for the Period Ended 30 September 2026",
+    "url": "https://dps.psx.com.pk/download/document/286829.pdf",
+    "date": "2026-10-26",
     "pages": [
-     8
+     7
     ],
     "method": "text"
    }
@@ -2133,7 +2133,7 @@
    }
   },
   "POL": {
-   "reason": "total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; missing equity or total assets",
+   "reason": "total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; ignored non-borrowing line 'Long term loans and advances'; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2151,12 +2151,16 @@
     "total_equity": null,
     "total_assets": "196,163",
     "total_liabilities": null,
-    "current_assets": "162,294",
-    "current_liabilities": "69,464",
+    "current_assets": null,
+    "current_liabilities": null,
     "borrowing_lines": [
      {
       "label": "Long term deposits",
       "amount": "1,078"
+     },
+     {
+      "label": "Long term loans and advances",
+      "amount": "53"
      }
     ],
     "cash": "86,263"
