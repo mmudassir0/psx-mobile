@@ -1,9 +1,10 @@
 /** Export everything that lives only on this phone as text, and paste it back to restore. */
 import React, { useState } from 'react';
-import { Share, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Share, StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtDay } from '../format';
-import { applyRestore, exportBackup, readBackup } from '../backup';
+import { applyRestore, exportBackup, readBackup, type Restore } from '../backup';
+import { autoBackupPref, chooseFolder, disable, enable, folderName, listBackups, supported as autoSupported, backupNow } from '../autoBackup';
 import { setHoldings } from '../portfolio/holdings';
 import { appliedBonusesPref, taxStatusPref } from '../portfolio/prefs';
 import { reloadJournal } from '../journal/store';
@@ -34,7 +35,9 @@ export function BackupCard() {
   };
   const doRestore = async () => {
     if (!parsed?.ok) return;
-    const r = parsed.restore;
+    await restoreFrom(parsed.restore);
+  };
+  const restoreFrom = async (r: Restore) => {
     await applyRestore(r);
     // Update what's already loaded; the rest is read when Sahm next starts.
     if (r.data['real.holdings']) await setHoldings(r.data['real.holdings'] as Holding[]);
@@ -98,6 +101,101 @@ export function BackupCard() {
         <Button label="Restore from backup" tone="ghost" onPress={() => (setPasting(true), setMsg(null))} />
       )}
       {msg ? <T v="caption">{msg}</T> : null}
+      {autoSupported ? <AutoBackupBox onRestore={restoreFrom} /> : null}
+    </View>
+  );
+}
+
+/** Weekly backups into a folder you pick once, and restoring from that folder after a reinstall. */
+function AutoBackupBox({ onRestore }: { onRestore: (r: Restore) => Promise<void> }) {
+  const auto = autoBackupPref.use();
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const run = async (f: () => Promise<void>) => {
+    setBusy(true);
+    setNote(null);
+    try {
+      await f();
+    } catch (e) {
+      setNote((e as Error).message || 'That folder could not be used; try another');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const turnOn = () =>
+    run(async () => {
+      const dir = await chooseFolder();
+      if (!dir) return;
+      await enable(dir);
+      setNote(`First backup saved in ${folderName(dir)}.`);
+    });
+  const restoreFromFolder = () =>
+    run(async () => {
+      const dir = auto.dir ?? (await chooseFolder());
+      if (!dir) return;
+      const list = (await listBackups(dir)).filter((b) => b.restore);
+      if (!list.length) return setNote(`No Sahm backups found in ${folderName(dir)}.`);
+      const b = list[0];
+      const c = b.restore!.counts;
+      Alert.alert(
+        `Restore the backup from ${fmtDay(Date.parse(b.day + 'T12:00:00Z'))}?`,
+        `${c.holdings} holdings, ${c.watchlist} watchlist stocks, ${c.journal} track-record entries. It replaces what's on this phone now.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Restore', style: 'destructive', onPress: () => run(() => onRestore(b.restore!)) },
+        ],
+      );
+    });
+  const nextIn = auto.lastAt ? Math.max(0, Math.ceil((auto.lastAt + 7 * 864e5 - Date.now()) / 864e5)) : 0;
+  return (
+    <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 12 }}>
+      <T v="body" style={{ fontFamily: fonts.semibold }}>
+        Automatic backup
+      </T>
+      {auto.dir ? (
+        <>
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Every week into <T v="caption" style={{ fontFamily: fonts.bold }}>{folderName(auto.dir)}</T>, keeping the last 4. Last one{' '}
+            {auto.lastAt ? fmtDay(auto.lastAt) : 'not yet'}
+            {auto.lastAt ? (nextIn ? `, next in ${nextIn} day${nextIn > 1 ? 's' : ''} (when you open Sahm)` : ', next when you open Sahm') : ''}.
+          </T>
+          {auto.error ? (
+            <T v="caption" style={{ color: colors.downText }}>
+              The last try failed: {auto.error}. Choose the folder again.
+            </T>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Button
+                label="Back up now"
+                tone="ghost"
+                disabled={busy}
+                onPress={() =>
+                  run(async () => {
+                    await backupNow(auto.dir!);
+                    await autoBackupPref.set({ ...auto, lastAt: Date.now(), error: null });
+                    setNote('Saved.');
+                  })
+                }
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button label={auto.error ? 'Choose again' : 'Change folder'} tone="ghost" disabled={busy} onPress={turnOn} />
+            </View>
+          </View>
+          <Button label="Turn off" tone="ghost" small disabled={busy} onPress={() => run(disable)} />
+        </>
+      ) : (
+        <>
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Pick a folder once (a new folder inside Download is a good choice) and Sahm saves a backup there every week. Files in that folder stay
+            when the app is removed, so a new phone or a reinstall can restore from them.
+          </T>
+          <Button label="Choose a folder" disabled={busy} onPress={turnOn} />
+        </>
+      )}
+      <Button label="Restore from the backup folder" tone="ghost" disabled={busy} onPress={restoreFromFolder} />
+      {note ? <T v="caption">{note}</T> : null}
     </View>
   );
 }

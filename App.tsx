@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,11 +33,15 @@ import { Icon, IconName } from './src/ui/kit';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import { loadLiveFundamentals } from './src/psx/fundamentals';
+import { maybeBackup } from './src/autoBackup';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 setStorage(diskStore);
 // Newer balance sheets than the ones bundled with this build, when online.
 loadLiveFundamentals();
+// the weekly backup, once the app has settled (it reads everything it saves)
+setTimeout(() => maybeBackup(), 15_000);
+AppState.addEventListener('change', (st) => st === 'active' && maybeBackup());
 
 const Stack = createNativeStackNavigator<RootParams>();
 const Tab = createBottomTabNavigator<TabParams>();

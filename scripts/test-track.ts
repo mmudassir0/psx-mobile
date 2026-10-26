@@ -1,5 +1,6 @@
 /** Return tracking, market mood and the dividend calendar. */
 import { reportText, scrub } from '../src/log';
+import { backupDay, folderName, toPrune } from '../src/backupFiles';
 import { addSnapshot, flowBetween, indexReturns, mixReturns, trackReturns, type Snap, type TrackInput } from '../src/portfolio/track';
 import { moodHistory, moodLabel, moodOutcomes } from '../src/analysis/mood';
 import { calendarItems, type CalendarFeed } from '../src/analysis/calendar';
@@ -250,6 +251,14 @@ const hc = healthCheck(rowsH, idxStocks, 'KMI30');
 const keys = hc.map((x) => x.key);
 check('health: big stock, big sector, tiny, review, index gap', keys.includes('stock-BIG') && keys.includes('sector-OIL') && keys.includes('tiny') && keys.includes('review') && keys.includes('gap-COMMERCIAL BANKS'), keys);
 check('health: worst first', hc[0].level === 'bad');
+
+// automatic backup files
+const dir = 'content://com.android.externalstorage.documents/tree/primary%3ADownload%2FSahm';
+check('backup folder name', folderName(dir) === 'Sahm' && folderName('content://com.android.externalstorage.documents/tree/primary%3ADownload') === 'Download', folderName(dir));
+const f = (d: string) => `${dir}/document/primary%3ADownload%2FSahm%2FSahm%20backup%20${d}.json`;
+check('backup day from file address', backupDay(f('2026-10-26')) === '2026-10-26' && backupDay(dir + '/document/other.json') === null);
+const prune = toPrune([f('2026-10-05'), f('2026-10-26'), dir + '/document/notes.txt', f('2026-10-12'), f('2026-09-28'), f('2026-10-19')]);
+check("keeps the newest four backups, never other files", prune.length === 1 && prune[0] === f("2026-09-28"), prune);
 
 // problem log
 check('log hides keys and tokens', scrub('bad key gsk_abcdefghijklmnop and AIzaSyABCDEFGH12345 at ntfy.sh/secret-topic?token=xyz') === 'bad key gsk_••• and AIza••• at ntfy.sh/•••?token=•••', scrub('bad key gsk_abcdefghijklmnop and AIzaSyABCDEFGH12345 at ntfy.sh/secret-topic?token=xyz'));
