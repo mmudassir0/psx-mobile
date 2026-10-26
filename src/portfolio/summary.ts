@@ -1,4 +1,5 @@
 /** Your real portfolio at a glance (Home): value, today's change, and what needs attention. */
+import { stateOf, type PriceTargets } from './targets';
 import { inbox } from '../analysis/announcements';
 import { resultsShort } from '../analysis/results';
 import { volumeSpike } from '../analysis/activity';
@@ -90,4 +91,16 @@ export function announcementItem(rows: Row[], seenAt: number, now = Date.now()):
   if (!items.length) return [];
   const syms = [...new Set(items.map((i) => i.symbol))];
   return [{ key: 'ann', text: `${items.length} new announcement${items.length > 1 ? 's' : ''}: ${syms.slice(0, 3).join(', ')}${syms.length > 3 ? '…' : ''}`, tone: 'plain', route: 'Announcements' }];
+}
+
+/** Holdings past your own target or rethink price, live. */
+export function targetItems(rows: Row[], targets: Record<string, PriceTargets>): TodoItem[] {
+  const out: TodoItem[] = [];
+  for (const r of rows) {
+    const t = targets[r.holding.symbol];
+    const st = stateOf(r.price, t);
+    if (st === 'reached') out.push({ key: `tgt-${r.holding.symbol}`, text: `${r.holding.symbol} reached your target of Rs ${t!.target}`, tone: 'up', symbol: r.holding.symbol });
+    if (st === 'broken') out.push({ key: `tgt-${r.holding.symbol}`, text: `${r.holding.symbol} is below your rethink price of Rs ${t!.rethink}`, tone: 'down', symbol: r.holding.symbol });
+  }
+  return out;
 }

@@ -33,6 +33,7 @@ export const BACKUP_KEYS = [
   'real.monthlyPlan',
   'real.goals',
   'user.watchGroups',
+  'real.priceTargets',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -68,6 +69,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',
   'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
+  'real.priceTargets': (x) => isObj(x) && Object.values(x).every((t) => isObj(t) && (t.target === null || typeof t.target === 'number') && (t.rethink === null || typeof t.rethink === 'number')),
   'user.watchGroups': (x) => Array.isArray(x) && x.every((g) => isObj(g) && typeof g.name === 'string' && strArr(g.symbols)),
   'real.goals': (x) => x === null || (Array.isArray(x) && x.every((g) => isObj(g) && typeof g.name === 'string' && typeof g.target === 'number' && typeof g.by === 'string' && typeof g.share === 'number')),
   'real.monthlyPlan': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.amount === 'number' && typeof x.day === 'number',

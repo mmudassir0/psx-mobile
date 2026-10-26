@@ -27,6 +27,7 @@ import { SectorMix } from '../../ui/SectorMix';
 import { PerformanceCard } from '../../ui/PerformanceCard';
 import { ZakatCard } from '../../ui/ZakatCard';
 import { GoalCard } from '../../ui/GoalCard';
+import { TargetBox } from '../../ui/TargetBox';
 import { HealthCard } from '../../ui/HealthCard';
 import { TaxYearCard } from '../../ui/TaxYearCard';
 import { useTrackSnapshot } from '../../portfolio/track';
@@ -178,6 +179,7 @@ function HoldingCard({
           </T>
         </View>
       </Pressable>
+      <TargetBox symbol={r.holding.symbol} price={r.price} avgCost={r.holding.avgCost} fairMid={rv?.upside != null ? r.price * (1 + rv.upside) : null} />
       {rv ? (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

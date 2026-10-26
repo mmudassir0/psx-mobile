@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { position, stateOf, withTargetRules } from '../src/portfolio/targets';
 import { colName, toBase64, xlsx } from '../src/xlsx';
 import { strFromU8, unzipSync } from 'fflate';
 import { inbox, kindOf } from '../src/analysis/announcements';
@@ -290,6 +291,17 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const wb = strFromU8(z['xl/workbook.xml']);
   const sh = strFromU8(z['xl/worksheets/sheet1.xml']);
   check('workbook: safe unique sheet names, escaped text, numbers as numbers', wb.includes('name="A B"') && wb.includes('name="A B 2"') && sh.includes('x &amp; &lt;y&gt;') && sh.includes('<v>1.5</v>') && !!z['xl/styles.xml'], wb);
+}
+
+// targets per holding
+{
+  const t = { target: 500, rethink: 300 };
+  check('position between rethink and target', position(400, t) === 0.5 && position(250, t)! < 0 && position(550, t)! > 1 && position(400, { target: 300, rethink: 500 }) === null);
+  check('reached, broken, between', stateOf(500, t) === 'reached' && stateOf(299, t) === 'broken' && stateOf(400, t) === 'between' && stateOf(400, undefined) === null);
+  const rules = [{ symbol: 'LUCK', dir: '>' as const, level: 450 }, { symbol: 'LUCK', dir: '<' as const, level: 'ma200' as const }, { symbol: 'MEBL', dir: '>' as const, level: 450 }];
+  const r1 = withTargetRules(rules, 'LUCK', { target: 450, rethink: null }, { target: 500, rethink: 300 });
+  check('alert rules follow the targets: old one swapped, others kept', r1.length === 4 && !r1.some((r) => r.symbol === 'LUCK' && r.level === 450) && r1.some((r) => r.symbol === 'LUCK' && r.level === 500 && r.dir === '>') && r1.some((r) => r.symbol === 'LUCK' && r.level === 300 && r.dir === '<') && r1.some((r) => r.symbol === 'MEBL'), r1);
+  check('clearing targets removes their alerts', withTargetRules(r1, 'LUCK', { target: 500, rethink: 300 }, { target: null, rethink: null }).filter((r) => r.symbol === 'LUCK').length === 1);
 }
 
 if (failed) {
