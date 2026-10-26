@@ -29,6 +29,7 @@ export const BACKUP_KEYS = [
   'ui.flags',
   'real.targets',
   'real.costs',
+  'real.notes',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -64,6 +65,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',
   'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
+  'real.notes': (x) => isObj(x) && Object.values(x).every((n) => isObj(n) && typeof n.why === 'string' && isObj(n.then)),
   'real.costs': (x) => isObj(x) && typeof x.brokerage === 'number' && typeof x.salesTax === 'number' && typeof x.minPerShare === 'number',
   'real.targets': (x) => isObj(x) && Object.values(x).every((v) => typeof v === 'number' && v >= 0),
   'real.snapshots': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.day === 'string' && typeof e.value === 'number' && isObj(e.pos)),

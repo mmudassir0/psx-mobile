@@ -72,6 +72,12 @@
             }
           ]
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E8B04B"
+        }
       ]
     ]
   }

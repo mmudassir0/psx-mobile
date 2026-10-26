@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { dueNotes, inMonths, moved } from '../src/portfolio/noteDates';
 import { breakEven, tradeCost } from '../src/portfolio/costs';
 import { moneyWeightedRate, whatIf } from '../src/analysis/whatif';
 import { normalise, rebalance } from '../src/portfolio/rebalance';
@@ -129,6 +130,14 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('break-even is about 0.37% above the buy price', be > 100.36 && be < 100.39, be);
   const after = 1000 * be - tradeCost(1000, be).total;
   check('selling at break-even gets back what was paid', after >= 100000 + c.total - 1e-6 && after - (100000 + c.total) < 15, after - (100000 + c.total));
+}
+
+// notes
+{
+  const now = Date.parse('2026-10-26T20:30:00Z'); // 27 Oct 01:30 in Pakistan
+  check('review date months ahead, in Pakistan time', inMonths(6, now) === '2027-04-27' && inMonths(3, now) === '2027-01-27', inMonths(6, now));
+  check('due notes: on or before today, oldest first', dueNotes({ A: { checkOn: '2026-10-27' }, B: { checkOn: '2026-09-01' }, C: { checkOn: '2026-10-28' }, D: { checkOn: null } }, now).join() === 'B,A');
+  check('then → now', moved(12, 7.1, (v) => `${v.toFixed(1)}%`) === '12.0% → 7.1%' && moved(null, 3, String) === null);
 }
 
 if (failed) {

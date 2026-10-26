@@ -10,6 +10,7 @@ import { appliedBonusesPref, taxStatusPref } from '../portfolio/prefs';
 import { reloadJournal } from '../journal/store';
 import { reloadSnapshots } from '../portfolio/track';
 import { reloadAllPrefs } from '../prefs';
+import { rescheduleNotes } from '../portfolio/notes';
 import type { Holding } from '../portfolio/review';
 import { useUser } from '../store/user';
 import { useTheme } from '../store/theme';
@@ -45,6 +46,7 @@ export function BackupCard() {
     if (r.data['real.appliedBonuses']) await appliedBonusesPref.set(r.data['real.appliedBonuses'] as string[]);
     reloadJournal();
     reloadSnapshots();
+    rescheduleNotes();
     await reloadAllPrefs();
     // the screens already open take the restored data now, so nothing old is saved over it
     await reload();

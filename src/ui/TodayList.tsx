@@ -43,7 +43,7 @@ export function useTodayItems(rows: Row[], todo: TodoItem[], max = 7): Item[] {
   const on = useFlags();
   const held = new Set(rows.map((r) => r.holding.symbol));
   const toPortfolio = () => nav.navigate('Tabs', { screen: 'Portfolio', params: { view: 'holdings' } });
-  const out: Item[] = todo.map((t) => ({ key: `todo-${t.key}`, emoji: DOT[t.tone], text: t.text, onPress: () => (t.symbol ? nav.navigate('Stock', { symbol: t.symbol }) : toPortfolio()) }));
+  const out: Item[] = todo.map((t) => ({ key: `todo-${t.key}`, emoji: DOT[t.tone], text: t.text, onPress: () => (t.route ? nav.navigate(t.route) : t.symbol ? nav.navigate('Stock', { symbol: t.symbol }) : toPortfolio()) }));
   for (const e of on('comingUp') ? eventsFor(rows, Date.now(), 7) : []) {
     // payouts already in the to-dos aren't repeated
     if (e.kind === 'exdate' && out.some((o) => e.symbol && o.text.startsWith(e.symbol + ':'))) continue;

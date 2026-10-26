@@ -11,6 +11,8 @@ export interface TodoItem {
   tone: 'down' | 'gold' | 'up' | 'plain';
   /** open this stock when tapped (otherwise My holdings) */
   symbol?: string;
+  /** or open this screen */
+  route?: 'Rebalance' | 'Income';
 }
 
 const DAY = 864e5;

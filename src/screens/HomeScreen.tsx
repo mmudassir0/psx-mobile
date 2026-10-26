@@ -21,6 +21,7 @@ import { useReviews } from '../portfolio/useReviews';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { todoItems, usePortfolioTotals } from '../portfolio/summary';
+import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
 import { layoutPref } from '../nav/layout';
@@ -88,7 +89,8 @@ export default function HomeScreen() {
   useTrackSnapshot(rows, reviewing);
   const real = usePortfolioTotals(rows, bySymbol);
   const applied = appliedBonusesPref.use();
-  const todo = useMemo(() => (reviewing ? [] : todoItems(rows, applied)), [rows, applied, reviewing]);
+  const reminders = useReminderTodos();
+  const todo = useMemo(() => [...reminders, ...(reviewing ? [] : todoItems(rows, applied))].slice(0, 5), [rows, applied, reviewing, reminders]);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();
   const layout = layoutPref.use();
@@ -190,7 +192,7 @@ export default function HomeScreen() {
                     key={t.key}
                     accessibilityRole="button"
                     hitSlop={4}
-                    onPress={() => (t.symbol ? open(t.symbol) : nav.navigate('Tabs', { screen: 'Portfolio' }))}
+                    onPress={() => (t.route ? nav.navigate(t.route) : t.symbol ? open(t.symbol) : nav.navigate('Tabs', { screen: 'Portfolio' }))}
                     style={styles.todoRow}
                   >
                     <View style={[styles.todoDot, { backgroundColor: t.tone === 'down' ? colors.down : t.tone === 'gold' ? colors.gold : t.tone === 'up' ? colors.up : colors.faint }]} />
