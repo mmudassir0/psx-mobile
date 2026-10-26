@@ -18,7 +18,7 @@ import { upcomingPayout } from '../analysis/dividends';
 import { BENCH_LABEL, benchmarkPref } from '../portfolio/prefs';
 import { Panel } from '../ui/bits';
 import { GoalCard } from '../ui/GoalCard';
-import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, Empty, IconButton, Section, Segmented, T } from '../ui/kit';
 
 const pc = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
@@ -142,6 +142,7 @@ export default function SummaryScreen() {
             <GoalCard value={value} tracked={snaps ? trackedYearly(snaps) : null} />
           </Section>
         ) : null}
+        <Button label="Share as a picture (percentages only)" tone="ghost" onPress={() => nav.navigate('ShareCard')} />
         <T v="caption" style={{ lineHeight: 18 }}>
           Returns leave out money you added or took out, and count cash dividends before tax, the way the KSE-100 does. They come from
           the snapshot saved each day you open Sahm, so days the app wasn't opened are bridged.

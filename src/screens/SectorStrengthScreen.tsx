@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed } from '../theme';
 import { usePicksFeed } from '../picks/feed';
 import { sectorRows, type SectorStat } from '../analysis/market';
-import { shortSector } from '../sectors';
 import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
@@ -17,6 +16,8 @@ type Period = 'r1w' | 'r1m' | 'r3m' | 'r6m';
 const LABEL: Record<Period, string> = { r1w: '1 week', r1m: '1 month', r3m: '3 months', r6m: '6 months' };
 const pc = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
 const key = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+/** PSX's full sector name, in normal case ("TEXTILE SPINNING" → "Textile Spinning"); the short names merge some sectors. */
+const nameOf = (s: string) => s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\b(And|Of|Cos)\b/g, (m) => m.toLowerCase()).replace(/\bInv\b/g, 'Inv.');
 
 export default function SectorStrengthScreen() {
   const nav = useNavigation();
@@ -93,7 +94,7 @@ export default function SectorStrengthScreen() {
                     <View style={{ flex: 1, gap: 3 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
                         <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, flex: 1 }} numberOfLines={1}>
-                          {shortSector(r.name)}
+                          {nameOf(r.name)}
                         </T>
                         {share > 0 ? <T style={{ fontFamily: fonts.bold, fontSize: 11.5, color: colors.gold }}>You {(share * 100).toFixed(0)}%</T> : null}
                         <T v="mono" style={{ fontSize: 13, color: v >= 0 ? colors.up : colors.downText, width: 62, textAlign: 'right' }}>

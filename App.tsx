@@ -142,6 +142,7 @@ function Root() {
       <Stack.Screen name="Summary" getComponent={() => require('./src/screens/SummaryScreen').default} />
       <Stack.Screen name="Alerts" getComponent={() => require('./src/screens/AlertsScreen').default} />
       <Stack.Screen name="News" getComponent={() => require('./src/screens/NewsScreen').default} />
+      <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
       <Stack.Screen name="Export" getComponent={() => require('./src/screens/ExportScreen').default} />
       <Stack.Screen name="Announcements" getComponent={() => require('./src/screens/AnnouncementsScreen').default} />
       <Stack.Screen name="Sectors" getComponent={() => require('./src/screens/SectorStrengthScreen').default} />
@@ -180,6 +181,7 @@ const linking: LinkingOptions<RootParams> = {
       Sectors: 'sectors',
       Announcements: 'announcements',
       Export: 'export',
+      ShareCard: 'share',
     },
   },
 };
