@@ -28,6 +28,7 @@ export type RootParams = {
   Compare: { symbols?: string[] } | undefined;
   Income: undefined;
   Rebalance: undefined;
+  WhatIf: undefined;
 };
 
 declare global {

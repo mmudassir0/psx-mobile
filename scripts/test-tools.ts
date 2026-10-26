@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { moneyWeightedRate, whatIf } from '../src/analysis/whatif';
 import { normalise, rebalance } from '../src/portfolio/rebalance';
 import { incomeIdeas, incomePlan, nextMonths } from '../src/portfolio/income';
 import { changeOver, compareRows, maxDrawdown, rebased } from '../src/analysis/compare';
@@ -86,6 +87,34 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('too little cash: spread over the gaps, within the cash', r3.trades.reduce((a, x) => a + x.value, 0) <= 1000 + 1e-9 && t(r3, 'C') > 0 && r3.leftover >= 0 && r3.leftover < 50, r3);
   const r4 = rebalance([{ symbol: 'A', shares: 10, price: 100 }, { symbol: 'B', shares: 10, price: 100 }], { A: 50, B: 50 }, 0, true);
   check('already on target: nothing to do', r4.trades.length === 0 && r4.maxGap < 1e-9);
+}
+
+// what-if
+{
+  const D = 864e5;
+  const t0 = Date.UTC(2023, 0, 2, 5);
+  // a price that doubles in a straight line over ~3 years of weekdays
+  const days: number[] = [];
+  for (let t = t0; days.length < 780; t += D) if (![0, 6].includes(new Date(t).getUTCDay())) days.push(t);
+  const candles = days.map((t, i) => ({ t, o: 0, h: 0, l: 0, c: 100 * (1 + i / 779), v: 1 }));
+  const r = whatIf({ candles, start: t0, amount: 100000, monthly: 0, taxRate: 0.15 })!;
+  check('single buy: doubles with the price', Math.abs(r.value - 200000) < 1 && r.buys === 1 && Math.abs(r.totalReturn - 1) < 1e-6, r.value);
+  check('yearly rate for a double in ~3 years is about 26%', r.yearly != null && r.yearly > 0.24 && r.yearly < 0.28, r.yearly);
+  check('money-weighted rate: 100 → 110 in a year is 10%', Math.abs(moneyWeightedRate([{ t: 0, amount: 100 }], 110, 365.25 * D)! - 0.1) < 1e-6);
+  const m = whatIf({ candles, start: t0, amount: 10000, monthly: 10000, taxRate: 0.15 })!;
+  check('monthly: one buy a month', m.buys >= 35 && m.buys <= 37 && Math.abs(m.invested - m.buys * 10000) < 1e-6, m.buys);
+  // a dividend of Rs 10 a share a year in, then a 100% bonus later: paid on half of today's shares
+  const div = [
+    { dps: 10, bonusPct: 0, bookClosure: days[260] },
+    { dps: 0, bonusPct: 100, bookClosure: days[520] },
+  ];
+  const d = whatIf({ candles, dividends: div, start: t0, amount: 100000, monthly: 0, taxRate: 0.15 })!;
+  // 1,000 shares in today's terms, but only 500 when the dividend was paid
+  check('dividend counted on the shares held then (bonus since), after tax', Math.abs(d.dividendsGross - 5000) < 1e-6 && Math.abs(d.dividendsNet - 4250) < 1e-6, d.dividendsGross);
+  const dip = candles.map((b, i) => ({ ...b, c: i === 100 ? 60 : b.c }));
+  const w = whatIf({ candles: dip, start: t0, amount: 100000, monthly: 0, taxRate: 0 })!;
+  check('worst fall below the money put in', w.worst != null && Math.abs(w.worst.pct - -0.4) < 1e-9 && w.worst.t === days[100], w.worst);
+  check('no history from the start date: no answer', whatIf({ candles, start: days[779] + 5 * D, amount: 1, monthly: 0, taxRate: 0 }) === null);
 }
 
 if (failed) {
