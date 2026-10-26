@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { breakEven, tradeCost } from '../src/portfolio/costs';
 import { moneyWeightedRate, whatIf } from '../src/analysis/whatif';
 import { normalise, rebalance } from '../src/portfolio/rebalance';
 import { incomeIdeas, incomePlan, nextMonths } from '../src/portfolio/income';
@@ -115,6 +116,19 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const w = whatIf({ candles: dip, start: t0, amount: 100000, monthly: 0, taxRate: 0 })!;
   check('worst fall below the money put in', w.worst != null && Math.abs(w.worst.pct - -0.4) < 1e-9 && w.worst.t === days[100], w.worst);
   check('no history from the start date: no answer', whatIf({ candles, start: days[779] + 5 * D, amount: 1, monthly: 0, taxRate: 0 }) === null);
+}
+
+// trade costs
+{
+  const c = tradeCost(1000, 100); // Rs 100,000
+  // brokerage 150, sales tax 16% of (150 + 3.50) = 24.56, PSX 3.50 + 0.62, SECP 0.65, NCCPL 1.11, CDC 3.60 → min 5
+  check('costs on a Rs 100,000 trade', Math.abs(c.brokerage - 150) < 1e-9 && Math.abs(c.salesTax - 24.56) < 1e-9 && Math.abs(c.exchange - (3.5 + 0.62 + 0.65 + 1.11 + 5)) < 1e-9 && Math.abs(c.pct - 0.0018544) < 1e-6, c);
+  const cheap = tradeCost(10000, 5); // under Rs 20: Rs 0.03 a share beats 0.15%
+  check('minimum brokerage per share under Rs 20', Math.abs(cheap.brokerage - 300) < 1e-9, cheap.brokerage);
+  const be = breakEven(1000, 100);
+  check('break-even is about 0.37% above the buy price', be > 100.36 && be < 100.39, be);
+  const after = 1000 * be - tradeCost(1000, be).total;
+  check('selling at break-even gets back what was paid', after >= 100000 + c.total - 1e-6 && after - (100000 + c.total) < 15, after - (100000 + c.total));
 }
 
 if (failed) {

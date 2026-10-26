@@ -8,6 +8,7 @@ import { applyTrade, setHoldings, useHoldings } from '../portfolio/holdings';
 import { boughtPref, taxStatusPref } from '../portfolio/prefs';
 import { heldSince2023, saleLine, saleTax } from '../portfolio/tax';
 import { logTrade } from '../portfolio/trades';
+import { breakEven, costsPref, tradeCost } from '../portfolio/costs';
 import { pkToday } from '../journal/store';
 import { Panel } from './bits';
 import { Button, Segmented, T } from './kit';
@@ -22,6 +23,7 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
   const tax = taxStatusPref.use();
   const taxOn = useFlag('tax');
   const bought = boughtPref.use();
+  const costs = costsPref.use();
   useEffect(() => {
     if (price) setPx(price.toFixed(2));
   }, [price]);
@@ -67,6 +69,7 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
           {saleLine(sale, (v) => fmtNum(v, 0))}
         </T>
       ) : null}
+      {n(shares) > 0 && n(px) > 0 && !preview.error ? <CostLine side={side} shares={n(shares)} price={n(px)} costs={costs} /> : null}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <View style={{ flex: 1 }}>
           <Button label="Cancel" tone="ghost" onPress={onDone} />
@@ -84,3 +87,17 @@ const styles = themed(() =>
     input: { minWidth: 0, flexBasis: 0, height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text },
   }),
 );
+
+/** The broker's and the market's charges on this trade, and for a buy the price it must reach to come out even. */
+function CostLine({ side, shares, price, costs }: { side: 'buy' | 'sell'; shares: number; price: number; costs: Parameters<typeof tradeCost>[2] }) {
+  const c = tradeCost(shares, price, costs);
+  const r = (v: number) => fmtNum(v, 0);
+  return (
+    <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+      Charges about Rs {r(c.total)} ({(c.pct * 100).toFixed(2)}%: brokerage Rs {r(c.brokerage)}, sales tax Rs {r(c.salesTax)}, PSX, CDC and others Rs {r(c.exchange)}).
+      {side === 'buy'
+        ? ` You need to sell above Rs ${breakEven(shares, price, costs).toFixed(2)} to come out ahead after both trades' charges.`
+        : ` You'd receive about Rs ${r(c.value - c.total)} before capital gains tax.`}
+    </T>
+  );
+}

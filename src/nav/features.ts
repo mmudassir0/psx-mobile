@@ -46,6 +46,7 @@ export const FEATURES: Feature[] = [
   { key: 'ideas', label: 'Ideas & picks', emoji: '💡', group: 'Ideas', words: 'picks long-term list experiment setups', flags: ['ideas'], go: tab('Ideas') },
   { key: 'record', label: "Sahm's record", emoji: '🏅', group: 'Ideas', words: 'track record verdicts scorecard', flags: ['ideas'], go: (nav) => nav.navigate('Record') },
   { key: 'ai', label: 'Ask AI', emoji: '✨', group: 'Ideas', words: 'ai chat question gemini groq', flags: ['ai'], go: tab('AI') },
+  { key: 'costs', label: 'Trading costs', emoji: '🧮', group: 'App', words: 'fees brokerage charges commission break even cdc', go: (nav) => nav.navigate('Settings') },
   { key: 'settings', label: 'Settings', emoji: '⚙️', group: 'App', words: 'settings theme backup keys tax status layout', go: (nav) => nav.navigate('Settings') },
   { key: 'find', label: 'Search', emoji: '🔎', group: 'App', words: 'find search', go: (nav) => nav.navigate('Find') },
 ];

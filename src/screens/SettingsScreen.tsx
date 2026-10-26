@@ -15,6 +15,7 @@ import { Panel } from '../ui/bits';
 import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
 import { ProblemLogCard } from '../ui/ProblemLogCard';
+import { CostsCard } from '../ui/CostsCard';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
 
@@ -171,6 +172,10 @@ export default function SettingsScreen() {
           </T>
         </Section>
         ) : null}
+
+        <Section title="Trading costs">
+          <CostsCard />
+        </Section>
 
         <Section title="Your data">
           <BackupCard />
