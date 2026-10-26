@@ -40,6 +40,7 @@ export const FEATURES: Feature[] = [
   { key: 'watch', label: 'Watchlist', emoji: '⭐', group: 'Market', words: 'watch star favourite', flags: ['watchlist'], go: tab('Market', { mode: 'watch' }) },
   { key: 'kse', label: 'KSE-100', emoji: '📉', group: 'Market', words: 'index chart kse100', go: (nav) => nav.navigate('Index', { code: 'KSE100' }) },
   { key: 'kmi', label: 'KMI-30', emoji: '☪️', group: 'Market', words: 'shariah index kmi30', go: (nav) => nav.navigate('Index', { code: 'KMI30' }) },
+  { key: 'heatmap', label: 'Market map', emoji: '🗺️', group: 'Market', words: 'heatmap heat map treemap sectors tiles overview', go: (nav) => nav.navigate('Heatmap') },
   { key: 'compare', label: 'Compare stocks', emoji: '🆚', group: 'Market', words: 'compare versus vs side by side peers', go: (nav) => nav.navigate('Compare') },
   { key: 'whatif', label: 'What if', emoji: '⏳', group: 'Market', words: 'what if simulator back then past invested monthly sip history return', go: (nav) => nav.navigate('WhatIf') },
   { key: 'dividends', label: 'Dividend calendar', emoji: '💸', group: 'Market', words: 'dividend payout book closure bonus calendar', flags: ['dividends'], go: (nav) => nav.navigate('Dividends') },

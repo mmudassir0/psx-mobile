@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { nested, squarify } from '../src/analysis/treemap';
 import { sharesFromTrades, snapshotLookup, statementHtml, taxStatement } from '../src/portfolio/taxStatement';
 import { crossedToday, describeRule, parseRules, rulesText } from '../src/analysis/watch';
 import { nextPlanDays, planDayIn, planDue } from '../src/portfolio/planDates';
@@ -192,6 +193,19 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('tax withheld by payer (power 7.5%)', Math.abs(st.divWithheld - (500 * 0.15 + 180 * 0.15 + 60 * 0.075)) < 1e-9 && st.assumed.length === 0, st.divWithheld);
   const html = statementHtml(st, { name: 'M & co', status: 'filer', made: '27 Oct 2026' });
   check('statement page has the totals and escapes text', html.includes('tax year 2026') && html.includes('Rs 1,000') && html.includes('M &amp; co') && !html.includes('M & co'));
+}
+
+// treemap
+{
+  const vals = [6, 6, 4, 3, 2, 2, 1];
+  const t = squarify(vals, (v) => v, { x: 0, y: 0, w: 6, h: 4 });
+  const area = (r: { w: number; h: number }) => r.w * r.h;
+  check('treemap: areas in proportion, inside the box', t.length === 7 && t.every((r) => Math.abs(area(r) - r.item) < 1e-9 && r.x >= -1e-9 && r.y >= -1e-9 && r.x + r.w <= 6 + 1e-9 && r.y + r.h <= 4 + 1e-9), t);
+  const overlap = t.some((a, i) => t.some((b, j) => i < j && a.x < b.x + b.w - 1e-9 && b.x < a.x + a.w - 1e-9 && a.y < b.y + b.h - 1e-9 && b.y < a.y + a.h - 1e-9));
+  check('treemap: no overlaps', !overlap);
+  check('treemap: tiles are not slivers', t.every((r) => Math.max(r.w / r.h, r.h / r.w) < 4), t.map((r) => (r.w / r.h).toFixed(2)));
+  const n = nested([{ s: 'A', v: 3 }, { s: 'A', v: 1 }, { s: 'B', v: 4 }, { s: 'C', v: 0 }], (x) => x.s, (x) => x.v, { x: 0, y: 0, w: 100, h: 100 }, 10);
+  check('nested: groups sized by their totals, empty items left out', n.length === 2 && Math.abs(area(n[0].rect) - 5000) < 1e-6 && n.reduce((a, g) => a + g.tiles.length, 0) === 3);
 }
 
 if (failed) {

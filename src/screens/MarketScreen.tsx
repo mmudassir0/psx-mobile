@@ -230,7 +230,7 @@ export default function MarketScreen() {
 
             {tiles.length ? (
               <View style={styles.pad}>
-                <Section title="Sectors" action={sector ? 'Clear filter' : undefined} onAction={() => setSector(null)}>
+                <Section title="Sectors" action={sector ? 'Clear filter' : 'Market map'} onAction={() => (sector ? setSector(null) : nav.navigate('Heatmap'))}>
                   <View style={styles.grid}>
                     {tiles.map((t) => {
                       const strength = Math.min(1, Math.abs(t.pct) / 2);
