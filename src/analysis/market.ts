@@ -164,6 +164,9 @@ export interface SectorStat {
   vol: number;
   /** share of its stocks above their 200-day average */
   up: number;
+  /** average 3- and 6-month return (feeds from late October 2026 on) */
+  r3m?: number | null;
+  r6m?: number | null;
 }
 
 export interface MarketFeed {
@@ -174,13 +177,13 @@ export interface MarketFeed {
   breadth: number | null;
   indices: Record<string, { regime: Regime; since: number; days: number; close: number; r1m: number | null; fromHigh: number }>;
   stale?: boolean;
-  /** compact rows: [name, n, r1w, r1m, vol, up] */
-  sectors: [string, number, number, number, number, number][];
+  /** compact rows: [name, n, r1w, r1m, vol, up, r3m?, r6m?] */
+  sectors: [string, number, number, number, number, number, number?, number?][];
   /** market mood, 0 extreme fear … 100 extreme greed (see mood.ts) */
   mood?: { score: number; parts: (number | null)[]; day: string };
 }
 
-export const sectorRows = (f: MarketFeed): SectorStat[] => f.sectors.map(([name, n, r1w, r1m, vol, up]) => ({ name, n, r1w, r1m, vol, up }));
+export const sectorRows = (f: MarketFeed): SectorStat[] => f.sectors.map(([name, n, r1w, r1m, vol, up, r3m, r6m]) => ({ name, n, r1w, r1m, vol, up, r3m: r3m ?? null, r6m: r6m ?? null }));
 
 const pkDate = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
 

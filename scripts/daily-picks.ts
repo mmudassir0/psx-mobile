@@ -272,15 +272,17 @@ async function main() {
       };
     console.log(`${code}: ${t ? `${t.regime} for ${t.days} days` : 'no data'}`);
   }
-  const groups = new Map<string, { r1w: number[]; r1m: number[]; vol: number[]; up: number }>();
+  const groups = new Map<string, { r1w: number[]; r1m: number[]; r3m: number[]; r6m: number[]; vol: number[]; up: number }>();
   for (const u of universe) {
     const S = u.series!;
     const n = S.c.length - 1;
     const sector = sectorOf[u.symbol];
     if (!sector || n < 260 || pkDay(S.c[n].t) !== day || liquidityAt(S, n) < MIN_LIQUIDITY) continue;
-    const g = groups.get(sector) ?? { r1w: [], r1m: [], vol: [], up: 0 };
+    const g = groups.get(sector) ?? { r1w: [], r1m: [], r3m: [], r6m: [], vol: [], up: 0 };
     g.r1w.push(S.cl[n] / S.cl[n - 5] - 1);
     g.r1m.push(S.cl[n] / S.cl[n - 21] - 1);
+    g.r3m.push(S.cl[n] / S.cl[n - 63] - 1);
+    g.r6m.push(S.cl[n] / S.cl[n - 126] - 1);
     const avg = (a: number, b: number) => S.c.slice(a, b + 1).reduce((x, c) => x + c.v, 0) / (b - a + 1);
     g.vol.push(avg(n - 4, n) / (avg(n - 59, n) || 1));
     if (S.e200[n] != null && S.cl[n] > (S.e200[n] as number)) g.up++;
@@ -307,6 +309,8 @@ async function main() {
             r3(mean(g.r1m)),
             Math.round(mean(g.vol) * 100) / 100,
             r3(g.up / g.r1m.length),
+            r3(mean(g.r3m)),
+            r3(mean(g.r6m)),
           ] as MarketFeed['sectors'][number],
       )
       .sort((a, b) => b[3] - a[3]),

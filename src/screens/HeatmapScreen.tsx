@@ -11,6 +11,11 @@ import { shortSector } from '../sectors';
 import { nested } from '../analysis/treemap';
 import type { Stock } from '../psx/types';
 import { IconButton, Segmented, T } from '../ui/kit';
+import { Sunburst } from '../ui/Sunburst';
+import { makePref } from '../prefs';
+
+/** tiles or rings, remembered */
+const stylePref = makePref<'tiles' | 'rings'>('ui.mapStyle', 'tiles');
 import { MarketStatus } from './HomeScreen';
 
 type Scope = 'kse100' | 'kmi30' | 'all' | 'mine';
@@ -33,7 +38,8 @@ function mix(a: string, b: string, t: number) {
 
 export default function HeatmapScreen() {
   const nav = useNavigation();
-  const { stocks } = useMarket();
+  const { stocks, indices } = useMarket();
+  const style = stylePref.use();
   const { watchlist } = useUser();
   const { holdings } = useHoldings();
   const [scope, setScope] = useState<Scope>('kse100');
@@ -50,7 +56,19 @@ export default function HeatmapScreen() {
     if (scope === 'mine') return pick.filter((s) => mine.has(s.symbol));
     return [...pick].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)).slice(0, 150);
   }, [stocks, scope, holdings, watchlist]);
-  const groups = useMemo(() => (w > 0 ? nested(list, (s) => shortSector(s.sector), (s) => s.marketCap ?? 0, { x: 0, y: 0, w, h }, HEADER) : []), [list, w, h]);
+  const groups = useMemo(
+    () =>
+      w > 0
+        ? nested(
+            list,
+            (s) => shortSector(s.sector),
+            (s) => s.marketCap ?? 0,
+            { x: 0, y: 0, w, h },
+            HEADER,
+          )
+        : [],
+    [list, w, h],
+  );
 
   // value-weighted move of each sector, for its label
   const sectorMove = (g: (typeof groups)[number]) => {
@@ -87,69 +105,134 @@ export default function HeatmapScreen() {
           value={scope}
           onChange={setScope}
         />
-        <Segmented
-          options={[
-            { key: 'today', label: 'Today' },
-            { key: 'year', label: '1 year' },
-          ]}
-          value={period}
-          onChange={setPeriod}
-        />
-        <T v="caption">
-          {list.length} stocks · {up} up, {down} down · tile size is market value · tap a tile to open it
-        </T>
-        <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))} style={{ height: h || 400, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.ground }}>
-          {!list.length ? (
-            <T v="caption" style={{ padding: 16 }}>
-              {scope === 'mine' ? 'Add holdings or watchlist stocks to see them here.' : 'Waiting for prices…'}
-            </T>
-          ) : null}
-          {groups.map((g) => (
-            <React.Fragment key={g.group}>
-              {g.tiles.map((t) => {
-                const v = move(t.item);
-                const big = t.w > 44 && t.h > 26;
-                // strong colours take white text; faint ones the normal text colour (readable in light mode too)
-                const ink = v != null && Math.abs(v) / FULL[period] > 0.45 ? '#FFFFFF' : colors.text;
-                return (
-                  <Pressable
-                    key={t.item.symbol}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t.item.symbol} ${v != null ? v.toFixed(1) : ''}%`}
-                    onPress={() => nav.navigate('Stock', { symbol: t.item.symbol })}
-                    style={{ position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, padding: 1 }}
-                  >
-                    <View style={{ flex: 1, backgroundColor: tileColor(v), borderRadius: 3, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      {big ? (
-                        <>
-                          <T numberOfLines={1} style={{ fontFamily: fonts.bold, fontSize: Math.min(15, Math.max(9.5, t.w / 6)), color: ink }}>
-                            {t.item.symbol}
-                          </T>
-                          {t.h > 38 ? (
-                            <T numberOfLines={1} style={{ fontFamily: fonts.semibold, fontSize: Math.min(12.5, Math.max(9, t.w / 8)), color: ink, opacity: 0.85 }}>
-                              {v == null ? '–' : `${v >= 0 ? '+' : ''}${v.toFixed(period === 'today' ? 1 : 0)}%`}
-                            </T>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-              {g.labelled ? (
-                <View pointerEvents="none" style={{ position: 'absolute', left: g.rect.x + 1, top: g.rect.y, width: g.rect.w - 2, height: HEADER, flexDirection: 'row', paddingHorizontal: 3, backgroundColor: colors.ground }}>
-                  <T numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 10, color: colors.text2 }}>
-                    {g.group.toUpperCase()}
-                  </T>
-                  <T style={{ fontFamily: fonts.bold, fontSize: 10, color: sectorMove(g) >= 0 ? colors.up : colors.downText }}>
-                    {sectorMove(g) >= 0 ? '+' : ''}
-                    {sectorMove(g).toFixed(1)}%
-                  </T>
-                </View>
-              ) : null}
-            </React.Fragment>
-          ))}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <Segmented
+              options={[
+                { key: 'today', label: 'Today' },
+                { key: 'year', label: '1 year' },
+              ]}
+              value={period}
+              onChange={setPeriod}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Segmented
+              options={[
+                { key: 'tiles', label: '▦ Tiles' },
+                { key: 'rings', label: '◎ Rings' },
+              ]}
+              value={style}
+              onChange={(k) => stylePref.set(k)}
+            />
+          </View>
         </View>
+        <T v="caption">
+          {list.length} stocks · {up} up, {down} down · {style === 'rings' ? 'slice' : 'tile'} size is market value
+        </T>
+        {style === 'rings' ? (
+          <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))}>
+            {list.length ? (
+              <Sunburst
+                stocks={list}
+                group={(s) => shortSector(s.sector)}
+                move={move}
+                color={tileColor}
+                size={w}
+                center={{
+                  label: scope === 'kse100' ? 'KSE-100' : scope === 'kmi30' ? 'KMI-30' : scope === 'mine' ? 'Yours' : 'Top 150',
+                  move:
+                    period === 'today' && (scope === 'kse100' || scope === 'kmi30')
+                      ? (indices.find((i) => i.code === (scope === 'kse100' ? 'KSE100' : 'KMI30'))?.changePct ?? null)
+                      : null,
+                }}
+                onStock={(symbol) => nav.navigate('Stock', { symbol })}
+              />
+            ) : (
+              <T v="caption">{scope === 'mine' ? 'Add holdings or watchlist stocks to see them here.' : 'Waiting for prices…'}</T>
+            )}
+          </View>
+        ) : (
+          <View
+            onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))}
+            style={{ height: h || 400, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.ground }}
+          >
+            {!list.length ? (
+              <T v="caption" style={{ padding: 16 }}>
+                {scope === 'mine' ? 'Add holdings or watchlist stocks to see them here.' : 'Waiting for prices…'}
+              </T>
+            ) : null}
+            {groups.map((g) => (
+              <React.Fragment key={g.group}>
+                {g.tiles.map((t) => {
+                  const v = move(t.item);
+                  const big = t.w > 44 && t.h > 26;
+                  // strong colours take white text; faint ones the normal text colour (readable in light mode too)
+                  const ink = v != null && Math.abs(v) / FULL[period] > 0.45 ? '#FFFFFF' : colors.text;
+                  return (
+                    <Pressable
+                      key={t.item.symbol}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t.item.symbol} ${v != null ? v.toFixed(1) : ''}%`}
+                      onPress={() => nav.navigate('Stock', { symbol: t.item.symbol })}
+                      style={{ position: 'absolute', left: t.x, top: t.y, width: t.w, height: t.h, padding: 1 }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          backgroundColor: tileColor(v),
+                          borderRadius: 3,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {big ? (
+                          <>
+                            <T numberOfLines={1} style={{ fontFamily: fonts.bold, fontSize: Math.min(15, Math.max(9.5, t.w / 6)), color: ink }}>
+                              {t.item.symbol}
+                            </T>
+                            {t.h > 38 ? (
+                              <T
+                                numberOfLines={1}
+                                style={{ fontFamily: fonts.semibold, fontSize: Math.min(12.5, Math.max(9, t.w / 8)), color: ink, opacity: 0.85 }}
+                              >
+                                {v == null ? '–' : `${v >= 0 ? '+' : ''}${v.toFixed(period === 'today' ? 1 : 0)}%`}
+                              </T>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+                {g.labelled ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      left: g.rect.x + 1,
+                      top: g.rect.y,
+                      width: g.rect.w - 2,
+                      height: HEADER,
+                      flexDirection: 'row',
+                      paddingHorizontal: 3,
+                      backgroundColor: colors.ground,
+                    }}
+                  >
+                    <T numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 10, color: colors.text2 }}>
+                      {g.group.toUpperCase()}
+                    </T>
+                    <T style={{ fontFamily: fonts.bold, fontSize: 10, color: sectorMove(g) >= 0 ? colors.up : colors.downText }}>
+                      {sectorMove(g) >= 0 ? '+' : ''}
+                      {sectorMove(g).toFixed(1)}%
+                    </T>
+                  </View>
+                ) : null}
+              </React.Fragment>
+            ))}
+          </View>
+        )}
         <T v="caption" style={{ lineHeight: 18 }}>
           Brighter green or red means a bigger move ({FULL[period]}% or more is the strongest). Sector figures are weighted by market value.
         </T>
