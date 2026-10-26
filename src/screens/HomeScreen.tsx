@@ -20,7 +20,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useReviews } from '../portfolio/useReviews';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
-import { activityItems, todoItems, usePortfolioTotals } from '../portfolio/summary';
+import { activityItems, nextDividendLine, todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
@@ -101,8 +101,18 @@ export default function HomeScreen() {
   // keep the home screen widget current (only once real prices are in)
   useEffect(() => {
     if (!hasReal || reviewing || !ready || !(real.total > 0)) return;
-    updateWidget({ value: real.total, today: real.today, todayPct: real.todayPct, pnlPct: real.pnlPct, mood: mood?.now.score ?? null, moodLabel: mood ? moodLabel(mood.now.score) : null, at: Date.now() });
-  }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood]);
+    updateWidget({
+      value: real.total,
+      today: real.today,
+      todayPct: real.todayPct,
+      pnlPct: real.pnlPct,
+      mood: mood?.now.score ?? null,
+      moodLabel: mood ? moodLabel(mood.now.score) : null,
+      at: Date.now(),
+      nextDividend: nextDividendLine(rows),
+      due: reminders[0]?.text ?? null,
+    });
+  }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood, rows, reminders]);
 
   const val = valuePortfolio(account, (s) => bySymbol.get(s));
   const homeIdx = HOME_INDICES.map((c) => indices.find((i) => i.code === c)).filter(Boolean) as typeof indices;

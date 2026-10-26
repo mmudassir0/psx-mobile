@@ -138,7 +138,7 @@ export default function SummaryScreen() {
           </Section>
         ) : null}
         {rows.length && goalOn ? (
-          <Section title="Your goal">
+          <Section title="Your goals">
             <GoalCard value={value} tracked={snaps ? trackedYearly(snaps) : null} />
           </Section>
         ) : null}

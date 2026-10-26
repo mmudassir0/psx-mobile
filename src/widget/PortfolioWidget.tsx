@@ -11,6 +11,10 @@ export interface WidgetData {
   moodLabel: string | null;
   /** epoch ms the figures are from */
   at: number;
+  /** the next cash dividend on your holdings, e.g. "MEBL Rs 1,200 · book closure 4 Nov" */
+  nextDividend?: string | null;
+  /** a reminder that's due, e.g. "Check your note on LUCK" */
+  due?: string | null;
 }
 
 export const WIDGET_KEY = 'widget.data';
@@ -34,7 +38,10 @@ export function PortfolioWidget({ data }: { data: WidgetData | null }) {
     >
       <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent' }}>
         <TextWidget text="Sahm · My portfolio" style={{ fontSize: 12, color: '#97A3B2' }} />
-        <TextWidget text={data ? time(data.at) : ''} style={{ fontSize: 11, color: '#7B8797' }} />
+        <TextWidget
+          text={data?.mood != null ? `Mood ${data.mood} ${data.moodLabel ?? ''}` : data ? time(data.at) : ''}
+          style={{ fontSize: 11.5, color: data?.mood == null ? '#7B8797' : data.mood < 45 ? '#FF8590' : data.mood <= 55 ? '#E8B04B' : '#22C38E' }}
+        />
       </FlexWidget>
       {data ? (
         <FlexWidget style={{ flexDirection: 'column' }}>
@@ -44,9 +51,11 @@ export function PortfolioWidget({ data }: { data: WidgetData | null }) {
       ) : (
         <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
       )}
+      {data?.nextDividend ? <TextWidget text={`💸 ${data.nextDividend}`} style={{ fontSize: 12, color: '#C3CCD6' }} maxLines={1} /> : null}
       <TextWidget
-        text={data?.mood != null ? `Market mood ${data.mood} · ${data.moodLabel}` : ' '}
-        style={{ fontSize: 12, color: data?.mood == null ? '#7B8797' : data.mood < 45 ? '#FF8590' : data.mood <= 55 ? '#E8B04B' : '#22C38E' }}
+        text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '}
+        style={{ fontSize: 12, color: data?.due ? '#E8B04B' : '#7B8797' }}
+        maxLines={1}
       />
     </FlexWidget>
   );

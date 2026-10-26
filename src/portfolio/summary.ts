@@ -70,3 +70,14 @@ export function activityItems(rows: Row[], candles: Record<string, Candle[] | nu
   }
   return out;
 }
+
+/** The next cash dividend on your holdings for the widget, e.g. "MEBL Rs 1,200 · book closure 4 Nov". */
+export function nextDividendLine(rows: Row[], now = Date.now()): string | null {
+  const next = rows
+    .map((r) => ({ r, up: upcomingPayout(r.dividends, now) }))
+    .filter((x) => x.up && x.up.dps > 0)
+    .sort((a, b) => a.up!.bookClosure - b.up!.bookClosure)[0];
+  if (!next) return null;
+  const amt = Math.round(next.up!.dps * next.r.holding.shares).toLocaleString('en-US');
+  return `${next.r.holding.symbol} Rs ${amt} · book closure ${day(next.up!.bookClosure)}`;
+}

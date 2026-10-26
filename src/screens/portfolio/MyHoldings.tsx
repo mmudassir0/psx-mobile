@@ -540,7 +540,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
       {view === 'invest' ? (
         <>
         {on('summary') ? (
-          <Section title="Your goal" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
+          <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
             <GoalCard value={total} tracked={null} />
           </Section>
         ) : null}
