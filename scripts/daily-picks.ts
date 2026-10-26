@@ -30,6 +30,7 @@ import {
   Universe,
 } from '../src/picks/build';
 import { buildMatcher, buildNews, NEWS_FEEDS, parseRss, type NewsFeed, type RawItem } from '../src/analysis/news';
+import { parsePbsInflation, parseSbp, petrolFromNews, type MacroFeed, type MacroNow, type MacroRow } from '../src/analysis/macro';
 import { fetchCompany, fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
 import { longTermList, monthReturn, LT, type LtFeed, type LtMonth } from '../src/analysis/longterm';
 import { cashDividends, dividends } from '../src/analysis/dividends';
@@ -414,6 +415,7 @@ async function main() {
   }
 
   // 10. News headlines from Pakistani business feeds, tagged to the companies they name.
+  const rssItems: RawItem[] = [];
   try {
     const companies = (syms ?? []).filter((x) => !/ETF|MODARABA|MUTUAL|FUND|BOND|TFC|SUKUK/i.test(x.sectorName ?? '')).map((x) => ({ symbol: x.symbol, name: x.name }));
     const collected: { source: number; item: RawItem }[] = [];
@@ -421,7 +423,10 @@ async function main() {
       const xml = await fetch(NEWS_FEEDS[i].url, { headers: { 'User-Agent': 'Mozilla/5.0 (Sahm news reader)' }, signal: AbortSignal.timeout(20_000) })
         .then((r) => (r.ok ? r.text() : ''))
         .catch(() => '');
-      for (const item of parseRss(xml)) collected.push({ source: i, item });
+      for (const item of parseRss(xml)) {
+        collected.push({ source: i, item });
+        rssItems.push(item);
+      }
     }
     // keep stories already collected on earlier runs, so the last few days stay even when a feed only lists its newest items
     const newsPath = join(stateDir, 'news.json');
@@ -435,6 +440,54 @@ async function main() {
     console.log(`news: ${rows.length} kept of ${collected.length}, ${rows.filter((r) => r[4].length).length} name a company`);
   } catch (e) {
     console.log(`news failed: ${(e as Error).message}`);
+  }
+
+  // 11. Economy: policy rate, T-bills, KIBOR, dollar, reserves (SBP homepage), inflation (PBS homepage chart),
+  // petrol (the latest price story in the business feeds); kept with a daily history.
+  try {
+    const page = async (u: string) =>
+      fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36' }, signal: AbortSignal.timeout(30_000) })
+        .then((r) => (r.ok ? r.text() : ''))
+        .catch(() => '');
+    const macroPath = join(stateDir, 'macro.json');
+    const prev: MacroFeed | null = existsSync(macroPath) ? JSON.parse(readFileSync(macroPath, 'utf8')) : null;
+    const sbp = parseSbp(await page('https://www.sbp.org.pk/'));
+    if (sbp.usd == null) {
+      // the SBP page didn't give a dollar rate: use an open rates service
+      const er = await page('https://open.er-api.com/v6/latest/USD');
+      const v = er ? JSON.parse(er)?.rates?.PKR : null;
+      if (typeof v === 'number') {
+        sbp.usd = Math.round(v * 100) / 100;
+        sbp.usdAsOf = 'open.er-api.com';
+      }
+    }
+    const inflation = parsePbsInflation(await page('https://www.pbs.gov.pk/'));
+    const lastCpi = inflation[inflation.length - 1] ?? null;
+    // the newest story with a petrol price in it
+    const petrolStory = [...rssItems].sort((a, b) => b.t - a.t).find((it) => petrolFromNews(`${it.title}. ${it.snippet}`) != null);
+    const petrol = petrolStory ? petrolFromNews(`${petrolStory.title}. ${petrolStory.snippet}`) : null;
+    const nowMacro: MacroNow = {
+      day,
+      ...sbp,
+      // anything a source didn't give today keeps its last known value
+      policy: sbp.policy ?? prev?.now.policy ?? null,
+      usd: sbp.usd ?? prev?.now.usd ?? null,
+      cpi: lastCpi?.[1] ?? prev?.now.cpi ?? null,
+      cpiMonth: lastCpi?.[0] ?? prev?.now.cpiMonth ?? null,
+      petrol: petrol ?? prev?.now.petrol ?? null,
+      petrolFrom: petrol != null ? pkDay(petrolStory!.t) : prev?.now.petrolFrom ?? null,
+    };
+    if (nowMacro.tbills.m12 == null && prev) nowMacro.tbills = prev.now.tbills;
+    if (nowMacro.pibs.y10 == null && prev) nowMacro.pibs = prev.now.pibs;
+    if (nowMacro.kibor.m6 == null && prev) nowMacro.kibor = prev.now.kibor;
+    if (nowMacro.reserves.total == null && prev) nowMacro.reserves = prev.now.reserves;
+    const row: MacroRow = [day, nowMacro.policy, nowMacro.usd, nowMacro.tbills.m12, nowMacro.cpi, nowMacro.petrol];
+    const history = [...(prev?.history ?? []).filter((r) => r[0] !== day), row].slice(-800);
+    const feed: MacroFeed = { v: 1, kind: 'macro', generatedAt: new Date(now).toISOString(), now: nowMacro, history };
+    if (nowMacro.policy != null || nowMacro.usd != null) writeFileSync(macroPath, JSON.stringify({ ...feed, inflation: inflation.slice(-36) }));
+    console.log(`economy: policy ${nowMacro.policy ?? '–'}, 12m T-bill ${nowMacro.tbills.m12 ?? '–'}, USD ${nowMacro.usd ?? '–'}, CPI ${nowMacro.cpi ?? '–'} (${nowMacro.cpiMonth ?? '–'}), petrol ${nowMacro.petrol ?? '–'}`);
+  } catch (e) {
+    console.log(`economy failed: ${(e as Error).message}`);
   }
 
   let mbody = JSON.stringify(market);

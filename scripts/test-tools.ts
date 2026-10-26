@@ -1,4 +1,7 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { cpiFromNews, marketYields, parsePbsInflation, parseSbp, petrolFromNews } from '../src/analysis/macro';
 import { buildTimeline } from '../src/portfolio/timeline';
 import { position, stateOf, withTargetRules } from '../src/portfolio/targets';
 import { colName, toBase64, xlsx } from '../src/xlsx';
@@ -322,6 +325,21 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('timeline: newest first with every kind', kinds === 'results,sell,dividend,bigday,note,buy,start', kinds);
   check('dividend on the shares held then; old payouts before tracking left out', ev.find((e) => e.kind === 'dividend')!.sub!.includes('Rs 500') && ev.filter((e) => e.kind === 'dividend').length === 1);
   check('a 5% day is a big day; 1% is not', ev.filter((e) => e.kind === 'bigday').length === 1 && ev.find((e) => e.kind === 'bigday')!.tone === 1);
+}
+
+// economy
+{
+  const sbp = parseSbp(readFileSync(join(__dirname, 'fixtures', 'sbp_home.txt'), 'utf8'));
+  check('SBP: policy rate and latest decision', sbp.policy === 12 && sbp.mpc === 'increase the policy rate by 50 bps to 12% w.e.f. October 27, 2026', sbp);
+  check('SBP: KIBOR mid rates', sbp.kibor.m3 === 11.91 && sbp.kibor.m6 === 12.33 && sbp.kibor.m12 === 12.54, sbp.kibor);
+  check('SBP: T-bill and PIB cut-offs with dates', sbp.tbills.m3 === 11.9999 && sbp.tbills.m12 === 12.4999 && sbp.tbills.asOf === 'Oct 14, 2026' && sbp.pibs.y10 === 12.5 && sbp.pibs.y5 === 12.49, [sbp.tbills, sbp.pibs]);
+  check('SBP: dollar rate and reserves', sbp.usd === 276.8118 && sbp.reserves.total === 26833 && sbp.reserves.sbp === 21488.6, [sbp.usd, sbp.reserves]);
+  const inf = parsePbsInflation(readFileSync(join(__dirname, 'fixtures', 'pbs_inflation_chart.txt'), 'utf8'));
+  check('PBS inflation: every month from the chart, newest last', inf.length === 33 && inf[0][0] === '2024-01' && inf[0][1] === 28.3 && inf[32][0] === '2026-09' && inf[32][1] === 10.3 && inf[32][2] === 1.3 && inf[26][0] === '2026-03', [inf[0], inf[26], inf[32]]);
+  check('petrol price from the news', petrolFromNews('Following the revision, the price of HSD was increased from Rs393.66 to Rs395.82 per litre, while petrol price went up from Rs377.71 to Rs379.25 per litre.') === 379.25);
+  check('inflation from the news', cpiFromNews('Pakistan’s CPI inflation clocked in at 5.6% in September, PBS data showed')?.cpi === 5.6 && cpiFromNews('Inflation eases to 4.2pc in August')?.month === 'August');
+  const y = marketYields([{ indexes: ['KSE100'], marketCap: 100, pe: 5, divYield: 10 }, { indexes: ['KSE100'], marketCap: 100, pe: 10, divYield: 4 }, { indexes: ['KSE100'], marketCap: 50, pe: null, divYield: null }]);
+  check('market earnings and dividend yield, weighted by value', Math.abs(y.pe! - 200 / 30) < 1e-9 && Math.abs(y.earningsYield! - 15) < 1e-9 && Math.abs(y.dividendYield! - 5.6) < 1e-9, y);
 }
 
 if (failed) {
