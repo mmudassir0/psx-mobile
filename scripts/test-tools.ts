@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { addGroup, deleteGroup, groupsOf, renameGroup, toggleInGroup } from '../src/portfolio/watchGroups';
 import { goalsFrom, goalsStatus } from '../src/portfolio/goal';
 import { nextResults, resultsShort } from '../src/analysis/results';
 import { normalVolume, volumeSpike } from '../src/analysis/activity';
@@ -251,6 +252,21 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   );
   check('shares over 100% are scaled down', Math.abs(gs[0].value - 666666.67) < 1 && Math.abs(gs[1].value - 333333.33) < 1, gs.map((g) => g.value));
   check('each goal gets its own monthly need and course check', gs[0].status.reach != null && gs[1].status.reach === null && gs[1].status.need > 0);
+}
+
+// watchlist groups
+{
+  let g = addGroup([], 'Banks to buy', 1);
+  g = addGroup(g, ' banks to BUY ', 2); // same name: not added twice
+  g = addGroup(g, 'Dividend payers', 3);
+  check('groups: added once each', g.length === 2 && g[0].name === 'Banks to buy');
+  g = toggleInGroup(g, g[0].id, 'MEBL');
+  g = toggleInGroup(g, g[1].id, 'MEBL');
+  g = toggleInGroup(g, g[0].id, 'UBL');
+  check('a stock can be in several lists', groupsOf(g, 'MEBL').length === 2 && g[0].symbols.join() === 'MEBL,UBL');
+  g = toggleInGroup(g, g[0].id, 'MEBL');
+  check('tapping again removes it', g[0].symbols.join() === 'UBL');
+  check('rename and delete', renameGroup(g, g[1].id, 'Income')[1].name === 'Income' && deleteGroup(g, g[0].id).length === 1);
 }
 
 if (failed) {

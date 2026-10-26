@@ -15,6 +15,7 @@ import { FundamentalsTab } from './stock/FundamentalsTab';
 import { NewsTab } from './stock/NewsTab';
 import { StockPress } from '../ui/StockPress';
 import { NoteCard } from '../ui/NoteCard';
+import { StockLists } from '../ui/WatchGroups';
 import { ProfileTab } from './stock/ProfileTab';
 import { PeersTab } from './stock/PeersTab';
 import { AiTab } from './stock/AiTab';
@@ -555,6 +556,7 @@ export default function StockScreen() {
           </View>
         ) : null}
 
+        <StockLists symbol={symbol} />
         <NoteCard symbol={symbol} owned={!!held} now={{ price: price ?? null, pe: company?.pe ?? stock?.pe ?? null, divYield: stock?.divYield ?? null, fair: pack.fair?.mid ?? null }} />
 
         <Section title="Today">

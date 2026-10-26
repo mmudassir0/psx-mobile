@@ -12,6 +12,8 @@ import { useMarket } from '../store/market';
 import { useIndexSeries } from '../store/indexSeries';
 import type { Stock } from '../psx/types';
 import { shortSector } from '../sectors';
+import { watchGroupsPref } from '../portfolio/watchGroups';
+import { GroupBar } from '../ui/WatchGroups';
 import { Change, Empty, Icon, Section, T } from '../ui/kit';
 import { StockRow, volumeLabel } from '../ui/StockRow';
 import { useUser } from '../store/user';
@@ -85,6 +87,8 @@ export default function MarketScreen() {
     nav.setParams({ mode: undefined } as never);
   }, [route.params?.mode, nav]);
   const { watchlist } = useUser();
+  const [group, setGroup] = useState<string | null>(null);
+  const groups = watchGroupsPref.use();
   const watchOn = useFlag('watchlist');
   const [allIndices, setAllIndices] = useState(false);
   const [limit, setLimit] = useState(10);
@@ -116,13 +120,17 @@ export default function MarketScreen() {
 
   const list = useMemo(() => {
     let l = stocks.filter((s) => (!shariahOnly || s.shariah) && (!sector || s.sector === sector) && filters.every((f) => passes(f, s, balanceSheetFor(s.symbol))));
-    if (mode === 'watch') return watchlist.map((w) => l.find((s) => s.symbol === w)).filter((s): s is (typeof l)[number] => !!s);
+    if (mode === 'watch') {
+      const g = groups.find((x) => x.id === group);
+      const syms = g ? g.symbols : watchlist;
+      return syms.map((w) => l.find((s) => s.symbol === w)).filter((s): s is (typeof l)[number] => !!s);
+    }
     if (mode === 'all') return screen(l, [], sort, balanceSheetFor);
     if (mode === 'active') return l.filter((s) => (s.volume ?? 0) > 0).sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
     l = l.filter((s) => s.changePct != null && (s.volume ?? 0) >= 10_000);
     l.sort((a, b) => (b.changePct as number) - (a.changePct as number));
     return mode === 'gainers' ? l.filter((s) => (s.changePct as number) > 0) : l.reverse().filter((s) => (s.changePct as number) < 0);
-  }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist]);
+  }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups]);
   const shown = list.slice(0, limit);
   const open = (symbol: string) => nav.navigate('Stock', { symbol });
 
@@ -289,6 +297,7 @@ export default function MarketScreen() {
                     <T style={{ fontFamily: fonts.bold, fontSize: 13, color: shariahOnly ? colors.shariah : colors.text2 }}>Shariah only</T>
                   </Pressable>
                 </ScrollView>
+                {mode === 'watch' ? <GroupBar value={group} onChange={setGroup} /> : null}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                   {FILTERS.map((f) => {
                     const on = filters.includes(f.id);
