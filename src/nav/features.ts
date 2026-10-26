@@ -29,6 +29,7 @@ export const FEATURES: Feature[] = [
   { key: 'insights', label: 'Returns & risk', emoji: '📈', group: 'My money', words: 'health check return kmi kse sector stress tax zakat insights performance', flags: ['health'], go: tab('Portfolio', { view: 'risk' }) },
   { key: 'summary', label: 'Monthly summary', emoji: '📅', group: 'My money', words: 'month report progress', flags: ['summary'], go: (nav) => nav.navigate('Summary') },
   { key: 'rebalance', label: 'Rebalance', emoji: '⚖️', group: 'My money', words: 'rebalance target weights allocation trim top up', go: (nav) => nav.navigate('Rebalance') },
+  { key: 'results', label: 'Results season', emoji: '📊', group: 'My money', words: 'results earnings eps quarter profit announcement board meeting due', go: (nav) => nav.navigate('Results') },
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
   { key: 'taxstatement', label: 'Tax statement', emoji: '📄', group: 'My money', words: 'tax return filing statement pdf capital gains dividends withheld fbr', flags: ['tax'], go: (nav) => nav.navigate('TaxStatement') },

@@ -31,6 +31,7 @@ export type RootParams = {
   WhatIf: undefined;
   TaxStatement: undefined;
   Heatmap: undefined;
+  Results: undefined;
 };
 
 declare global {

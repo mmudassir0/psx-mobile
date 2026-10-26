@@ -11,7 +11,7 @@ import { balanceSheetFor, computeRatios } from '../analysis/ratios';
 import { valueStock } from '../analysis/valuation';
 import { dataChecks } from '../analysis/quality';
 import { eachLimit } from '../limit';
-import { resultsStatus, ResultsStatus } from '../analysis/results';
+import { nextResults, resultsStatus, type NextResults, ResultsStatus } from '../analysis/results';
 import type { Candle } from '../psx/types';
 import { Holding, Review, reviewHolding } from './review';
 
@@ -27,6 +27,8 @@ export interface Row {
   fund: boolean;
   /** latest results and whether more are due */
   results: ResultsStatus | null;
+  /** the next results owed, when they're likely, and last year's figures for that period */
+  next?: NextResults | null;
   /** current assets per share from the latest balance sheet (not for banks), for zakat */
   zakatable?: number | null;
 }
@@ -119,7 +121,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
       });
       // the company's current assets (cash, receivables, stock in trade) per share, for zakat on shares held for income
       const zakatable = balance && !balance.isBank && balance.currentAssets && d.company?.shares ? balance.currentAssets / d.company.shares : null;
-      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null, zakatable };
+      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null, next: nextResults(d.company), zakatable };
     });
     const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
     return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };

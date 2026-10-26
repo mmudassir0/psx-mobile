@@ -1,4 +1,6 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { nextResults, resultsShort } from '../src/analysis/results';
+import { normalVolume, volumeSpike } from '../src/analysis/activity';
 import { nested, squarify } from '../src/analysis/treemap';
 import { sharesFromTrades, snapshotLookup, statementHtml, taxStatement } from '../src/portfolio/taxStatement';
 import { crossedToday, describeRule, parseRules, rulesText } from '../src/analysis/watch';
@@ -206,6 +208,30 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('treemap: tiles are not slivers', t.every((r) => Math.max(r.w / r.h, r.h / r.w) < 4), t.map((r) => (r.w / r.h).toFixed(2)));
   const n = nested([{ s: 'A', v: 3 }, { s: 'A', v: 1 }, { s: 'B', v: 4 }, { s: 'C', v: 0 }], (x) => x.s, (x) => x.v, { x: 0, y: 0, w: 100, h: 100 }, 10);
   check('nested: groups sized by their totals, empty items left out', n.length === 2 && Math.abs(area(n[0].rect) - 5000) < 1e-6 && n.reduce((a, g) => a + g.tiles.length, 0) === 3);
+}
+
+// results season and unusual activity
+{
+  const ann = (date: string, title: string) => ({ date, title, url: null, category: 'Financial Results' });
+  const company = {
+    fiscalYearEnd: 'June',
+    announcements: [
+      ann('2025-10-24', 'Financial Results for the Quarter Ended - September 30, 2025'),
+      ann('2026-02-20', 'Financial Results for the Half Year Ended - December 31, 2025'),
+      ann('2026-04-22', 'Financial Results for the Quarter Ended - March 31, 2026'),
+      ann('2026-09-15', 'Financial Results for the Year Ended - June 30, 2026'),
+    ],
+    financialsQuarterly: { periods: ['Q4 2026', 'Q3 2026', 'Q2 2026', 'Q1 2026'], rows: [{ label: 'EPS', values: [5, 4, 3, 2.5] }, { label: 'Profit after Taxation', values: [500, 400, 300, 250] }] },
+    financialsAnnual: null,
+  } as never;
+  const n = nextResults(company, Date.parse('2026-10-27T07:00:00Z'))!;
+  check('next results: the September quarter, Q1 of the June year', n.label === 'Q1 2027' && n.periodEnd === '2026-09-30' && n.kind === 'quarter', n);
+  check('expected a year after last year’s, with the 30-day deadline', n.expected === '2026-10-24' && n.basis === 'last year' && n.deadline === '2026-10-30', n);
+  check("last year's same quarter from PSX's table", n.lastYear?.label === 'Q1 2026' && n.lastYear.eps === 2.5 && n.lastYear.profit === 250, n.lastYear);
+  check('short results line', resultsShort({ eps: 3, epsBefore: 2.5, epsChange: 0.2, tableBehind: false } as never) === 'results out: EPS +20% on last year');
+  const vols = [...Array(20).fill(100_000), 350_000];
+  check('normal volume is the median of the 20 sessions before', normalVolume(vols) === 100_000);
+  check('3.5× normal volume is unusual; small volumes are not', volumeSpike(vols) === 3.5 && volumeSpike([...Array(20).fill(5_000), 40_000]) === null && volumeSpike([...Array(20).fill(100_000), 200_000]) === null);
 }
 
 if (failed) {

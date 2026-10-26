@@ -1,4 +1,7 @@
 /** Your real portfolio at a glance (Home): value, today's change, and what needs attention. */
+import { resultsShort } from '../analysis/results';
+import { volumeSpike } from '../analysis/activity';
+import type { Candle } from '../psx/types';
 import { useMemo } from 'react';
 import type { Stock } from '../psx/types';
 import { recentBonus, upcomingPayout } from '../analysis/dividends';
@@ -31,7 +34,7 @@ export function todoItems(rows: Row[], applied: string[], now = Date.now(), max 
     const b = recentBonus(r.dividends, now);
     if (b && !applied.includes(`${r.holding.symbol}:${b.key}`) && Math.floor((r.holding.shares * b.pct) / 100) >= 1)
       out.push({ key: `bonus-${r.holding.symbol}`, text: `${r.holding.symbol}: add your ${b.pct}% bonus shares`, tone: 'gold' });
-    if (r.results?.latest?.fresh) out.push({ key: `res-${r.holding.symbol}`, text: `${r.holding.symbol}: new results out`, tone: 'plain', symbol: r.holding.symbol });
+    if (r.results?.latest?.fresh) out.push({ key: `res-${r.holding.symbol}`, text: `${r.holding.symbol}: ${resultsShort(r.results.latest)}`, tone: (r.results.latest.epsChange ?? 0) < 0 ? 'down' : 'up', symbol: r.holding.symbol });
     else if (r.results?.meetingNotice) out.push({ key: `due-${r.holding.symbol}`, text: `${r.holding.symbol}: results due soon`, tone: 'plain', symbol: r.holding.symbol });
   }
   if (trim.length) out.push({ key: 'trim', text: `Trim ${trim.join(', ')}: too big a share of your money`, tone: 'gold', symbol: trim.length === 1 ? trim[0] : undefined });
@@ -45,4 +48,25 @@ export function usePortfolioTotals(rows: Row[], bySymbol: Map<string, Stock>) {
     const today = rows.reduce((a, r) => a + r.holding.shares * (bySymbol.get(r.holding.symbol)?.change ?? 0), 0);
     return { total, invested, pnl: total - invested, pnlPct: invested ? total / invested - 1 : 0, today, todayPct: total - today > 0 ? today / (total - today) : 0 };
   }, [rows, bySymbol]);
+}
+
+/**
+ * Holdings trading unusually today: 3× their normal volume or more (live,
+ * against the 20 sessions before today).
+ */
+export function activityItems(rows: Row[], candles: Record<string, Candle[] | null>, now = Date.now()): TodoItem[] {
+  const today = new Date(now + 5 * 3600_000).toISOString().slice(0, 10);
+  const out: TodoItem[] = [];
+  for (const r of rows) {
+    const c = candles[r.holding.symbol];
+    const vol = r.stock?.volume;
+    if (!c || !vol) continue;
+    const past = c.filter((b) => new Date(b.t + 5 * 3600_000).toISOString().slice(0, 10) < today).map((b) => b.v);
+    const x = volumeSpike([...past, vol]);
+    if (x) {
+      const pct = r.stock?.changePct;
+      out.push({ key: `vol-${r.holding.symbol}`, text: `${r.holding.symbol}: ${x.toFixed(1)}× its usual volume today${pct != null ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : ''}`, tone: 'gold', symbol: r.holding.symbol });
+    }
+  }
+  return out;
 }

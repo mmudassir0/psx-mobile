@@ -14,6 +14,7 @@
  * repository secrets. Quantities are never used, so size-based Trim can't be
  * judged here; the app does that.
  */
+import { volumeSpike } from '../src/analysis/activity';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KeyValueStore, setStorage } from '../src/psx/cache';
@@ -133,6 +134,9 @@ async function main() {
       if (dvToday && move < 0) notes.push(`down ${(Math.abs(move) * 100).toFixed(1)}% today, mostly because it went ex-dividend (Rs ${dvToday.dps.toFixed(2)} a share, which holders receive)`);
       else notes.push(`${move > 0 ? 'up' : 'down'} ${(Math.abs(move) * 100).toFixed(1)}% today`);
     }
+    // heavy trading often comes before the news is out
+    const spike = volumeSpike(candles.map((b) => b.v));
+    if (spike) notes.push(`traded ${spike.toFixed(1)}× its usual volume today (${move >= 0 ? '+' : ''}${(move * 100).toFixed(1)}%)`);
     for (const p of payouts ?? []) {
       if (p.announced > lastBar - 2 * DAY && p.items.length) notes.push(`announced ${p.items.map((i) => `${i.pct}%${i.tag ? `(${i.tag})` : ''} ${i.type === 'D' ? 'cash dividend' : i.type === 'B' ? 'bonus shares' : 'right shares'}`).join(' + ')}`);
       // Once, the evening before the last day to buy: that's when there is still time to act.

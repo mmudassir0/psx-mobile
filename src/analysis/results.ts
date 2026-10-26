@@ -158,3 +158,76 @@ export function resultsBuzz(c: CompanyInfo | null, now = Date.now()): string | n
   if (s.meetingNotice) return `Board meeting notice ${new Date(dayMs(s.meetingNotice.date)).toUTCString().slice(5, 11).replace(/^0/, '')}: results are probably due within days.`;
   return null;
 }
+
+// ------------------------------------------------------------ next results ----
+
+/**
+ * PSX's deadlines after a period ends: first and third quarters within 30
+ * days, half-year within 60, the full year within 120 (most companies report
+ * the year much sooner, near their AGM notice).
+ */
+export const DEADLINE_DAYS = { quarter: 30, half: 60, year: 120 };
+
+export interface NextResults {
+  /** PSX's label for the period, e.g. "Q1 2027" or "2026" */
+  label: string;
+  /** last day of the period, YYYY-MM-DD */
+  periodEnd: string;
+  kind: 'quarter' | 'half' | 'year';
+  /** a likely date: the same results' date a year earlier moved on a year, or the deadline */
+  expected: string;
+  basis: 'last year' | 'deadline';
+  deadline: string;
+  /** a board meeting has been called: results are probably within days */
+  meeting: string | null;
+  /** the same period a year earlier, from PSX's tables */
+  lastYear: { label: string; eps: number | null; profit: number | null } | null;
+}
+
+const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+/** Last day of a month (YYYY-MM). */
+const monthEnd = (ym: string) => iso(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0, 12));
+const addMonths = (ym: string, n: number) => {
+  const d = new Date(Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1 + n, 1));
+  return d.toISOString().slice(0, 7);
+};
+
+/** The next results a company owes: the period after its latest results, when they're likely, and last year's figures for it. */
+export function nextResults(c: CompanyInfo | null, now = Date.now()): NextResults | null {
+  if (!c) return null;
+  const fy = fiscalEndMonth(c.fiscalYearEnd);
+  const results = (c.announcements ?? []).filter(isResults);
+  const ends = results.map((a) => periodEndOf(a.title)).filter((x): x is string => !!x).sort();
+  // the period after the latest one reported; with none on record, the last quarter end already passed
+  let end: string;
+  if (ends.length) end = addMonths(ends[ends.length - 1], 3);
+  else {
+    const d = new Date(now);
+    let ym = d.toISOString().slice(0, 7);
+    while ((Number(ym.slice(5, 7)) - 1 - fy + 12) % 3 !== 0 || monthEnd(ym) > iso(now)) ym = addMonths(ym, -1);
+    end = ym;
+  }
+  const m = Number(end.slice(5, 7)) - 1;
+  const q = ((m - fy + 12) % 12) / 3; // 0 = the year end, 1 = Q1, 2 = half year, 3 = Q3
+  const kind: NextResults['kind'] = q === 0 ? 'year' : q === 2 ? 'half' : 'quarter';
+  const periodEnd = monthEnd(end);
+  const deadline = iso(dayMs(periodEnd) + DEADLINE_DAYS[kind] * DAY);
+  const lastYearEnd = addMonths(end, -12);
+  const prev = results.find((a) => periodEndOf(a.title) === lastYearEnd);
+  const expected = prev ? iso(dayMs(prev.date) + 365 * DAY) : deadline;
+  const label = expectedLabel(end, fy, kind === 'year');
+  const prevLabel = expectedLabel(lastYearEnd, fy, kind === 'year');
+  const t = kind === 'year' ? c.financialsAnnual : c.financialsQuarterly;
+  const j = t ? t.periods.findIndex((p) => p.toUpperCase() === prevLabel.toUpperCase()) : -1;
+  const lastYear = t && j >= 0 ? { label: prevLabel, eps: row(t, /^eps$/i)[j] ?? null, profit: row(t, /profit after/i)[j] ?? null } : null;
+  const s = resultsStatus(c, now);
+  return { label, periodEnd, kind, expected, basis: prev ? 'last year' : 'deadline', deadline, meeting: s.meetingNotice?.date ?? null, lastYear };
+}
+
+/** A short line for Home, e.g. "results out: EPS +23% on last year". */
+export function resultsShort(r: ResultsNews): string {
+  if (r.tableBehind || r.eps == null) return 'results out (figures not on PSX yet)';
+  if (r.epsChange != null) return `results out: EPS ${pc(r.epsChange)} on last year`;
+  if (r.epsBefore != null && r.epsBefore <= 0 && r.eps > 0) return 'results out: back to profit';
+  return `results out: EPS Rs ${r.eps.toFixed(2)}`;
+}

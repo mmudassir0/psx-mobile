@@ -139,6 +139,7 @@ function Root() {
       <Stack.Screen name="Summary" getComponent={() => require('./src/screens/SummaryScreen').default} />
       <Stack.Screen name="Alerts" getComponent={() => require('./src/screens/AlertsScreen').default} />
       <Stack.Screen name="News" getComponent={() => require('./src/screens/NewsScreen').default} />
+      <Stack.Screen name="Results" getComponent={() => require('./src/screens/ResultsScreen').default} />
       <Stack.Screen name="Heatmap" getComponent={() => require('./src/screens/HeatmapScreen').default} />
       <Stack.Screen name="TaxStatement" getComponent={() => require('./src/screens/TaxStatementScreen').default} />
       <Stack.Screen name="WhatIf" getComponent={() => require('./src/screens/WhatIfScreen').default} />
@@ -169,6 +170,7 @@ const linking: LinkingOptions<RootParams> = {
       WhatIf: 'whatif',
       TaxStatement: 'tax',
       Heatmap: 'map',
+      Results: 'results',
     },
   },
 };

@@ -20,7 +20,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useReviews } from '../portfolio/useReviews';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
-import { todoItems, usePortfolioTotals } from '../portfolio/summary';
+import { activityItems, todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
@@ -90,7 +90,7 @@ export default function HomeScreen() {
   const real = usePortfolioTotals(rows, bySymbol);
   const applied = appliedBonusesPref.use();
   const reminders = useReminderTodos();
-  const todo = useMemo(() => [...reminders, ...(reviewing ? [] : todoItems(rows, applied))].slice(0, 5), [rows, applied, reviewing, reminders]);
+  const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...todoItems(rows, applied), ...activityItems(rows, candles)])].slice(0, 5), [rows, applied, reviewing, reminders, candles]);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();
   const layout = layoutPref.use();
