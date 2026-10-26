@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { inbox, kindOf } from '../src/analysis/announcements';
 import { addGroup, deleteGroup, groupsOf, renameGroup, toggleInGroup } from '../src/portfolio/watchGroups';
 import { goalsFrom, goalsStatus } from '../src/portfolio/goal';
 import { nextResults, resultsShort } from '../src/analysis/results';
@@ -267,6 +268,16 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   g = toggleInGroup(g, g[0].id, 'MEBL');
   check('tapping again removes it', g[0].symbols.join() === 'UBL');
   check('rename and delete', renameGroup(g, g[1].id, 'Income')[1].name === 'Income' && deleteGroup(g, g[0].id).length === 1);
+}
+
+// announcements inbox
+{
+  const a = (date: string, title: string, category = 'Others') => ({ date, title, url: null, category });
+  check('announcement kinds', kindOf(a('', 'Financial Results for the Quarter Ended', 'Financial Results')) === 'results' && kindOf(a('', 'Credit of final cash dividend')) === 'payout' && kindOf(a('', 'Material Information')) === 'material' && kindOf(a('', 'Disclosure of Interest by a Director CEO u/c 5.6.1.(d)')) === 'insider' && kindOf(a('', 'Board Meeting', 'Board Meetings')) === 'meeting');
+  const now = Date.parse('2026-10-27T07:00:00Z');
+  const items = inbox({ LUCK: [a('2026-10-26', 'Material Information'), a('2026-10-20', 'Board Meeting', 'Board Meetings'), a('2026-07-01', 'Old')], MEBL: [a('2026-10-26', 'Credit of final cash dividend')] }, Date.parse('2026-10-21T07:00:00Z'), now);
+  check('inbox: last 60 days, newest first, new since last look', items.length === 3 && items[0].symbol === 'LUCK' && items[1].symbol === 'MEBL' && items[0].fresh && !items[2].fresh, items);
+  check('nothing is "new" the first time', inbox({ X: [a('2026-10-26', 'x')] }, 0, now)[0].fresh === false);
 }
 
 if (failed) {

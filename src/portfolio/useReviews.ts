@@ -1,6 +1,6 @@
 /** Loads what each holding's review needs (shared cache, one stock at a time) and reviews it. */
 import { useEffect, useMemo, useState } from 'react';
-import type { CompanyInfo, Stock } from '../psx/types';
+import type { Announcement, CompanyInfo, Stock } from '../psx/types';
 import { fetchCompany, fetchPayouts } from '../psx/api';
 import { dividends, Dividends, Payout } from '../analysis/dividends';
 import { fiscalEndMonth } from '../analysis/fairValue';
@@ -29,6 +29,8 @@ export interface Row {
   results: ResultsStatus | null;
   /** the next results owed, when they're likely, and last year's figures for that period */
   next?: NextResults | null;
+  /** the company's PSX announcements */
+  announcements?: Announcement[];
   /** current assets per share from the latest balance sheet (not for banks), for zakat */
   zakatable?: number | null;
 }
@@ -121,7 +123,7 @@ export function useReviews(holdings: Holding[], stocks: Stock[], bySymbol: Map<s
       });
       // the company's current assets (cash, receivables, stock in trade) per share, for zakat on shares held for income
       const zakatable = balance && !balance.isBank && balance.currentAssets && d.company?.shares ? balance.currentAssets / d.company.shares : null;
-      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null, next: nextResults(d.company), zakatable };
+      return { ...r, weight: r.value / total, review, dividends: dv, fund, results: d.company ? resultsStatus(d.company) : null, next: nextResults(d.company), announcements: d.company?.announcements ?? [], zakatable };
     });
     const candles = Object.fromEntries(holdings.map((h) => [h.symbol, data[h.symbol]?.candles ?? null]));
     return { rows, total, candles, sectors: [...sectorW].sort((a, b) => b[1] - a[1]), loading: holdings.some((h) => !data[h.symbol]) };

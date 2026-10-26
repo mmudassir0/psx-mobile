@@ -37,6 +37,7 @@ import { maybeBackup } from './src/autoBackup';
 import { installReminderHandlers } from './src/notify';
 import { rescheduleNotes } from './src/portfolio/notes';
 import { schedulePlan } from './src/portfolio/monthlyPlan';
+import { annSeenPref } from './src/analysis/announcements';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 setStorage(diskStore);
@@ -46,6 +47,8 @@ loadLiveFundamentals();
 setTimeout(() => maybeBackup(), 15_000);
 installReminderHandlers();
 setTimeout(() => (rescheduleNotes(), schedulePlan()), 20_000);
+// start counting new announcements from the first time this version runs
+annSeenPref.get().then((t) => (t ? null : annSeenPref.set(Date.now())));
 AppState.addEventListener('change', (st) => st === 'active' && maybeBackup());
 
 const Stack = createNativeStackNavigator<RootParams>();
@@ -139,6 +142,7 @@ function Root() {
       <Stack.Screen name="Summary" getComponent={() => require('./src/screens/SummaryScreen').default} />
       <Stack.Screen name="Alerts" getComponent={() => require('./src/screens/AlertsScreen').default} />
       <Stack.Screen name="News" getComponent={() => require('./src/screens/NewsScreen').default} />
+      <Stack.Screen name="Announcements" getComponent={() => require('./src/screens/AnnouncementsScreen').default} />
       <Stack.Screen name="Sectors" getComponent={() => require('./src/screens/SectorStrengthScreen').default} />
       <Stack.Screen name="Results" getComponent={() => require('./src/screens/ResultsScreen').default} />
       <Stack.Screen name="Heatmap" getComponent={() => require('./src/screens/HeatmapScreen').default} />
@@ -173,6 +177,7 @@ const linking: LinkingOptions<RootParams> = {
       Heatmap: 'map',
       Results: 'results',
       Sectors: 'sectors',
+      Announcements: 'announcements',
     },
   },
 };

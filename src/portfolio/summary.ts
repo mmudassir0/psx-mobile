@@ -1,4 +1,5 @@
 /** Your real portfolio at a glance (Home): value, today's change, and what needs attention. */
+import { inbox } from '../analysis/announcements';
 import { resultsShort } from '../analysis/results';
 import { volumeSpike } from '../analysis/activity';
 import type { Candle } from '../psx/types';
@@ -15,7 +16,7 @@ export interface TodoItem {
   /** open this stock when tapped (otherwise My holdings) */
   symbol?: string;
   /** or open this screen */
-  route?: 'Rebalance' | 'Income';
+  route?: 'Rebalance' | 'Income' | 'Announcements';
 }
 
 const DAY = 864e5;
@@ -80,4 +81,13 @@ export function nextDividendLine(rows: Row[], now = Date.now()): string | null {
   if (!next) return null;
   const amt = Math.round(next.up!.dps * next.r.holding.shares).toLocaleString('en-US');
   return `${next.r.holding.symbol} Rs ${amt} · book closure ${day(next.up!.bookClosure)}`;
+}
+
+/** "3 new announcements from your holdings" since you last opened the inbox (none the very first time). */
+export function announcementItem(rows: Row[], seenAt: number, now = Date.now()): TodoItem[] {
+  if (!seenAt) return [];
+  const items = inbox(Object.fromEntries(rows.map((r) => [r.holding.symbol, r.announcements ?? []])), seenAt, now, 14).filter((i) => i.fresh);
+  if (!items.length) return [];
+  const syms = [...new Set(items.map((i) => i.symbol))];
+  return [{ key: 'ann', text: `${items.length} new announcement${items.length > 1 ? 's' : ''}: ${syms.slice(0, 3).join(', ')}${syms.length > 3 ? '…' : ''}`, tone: 'plain', route: 'Announcements' }];
 }

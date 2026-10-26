@@ -33,6 +33,7 @@ export type RootParams = {
   Heatmap: undefined;
   Results: undefined;
   Sectors: undefined;
+  Announcements: undefined;
 };
 
 declare global {
