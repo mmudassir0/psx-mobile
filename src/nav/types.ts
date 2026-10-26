@@ -26,6 +26,7 @@ export type RootParams = {
   News: undefined;
   Find: undefined;
   Compare: { symbols?: string[] } | undefined;
+  Income: undefined;
 };
 
 declare global {

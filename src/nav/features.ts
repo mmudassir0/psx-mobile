@@ -28,6 +28,7 @@ export const FEATURES: Feature[] = [
   { key: 'plan', label: 'Invest cash & goal', emoji: '🎯', group: 'My money', words: 'plan goal new money monthly target', go: tab('Portfolio', { view: 'invest' }) },
   { key: 'insights', label: 'Returns & risk', emoji: '📈', group: 'My money', words: 'health check return kmi kse sector stress tax zakat insights performance', flags: ['health'], go: tab('Portfolio', { view: 'risk' }) },
   { key: 'summary', label: 'Monthly summary', emoji: '📅', group: 'My money', words: 'month report progress', flags: ['summary'], go: (nav) => nav.navigate('Summary') },
+  { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
   { key: 'edit', label: 'Edit holdings', emoji: '✏️', group: 'My money', words: 'add paste screenshot import trades history ktrade', go: (nav) => nav.navigate('EditHoldings') },
   { key: 'alerts', label: 'Price alerts', emoji: '🔔', group: 'My money', words: 'alert notify price watch', flags: ['alerts'], go: (nav) => nav.navigate('Alerts') },

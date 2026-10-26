@@ -1,4 +1,5 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
+import { incomeIdeas, incomePlan, nextMonths } from '../src/portfolio/income';
 import { changeOver, compareRows, maxDrawdown, rebased } from '../src/analysis/compare';
 
 let failed = 0;
@@ -18,6 +19,54 @@ const row = (l: string) => cr.find((r) => r.label === l)!;
 check('compare: lower P/E wins, equal yields have no star, 1-year leader marked', row('P/E').best.join() === '0' && row('Dividend yield').best.length === 0 && row('1 year').best.join() === '0' && row('Price').best.length === 0, cr.map((r) => [r.label, r.values, r.best]));
 
 // --- end compare
+
+// dividend income plan
+{
+  const now = Date.parse('2026-10-26T07:00:00Z');
+  const D = 864e5;
+  const div = (list: { announced: number; dps: number; bookClosure: number | null }[], cut: string | null = null) => ({
+    faceValue: 10, ttm: 0, ttmYield: null, years: [], cut, lower: null,
+    list: list.map((p) => ({ ...p, period: null, periodType: null, bonusPct: 0 })),
+  });
+  check('months from now to a year on', nextMonths(now).join() === '2026-10,2026-11,2026-12,2027-01,2027-02,2027-03,2027-04,2027-05,2027-06,2027-07,2027-08,2027-09,2027-10', nextMonths(now));
+  {
+    // an annual payer whose book closure was 5 weeks ago: next year's lands just inside the 365 days
+    const p = incomePlan([{ symbol: 'LUCK', shares: 10, sector: 'Cement', dividends: div([{ announced: now - 77 * D, dps: 25, bookClosure: now - 38 * D }]) }], 'filer', now);
+    check('annual payer near the year end still counted', p.items.length === 1 && p.items[0].month === '2027-10', p.items);
+  }
+  const plan = incomePlan(
+    [
+      // announced: book closure in 10 days, Rs 5; and last year's final in Feb (Rs 8) repeats
+      { symbol: 'AAA', shares: 100, sector: 'Cement', dividends: div([{ announced: now - 5 * D, dps: 5, bookClosure: now + 10 * D }, { announced: now - 250 * D, dps: 8, bookClosure: now - 230 * D }]) },
+      // last year's interim a year ago (10 days before now): already announced again this year → not doubled
+      { symbol: 'BBB', shares: 10, sector: 'Power Generation & Distribution', dividends: div([{ announced: now - 20 * D, dps: 4, bookClosure: now + 3 * D }, { announced: now - 360 * D, dps: 4, bookClosure: now - 345 * D }]) },
+      { symbol: 'CUT', shares: 50, sector: 'Cement', dividends: div([{ announced: now - 100 * D, dps: 2, bookClosure: now - 80 * D }], 'Dividend cut') },
+      { symbol: 'NIL', shares: 50, sector: 'Cement', dividends: div([{ announced: now - 500 * D, dps: 2, bookClosure: now - 480 * D }]) },
+    ],
+    'filer',
+    now,
+  );
+  const sym = (s: string) => plan.items.filter((i) => i.symbol === s);
+  check('announced dividend counted once, paid two weeks after book closure', sym('AAA').filter((i) => i.known).length === 1 && sym('AAA').find((i) => i.known)!.month === '2026-11');
+  check("last year's dividend expected again a year on", sym('AAA').some((i) => !i.known && i.dps === 8 && i.month === '2027-03'), sym('AAA'));
+  check('same dividend already announced this year is not counted twice', sym('BBB').length === 1 && sym('BBB')[0].known, sym('BBB'));
+  check('power producer taxed at 7.5%, others 15% (filer)', Math.abs(sym('BBB')[0].net - 40 * 0.925) < 1e-9 && Math.abs(sym('AAA')[0].net - 500 * 0.85) < 1e-9);
+  check('cut and non-payers listed, not estimated', plan.cut.join() === 'CUT' && plan.none.join() === 'NIL' && !sym('CUT').length && !sym('NIL').length);
+  check('totals add up', Math.abs(plan.net - plan.months.reduce((a, m) => a + m.net, 0)) < 1e-9 && plan.months.length === 13);
+  const ideas = incomeIdeas(
+    [
+      { symbol: 'A', divYield: 12, indexes: ['KSE100'], price: 10 },
+      { symbol: 'B', divYield: 25, indexes: ['KSE100'], price: 10 },
+      { symbol: 'C', divYield: 9, indexes: ['KMI30'], price: 10 },
+      { symbol: 'D', divYield: 7, indexes: [], price: 10 },
+      { symbol: 'E', divYield: 11, indexes: ['KSE100'], price: 10 },
+    ],
+    new Set(['E']),
+    false,
+  );
+  check('income ideas: index members, 5-18% yield, not owned, highest first', ideas.map((s) => s.symbol).join() === 'A,C', ideas);
+  check('income ideas: Shariah keeps KMI-30 only', incomeIdeas([{ symbol: 'A', divYield: 12, indexes: ['KSE100'], price: 10 }, { symbol: 'C', divYield: 9, indexes: ['KMI30'], price: 10 }], new Set(), true).map((s) => s.symbol).join() === 'C');
+}
 
 if (failed) {
   console.log(`\n${failed} failed`);
