@@ -46,7 +46,7 @@ picks → "Enable workflow".
 | `SAHM_SIGNING_PASSWORD` | Decrypts the release key on the `signing` branch. **Keep a copy somewhere safe.** Without it, a new key is made and the phone refuses the update until Sahm is uninstalled (back up first). |
 | `NTFY_ALERT_TOPIC` | Your private ntfy.sh topic for alerts and "job failed" notices. |
 | `HOLDINGS_SYMBOLS` | Comma-separated symbols the evening holdings alert checks. Update it when you buy or sell a new stock. |
-| `WATCH_ALERTS` | Price-alert rules (Settings → Price alerts → Copy, then paste here). |
+| `WATCH_ALERTS` | Price-alert rules (Price alerts → Copy, then paste here), e.g. `SYS<100, LUCK>200d, MEBL yield>9, LUCK<fair`. Rules are in `src/analysis/watch.ts`. |
 | `GROQ_API_KEY`, `GEMINI_API_KEY` | Weekly AI brief and the AI checks. The app's own keys are saved on the phone, not here. |
 
 Never print these in logs: the repo and its Action logs are public. The
