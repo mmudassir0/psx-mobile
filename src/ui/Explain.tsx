@@ -1,6 +1,5 @@
 /** A small ⓘ next to a term: tap for what it means in plain words, with an example from your own holdings. */
 import React, { useMemo, useState } from 'react';
-import { langPref, UR_TERMS } from '../i18n';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { TERMS, pickExample, type TermId } from '../analysis/glossary';
@@ -9,10 +8,7 @@ import { useMarket } from '../store/market';
 import { T } from './kit';
 
 function Sheet({ id, onClose }: { id: TermId; onClose: () => void }) {
-  const lang = langPref.use();
-  const ur = lang === 'ur' ? UR_TERMS[id] : null;
   const term = TERMS[id];
-  const rtl = ur ? ({ writingDirection: 'rtl', textAlign: 'right' } as const) : null;
   const { holdings } = useHoldings();
   const { bySymbol } = useMarket();
   const example = useMemo(
@@ -30,20 +26,20 @@ function Sheet({ id, onClose }: { id: TermId; onClose: () => void }) {
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close">
         <Pressable style={styles.card} onPress={() => {}}>
-          <T style={[{ fontFamily: fonts.bold, fontSize: 16 }, rtl]}>{ur?.title ?? term.title}</T>
-          <T v="body" style={[{ fontSize: 14.5, lineHeight: ur ? 26 : 21 }, rtl]}>
-            {ur?.body ?? term.body}
+          <T style={{ fontFamily: fonts.bold, fontSize: 16 }}>{term.title}</T>
+          <T v="body" style={{ fontSize: 14.5, lineHeight: 21 }}>
+            {term.body}
           </T>
           {example ? (
             <View style={styles.example}>
-              <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.gold }}>{ur ? 'آپ کے شیئرز کے ساتھ (انگریزی میں)' : 'With your shares'}</T>
+              <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.gold }}>With your shares</T>
               <T v="body" style={{ fontSize: 14, lineHeight: 20 }}>
                 {example}
               </T>
             </View>
           ) : null}
           <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8} style={{ alignSelf: 'flex-end', paddingTop: 4 }}>
-            <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.gold }}>{ur ? 'ٹھیک ہے' : 'Got it'}</T>
+            <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.gold }}>Got it</T>
           </Pressable>
         </Pressable>
       </Pressable>

@@ -4,7 +4,6 @@
  */
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import type { Flag } from '../flags';
-import { UR } from '../i18n';
 
 type Nav = NavigationProp<ParamListBase>;
 
@@ -71,7 +70,7 @@ export const FEATURES: Feature[] = [
   { key: 'costs', label: 'Trading costs', emoji: '🧮', group: 'App', words: 'fees brokerage charges commission break even cdc', go: (nav) => nav.navigate('Settings') },
   { key: 'export', label: 'Export to Excel', emoji: '📗', group: 'App', words: 'excel xlsx spreadsheet export download sheet accountant', go: (nav) => nav.navigate('Export') },
   { key: 'offline', label: 'Offline copy', emoji: '📴', group: 'App', words: 'offline no internet download save copy data', go: (nav) => nav.navigate('Settings') },
-  { key: 'settings', label: 'Settings', emoji: '⚙️', group: 'App', words: 'settings theme backup keys tax status layout language urdu اردو', go: (nav) => nav.navigate('Settings') },
+  { key: 'settings', label: 'Settings', emoji: '⚙️', group: 'App', words: 'settings theme backup keys tax status layout', go: (nav) => nav.navigate('Settings') },
   { key: 'find', label: 'Search', emoji: '🔎', group: 'App', words: 'find search', go: (nav) => nav.navigate('Find') },
 ];
 
@@ -81,7 +80,7 @@ export function findFeatures(q: string, on: (f: Flag) => boolean = () => true): 
   const s = q.trim().toLowerCase();
   if (!s) return [];
   return visibleFeatures(on).filter((f) => {
-    const hay = `${f.label} ${UR[f.label] ?? ''} ${f.words}`.toLowerCase();
+    const hay = `${f.label} ${f.words}`.toLowerCase();
     return f.key !== 'find' && (hay.includes(s) || s.split(/\s+/).every((w) => hay.includes(w)));
   });
 }

@@ -1,6 +1,5 @@
 /** One search for everything: stocks by symbol or name, and every screen in the app ("zakat", "alerts", "dividends"…). */
 import React, { useMemo, useState } from 'react';
-import { langPref, tr } from '../i18n';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
@@ -15,7 +14,6 @@ import { ToolsGrid } from '../ui/ToolsGrid';
 
 export default function FindScreen() {
   const nav = useNavigation<NavigationProp<ParamListBase>>();
-  const lang = langPref.use();
   const { stocks } = useMarket();
   const [q, setQ] = useState('');
   const features = findFeatures(q, useFlags());
@@ -49,7 +47,7 @@ export default function FindScreen() {
             {features.map((f, i) => (
               <Pressable key={f.key} accessibilityRole="button" onPress={() => f.go(nav)} style={[styles.row, i < features.length - 1 && styles.border]}>
                 <T style={{ fontSize: 20, width: 30 }}>{f.emoji}</T>
-                <T style={{ fontFamily: fonts.semibold, fontSize: 15, flex: 1 }}>{tr(f.label, lang)}</T>
+                <T style={{ fontFamily: fonts.semibold, fontSize: 15, flex: 1 }}>{f.label}</T>
                 <T style={{ color: colors.faint }}>›</T>
               </Pressable>
             ))}

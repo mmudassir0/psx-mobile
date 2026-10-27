@@ -1,6 +1,6 @@
 /**
  * Spoken questions for the AI: the phone records, Groq's Whisper turns it into
- * text (Urdu or English), and the text goes to the AI like a typed question.
+ * text , and the text goes to the AI like a typed question.
  * Uses your Groq key; the recording is sent only to Groq and not kept.
  */
 export const WHISPER_MODELS = ['whisper-large-v3-turbo', 'whisper-large-v3'];
@@ -18,7 +18,7 @@ export function tidyTranscript(text: string, symbols: string[]): string {
   return t;
 }
 
-export async function transcribe(uri: string, key: string, opts: { lang?: 'ur' | 'en' | null; symbols?: string[]; fetchImpl?: typeof fetch } = {}): Promise<string> {
+export async function transcribe(uri: string, key: string, opts: { lang?: string | null; symbols?: string[]; fetchImpl?: typeof fetch } = {}): Promise<string> {
   const f = opts.fetchImpl ?? fetch;
   let lastErr = '';
   for (const model of WHISPER_MODELS) {

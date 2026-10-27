@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { tt, useLang } from '../i18n';
 import { pinStockWidget } from '../widget/update';
 import { MyLines } from '../ui/MyLines';
 import { trendValues } from '../analysis/chartLines';
@@ -124,11 +123,11 @@ function Ohlc({ c, unit }: { c: Candle; unit: string }) {
 type Tab = 'overview' | 'ai' | 'fundamentals' | 'technicals' | 'news';
 // Five tabs that fit the screen: the company profile is at the end of Overview, peers at the end of Financials.
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: tt("Overview") },
+  { key: 'overview', label: 'Overview' },
   { key: 'ai', label: 'AI' },
-  { key: 'fundamentals', label: tt("Financials") },
-  { key: 'technicals', label: tt("Technicals") },
-  { key: 'news', label: tt("News") },
+  { key: 'fundamentals', label: 'Financials' },
+  { key: 'technicals', label: 'Technicals' },
+  { key: 'news', label: 'News' },
 ];
 type Extra = 'ma' | 'bb' | 'levels' | 'w52' | 'pick' | 'cross' | 'rsi' | 'macd' | 'fair';
 const MORE_EXTRAS: Extra[] = ['bb', 'w52', 'cross', 'rsi', 'macd'];
@@ -142,7 +141,6 @@ function More({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 export default function StockScreen() {
-  useLang();
   const nav = useNavigation();
   const { symbol } = useRoute<RouteProp<RootParams, 'Stock'>>().params;
   const stock = useStock(symbol);
@@ -507,7 +505,7 @@ export default function StockScreen() {
                 );
               })}
               <Pressable accessibilityRole="button" accessibilityState={{ expanded: linesOpen }} onPress={() => setLinesOpen((v) => !v)} style={[styles.extra, (linesOpen || !!myLines?.levels.length || !!myLines?.trends.length) && styles.extraOn]}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>{tt("✏️ My lines")}</T>
+                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>✏️ My lines</T>
               </Pressable>
               {(() => {
                 const n = extras.filter((e) => MORE_EXTRAS.includes(e)).length;
@@ -562,7 +560,7 @@ export default function StockScreen() {
         {pos ? (
           <View style={styles.position}>
             <View style={{ flex: 1, gap: 2 }}>
-              <T v="caption">{tt("Your position")}</T>
+              <T v="caption">Your position</T>
               <T v="mono" style={{ fontSize: 16 }}>
                 {fmtNum(pos.qty, 0)} shares at {fmtPrice(pos.avgCost)}
               </T>
@@ -585,12 +583,12 @@ export default function StockScreen() {
           <Panel style={{ paddingVertical: 16, gap: 16 }}>
             <RangeBar lowLabel="Day low" highLabel="Day high" low={company?.low ?? null} high={company?.high ?? null} value={price} />
             <View style={styles.grid}>
-              <Stat label={tt("Open")} value={fmtPrice(company?.open)} />
-              <Stat label={tt("Prev. close")} value={fmtPrice(ldcp)} />
-              <Stat label={tt("Volume")} value={fmtCompact(stock?.volume ?? company?.volume)} />
+              <Stat label="Open" value={fmtPrice(company?.open)} />
+              <Stat label="Prev. close" value={fmtPrice(ldcp)} />
+              <Stat label="Volume" value={fmtCompact(stock?.volume ?? company?.volume)} />
               <Stat label="Bid" value={stock?.bid ? `${fmtPrice(stock.bid)}` : '—'} sub={stock?.bidVol ? `${fmtCompact(stock.bidVol)} shares` : undefined} />
               <Stat label="Ask" value={stock?.ask ? `${fmtPrice(stock.ask)}` : '—'} sub={stock?.askVol ? `${fmtCompact(stock.askVol)} shares` : undefined} />
-              <Stat label={tt("Value traded")} value={price != null && (stock?.volume ?? company?.volume) ? fmtCompact(price * ((stock?.volume ?? company?.volume) as number)) : '—'} />
+              <Stat label="Value traded" value={price != null && (stock?.volume ?? company?.volume) ? fmtCompact(price * ((stock?.volume ?? company?.volume) as number)) : '—'} />
             </View>
           </Panel>
         </Section>
@@ -609,8 +607,8 @@ export default function StockScreen() {
 
         <Section title="Circuit breakers">
           <Panel>
-            <KV label={tt("Lower lock")} sub="Trading halts below this today" value={fmtPrice(company?.circuitLow)} color={colors.downText} />
-            <KV label={tt("Upper lock")} sub="Trading halts above this today" value={fmtPrice(company?.circuitHigh)} color={colors.up} last />
+            <KV label="Lower lock" sub="Trading halts below this today" value={fmtPrice(company?.circuitLow)} color={colors.downText} />
+            <KV label="Upper lock" sub="Trading halts above this today" value={fmtPrice(company?.circuitHigh)} color={colors.up} last />
           </Panel>
         </Section>
 
@@ -620,7 +618,7 @@ export default function StockScreen() {
               <Panel style={{ paddingVertical: 16, gap: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ gap: 2 }}>
-                    <T v="caption">{tt("Signal score")}</T>
+                    <T v="caption">Signal score</T>
                     <T v="mono" style={{ fontSize: 22 }}>
                       {analysis.score.toFixed(1)}
                       <T v="mono" style={{ fontSize: 14, color: colors.faint }}>
@@ -633,7 +631,7 @@ export default function StockScreen() {
                 <T v="caption">
                   {tech.summary.buy} buy, {tech.summary.neutral} neutral, {tech.summary.sell} sell across {tech.oscillators.length + tech.averages.length} indicators
                 </T>
-                <More label={tt("See all technicals")} onPress={() => setTab('technicals')} />
+                <More label="See all technicals" onPress={() => setTab('technicals')} />
               </Panel>
             </Pressable>
           </Section>
@@ -644,13 +642,13 @@ export default function StockScreen() {
             <Panel style={{ paddingVertical: 16, gap: 14 }}>
               <View style={styles.grid}>
                 <Stat label="P/E" term="pe" value={company.pe != null ? fmtNum(company.pe) : '—'} />
-                <Stat label={tt("Dividend yield")} term="divYield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
-                <Stat label={tt("Market cap")} term="marketCap" value={fmtCompact(company.marketCap)} />
-                <Stat label={tt("1-year")} value={fmtPct(company.change1y)} />
+                <Stat label="Dividend yield" term="divYield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
+                <Stat label="Market cap" term="marketCap" value={fmtCompact(company.marketCap)} />
+                <Stat label="1-year" value={fmtPct(company.change1y)} />
                 <Stat label="YTD" value={fmtPct(company.ytd)} />
-                <Stat label={tt("Free float")} term="freeFloat" value={company.freeFloatPct != null ? fmtPct(company.freeFloatPct, false) : '—'} />
+                <Stat label="Free float" term="freeFloat" value={company.freeFloatPct != null ? fmtPct(company.freeFloatPct, false) : '—'} />
               </View>
-              <More label={tt("See fundamentals")} onPress={() => setTab('fundamentals')} />
+              <More label="See fundamentals" onPress={() => setTab('fundamentals')} />
             </Panel>
           </Section>
         ) : null}
@@ -673,7 +671,7 @@ export default function StockScreen() {
         ) : null}
 
         {news.length ? (
-          <Section title="Latest announcements" action={tt("See all")} onAction={() => setTab('news')}>
+          <Section title="Latest announcements" action="See all" onAction={() => setTab('news')}>
             <View>
               {news.slice(0, 3).map((a, i) => (
                 <View key={a.date + a.title} style={[styles.news, i < 2 && styles.border]}>
@@ -711,7 +709,7 @@ export default function StockScreen() {
     content = (
       <View style={[pad, { gap: 26 }]}>
         <FundamentalsTab company={company} stock={stock} err={companyErr} fair={pack.fair} />
-        <Section title="Sector peers" action={tt("Compare")} onAction={() => nav.navigate('Compare', { symbols: [symbol, ...pack.peers.slice(0, 1).map((p) => p.symbol)] })}>
+        <Section title="Sector peers" action="Compare" onAction={() => nav.navigate('Compare', { symbols: [symbol, ...pack.peers.slice(0, 1).map((p) => p.symbol)] })}>
           <PeersTab stock={stock} />
         </Section>
       </View>
@@ -721,7 +719,7 @@ export default function StockScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <View style={styles.topbar}>
-        <IconButton name="back" label={tt("Back")} filled={false} onPress={() => nav.goBack()} />
+        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
         <View style={{ alignItems: 'center' }}>
           <T v="title" style={{ fontSize: 16 }}>
             {symbol}
@@ -734,7 +732,7 @@ export default function StockScreen() {
         </View>
         <IconButton
           name={watched ? 'starFilled' : 'star'}
-          label={watched ? tt("Remove from watchlist") : tt("Add to watchlist")}
+          label={watched ? 'Remove from watchlist' : 'Add to watchlist'}
           color={watched ? colors.gold : colors.text}
           filled={false}
           onPress={() => toggleWatch(symbol)}
@@ -770,7 +768,7 @@ export default function StockScreen() {
           ) : null}
           {tab !== 'overview' ? subline : null}
         </View>
-        <TabStrip tabs={(aiOn ? TABS : TABS.filter((t) => t.key !== 'ai')).map((t) => ({ ...t, label: tt(t.label) }))} value={aiOn || tab !== 'ai' ? tab : 'overview'} onChange={setTab} />
+        <TabStrip tabs={(aiOn ? TABS : TABS.filter((t) => t.key !== 'ai')).map((t) => ({ ...t, label: t.label }))} value={aiOn || tab !== 'ai' ? tab : 'overview'} onChange={setTab} />
         <View style={{ paddingTop: 18 }}>{content}</View>
         <T v="caption" style={{ paddingHorizontal: space.gutter, paddingTop: 24 }}>
           Data from the PSX data portal{company?.asOf ? `, ${company.asOf.replace(/^As of /, 'as of ')}` : ''}. Market
@@ -778,8 +776,8 @@ export default function StockScreen() {
         </T>
       </ScrollView>
       <View style={styles.actions}>
-        <Button label={tt("Sell")} tone="down" style={{ flex: 1 }} onPress={() => nav.navigate('Order', { symbol, side: 'sell' })} />
-        <Button label={tt("Buy")} tone="up" style={{ flex: 1 }} onPress={() => nav.navigate('Order', { symbol, side: 'buy' })} />
+        <Button label="Sell" tone="down" style={{ flex: 1 }} onPress={() => nav.navigate('Order', { symbol, side: 'sell' })} />
+        <Button label="Buy" tone="up" style={{ flex: 1 }} onPress={() => nav.navigate('Order', { symbol, side: 'buy' })} />
       </View>
     </SafeAreaView>
   );

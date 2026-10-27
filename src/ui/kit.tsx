@@ -1,5 +1,4 @@
 import React from 'react';
-import { langPref, tr } from '../i18n';
 import {
   ActivityIndicator,
   Pressable,
@@ -210,8 +209,6 @@ export function Section({
   onAction?: () => void;
   children: React.ReactNode;
 }) {
-  const lang = langPref.use();
-  title = tr(title, lang);
   return (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>

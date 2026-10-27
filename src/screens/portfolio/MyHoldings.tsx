@@ -1,6 +1,5 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { tt, useLang } from '../../i18n';
 import { bonusAfter, canUndo } from '../../portfolio/bonusAuto';
 import { undoBonus } from '../../portfolio/useAutoBonus';
 import { rightsChoice } from '../../portfolio/rights';
@@ -93,7 +92,7 @@ function SaleTaxLine({ r }: { r: Row }) {
   return (
     <View style={styles.taxBox}>
       <T v="caption" style={{ fontFamily: fonts.bold, color: colors.text2 }}>
-        {tt("If you sold all of it now")}
+        If you sold all of it now
       </T>
       <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
         {saleLine(t, (v) => fmtNum(v, 0))}
@@ -133,7 +132,7 @@ function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }
       </T>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <T v="caption" style={{ flex: 1 }}>
-          {tt("Offer price from the company's notice (Rs)")}
+          Offer price from the company's notice (Rs)
         </T>
         <TextInput value={offer} onChangeText={setOffer} keyboardType="decimal-pad" placeholder="e.g. 10" placeholderTextColor={colors.faint} style={styles.offer} accessibilityLabel="Rights offer price" />
       </View>
@@ -229,13 +228,13 @@ function HoldingCard({
       <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
         <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })}>
           <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-            {tt("Plan a sale ›")}
+            Plan a sale ›
           </T>
         </Pressable>
         {r.price > 0 && r.price < r.holding.avgCost ? (
           <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('AverageDown', { symbol: r.holding.symbol })}>
             <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-              {tt("Average down ›")}
+              Average down ›
             </T>
           </Pressable>
         ) : null}
@@ -245,8 +244,8 @@ function HoldingCard({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={[styles.chip, { backgroundColor: bg }]}>
               <T style={{ fontFamily: fonts.bold, fontSize: 13.5, color: fg }}>
-                {tt(rv.action)}
-                {rv.watch ? tt(', watch') : ''}
+                {rv.action}
+                {rv.watch ? ', watch' : ''}
               </T>
             </View>
             <T v="caption" style={{ flex: 1 }} numberOfLines={open ? undefined : 2}>
@@ -293,7 +292,7 @@ function HoldingCard({
                 </T>
                 {canUndo(e, r.holding) ? (
                   <Pressable accessibilityRole="button" hitSlop={8} onPress={() => undoBonus(e)} style={{ marginTop: 4 }}>
-                    <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>{tt("Undo")}</T>
+                    <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>Undo</T>
                   </Pressable>
                 ) : null}
               </View>
@@ -341,7 +340,7 @@ function HoldingCard({
                         color: colors.muted,
                       }}
                     >
-                      {tt("Already done")}
+                      Already done
                     </T>
                   </Pressable>
                 </View>
@@ -420,7 +419,7 @@ function HoldingCard({
                   color: colors.gold,
                 }}
               >
-                {open ? tt("Hide reasons") : tt("Why?")}
+                {open ? 'Hide reasons' : 'Why?'}
               </T>
             </Pressable>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setTrading((v) => !v)}>
@@ -431,21 +430,20 @@ function HoldingCard({
                   color: colors.gold,
                 }}
               >
-                {tt("Bought or sold")}
+                Bought or sold
               </T>
             </Pressable>
           </View>
           {trading ? <TradeSheet symbol={r.holding.symbol} price={r.price} onDone={() => setTrading(false)} /> : null}
         </>
       ) : (
-        <T v="caption">{tt("Checking…")}</T>
+        <T v="caption">Checking…</T>
       )}
     </Panel>
   );
 }
 
 export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'invest' | 'risk'; onView?: (v: 'holdings' | 'invest' | 'risk') => void } = {}) {
-  useLang();
   const nav = useNavigation();
   const { stocks, bySymbol } = useMarket();
   const { holdings, loaded } = useHoldings();
@@ -494,10 +492,10 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <Empty
-          title={tt("Add your real holdings")}
+          title="Add your real holdings"
           body="Type or paste each holding as: symbol, shares, average price. They are saved on this phone only."
         />
-        <Button label={tt("Add holdings")} onPress={() => nav.navigate('EditHoldings')} />
+        <Button label="Add holdings" onPress={() => nav.navigate('EditHoldings')} />
       </ScrollView>
     );
 
@@ -518,7 +516,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Panel style={{ paddingVertical: 16, gap: 10 }}>
-        <T v="caption">{tt("Market value")}</T>
+        <T v="caption">Market value</T>
         <T v="monoXl">{fmtPkr(total)}</T>
         <T v="mono" style={{ color: changeColor(pnl) }}>
           {fmtSigned(pnl, 0)} ({pct(invested ? total / invested - 1 : 0)}) on {fmtNum(invested, 0)} invested
@@ -535,7 +533,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
             {watching ? ` (${watching} to watch)` : ''}
           </T>
         ) : (
-          <T v="caption">{tt("Checking each holding…")}</T>
+          <T v="caption">Checking each holding…</T>
         )}
       </Panel>
       {breadth != null && breadth < 0.5 ? (
@@ -547,9 +545,9 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
       <Segmented
         options={[
-          { key: 'holdings', label: tt("Holdings") },
-          { key: 'invest', label: tt("Invest cash") },
-          { key: 'risk', label: tt("Returns & risk") },
+          { key: 'holdings', label: 'Holdings' },
+          { key: 'invest', label: 'Invest cash' },
+          { key: 'risk', label: 'Returns & risk' },
         ]}
         value={view}
         onChange={setView}
@@ -560,12 +558,12 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
           {newTrade ? (
             <TradeSheet onDone={() => setNewTrade(false)} />
           ) : (
-            <Button label={tt("Record a trade")} tone="ghost" onPress={() => setNewTrade(true)} />
+            <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />
           )}
 
           {!loading && (reported.length || due.length) ? (
             <Panel style={{ paddingVertical: 12, gap: 4 }}>
-              <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{tt("Results season")}</T>
+              <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Results season</T>
               {reported.length ? (
                 <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T>
               ) : null}
@@ -606,7 +604,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
             </Section>
           ) : null}
 
-          <Section title="Holdings" action={tt("Edit all")} onAction={() => nav.navigate('EditHoldings')}>
+          <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
             {sorted.map((r) => (
               <HoldingCard
                 key={r.holding.symbol}
@@ -624,12 +622,12 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
       {view === 'invest' ? (
         <>
         {on('summary') ? (
-          <Section title="Your goals" action={tt("Monthly summary")} onAction={() => nav.navigate('Summary')}>
+          <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
             <GoalCard value={total} tracked={null} />
           </Section>
         ) : null}
         <Section title="Where should new money go?">
-          {loading ? <T v="caption">{tt("Waiting for every holding's review…")}</T> : <PlanCard rows={rows} breadth={breadth} />}
+          {loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}
         </Section>
         </>
       ) : null}
@@ -639,7 +637,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
           {on('health') ? (
             <>
               <Section title="Health check">
-                {loading ? <T v="caption">{tt("Checking every holding…")}</T> : <HealthCard rows={rows} />}
+                {loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}
               </Section>
               <Section title="How you're doing">
                 <PerformanceCard rows={rows} candles={candles} loading={loading} />
@@ -683,13 +681,13 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
           {on('zakat') ? (
             <Section title="Zakat on your shares">
-              {loading ? <T v="caption">{tt("Waiting for every holding's figures…")}</T> : <ZakatCard rows={rows} />}
+              {loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}
             </Section>
           ) : null}
 
           {on('health') ? (
             <Section title="Stress test">
-              {loading ? <T v="caption">{tt("Waiting for every holding's price history…")}</T> : <StressCard rows={stressRows} candles={candles} />}
+              {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
             </Section>
           ) : null}
         </>
@@ -702,7 +700,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
             color: colors.gold,
           }}
         >
-          {tt("How have these decisions done? ›")}
+          How have these decisions done? ›
         </T>
       </Pressable>
       <T v="caption" style={{ lineHeight: 18 }}>

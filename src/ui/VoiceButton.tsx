@@ -5,7 +5,6 @@ import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } fr
 import { colors, themed } from '../theme';
 import { aiKeys } from '../store/ai';
 import { transcribe } from '../ai/voice';
-import { langPref } from '../i18n';
 import { logProblem } from '../log';
 import { T } from './kit';
 
@@ -13,7 +12,6 @@ export function VoiceButton({ symbols, onText, onStatus, disabled }: { symbols: 
   const rec = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [state, setState] = useState<'idle' | 'rec' | 'busy'>('idle');
   const started = useRef(0);
-  const lang = langPref.use();
 
   const start = async () => {
     if (state !== 'idle' || disabled) return;
@@ -25,7 +23,7 @@ export function VoiceButton({ symbols, onText, onStatus, disabled }: { symbols: 
       rec.record();
       started.current = Date.now();
       setState('rec');
-      onStatus(lang === 'ur' ? 'بولیں… چھوڑنے پر سوال لکھ دیا جائے گا' : 'Listening… let go when you’re done');
+      onStatus('Listening… let go when you’re done');
     } catch (e) {
       logProblem('voice', e);
       onStatus(`Couldn't start recording: ${(e as Error).message}`);
@@ -48,8 +46,8 @@ export function VoiceButton({ symbols, onText, onStatus, disabled }: { symbols: 
         onStatus('Spoken questions use your Groq key: add it in Settings → AI.');
         return setState('idle');
       }
-      onStatus(lang === 'ur' ? 'سن رہا ہے…' : 'Turning it into text…');
-      const text = await transcribe(rec.uri ?? '', groq, { lang: lang === 'ur' ? 'ur' : null, symbols });
+      onStatus('Turning it into text…');
+      const text = await transcribe(rec.uri ?? '', groq, { symbols });
       onStatus(null);
       if (text) onText(text);
       else onStatus("Didn't catch that. Try again a little closer to the phone.");

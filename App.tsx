@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { langPref, tr } from './src/i18n';
 import { installShortcuts } from './src/shortcuts';
 import { useScreenGuard } from './src/screenGuard';
 import { AppState, View } from 'react-native';
@@ -87,7 +86,6 @@ const IdeasTab = () => <PicksScreen asTab />;
 
 /** Screens other than Home load the first time they're opened (getComponent), so the app starts faster. */
 function Tabs() {
-  const lang = langPref.use();
   const insets = useSafeAreaInsets();
   const layout = layoutPref.use();
   const on = useFlags();
@@ -113,7 +111,6 @@ function Tabs() {
         },
         tabBarLabelStyle: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14 },
         tabBarIcon: ({ color }) => <Icon name={TAB_ICONS[route.name]} color={color} />,
-        tabBarLabel: tr(route.name === 'Trade' ? 'Practice' : route.name, lang),
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />

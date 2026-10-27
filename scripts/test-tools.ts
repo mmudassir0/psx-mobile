@@ -8,8 +8,6 @@ import { LESSONS } from '../src/learn/lessons';
 import { sparkPath } from '../src/widget/spark';
 import { autoTrend, swings, trendNow, trendValues } from '../src/analysis/chartLines';
 import { sinceLast } from '../src/portfolio/sinceLast';
-import { tr, UR, UR_TERMS } from '../src/i18n';
-import { FEATURES } from '../src/nav/features';
 import { peerCompare } from '../src/analysis/peers';
 import { offlineDue } from '../src/offlineDue';
 import { rightsChoice } from '../src/portfolio/rights';
@@ -443,13 +441,6 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
   check('since: nothing to say', sinceLast({ ...base, announcements: {}, payouts: {}, last: { at: now - 20 * 3600_000, prices: { A: 100, W: 50 } }, price: (x) => (x === 'A' ? 100 : 50) }) === null);
 }
 
-// Urdu
-{
-  const missing = FEATURES.filter((f) => !UR[f.label]).map((f) => f.label);
-  check('every tool has an Urdu name', missing.length === 0, missing);
-  check('every explanation has Urdu', Object.keys(UR_TERMS).length === 19);
-  check('English stays English, unknown stays as is', tr('Market', 'en') === 'Market' && tr('Market', 'ur') === 'مارکیٹ' && tr('Zzz', 'ur') === 'Zzz');
-}
 
 // Peers
 {
