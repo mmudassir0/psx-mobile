@@ -1,6 +1,7 @@
 /** Export everything that lives only on this phone as text, and paste it back to restore. */
 import React, { useState } from 'react';
-import { Alert, Share, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, Share, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { driveReminderPref, driveSavedPref, pickBackupFile, scheduleDriveReminder, shareBackupFile } from '../driveBackup';
 import { colors, fonts, themed } from '../theme';
 import { fmtDay } from '../format';
 import { applyRestore, exportBackup, readBackup, type Restore } from '../backup';
@@ -25,6 +26,8 @@ export function BackupCard() {
   const [pasting, setPasting] = useState(false);
   const [text, setText] = useState('');
   const parsed = text.trim() ? readBackup(text) : null;
+  const driveReminder = driveReminderPref.use();
+  const driveSaved = driveSavedPref.use();
 
   const doExport = async () => {
     setMsg(null);
@@ -66,6 +69,52 @@ export function BackupCard() {
         note, or an email to yourself) so a new phone or a reinstall doesn't lose them. API keys are not included.
       </T>
       <Button label="Export backup" tone="ghost" onPress={doExport} />
+      {Platform.OS !== 'web' ? (
+        <View style={{ gap: 8 }}>
+          <Button
+            label="Save to Google Drive"
+            tone="ghost"
+            onPress={async () => {
+              setMsg(null);
+              try {
+                await shareBackupFile();
+                setMsg('Choose "Drive" in the list to keep it in your Google account.');
+              } catch (e) {
+                setMsg((e as Error).message);
+              }
+            }}
+          />
+          <Button
+            label="Restore from a file (Drive or Downloads)"
+            tone="ghost"
+            onPress={async () => {
+              setMsg(null);
+              try {
+                const r = await pickBackupFile();
+                if (!r) return;
+                if (!r.ok) return setMsg(r.error);
+                await restoreFrom(r.restore);
+              } catch (e) {
+                setMsg((e as Error).message);
+              }
+            }}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <T v="caption" style={{ flex: 1 }}>
+              Remind me every Sunday evening{driveSaved ? ` · last saved ${fmtDay(driveSaved)}` : ''}
+            </T>
+            <Switch
+              value={driveReminder}
+              onValueChange={async (v) => {
+                await driveReminderPref.set(v);
+                await scheduleDriveReminder(v);
+              }}
+              trackColor={{ true: colors.gold, false: colors.line }}
+              thumbColor={colors.surface}
+            />
+          </View>
+        </View>
+      ) : null}
       {pasting ? (
         <View style={{ gap: 10 }}>
           <TextInput

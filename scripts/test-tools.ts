@@ -2,6 +2,9 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { bookView } from '../src/analysis/book';
+import { addPoint, healthScore, spreadOf, trendLine, weekOf } from '../src/portfolio/healthScore';
+import { payMonths } from '../src/portfolio/income';
 import { intradayHits } from '../src/portfolio/intradayCore';
 import { tipFor, TIPS } from '../src/learn/tips';
 import { crossings } from '../src/analysis/chartLines';
@@ -397,6 +400,32 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Buyers and sellers
+{
+  const b = bookView({ bid: 99.9, ask: 100.1, bidVol: 30000, askVol: 10000 })!;
+  check('book: gap, buyers share, easy', Math.abs(b.spreadPct - 0.002) < 1e-9 && b.buyers === 0.75 && b.liquidity === 'easy' && b.text.startsWith('More shares are waiting to be bought'));
+  check('book: thin and none', bookView({ bid: 9, ask: 10, bidVol: 1, askVol: 1 })!.liquidity === 'thin' && bookView({ bid: 0, ask: 10, bidVol: 1, askVol: 1 }) === null);
+}
+
+// Health score history
+{
+  check('health score', healthScore([{ level: 'bad' }, { level: 'warn' }, { level: 'ok' }]) === 79 && healthScore([]) === 100);
+  const sp = spreadOf([50, 50]);
+  check('spread like owning N stocks', Math.abs(sp.spread - 2) < 1e-9 && sp.top === 0.5 && Math.abs(spreadOf([90, 10]).spread - 1.22) < 0.01);
+  check('week of a day', weekOf('2026-10-28') === '2026-10-26' && weekOf('2026-10-26') === '2026-10-26' && weekOf('2026-11-01') === '2026-10-26');
+  let h = addPoint([], { week: '2026-10-05', score: 60, spread: 3, top: 0.4 });
+  h = addPoint(h, { week: '2026-10-12', score: 66, spread: 3.5, top: 0.35 });
+  h = addPoint(h, { week: '2026-10-12', score: 72, spread: 4, top: 0.3 });
+  check('one point a week', h.length === 2 && h[1].score === 72 && trendLine(h) === 'Up 12 from 60 1 week ago: better spread.');
+}
+
+// Who pays when
+{
+  const t = (d: string) => Date.parse(d + 'T04:00:00Z');
+  const m = payMonths([{ dps: 5, bookClosure: t('2026-03-10') }, { dps: 4, bookClosure: t('2025-03-12') }, { dps: 2, bookClosure: t('2025-09-01') }, { dps: 0, bookClosure: t('2026-06-01') }, { dps: 9, bookClosure: t('2020-03-01') }], Date.parse('2026-10-27T00:00:00Z'));
+  check('pay months over three years', m.get(2) === 2 && m.get(8) === 1 && !m.has(5) && m.size === 2);
 }
 
 // Alerts during market hours

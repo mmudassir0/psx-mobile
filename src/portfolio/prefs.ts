@@ -20,3 +20,5 @@ export const BENCH_LABEL = { KSE100: 'KSE-100', KMI30: 'KMI-30' } as const;
 export const bonusLogPref = makePref<import('./bonusAuto').BonusEntry[]>('real.bonusLog', []);
 /** your own lines on each stock's chart (symbol → lines) */
 export const chartLinesPref = makePref<Record<string, import('../analysis/chartLines').UserLines>>('user.chartLines', {});
+/** weekly health score points */
+export const healthHistoryPref = makePref<import('./healthScore').HealthPoint[]>('real.healthHistory', []);

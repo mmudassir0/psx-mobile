@@ -169,7 +169,7 @@ export default function PortfolioScreen() {
         {practiceOn ? (
           <Segmented
             options={[
-              { key: 'real', label: `$My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
+              { key: 'real', label: `My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
               { key: 'paper', label: 'Practice' },
             ]}
             value={tab}

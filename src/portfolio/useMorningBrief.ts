@@ -5,6 +5,7 @@
  */
 import { useEffect } from 'react';
 import { makePref } from '../prefs';
+import { driveReminderPref, scheduleDriveReminder } from '../driveBackup';
 import { cancelReminder, ensureReady, morningOf, remind, scheduledIds } from '../notify';
 import { MPC_DATES } from '../analysis/events';
 import { working } from '../analysis/dividends';
@@ -100,6 +101,7 @@ export function useMorningBrief(rows: Row[], ready: boolean) {
     if (!ready) return;
     scheduleMorning(rows, s).catch(() => {});
     scheduleYearReview().catch(() => {});
+    driveReminderPref.get().then((on) => (on ? scheduleDriveReminder(true) : undefined)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, sig, s.on, s.time]);
 }

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { bookView } from '../analysis/book';
 import { pinStockWidget } from '../widget/update';
 import { MyLines } from '../ui/MyLines';
 import { trendValues } from '../analysis/chartLines';
@@ -592,6 +593,45 @@ export default function StockScreen() {
             </View>
           </Panel>
         </Section>
+
+        {(() => {
+          const bk = stock ? bookView(stock) : null;
+          return bk ? (
+            <Section title="Buyers and sellers">
+              <Panel style={{ paddingVertical: 14, gap: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View>
+                    <T v="caption">Best bid (buyers)</T>
+                    <T v="mono" style={{ fontSize: 16, color: colors.up }}>
+                      {fmtPrice(bk.bid)}
+                    </T>
+                    <T v="caption">{fmtCompact(bk.bidVol)} shares</T>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <T v="caption">Gap</T>
+                    <T v="mono" style={{ fontSize: 14 }}>
+                      {(bk.spreadPct * 100).toFixed(2)}%
+                    </T>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <T v="caption">Best ask (sellers)</T>
+                    <T v="mono" style={{ fontSize: 16, color: colors.downText }}>
+                      {fmtPrice(bk.ask)}
+                    </T>
+                    <T v="caption">{fmtCompact(bk.askVol)} shares</T>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 }}>
+                  <View style={{ flex: Math.max(0.02, bk.buyers), backgroundColor: colors.up }} />
+                  <View style={{ flex: Math.max(0.02, 1 - bk.buyers), backgroundColor: colors.down }} />
+                </View>
+                <T v="caption" style={{ lineHeight: 17 }}>
+                  {bk.text} PSX shows only the best price on each side; pull down to refresh during the session.
+                </T>
+              </Panel>
+            </Section>
+          ) : null;
+        })()}
 
         <Section title="52-week range">
           <Panel style={{ paddingVertical: 16 }}>

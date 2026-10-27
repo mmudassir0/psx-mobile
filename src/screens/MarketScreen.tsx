@@ -145,6 +145,7 @@ export default function MarketScreen() {
   const [activeSaved, setActiveSaved] = useState<string | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
   const [freshSyms, setFreshSyms] = useState<string[]>([]);
+  const [pickCmp, setPickCmp] = useState<string[] | null>(null);
   // new matches per saved screen (only for screens of stocks, not today's movers)
   const savedNew = useMemo(() => {
     const m = new Map<string, number>();
@@ -456,6 +457,52 @@ export default function MarketScreen() {
                   </Pressable>
                 </ScrollView>
                 {mode === 'watch' ? <GroupBar value={group} onChange={setGroup} /> : null}
+                {mode === 'watch' && list.length >= 2 ? (
+                  pickCmp == null ? (
+                    <Pressable accessibilityRole="button" onPress={() => setPickCmp([])} style={{ alignSelf: 'flex-start' }}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>⚖️ Compare some of these</T>
+                    </Pressable>
+                  ) : (
+                    <View style={{ gap: 8 }}>
+                      <T v="caption">Pick 2 to 4 to compare side by side:</T>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                        {list.slice(0, 40).map((s) => {
+                          const on = pickCmp.includes(s.symbol);
+                          return (
+                            <Pressable
+                              key={s.symbol}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: on }}
+                              onPress={() => setPickCmp(on ? pickCmp.filter((x) => x !== s.symbol) : pickCmp.length < 4 ? [...pickCmp, s.symbol] : pickCmp)}
+                              style={[styles.fchip, on && { borderColor: colors.gold, backgroundColor: colors.surface2 }]}
+                            >
+                              <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.gold : colors.text2 }}>
+                                {on ? '✓ ' : ''}
+                                {s.symbol}
+                              </T>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+                        <Pressable
+                          accessibilityRole="button"
+                          disabled={pickCmp.length < 2}
+                          onPress={() => {
+                            nav.navigate('Compare', { symbols: pickCmp });
+                            setPickCmp(null);
+                          }}
+                          style={[styles.cmpBtn, pickCmp.length < 2 && { opacity: 0.4 }]}
+                        >
+                          <T style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.onGold }}>Compare {pickCmp.length || ''}</T>
+                        </Pressable>
+                        <Pressable accessibilityRole="button" onPress={() => setPickCmp(null)}>
+                          <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.faint }}>Cancel</T>
+                        </Pressable>
+                      </View>
+                    </View>
+                  )
+                ) : null}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                   {FILTERS.map((f) => {
                     const on = filters.includes(f.id);
@@ -744,6 +791,7 @@ const styles = themed(() =>
     },
     chipOn: { backgroundColor: colors.gold },
     more: { paddingVertical: 12, alignItems: 'center' },
+  cmpBtn: { paddingHorizontal: 16, height: 36, borderRadius: 18, backgroundColor: colors.gold, justifyContent: 'center' },
     badge: {
       backgroundColor: colors.gold,
       borderRadius: 8,

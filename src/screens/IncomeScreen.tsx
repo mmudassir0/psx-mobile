@@ -9,6 +9,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { useReviews } from '../portfolio/useReviews';
 import { incomeIdeas, incomePlan } from '../portfolio/income';
+import { payMonths } from '../portfolio/income';
 import { benchmarkPref, taxStatusPref } from '../portfolio/prefs';
 import { dividendTaxRate, payerKind } from '../analysis/dividends';
 import { Panel } from '../ui/bits';
@@ -99,6 +100,44 @@ export default function IncomeScreen() {
                 <Key fill={colors.goldSoft} border text="Expected from last year" />
               </View>
             </Panel>
+
+            {rows.some((r) => (r.dividends?.list ?? []).some((x) => x.dps > 0)) ? (
+              <Section title="Who usually pays when">
+                <Panel style={{ paddingVertical: 10, gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 62 }} />
+                    {MONTH.map((m) => (
+                      <T key={m} v="caption" style={{ flex: 1, textAlign: 'center', fontSize: 9.5 }}>
+                        {m.slice(0, 1)}
+                      </T>
+                    ))}
+                  </View>
+                  {rows
+                    .filter((r) => (r.dividends?.list ?? []).some((x) => x.dps > 0))
+                    .map((r) => {
+                      const pm = payMonths(r.dividends?.list ?? []);
+                      return (
+                        <View key={r.holding.symbol} style={{ flexDirection: 'row', alignItems: 'center', height: 22 }}>
+                          <T style={{ width: 62, fontFamily: fonts.bold, fontSize: 12 }} numberOfLines={1}>
+                            {r.holding.symbol}
+                          </T>
+                          {MONTH.map((m, i) => {
+                            const n = pm.get(i) ?? 0;
+                            return (
+                              <View key={m} style={{ flex: 1, alignItems: 'center' }}>
+                                <View style={{ width: n ? 12 : 4, height: n ? 12 : 4, borderRadius: 6, backgroundColor: n >= 3 ? colors.gold : n === 2 ? colors.gold : n === 1 ? colors.goldSoft : colors.hairline, borderWidth: n === 1 ? 1 : 0, borderColor: colors.gold, opacity: n === 2 ? 0.75 : 1 }} />
+                              </View>
+                            );
+                          })}
+                        </View>
+                      );
+                    })}
+                  <T v="caption" style={{ lineHeight: 17 }}>
+                    Months each holding's book closure fell in over the last three years: a full dot every year, a lighter one in some years. Payment usually follows within a few weeks.
+                  </T>
+                </Panel>
+              </Section>
+            ) : null}
 
             <Section title="Month by month">
               <Panel style={{ paddingVertical: 4 }}>

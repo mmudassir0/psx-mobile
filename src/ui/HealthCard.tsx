@@ -1,5 +1,8 @@
 /** Portfolio health check: what's worth fixing in how your money is spread, and how. */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Sparkline } from './PriceChart';
+import { healthHistoryPref } from '../portfolio/prefs';
+import { addPoint, healthScore, spreadOf, trendLine, weekOf } from '../portfolio/healthScore';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { healthCheck, type Level } from '../portfolio/health';
@@ -16,9 +19,33 @@ export function HealthCard({ rows }: { rows: Row[] }) {
   const bench = benchmarkPref.use();
   const items = healthCheck(rows, stocks, bench);
   const [open, setOpen] = useState<string | null>(null);
-  if (!items.length) return null;
+  const history = healthHistoryPref.use();
+  const score = healthScore(items);
+  const { spread, top } = spreadOf(rows.map((r) => r.value));
+  // one point a week, saved when you look
+  useEffect(() => {
+    if (!rows.length || !rows.every((r) => r.price > 0)) return;
+    const week = weekOf(new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10));
+    const last = history[history.length - 1];
+    if (last && last.week === week && last.score === score && Math.abs(last.spread - spread) < 0.05) return;
+    healthHistoryPref.set(addPoint(history, { week, score, spread: Math.round(spread * 10) / 10, top: Math.round(top * 1000) / 1000 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score, Math.round(spread * 10), rows.length]);
+  if (!rows.length) return null;
+  const line = trendLine(history);
   return (
     <Panel style={{ paddingVertical: 4 }}>
+      <View style={[styles.row, { alignItems: 'center' }, items.length ? styles.border : null]}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>
+            Health {score}/100
+          </T>
+          <T v="caption" style={{ lineHeight: 17 }}>
+            Like owning {spread.toFixed(1)} stocks equally{line ? ` · ${line}` : ''}
+          </T>
+        </View>
+        {history.length >= 2 ? <Sparkline values={history.slice(-26).map((h) => h.score)} width={80} height={28} /> : null}
+      </View>
       {items.map((it, i) => (
         <Pressable key={it.key} accessibilityRole="button" onPress={() => setOpen((k) => (k === it.key ? null : it.key))} style={[styles.row, i < items.length - 1 && styles.border]}>
           <View style={[styles.dot, { backgroundColor: TONE[it.level]() }]} />

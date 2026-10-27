@@ -133,3 +133,19 @@ export function incomeIdeas<T extends { symbol: string; divYield: number | null;
     .sort((a, b) => (b.divYield ?? 0) - (a.divYield ?? 0))
     .slice(0, n);
 }
+
+/**
+ * Which months a company has paid cash dividends in (book closure month), over
+ * the last `years` years: month index (0 = January) → how many of those years.
+ */
+export function payMonths(list: { dps: number; bookClosure: number | null }[], now = Date.now(), years = 3): Map<number, number> {
+  const from = now - years * 365 * 864e5;
+  const seen = new Map<number, Set<number>>();
+  for (const p of list) {
+    if (!(p.dps > 0) || p.bookClosure == null || p.bookClosure < from || p.bookClosure > now + 60 * 864e5) continue;
+    const d = new Date(p.bookClosure + 5 * 3600_000);
+    const m = d.getUTCMonth();
+    seen.set(m, (seen.get(m) ?? new Set()).add(d.getUTCFullYear()));
+  }
+  return new Map([...seen].map(([m, ys]) => [m, ys.size]));
+}

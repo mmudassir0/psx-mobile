@@ -215,6 +215,7 @@ const linking: LinkingOptions<RootParams> = {
       Portfolios: 'portfolios',
       Diary: 'diary',
       Learn: 'learn',
+      Settings: 'settings',
       StockCard: 'card/:symbol',
       YearReview: 'year-review',
     },
