@@ -1,5 +1,6 @@
 /** Every term Sahm uses, in plain words, with examples from your own holdings. */
 import React, { useMemo, useState } from 'react';
+import { langPref, UR_TERMS } from '../i18n';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -24,14 +25,19 @@ export default function GlossaryScreen() {
       }),
     [holdings, bySymbol],
   );
-  const ids = (Object.keys(TERMS) as TermId[]).filter((k) => !q.trim() || `${TERMS[k].title} ${TERMS[k].body}`.toLowerCase().includes(q.trim().toLowerCase())).sort((a, b) => TERMS[a].title.localeCompare(TERMS[b].title));
+  const lang = langPref.use();
+  const term = (k: TermId) => (lang === 'ur' ? { ...TERMS[k], ...UR_TERMS[k] } : TERMS[k]);
+  const rtl = lang === 'ur' ? ({ writingDirection: 'rtl', textAlign: 'right' } as const) : null;
+  const ids = (Object.keys(TERMS) as TermId[])
+    .filter((k) => !q.trim() || `${TERMS[k].title} ${TERMS[k].body} ${UR_TERMS[k]?.title ?? ''} ${UR_TERMS[k]?.body ?? ''}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => term(a).title.localeCompare(term(b).title));
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.topbar}>
         <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
         <T v="title" style={{ fontSize: 16 }}>
-          Words explained
+          {lang === 'ur' ? 'اصطلاحات کی وضاحت' : 'Words explained'}
         </T>
         <View style={{ width: 44 }} />
       </View>
@@ -39,18 +45,18 @@ export default function GlossaryScreen() {
         <TextInput value={q} onChangeText={setQ} placeholder="Find a word" placeholderTextColor={colors.faint} style={styles.search} accessibilityLabel="Find a word" />
         <Panel style={{ paddingVertical: 4 }}>
           {ids.map((k, i) => {
-            const t = TERMS[k];
+            const t = term(k);
             const on = open === k;
             const ex = on ? pickExample(t, mine) : null;
             return (
               <Pressable key={k} accessibilityRole="button" accessibilityState={{ expanded: on }} onPress={() => setOpen(on ? null : k)} style={[styles.row, i < ids.length - 1 && styles.border]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <T style={{ fontFamily: fonts.semibold, fontSize: 14.5, flex: 1 }}>{t.title}</T>
+                  <T style={[{ fontFamily: fonts.semibold, fontSize: 14.5, flex: 1 }, rtl]}>{t.title}</T>
                   <T v="caption">{on ? '−' : '+'}</T>
                 </View>
                 {on ? (
                   <View style={{ gap: 8, paddingTop: 6 }}>
-                    <T v="body" style={{ fontSize: 14, lineHeight: 20 }}>
+                    <T v="body" style={[{ fontSize: 14, lineHeight: lang === 'ur' ? 26 : 20 }, rtl]}>
                       {t.body}
                     </T>
                     {ex ? (

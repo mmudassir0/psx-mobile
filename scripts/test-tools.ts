@@ -2,6 +2,10 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { autoTrend, swings, trendNow, trendValues } from '../src/analysis/chartLines';
+import { sinceLast } from '../src/portfolio/sinceLast';
+import { tr, UR, UR_TERMS } from '../src/i18n';
+import { FEATURES } from '../src/nav/features';
 import { peerCompare } from '../src/analysis/peers';
 import { offlineDue } from '../src/offlineDue';
 import { rightsChoice } from '../src/portfolio/rights';
@@ -389,6 +393,38 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Chart lines
+{
+  const D = 864e5;
+  const closes = [10, 9, 8, 9, 10, 11, 12, 11, 10, 9, 10, 11, 12, 13, 14, 13, 12, 11, 12, 13, 14, 15, 16];
+  const c = closes.map((v, i) => ({ t: i * D, o: v, h: v, l: v, c: v, v: 1 }));
+  const lows = swings(c, 'lows', 2);
+  check('swings: the turning points', lows.map((x) => x.p).join() === '8,9,11', lows);
+  const t = autoTrend(c, 'lows', 250)!;
+  check('trend through the last two lows', t.p1 === 9 && t.p2 === 11);
+  const v = trendValues(c, t);
+  check('trend values: null before, carried on', v[0] === null && Math.abs(v[9]! - 9) < 1e-9 && Math.abs(v[17]! - 11) < 1e-9 && Math.abs(v[22]! - 12.25) < 1e-9);
+  check('trend now', Math.abs(trendNow(c, t)!.value - 12.25) < 1e-9 && trendNow(c, t)!.gap > 0.3);
+}
+
+// Since you last looked
+{
+  const now = Date.parse('2026-10-27T10:00:00Z');
+  const base = { now, holdings: [{ symbol: 'A', shares: 10 }], watchlist: ['W'], announcements: { A: [{ date: '2026-10-27', title: 'Board meeting' }, { date: '2026-10-01', title: 'old' }] }, payouts: { A: [{ bookClosure: now - 3600_000 }] } };
+  const s = sinceLast({ ...base, last: { at: now - 20 * 3600_000, prices: { A: 100, W: 50 } }, price: (x) => (x === 'A' ? 105 : 45) })!;
+  check('since: change on today\'s shares, movers, news, book closures', s.change === 50 && Math.abs(s.pct - 0.05) < 1e-9 && s.movers[0].symbol === 'W' && !s.movers[0].held && s.news.length === 1 && s.bookClosures.length === 1);
+  check('since: not shown after a short time away', sinceLast({ ...base, last: { at: now - 3600_000, prices: { A: 100 } }, price: () => 105 }) === null);
+  check('since: nothing to say', sinceLast({ ...base, announcements: {}, payouts: {}, last: { at: now - 20 * 3600_000, prices: { A: 100, W: 50 } }, price: (x) => (x === 'A' ? 100 : 50) }) === null);
+}
+
+// Urdu
+{
+  const missing = FEATURES.filter((f) => !UR[f.label]).map((f) => f.label);
+  check('every tool has an Urdu name', missing.length === 0, missing);
+  check('every explanation has Urdu', Object.keys(UR_TERMS).length === 19);
+  check('English stays English, unknown stays as is', tr('Market', 'en') === 'Market' && tr('Market', 'ur') === 'مارکیٹ' && tr('Zzz', 'ur') === 'Zzz');
 }
 
 // Peers

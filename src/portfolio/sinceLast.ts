@@ -56,8 +56,7 @@ export function sinceLast(input: {
   const news: SinceLast['news'] = [];
   for (const [s, list] of Object.entries(input.announcements)) for (const a of list) if (a.date >= fromDay) news.push({ symbol: s, title: a.title });
   const bookClosures: SinceLast['bookClosures'] = [];
-  for (const [s, list] of Object.entries(input.payouts))
-    for (const p of list) if (p.bookClosure != null && p.bookClosure > L.at && p.bookClosure <= input.now) bookClosures.push({ symbol: s, day: pk(p.bookClosure) });
+  for (const [s, list] of Object.entries(input.payouts)) for (const p of list) if (p.bookClosure != null && p.bookClosure > L.at && p.bookClosure <= input.now) bookClosures.push({ symbol: s, day: pk(p.bookClosure) });
   const change = after - before;
   const r = { hours: (input.now - L.at) / 3600_000, change, pct: before ? change / before : 0, movers, news: news.slice(0, 6), bookClosures };
   // nothing to say: no card

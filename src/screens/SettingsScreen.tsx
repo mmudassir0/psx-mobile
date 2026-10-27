@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { langPref, type Lang } from '../i18n';
 import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
 import { CalendarCard } from '../ui/CalendarCard';
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const ai = useAi();
   const locked = lockPref.use();
   const hideScreen = hideScreenPref.use();
+  const lang = langPref.use();
   const [lockMsg, setLockMsg] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
@@ -162,6 +164,18 @@ export default function SettingsScreen() {
         <Section title="Appearance">
           <Segmented options={THEMES} value={pref} onChange={setPref} />
           <T v="caption">“Phone” follows your phone's light or dark mode.</T>
+        </Section>
+
+        <Section title="Language">
+          <Segmented
+            options={[
+              { key: 'en', label: 'English' },
+              { key: 'ur', label: 'اردو' },
+            ]}
+            value={lang}
+            onChange={(v) => langPref.set(v as Lang)}
+          />
+          <T v="caption">{lang === 'ur' ? 'ٹیبز، تمام ٹولز کے نام، سیکشن کے عنوان اور اصطلاحات کی وضاحت اردو میں۔ باقی تفصیل ابھی انگریزی میں ہے۔' : 'Urdu for the tabs, every tool, section headings and the plain-word explanations. The rest is still in English.'}</T>
         </Section>
 
         <Section title="Tax status">

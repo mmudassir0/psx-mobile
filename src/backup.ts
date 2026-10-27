@@ -47,6 +47,8 @@ export const BACKUP_KEYS = [
   'real.divReceived',
   'real.bonusLog',
   'ui.portfolios',
+  'ui.lang',
+  'user.chartLines',
   'pf.store',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
@@ -88,6 +90,8 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.divReceived': (x) => isReceived(x),
   'real.bonusLog': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.symbol === 'string' && isObj(e.before) && isObj(e.after)),
   'ui.portfolios': (x) => isPortfolios(x),
+  'ui.lang': (x) => x === 'en' || x === 'ur',
+  'user.chartLines': (x) => isObj(x),
   'pf.store': (x) => isObj(x) && Object.values(x).every((v) => isObj(v)),
   'ui.homeCards': (x) => isObj(x) && strArr(x.order) && strArr(x.hidden),
   'real.priceTargets': (x) => isObj(x) && Object.values(x).every((t) => isObj(t) && (t.target === null || typeof t.target === 'number') && (t.rethink === null || typeof t.rethink === 'number')),

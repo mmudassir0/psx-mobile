@@ -1,5 +1,6 @@
 /** Side menu layout: a ☰ button on every main screen opens a list of every tool. */
 import React, { useState } from 'react';
+import { langPref, tr } from '../i18n';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -9,6 +10,7 @@ import { useFlags } from '../flags';
 import { T } from './kit';
 
 export function MenuButton({ navigation }: BottomTabBarProps) {
+  const lang = langPref.use();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const features = visibleFeatures(useFlags());
@@ -35,7 +37,7 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
               {GROUPS.filter((g) => features.some((f) => f.group === g)).map((g) => (
                 <View key={g} style={{ marginTop: 10 }}>
                   <T v="caption" style={{ fontFamily: fonts.bold, paddingHorizontal: 10, paddingBottom: 4 }}>
-                    {g}
+                    {tr(g, lang)}
                   </T>
                   {features.filter((f) => f.group === g).map((f) => (
                     <Pressable
@@ -48,7 +50,7 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
                       style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
                     >
                       <T style={{ fontSize: 18, width: 28 }}>{f.emoji}</T>
-                      <T style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{f.label}</T>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{tr(f.label, lang)}</T>
                     </Pressable>
                   ))}
                 </View>

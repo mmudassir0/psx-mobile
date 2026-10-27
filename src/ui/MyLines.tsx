@@ -26,7 +26,15 @@ export function MyLines({ symbol, daily }: { symbol: string; daily: Candle[] | n
   return (
     <View style={styles.box}>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={last ? `Level, e.g. ${last.toFixed(0)}` : 'Price'} placeholderTextColor={colors.faint} style={styles.input} accessibilityLabel="Price for a level" />
+        <TextInput
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="decimal-pad"
+          placeholder={last ? `Level, e.g. ${last.toFixed(0)}` : 'Price'}
+          placeholderTextColor={colors.faint}
+          style={styles.input}
+          accessibilityLabel="Price for a level"
+        />
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -75,8 +83,7 @@ export function MyLines({ symbol, daily }: { symbol: string; daily: Candle[] | n
         );
       })}
       <T v="caption" style={{ lineHeight: 17 }}>
-        A close below a rising line under the lows, or above a falling line over the highs, is often read as the trend changing. Lines are a way of looking,
-        not a forecast. They show on the daily ranges.
+        A close below a rising line under the lows, or above a falling line over the highs, is often read as the trend changing. Lines are a way of looking, not a forecast. They show on the daily ranges.
       </T>
     </View>
   );
@@ -85,7 +92,19 @@ export function MyLines({ symbol, daily }: { symbol: string; daily: Candle[] | n
 const styles = themed(() =>
   StyleSheet.create({
     box: { backgroundColor: colors.surface, borderRadius: 14, padding: 12, gap: 8, marginHorizontal: 16 },
-    input: { flex: 1, height: 38, borderRadius: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface2, color: colors.text, fontFamily: fonts.medium, fontSize: 14, paddingHorizontal: 10, paddingVertical: 0 },
+    input: {
+      flex: 1,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.line,
+      backgroundColor: colors.surface2,
+      color: colors.text,
+      fontFamily: fonts.medium,
+      fontSize: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 0,
+    },
     btn: { paddingHorizontal: 12, height: 36, borderRadius: 18, backgroundColor: colors.gold, justifyContent: 'center' },
     chip: { paddingHorizontal: 11, height: 32, borderRadius: 16, backgroundColor: colors.surface2, justifyContent: 'center' },
     row: { flexDirection: 'row', alignItems: 'center', gap: 8 },

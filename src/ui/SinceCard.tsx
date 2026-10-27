@@ -83,7 +83,12 @@ export function SinceCard({ rows, watchlist, bySymbol, ready, hidden }: { rows: 
       {s.movers.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
           {s.movers.map((m) => (
-            <Pressable key={m.symbol} accessibilityRole="button" onPress={() => nav.navigate('Stock', { symbol: m.symbol })} style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, backgroundColor: m.pct >= 0 ? colors.upSoft : colors.downSoft }}>
+            <Pressable
+              key={m.symbol}
+              accessibilityRole="button"
+              onPress={() => nav.navigate('Stock', { symbol: m.symbol })}
+              style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, backgroundColor: m.pct >= 0 ? colors.upSoft : colors.downSoft }}
+            >
               <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: m.pct >= 0 ? colors.up : colors.downText }}>
                 {m.symbol} {m.pct >= 0 ? '+' : '−'}
                 {Math.abs(m.pct * 100).toFixed(1)}%{m.held ? '' : ' ☆'}
@@ -95,7 +100,12 @@ export function SinceCard({ rows, watchlist, bySymbol, ready, hidden }: { rows: 
       {s.news.length ? (
         <Pressable accessibilityRole="button" onPress={() => nav.navigate('Announcements')}>
           <T v="caption" numberOfLines={2} style={{ lineHeight: 17 }}>
-            📰 {s.news.length} new announcement{s.news.length === 1 ? '' : 's'}: {s.news.slice(0, 2).map((n) => `${n.symbol} ${n.title.slice(0, 40)}`).join('; ')} ›
+            📰 {s.news.length} new announcement{s.news.length === 1 ? '' : 's'}:{' '}
+            {s.news
+              .slice(0, 2)
+              .map((n) => `${n.symbol} ${n.title.slice(0, 40)}`)
+              .join('; ')}{' '}
+            ›
           </T>
         </Pressable>
       ) : null}
