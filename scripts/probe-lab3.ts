@@ -1,21 +1,27 @@
-/** How the market-wide /payouts page loads its table, and whether it reaches back years. */
+/** How far back PSX's payouts list and the index dividend-discount page reach. */
 import { fetchRaw } from '../src/psx/api';
-import { parsePayouts } from '../src/analysis/dividends';
 async function retry<T>(f: () => Promise<T>, n = 3): Promise<T> {
   let last: unknown;
   for (let i = 0; i < n; i++) { try { return await f(); } catch (e) { last = e; await new Promise((r) => setTimeout(r, 3000 * (i + 1))); } }
   throw last;
 }
+const rows = (h: string) => [...h.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) => c[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()).join(' | '));
 (async () => {
-  const page = await retry(() => fetchRaw('/payouts', undefined, false));
-  const body = page.slice(page.indexOf('<body'));
-  const main = body.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '');
-  const k = main.search(/payout/i);
-  console.log('PAGE', main.replace(/\s+/g, ' ').slice(Math.max(0, main.indexOf('<main')), main.indexOf('<main') + 5000));
-  const js = await retry(() => fetchRaw('/static/script.js?v=1.79', undefined, false)).catch(() => fetchRaw('/static/script.js?v=1.76', undefined, false));
-  let i = -1;
-  while ((i = js.indexOf('/payouts', i + 1)) >= 0) console.log('\nJS ...', js.slice(Math.max(0, i - 600), i + 400).replace(/\s+/g, ' '));
-  for (const form of [{ date: '2018-03-15' }, { from: '2018-01-01', to: '2018-03-31' }, { date_from: '2018-01-01', date_to: '2018-03-31' }, { year: '2018', month: '3' }]) {
-    try { const r = await fetchRaw('/payouts', form); console.log(`\nPOST /payouts ${JSON.stringify(form)} ${r.length}`, r.replace(/\s+/g, ' ').slice(0, 1200), '\nparsed', parsePayouts(r).length); } catch (e) { console.log('POST', JSON.stringify(form), (e as Error).message); }
+  const forms: Record<string, string>[] = [
+    { symbol: 'FFC', count: '500', offset: '0' },
+    { symbol: '', count: '50', offset: '700' },
+  ];
+  for (const f of forms) {
+    try { const r = await retry(() => fetchRaw('/payouts', f)); const rr = rows(r); console.log(`\n/payouts ${JSON.stringify(f)} rows ${rr.length}`, r.match(/Showing[^<]*/)?.[0]); console.log(rr.slice(0, 3).join('\n')); console.log('...'); console.log(rr.slice(-4).join('\n')); } catch (e) { console.log('ERR', (e as Error).message); }
   }
+  try {
+    const page = await retry(() => fetchRaw('/indices-div-discount', undefined, false));
+    const main = page.slice(page.indexOf('page__content') - 20).replace(/<script[\s\S]*?<\/script>/g, '').replace(/\s+/g, ' ');
+    console.log('\nDIV DISCOUNT PAGE', main.slice(0, 3000));
+  } catch (e) { console.log('ERR dd', (e as Error).message); }
+  const js = await retry(() => fetchRaw('/static/script.js?v=1.79', undefined, false));
+  let i = -1;
+  while ((i = js.indexOf('div-discount', i + 1)) >= 0) console.log('\nJS ...', js.slice(Math.max(0, i - 200), i + 1500).replace(/\s+/g, ' '));
+  i = js.indexOf('IndicesDivDiscount');
+  while (i >= 0) { console.log('\nJS2 ...', js.slice(i, i + 1500)); i = js.indexOf('IndicesDivDiscount', i + 1); }
 })();
