@@ -34,6 +34,7 @@ export const FEATURES: Feature[] = [
   { key: 'results', label: 'Results season', emoji: '📊', group: 'My money', words: 'results earnings eps quarter profit announcement board meeting due', go: (nav) => nav.navigate('Results') },
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
+  { key: 'diary', label: 'Portfolio diary', emoji: '📔', group: 'My money', words: 'diary daily log day by day what happened today yesterday history line', go: (nav) => nav.navigate('Diary') },
   { key: 'divpayments', label: 'Dividend payments', emoji: '✅', group: 'My money', words: 'dividend payment received paid bank credit tick missing late owed', flags: ['dividends'], go: (nav) => nav.navigate('DivPayments') },
   { key: 'averagedown', label: 'Average down', emoji: '📉', group: 'My money', words: 'average down cost averaging lower average buy more dip loss', go: (nav) => nav.navigate('AverageDown') },
   { key: 'portfolios', label: 'Family portfolios', emoji: '👪', group: 'My money', words: 'family portfolio second another parent child wife account profile switch total', go: (nav) => nav.navigate('Portfolios') },
@@ -67,6 +68,7 @@ export const FEATURES: Feature[] = [
   { key: 'glossary', label: 'Words explained', emoji: '📖', group: 'App', words: 'glossary meaning explain what is pe eps yield book closure kibor fair value roe help learn', go: (nav) => nav.navigate('Glossary') },
   { key: 'costs', label: 'Trading costs', emoji: '🧮', group: 'App', words: 'fees brokerage charges commission break even cdc', go: (nav) => nav.navigate('Settings') },
   { key: 'export', label: 'Export to Excel', emoji: '📗', group: 'App', words: 'excel xlsx spreadsheet export download sheet accountant', go: (nav) => nav.navigate('Export') },
+  { key: 'offline', label: 'Offline copy', emoji: '📴', group: 'App', words: 'offline no internet download save copy data', go: (nav) => nav.navigate('Settings') },
   { key: 'settings', label: 'Settings', emoji: '⚙️', group: 'App', words: 'settings theme backup keys tax status layout', go: (nav) => nav.navigate('Settings') },
   { key: 'find', label: 'Search', emoji: '🔎', group: 'App', words: 'find search', go: (nav) => nav.navigate('Find') },
 ];

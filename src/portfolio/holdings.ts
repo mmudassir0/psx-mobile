@@ -13,6 +13,9 @@ async function ensure(): Promise<Holding[]> {
   return current;
 }
 
+/** The holdings as saved (for code outside a screen). */
+export const getHoldings = () => ensure();
+
 export async function setHoldings(h: Holding[]) {
   current = [...h].sort((a, b) => a.symbol.localeCompare(b.symbol));
   await save(KEY, current);

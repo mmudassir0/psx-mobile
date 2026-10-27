@@ -16,3 +16,5 @@ export const watchCopiedPref = makePref<string>('real.watchAlertsCopied', '');
 export const watchlistCopiedPref = makePref<string>('user.watchlistCopied', '');
 export const benchmarkPref = makePref<'KSE100' | 'KMI30'>('real.benchmark', 'KSE100');
 export const BENCH_LABEL = { KSE100: 'KSE-100', KMI30: 'KMI-30' } as const;
+/** bonus shares Sahm added (by itself or when you tapped), newest last */
+export const bonusLogPref = makePref<import('./bonusAuto').BonusEntry[]>('real.bonusLog', []);

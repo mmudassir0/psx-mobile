@@ -45,6 +45,7 @@ export const BACKUP_KEYS = [
   'ui.morningBrief',
   'real.sectorLimits',
   'real.divReceived',
+  'real.bonusLog',
   'ui.portfolios',
   'pf.store',
 ] as const;
@@ -85,6 +86,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'ui.morningBrief': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.time === 'string' && /^\d\d:\d\d$/.test(x.time),
   'real.sectorLimits': (x) => isSectorLimits(x),
   'real.divReceived': (x) => isReceived(x),
+  'real.bonusLog': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.symbol === 'string' && isObj(e.before) && isObj(e.after)),
   'ui.portfolios': (x) => isPortfolios(x),
   'pf.store': (x) => isObj(x) && Object.values(x).every((v) => isObj(v)),
   'ui.homeCards': (x) => isObj(x) && strArr(x.order) && strArr(x.hidden),

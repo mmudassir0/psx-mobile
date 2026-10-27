@@ -2,6 +2,11 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { peerCompare } from '../src/analysis/peers';
+import { offlineDue } from '../src/offlineDue';
+import { rightsChoice } from '../src/portfolio/rights';
+import { bonusAfter, canUndo, dueBonuses } from '../src/portfolio/bonusAuto';
+import { byMonth, diary, diaryExtras } from '../src/portfolio/diary';
 import { owedPayments, owedSummary, tick, untick } from '../src/portfolio/divPayments';
 import { averageAfter, averageWithMoney, sharesForAverage, targetSteps } from '../src/portfolio/averageDown';
 import { addPortfolio, renamePortfolio, valueOf } from '../src/portfolio/portfoliosCore';
@@ -384,6 +389,51 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Peers
+{
+  const P = (symbol: string, pe: number | null, divYield: number | null, marketCap = 1) => ({ symbol, pe, divYield, change1y: null, roe: null, marketCap });
+  const c = peerCompare(P('ME', 4, 12, 5), [P('A', 6, 8), P('B', 8, 6), P('C', 10, 5), P('D', 0.5, 20)]);
+  check('peers: rank and median, bad P/E left out', c.measures[0].rank === 1 && c.measures[0].n === 3 && c.measures[0].median === 8 && c.measures[1].rank === 2, c.measures);
+  check('peers: cheap for its sector, biggest', c.verdict === 'cheap' && c.size.rank === 1 && c.size.of === 5);
+  check('peers: dear', peerCompare(P('ME', 20, 1), [P('A', 6, 8), P('B', 8, 6), P('C', 10, 5)]).verdict === 'dear');
+}
+
+// Rights
+{
+  const r = rightsChoice(100, 50, 20, 60, 30)!;
+  // TERP = (60×100 + 30×20)/120 = 55; each right 25; 20 rights
+  check('rights: three choices', r.entitled === 20 && Math.abs(r.terp - 55) < 1e-9 && r.lostByNothing === 500 && r.sell.cash === 500 && r.subscribe.cash === -600);
+  check('rights: new average', Math.abs(r.newAvg - (5000 + 600) / 120) < 1e-9 && r.newShares === 120);
+}
+
+// Bonus shares
+{
+  const bc = Date.parse('2026-10-01T04:00:00Z');
+  const base = { holdings: [{ symbol: 'A', shares: 100, avgCost: 110 }], bonuses: { A: { pct: 10, key: 'k1', bookClosure: bc } }, applied: [] as string[], now: bc + 12 * 864e5 };
+  const due = dueBonuses({ ...base, sharesOn: () => 100 });
+  check('bonus: added after settling, average lowered', due.length === 1 && due[0].after.shares === 110 && due[0].after.avgCost === 100 && due[0].key === 'A:k1');
+  check('bonus: not before 10 days, not twice, not when shares changed or unknown', dueBonuses({ ...base, now: bc + 5 * 864e5, sharesOn: () => 100 }).length === 0 && dueBonuses({ ...base, applied: ['A:k1'], sharesOn: () => 100 }).length === 0 && dueBonuses({ ...base, sharesOn: () => 90 }).length === 0 && dueBonuses({ ...base, sharesOn: () => null }).length === 0);
+  check('bonus: under one share', bonusAfter(5, 100, 10).shares === 5);
+  check('bonus: undo only while unchanged', canUndo(due[0], { shares: 110, avgCost: 100 }) && !canUndo(due[0], { shares: 120, avgCost: 100 }));
+}
+
+// Diary
+{
+  const snap = (day: string, a: [number, number, number], b: [number, number, number], div = 0) => ({ day, value: a[0] * a[2] + b[0] * b[2], pos: { A: a, B: b } as Record<string, [number, number, number]>, div });
+  const s = [snap('2026-10-20', [100, 1000, 10], [10, 1000, 100]), snap('2026-10-21', [100, 1000, 11], [10, 1000, 98]), snap('2026-10-23', [200, 2100, 11], [10, 1000, 98], 50)];
+  const ex = diaryExtras({ trades: [{ day: '2026-10-22', symbol: 'A', side: 'buy', shares: 100 }], notes: [], bookClosures: [{ symbol: 'B', day: '2026-10-21' }] });
+  const d = diary({ snaps: s, extras: ex });
+  check('diary: newest first, with the day between folded in', d.length === 2 && d[0].day === '2026-10-23' && d[0].text.includes('Bought 100 A') && d[0].text.includes('Rs 1,100 added') && d[0].text.includes('dividends Rs 50'), d.map((x) => x.text));
+  check('diary: leader and laggard', d[1].text.startsWith('Up 4.0% (+Rs 80)') && d[1].text.includes('A led (+10.0%)') && d[1].text.includes('B lagged (−2.0%)') && d[1].text.includes('B book closure'), d[1].text);
+  check('diary: by month', byMonth(d).length === 1);
+}
+
+// Offline copy timing
+{
+  const t = (s: string) => Date.parse(s);
+  check('offline: due after the close if the last copy is older', offlineDue(t('2026-10-27T05:00:00Z'), t('2026-10-27T12:00:00Z')) && !offlineDue(t('2026-10-27T11:30:00Z'), t('2026-10-27T12:00:00Z')) && !offlineDue(t('2026-10-26T12:00:00Z'), t('2026-10-27T08:00:00Z')) && offlineDue(0));
 }
 
 // Dividend payments

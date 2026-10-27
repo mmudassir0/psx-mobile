@@ -22,6 +22,7 @@ import { sectorLimitsPref } from '../portfolio/sectorLimits';
 import { receivedPref } from '../portfolio/divPayments';
 import { useMorningBrief } from '../portfolio/useMorningBrief';
 import { useCalendarSync } from '../portfolio/calendarSync';
+import { useAutoBonus } from '../portfolio/useAutoBonus';
 import { useOfflineCopy } from '../offline';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
@@ -108,6 +109,7 @@ export default function HomeScreen() {
   const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...targetItems(rows, targets), ...sectorItems(rows, sectorLimits), ...(Object.keys(received).length ? latePaymentItems(rows, received) : []), ...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, candles, annSeen, targets, sectorLimits, received]);
   useMorningBrief(rows, !reviewing && rows.length > 0);
   useCalendarSync(rows, !reviewing && rows.length > 0);
+  useAutoBonus(rows, !reviewing && rows.length > 0);
   useOfflineCopy(useMemo(() => [...holdings.map((x) => x.symbol), ...watchlist], [holdings, watchlist]), ready);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();

@@ -15,6 +15,8 @@ import { FEED_BASE } from './picks/config';
 import { getJson } from './net';
 import { eachLimit } from './limit';
 import { logProblem } from './log';
+import { offlineDue } from './offlineDue';
+export { offlineDue };
 
 export interface OfflineState {
   auto: boolean;
@@ -80,15 +82,6 @@ export function saveOffline(symbols: string[], onStep?: (done: number, total: nu
     running = null;
   });
   return running;
-}
-
-/** Due when the last copy is from before today's close (16:00 Pakistan time) and it's now after it, or over a day old. */
-export function offlineDue(lastAt: number, now = Date.now()): boolean {
-  if (!lastAt) return true;
-  if (now - lastAt > 24 * 3600_000) return true;
-  const pk = new Date(now + 5 * 3600_000);
-  const close = Date.UTC(pk.getUTCFullYear(), pk.getUTCMonth(), pk.getUTCDate(), 16) - 5 * 3600_000;
-  return now >= close && lastAt < close;
 }
 
 /** On Home: the daily offline copy, a minute after opening so it doesn't slow the first screen. */

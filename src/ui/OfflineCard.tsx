@@ -35,13 +35,19 @@ export function OfflineCard() {
         <View style={{ flex: 1, gap: 2 }}>
           <T v="body">Keep an offline copy</T>
           <T v="caption" style={{ lineHeight: 17 }}>
-            Once a day after the close, Sahm saves everything your holdings and watchlist need (results, dividends, charts, announcements) and the daily
-            picks, mood, calendar, news and economy figures, so the app works fully without internet. Prices then show from the last time you were online.
+            Once a day after the close, Sahm saves everything your holdings and watchlist need (results, dividends, charts, announcements) and the daily picks, mood, calendar, news and economy figures, so the app works
+            fully without internet. Prices then show from the last time you were online.
           </T>
         </View>
         <Switch value={s.auto} onValueChange={(v) => offlinePref.set({ ...s, auto: v })} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
       </View>
-      <Button small tone="ghost" label={progress?.startsWith('Saving') || progress === 'Starting…' ? progress : 'Save a copy now'} disabled={!!progress && (progress.startsWith('Saving') || progress === 'Starting…')} onPress={run} />
+      <Button
+        small
+        tone="ghost"
+        label={progress?.startsWith('Saving') || progress === 'Starting…' ? progress : 'Save a copy now'}
+        disabled={!!progress && (progress.startsWith('Saving') || progress === 'Starting…')}
+        onPress={run}
+      />
       {progress && !progress.startsWith('Saving') && progress !== 'Starting…' ? <T v="caption">{progress}</T> : null}
       <T v="caption">{s.at ? `Last copy ${time(s.at)}: ${s.stocks} stocks${s.failed ? `, ${s.failed} downloads failed` : ''}.` : 'No offline copy yet.'}</T>
     </Panel>

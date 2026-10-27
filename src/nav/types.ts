@@ -48,6 +48,7 @@ export type RootParams = {
   DivPayments: undefined;
   AverageDown: { symbol?: string } | undefined;
   Portfolios: undefined;
+  Diary: undefined;
   YearReview: { year?: number } | undefined;
 };
 

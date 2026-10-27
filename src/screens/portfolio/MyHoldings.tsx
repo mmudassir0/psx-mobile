@@ -1,5 +1,8 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { bonusAfter, canUndo } from '../../portfolio/bonusAuto';
+import { undoBonus } from '../../portfolio/useAutoBonus';
+import { rightsChoice } from '../../portfolio/rights';
 import { useFlags } from '../../flags';
 import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -7,8 +10,9 @@ import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
 import { currentRights, dividendTaxRate, payerKind, recentBonus, rightsMaths, upcomingPayout, type Dividends } from '../../analysis/dividends';
-import { applyBonus, setHoldings } from '../../portfolio/holdings';
-import { appliedBonusesPref, boughtPref, taxStatusPref } from '../../portfolio/prefs';
+import { applyBonus, applyTrade, setHoldings } from '../../portfolio/holdings';
+import { logTrade } from '../../portfolio/trades';
+import { appliedBonusesPref, bonusLogPref, boughtPref, taxStatusPref } from '../../portfolio/prefs';
 import { BOUGHT_LABEL, heldSince2023, saleLine, saleTax, type Bought } from '../../portfolio/tax';
 import { useMarket } from '../../store/market';
 import { useHoldings } from '../../portfolio/holdings';
@@ -107,13 +111,15 @@ function SaleTaxLine({ r }: { r: Row }) {
 }
 
 /** A rights issue on this holding: what you're entitled to, and with the offer price, what it costs and what the rights are worth. */
-function RightsBox({ r }: { r: Row }) {
+function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }) {
   const ri = currentRights(r.dividends);
   const [offer, setOffer] = useState('');
+  const [done, setDone] = useState(false);
   if (!ri) return null;
   const n = Math.floor((r.holding.shares * ri.pct) / 100);
   const o = Number(offer.replace(/,/g, ''));
   const m = o > 0 ? rightsMaths(r.holding.shares, ri.pct, r.price, o) : null;
+  const ch = o > 0 ? rightsChoice(r.holding.shares, r.holding.avgCost, ri.pct, r.price, o) : null;
   return (
     <View style={styles.rights}>
       <T v="caption" style={{ fontFamily: fonts.bold, color: colors.text2 }}>
@@ -137,6 +143,43 @@ function RightsBox({ r }: { r: Row }) {
           {m.perRight > 0 ? `: Rs ${fmtNum(m.valueOfRights, 0)} in all, which you'd lose by doing nothing.` : '. The offer is above the market price, so subscribing costs more than buying on the market.'}
         </T>
       ) : null}
+      {ch && ch.entitled > 0 ? (
+        <View style={{ gap: 4 }}>
+          {[
+            ['Subscribe', `pay Rs ${fmtNum(ch.cost, 0)}; ${fmtNum(ch.newShares, 0)} shares, average Rs ${ch.newAvg.toFixed(2)}`],
+            ['Sell the rights', ch.perRight > 0 ? `get about Rs ${fmtNum(ch.sell.cash, 0)} (rights often trade a little below this)` : 'worth little or nothing at this offer'],
+            ['Do nothing', ch.lostByNothing > 0 ? `lose about Rs ${fmtNum(ch.lostByNothing, 0)} of value` : 'no loss at this offer'],
+          ].map(([k, v]) => (
+            <T key={k} v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
+              <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: colors.text }}>{k}: </T>
+              {v}
+            </T>
+          ))}
+          {ri.phase === 'after' ? (
+            done ? (
+              <T v="caption" style={{ color: colors.up }}>
+                Added {fmtNum(ch.entitled, 0)} shares at Rs {o.toFixed(2)}.
+              </T>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={6}
+                onPress={async () => {
+                  const res = applyTrade(holdingsAll, { symbol: r.holding.symbol, side: 'buy', shares: ch.entitled, price: o });
+                  if (res.error) return;
+                  await logTrade({ day: pkToday(), symbol: r.holding.symbol, side: 'buy', shares: ch.entitled, price: o, avgCost: r.holding.avgCost, realised: null });
+                  await setHoldings(res.holdings);
+                  setDone(true);
+                }}
+              >
+                <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>
+                  I subscribed: add {fmtNum(ch.entitled, 0)} shares at Rs {o.toFixed(2)}
+                </T>
+              </Pressable>
+            )
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -158,6 +201,7 @@ function HoldingCard({
   const nav = useNavigation();
   const [open, setOpen] = useState(false);
   const [trading, setTrading] = useState(false);
+  const bonusLog = bonusLogPref.use();
   const rv = r.review;
   const [fg, bg] = rv ? actionTone(rv.action, rv.watch) : [colors.muted, colors.surface2];
   const pnl = rv?.pnl ?? r.value - r.holding.shares * r.holding.avgCost;
@@ -209,7 +253,7 @@ function HoldingCard({
             </T>
           </View>
           {!open ? <Pills r={r} taxRate={taxRate} onPress={() => setOpen(true)} /> : null}
-          {flags('rights') ? <RightsBox r={r} /> : null}
+          {flags('rights') ? <RightsBox r={r} holdingsAll={holdingsAll} /> : null}
           {open &&
             (() => {
               const up = upcomingPayout(r.dividends);
@@ -237,6 +281,22 @@ function HoldingCard({
                 </View>
               );
             })()}
+          {bonusLog
+            .filter((e) => e.symbol === r.holding.symbol && Date.now() - e.at < 45 * 864e5)
+            .slice(-1)
+            .map((e) => (
+              <View key={e.key + e.at} style={styles.payout}>
+                <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
+                  {e.auto ? 'Added by Sahm' : 'Added'} on {fmtDay(e.at)}: {e.pct}% bonus shares, {fmtNum(e.before.shares, 0)} → {fmtNum(e.after.shares, 0)} shares, average Rs {e.before.avgCost.toFixed(2)} → Rs{' '}
+                  {e.after.avgCost.toFixed(2)}.
+                </T>
+                {canUndo(e, r.holding) ? (
+                  <Pressable accessibilityRole="button" hitSlop={8} onPress={() => undoBonus(e)} style={{ marginTop: 4 }}>
+                    <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>Undo</T>
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
           {(() => {
             const b = recentBonus(r.dividends);
             const key = b ? `${r.holding.symbol}:${b.key}` : '';
@@ -253,8 +313,13 @@ function HoldingCard({
                     accessibilityRole="button"
                     hitSlop={8}
                     onPress={async () => {
+                      const after = bonusAfter(r.holding.shares, r.holding.avgCost, b.pct);
                       await setHoldings(applyBonus(holdingsAll, r.holding.symbol, b.pct));
                       await appliedBonusesPref.set([...applied, key]);
+                      await bonusLogPref.set([
+                        ...(await bonusLogPref.get()),
+                        { key, symbol: r.holding.symbol, pct: b.pct, day: new Date(b.bookClosure + 5 * 3600_000).toISOString().slice(0, 10), before: { shares: r.holding.shares, avgCost: r.holding.avgCost }, after, at: Date.now(), auto: false },
+                      ]);
                     }}
                   >
                     <T
