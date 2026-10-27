@@ -32,6 +32,8 @@
     "expo-local-authentication": "~17.0.9",
     "expo-notifications": "~0.32.17",
     "expo-print": "~15.0.8",
+    "expo-quick-actions": "6.0.0",
+    "expo-screen-capture": "~8.0.10",
     "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",

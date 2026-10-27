@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
 import { CalendarCard } from '../ui/CalendarCard';
 import { MorningCard } from '../ui/MorningCard';
@@ -40,6 +41,7 @@ export default function SettingsScreen() {
   const upd = useUpdate();
   const ai = useAi();
   const locked = lockPref.use();
+  const hideScreen = hideScreenPref.use();
   const [lockMsg, setLockMsg] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
@@ -214,6 +216,13 @@ export default function SettingsScreen() {
                 />
               </View>
               {lockMsg ? <T v="caption" style={{ color: colors.downText }}>{lockMsg}</T> : null}
+              <View style={[styles.row, { borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 10 }]}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T v="body">Hide Sahm on screen</T>
+                  <T v="caption">Blank in recent apps; no screenshots or screen recording of Sahm (yours included)</T>
+                </View>
+                <Switch value={hideScreen} onValueChange={(v) => hideScreenPref.set(v)} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
+              </View>
             </View>
           </Section>
         ) : null}

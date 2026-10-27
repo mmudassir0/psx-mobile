@@ -109,6 +109,29 @@
           "calendarPermission": "Sahm adds book closures and dividend payments for your holdings to your calendar.",
           "remindersPermission": false
         }
+      ],
+      [
+        "expo-quick-actions",
+        {
+          "androidIcons": {
+            "shortcut_trade": {
+              "foregroundImage": "./assets/shortcut-trade.png",
+              "backgroundColor": "#161E29"
+            },
+            "shortcut_watch": {
+              "foregroundImage": "./assets/shortcut-watch.png",
+              "backgroundColor": "#161E29"
+            },
+            "shortcut_market": {
+              "foregroundImage": "./assets/shortcut-market.png",
+              "backgroundColor": "#161E29"
+            },
+            "shortcut_ai": {
+              "foregroundImage": "./assets/shortcut-ai.png",
+              "backgroundColor": "#161E29"
+            }
+          }
+        }
       ]
     ]
   }

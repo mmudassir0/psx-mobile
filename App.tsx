@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { installShortcuts } from './src/shortcuts';
+import { useScreenGuard } from './src/screenGuard';
 import { AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -178,7 +180,7 @@ const linking: LinkingOptions<RootParams> = {
   prefixes: ['sahm://'],
   config: {
     screens: {
-      Tabs: { screens: { Portfolio: 'portfolio', Market: 'market', Home: 'home' } },
+      Tabs: { screens: { Portfolio: 'portfolio', Market: 'market', Home: 'home', AI: 'ai' } },
       Stock: 'stock/:symbol',
       Picks: 'picks',
       Dividends: 'dividends',
@@ -248,6 +250,10 @@ export default function App() {
 
 function Themed() {
   const { name } = useTheme();
+  useScreenGuard();
+  useEffect(() => {
+    installShortcuts();
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ground }}>
       <SafeAreaProvider>
