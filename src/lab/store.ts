@@ -24,8 +24,13 @@ export const setDraft = (s: Strategy | null) => (draft = s);
 export const getDraft = () => draft;
 
 /** A saved strategy, a template, or the draft. */
+/** Strategies from the last hunt, so their results can be opened. */
+const hunted = new Map<string, Strategy>();
+export const rememberHunted = (list: Strategy[]) => list.forEach((s) => hunted.set(s.id, s));
+
 export function findStrategy(id: string, mine: Strategy[]): Strategy | null {
   if (id === 'draft') return draft;
+  if (hunted.has(id)) return hunted.get(id)!;
   return mine.find((s) => s.id === id) ?? TEMPLATES.find((t) => t.strategy.id === id)?.strategy ?? null;
 }
 

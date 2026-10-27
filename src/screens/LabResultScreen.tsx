@@ -79,7 +79,7 @@ export default function LabResultScreen() {
 
   const save = async () => {
     if (!st) return;
-    const s: Strategy = st.id.startsWith('tpl-') || st.id === 'draft' ? { ...st, id: newId() } : st;
+    const s: Strategy = st.id.startsWith('tpl-') || st.id.startsWith('hunt-') || st.id === 'draft' ? { ...st, id: newId() } : st;
     await labStrategiesPref.set([...mine.filter((x) => x.id !== s.id), s]);
     nav.setParams({ id: s.id });
   };

@@ -159,6 +159,7 @@ function Root() {
       <Stack.Screen name="LabEdit" getComponent={() => require('./src/screens/LabEditScreen').default} />
       <Stack.Screen name="LabResult" getComponent={() => require('./src/screens/LabResultScreen').default} />
       <Stack.Screen name="LabCompare" getComponent={() => require('./src/screens/LabCompareScreen').default} />
+      <Stack.Screen name="LabHunt" getComponent={() => require('./src/screens/LabHuntScreen').default} />
       <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
@@ -224,6 +225,7 @@ const linking: LinkingOptions<RootParams> = {
       LabEdit: 'lab/edit',
       LabResult: 'lab/result/:id',
       LabCompare: 'lab/compare',
+      LabHunt: 'lab/hunt',
       YearReview: 'year-review',
     },
   },

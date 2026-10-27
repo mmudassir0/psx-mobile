@@ -110,7 +110,10 @@ export default function LabScreen() {
                 </Panel>
               </Section>
             ) : null}
-            <Button label="+ New strategy" onPress={() => nav.navigate('LabEdit', {})} />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button label="+ New strategy" style={{ flex: 1 }} onPress={() => nav.navigate('LabEdit', {})} />
+              <Button label="Strategy hunt" tone="ghost" style={{ flex: 1 }} onPress={() => nav.navigate('LabHunt')} />
+            </View>
             {mine.length ? (
               <Section title="Your strategies" action={mine.length > 1 ? 'Compare' : undefined} onAction={() => nav.navigate('LabCompare', { ids: mine.slice(0, 3).map((s) => s.id) })}>
                 <Panel style={{ paddingVertical: 4 }}>

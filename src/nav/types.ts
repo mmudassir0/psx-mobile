@@ -60,6 +60,7 @@ export type RootParams = {
   /** id of a saved strategy or template, or 'draft' for the one being edited */
   LabResult: { id: string };
   LabCompare: { ids: string[] };
+  LabHunt: undefined;
   YearReview: { year?: number } | undefined;
 };
 

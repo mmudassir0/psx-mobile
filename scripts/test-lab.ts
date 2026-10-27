@@ -8,6 +8,7 @@ import { robustness } from '../src/lab/robust';
 import { firstDate, parseDivNotice } from '../src/lab/divText';
 import { labPrompt, readLabReply } from '../src/lab/aiStrategy';
 import { checkDue, followPlan, nextCheck } from '../src/lab/follow';
+import { defaultSetup, ideas, summarise, tryIdea } from '../src/lab/hunt';
 
 let failed = 0;
 function check(name: string, ok: boolean, extra?: unknown) {
@@ -197,6 +198,16 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   check('follow: check months every three', checkDue(lab, q, `${plus(3)}-02`) && !checkDue(lab, q, `${plus(4)}-02`) && !checkDue(lab, q, `${plus(3)}-20`));
   check('follow: next check', nextCheck(lab, q, `${plus(1)}-15`) === `${plus(3)}-01`);
   check('follow: plan', followPlan(['A', 'B', 'C'], ['B', 'X']).missing.join() === 'A,C');
+}
+
+{
+  const setup = { ...defaultSetup(lab, 'all'), split: 2019 };
+  const list = ideas(setup);
+  check('hunt: many ideas, unique ids, same order each time', list.length > 1000 && new Set(list.map((x) => x.id)).size === list.length && ideas(setup)[5].name === list[5].name);
+  const res = list.slice(0, 30).map((s) => tryIdea(lab, s, setup));
+  check('hunt: both periods run', res.every((r) => Number.isFinite(r.train.cagr)) && res.some((r) => r.test));
+  const s = summarise(res, 5);
+  check('hunt: summary', s.top.length === 5 && s.tried === 30 && s.topHeld <= 5);
 }
 
 if (failed) {
