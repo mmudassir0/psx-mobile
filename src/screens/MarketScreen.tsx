@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { notesPref } from '../portfolio/notes';
 import { useFlag } from '../flags';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -140,7 +141,15 @@ export default function MarketScreen() {
   };
   const current: ScreenSettings = { mode, filters, sort, sector, shariahOnly };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const list = useMemo(() => listFor(current), [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups]);
+  const [watchSort, setWatchSort] = useState<'mine' | 'change' | 'yield' | 'pe'>('mine');
+  const notes = notesPref.use();
+  const list = useMemo(() => {
+    const l = listFor(current);
+    if (mode !== 'watch' || watchSort === 'mine') return l;
+    const v = (s: (typeof l)[number]) => (watchSort === 'change' ? s.changePct ?? -999 : watchSort === 'yield' ? s.divYield ?? -1 : s.pe != null && s.pe > 0 ? -s.pe : -9999);
+    return [...l].sort((a, b) => v(b) - v(a));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups, watchSort]);
   const saved = savedScreensPref.use();
   const [activeSaved, setActiveSaved] = useState<string | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
@@ -458,6 +467,23 @@ export default function MarketScreen() {
                 </ScrollView>
                 {mode === 'watch' ? <GroupBar value={group} onChange={setGroup} /> : null}
                 {mode === 'watch' && list.length >= 2 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, alignItems: 'center' }}>
+                    <T v="caption">Sort:</T>
+                    {(
+                      [
+                        ['mine', 'My order'],
+                        ['change', 'Today'],
+                        ['yield', 'Dividend yield'],
+                        ['pe', 'Lowest P/E'],
+                      ] as const
+                    ).map(([k, l]) => (
+                      <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: watchSort === k }} onPress={() => setWatchSort(k)} style={[styles.fchip, watchSort === k && styles.fchipOn]}>
+                        <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: watchSort === k ? colors.text : colors.faint }}>{l}</T>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : null}
+                {mode === 'watch' && list.length >= 2 ? (
                   pickCmp == null ? (
                     <Pressable accessibilityRole="button" onPress={() => setPickCmp([])} style={{ alignSelf: 'flex-start' }}>
                       <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>⚖️ Compare some of these</T>
@@ -663,7 +689,7 @@ export default function MarketScreen() {
                         stock={s}
                         highlight={fresh.has(s.symbol) || (mode === 'all' && (filters.length > 0 || sort !== 'cap'))}
                         sub={
-                          [fresh.has(s.symbol) ? 'New here' : null, mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null]
+                          [fresh.has(s.symbol) ? 'New here' : null, mode === 'watch' && notes[s.symbol]?.why ? `📝 ${notes[s.symbol].why.slice(0, 60)}${notes[s.symbol].why.length > 60 ? '…' : ''}` : null, mode === 'watch' && watchSort === 'yield' && s.divYield != null ? `yield ${s.divYield.toFixed(1)}%` : null, mode === 'watch' && watchSort === 'pe' && s.pe ? `P/E ${s.pe.toFixed(1)}` : null, mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null]
                             .filter(Boolean)
                             .join(' · ') || undefined
                         }

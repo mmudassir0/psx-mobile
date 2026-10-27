@@ -159,6 +159,8 @@ function Root() {
       <Stack.Screen name="Diary" getComponent={() => require('./src/screens/DiaryScreen').default} />
       <Stack.Screen name="Learn" getComponent={() => require('./src/screens/LearnScreen').default} />
       <Stack.Screen name="StockCard" getComponent={() => require('./src/screens/StockCardScreen').default} />
+      <Stack.Screen name="SinceBought" getComponent={() => require('./src/screens/SinceBoughtScreen').default} />
+      <Stack.Screen name="DivGrowth" getComponent={() => require('./src/screens/DivGrowthScreen').default} />
       <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
@@ -217,6 +219,8 @@ const linking: LinkingOptions<RootParams> = {
       Learn: 'learn',
       Settings: 'settings',
       StockCard: 'card/:symbol',
+      SinceBought: 'since-bought',
+      DivGrowth: 'dividend-growth',
       YearReview: 'year-review',
     },
   },

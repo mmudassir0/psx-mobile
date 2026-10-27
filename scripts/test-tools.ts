@@ -2,6 +2,9 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { sinceBought, startDay } from '../src/portfolio/sinceBought';
+import { divGrowth } from '../src/portfolio/divGrowth';
+import { picksVsMine } from '../src/picks/vsMine';
 import { bookView } from '../src/analysis/book';
 import { addPoint, healthScore, spreadOf, trendLine, weekOf } from '../src/portfolio/healthScore';
 import { payMonths } from '../src/portfolio/income';
@@ -400,6 +403,47 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Since you bought
+{
+  const tr = [
+    { day: '2025-01-10', symbol: 'A', side: 'buy' as const, shares: 10 },
+    { day: '2025-03-01', symbol: 'A', side: 'sell' as const, shares: 10 },
+    { day: '2025-06-05', symbol: 'A', side: 'buy' as const, shares: 5 },
+    { day: '2025-07-01', symbol: 'A', side: 'buy' as const, shares: 5 },
+  ];
+  check('start: first buy after last held none', startDay('A', tr, [])?.day === '2025-06-05' && startDay('B', [], [{ day: '2026-01-01', has: true }, { day: '2026-01-02', has: false }, { day: '2026-02-01', has: true }])?.day === '2026-02-01' && startDay('C', [], []) === null);
+  const D = 864e5;
+  const c = [100, 120, 80, 90].map((v, i) => ({ t: Date.parse('2026-01-01T05:00:00Z') + i * D, o: v, h: v, l: v, c: v, v: 1 }));
+  const x = sinceBought({ symbol: 'A', candles: c, start: { day: '2026-01-01', basis: 'trade' }, avgCost: 95, price: 90 });
+  check('since bought: best, worst, off best', x.best?.price === 120 && x.worst?.price === 80 && Math.abs(x.offBest! - 0.25) < 1e-9 && Math.abs(x.sinceStart! + 0.1) < 1e-9 && Math.abs(x.onCost + 5 / 95) < 1e-9);
+}
+
+// Dividend growth
+{
+  const g = divGrowth([{ fy: '2026', dps: 3 }, { fy: '2025', dps: 16 }, { fy: '2024', dps: 13 }, { fy: '2023', dps: 11 }, { fy: '2022', dps: 10 }, { fy: '2021', dps: 9 }], '2025');
+  check('dividend growth: growing, streak, current year left out', g.verdict === 'growing' && g.streak === 4 && g.years.length === 5 && g.years[4].fy === '2025' && Math.abs(g.cagr! - ((16 / 9) ** 0.25 - 1)) < 1e-9, g);
+  check('dividend cut', divGrowth([{ fy: '2025', dps: 4 }, { fy: '2024', dps: 10 }, { fy: '2023', dps: 10 }], '2025').verdict === 'cut');
+  check('dividend gaps count as zero', divGrowth([{ fy: '2025', dps: 4 }, { fy: '2022', dps: 4 }], '2025').verdict === 'irregular' && divGrowth([], null).verdict === 'none');
+}
+
+// Picks against your portfolio
+{
+  const track = [
+    { day: '2026-01-01', ret: 0 },
+    { day: '2026-01-10', ret: 0.1 },
+    { day: '2026-01-20', ret: 0.21 },
+  ];
+  const r = picksVsMine(
+    [
+      { symbol: 'A', day: '2026-01-01', closedDay: '2026-01-10', ret: 0.05 },
+      { symbol: 'B', day: '2026-01-10', closedDay: '2026-01-20', ret: 0.2 },
+      { symbol: 'C', day: '2025-12-01', closedDay: '2026-01-10', ret: 0.5 },
+    ],
+    track,
+  )!;
+  check('picks vs mine over the same days', r.n === 2 && Math.abs(r.mine - 0.1) < 1e-9 && Math.abs(r.picks - 0.125) < 1e-9 && r.better === 1);
 }
 
 // Buyers and sellers

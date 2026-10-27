@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { markReady, useSettled } from '../startup';
 import { TipCard } from '../ui/TipCard';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -110,10 +111,14 @@ export default function HomeScreen() {
   const appLocked = lockPref.use();
   const targets = targetsPref.use();
   const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...targetItems(rows, targets), ...sectorItems(rows, sectorLimits), ...(Object.keys(received).length ? latePaymentItems(rows, received) : []), ...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, candles, annSeen, targets, sectorLimits, received]);
-  useMorningBrief(rows, !reviewing && rows.length > 0);
-  useCalendarSync(rows, !reviewing && rows.length > 0);
-  useAutoBonus(rows, !reviewing && rows.length > 0);
-  useLineAlerts(ready);
+  const settled = useSettled();
+  useEffect(() => {
+    if (ready && stocks.length) markReady();
+  }, [ready, stocks.length]);
+  useMorningBrief(rows, settled && !reviewing && rows.length > 0);
+  useCalendarSync(rows, settled && !reviewing && rows.length > 0);
+  useAutoBonus(rows, settled && !reviewing && rows.length > 0);
+  useLineAlerts(settled && ready);
   useOfflineCopy(useMemo(() => [...holdings.map((x) => x.symbol), ...watchlist], [holdings, watchlist]), ready);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();

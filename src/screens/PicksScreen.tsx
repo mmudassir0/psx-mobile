@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { snapshots, trackReturns, type Snap } from '../portfolio/track';
+import { picksVsMine } from '../picks/vsMine';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +34,43 @@ function StatsLine({ s, label }: { s: Stats; label: string }) {
         </T>
       )}
     </View>
+  );
+}
+
+/** The finished picks against your own portfolio over the same days. */
+function VsMine({ feed }: { feed: { recent: ScoredPick[]; open: ScoredPick[] } }) {
+  const [snaps, setSnaps] = useState<Snap[] | null>(null);
+  useEffect(() => {
+    snapshots().then(setSnaps);
+  }, []);
+  const r = useMemo(() => (snaps && snaps.length > 1 ? picksVsMine(feed.recent, trackReturns(snaps)) : null), [snaps, feed.recent]);
+  const pc = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;
+  if (!r) return null;
+  return (
+    <Section title="Picks against your portfolio">
+      <Panel style={{ paddingVertical: 14, gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 18 }}>
+          <View>
+            <T v="caption">Sahm's picks</T>
+            <T v="mono" style={{ fontSize: 20, color: r.picks >= 0 ? colors.up : colors.downText }}>
+              {pc(r.picks)}
+            </T>
+          </View>
+          <View>
+            <T v="caption">Your portfolio, same days</T>
+            <T v="mono" style={{ fontSize: 20, color: r.mine >= 0 ? colors.up : colors.downText }}>
+              {pc(r.mine)}
+            </T>
+          </View>
+        </View>
+        <T v="body" style={{ fontSize: 14, lineHeight: 20 }}>
+          {Math.abs(r.picks - r.mine) < 0.005 ? 'About the same on average.' : r.picks > r.mine ? 'The picks did better on average.' : 'Your portfolio did better on average.'} The pick won in {r.better} of {r.n} cases.
+        </T>
+        <T v="caption" style={{ lineHeight: 17 }}>
+          Average return of the {r.n} finished picks from their pick day to the day they closed{r.from ? ` (from ${fmtDay(Date.parse(r.from + 'T12:00:00Z'))})` : ''}, against your real return over exactly those days, from Sahm's daily record. A pick is one stock held for weeks; your portfolio is spread, so it usually moves less either way.
+        </T>
+      </Panel>
+    </Section>
   );
 }
 
@@ -178,6 +217,8 @@ export default function PicksScreen({ asTab }: { asTab?: boolean } = {}) {
                 ))}
               </Section>
             ) : null}
+
+            <VsMine feed={feed} />
 
             {feed.live ? (
               <Section title={`Live record vs testing: ${label}`}>

@@ -34,6 +34,8 @@ export const FEATURES: Feature[] = [
   { key: 'results', label: 'Results season', emoji: '📊', group: 'My money', words: 'results earnings eps quarter profit announcement board meeting due', go: (nav) => nav.navigate('Results') },
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
+  { key: 'sincebought', label: 'Since you bought', emoji: '🧭', group: 'My money', words: 'since bought buy price best worst high low drawdown peak history holding', go: (nav) => nav.navigate('SinceBought') },
+  { key: 'divgrowth', label: 'Dividend growth', emoji: '📶', group: 'My money', words: 'dividend growth grown cut increase history years dps payout trend', flags: ['dividends'], go: (nav) => nav.navigate('DivGrowth') },
   { key: 'diary', label: 'Portfolio diary', emoji: '📔', group: 'My money', words: 'diary daily log day by day what happened today yesterday history line', go: (nav) => nav.navigate('Diary') },
   { key: 'divpayments', label: 'Dividend payments', emoji: '✅', group: 'My money', words: 'dividend payment received paid bank credit tick missing late owed', flags: ['dividends'], go: (nav) => nav.navigate('DivPayments') },
   { key: 'averagedown', label: 'Average down', emoji: '📉', group: 'My money', words: 'average down cost averaging lower average buy more dip loss', go: (nav) => nav.navigate('AverageDown') },

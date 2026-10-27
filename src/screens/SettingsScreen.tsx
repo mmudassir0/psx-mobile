@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { startPref } from '../startup';
 import { IntradayCard } from '../ui/IntradayCard';
 import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
@@ -43,6 +44,7 @@ export default function SettingsScreen() {
   const ai = useAi();
   const locked = lockPref.use();
   const hideScreen = hideScreenPref.use();
+  const lastStart = startPref.use();
   const [lockMsg, setLockMsg] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState('');
   const [keyMsg, setKeyMsg] = useState<string | null>(null);
@@ -340,6 +342,14 @@ export default function SettingsScreen() {
                 {BUILD ? ` (build ${BUILD})` : ''}
               </T>
             </View>
+            {lastStart ? (
+              <View style={styles.row}>
+                <T v="body">Last start</T>
+                <T v="mono" style={{ fontSize: 14, color: colors.text2 }}>
+                  prices in {(lastStart.ms / 1000).toFixed(1)} s
+                </T>
+              </View>
+            ) : null}
             {updatesSupported ? (
               <View style={{ gap: 10 }}>
                 {updateLine ? <T v="caption">{updateLine}</T> : null}

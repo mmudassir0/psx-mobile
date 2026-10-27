@@ -51,6 +51,8 @@ export type RootParams = {
   Diary: undefined;
   Learn: { lesson?: number } | undefined;
   StockCard: { symbol: string };
+  SinceBought: undefined;
+  DivGrowth: undefined;
   YearReview: { year?: number } | undefined;
 };
 
