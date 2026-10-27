@@ -82,6 +82,13 @@ jobs:
         run: |
           [ -f /tmp/fund.json ] || { git fetch -q origin data 2>/dev/null && git show origin/data:fundamentals.json > /tmp/fund.json 2>/dev/null || echo '{}' > /tmp/fund.json; }
           npx tsx scripts/watch-alerts.ts /tmp/state /tmp/fund.json
+      - name: Watchlist news
+        # Symbols and the alert channel are secrets; the script prints counts only (public logs).
+        if: steps.done.outputs.skip != '1' && (inputs.alerts || env.EVENING == '1')
+        env:
+          WATCHLIST_SYMBOLS: ${{ secrets.WATCHLIST_SYMBOLS }}
+          NTFY_ALERT_TOPIC: ${{ secrets.NTFY_ALERT_TOPIC }}
+        run: npx tsx scripts/watchlist-news.ts /tmp/state
       - name: Mark the evening done
         # only once today's close is in (PSX can publish late); otherwise the backup runs try again
         # a run started by hand with alerts (the app, or the Claude task) counts too

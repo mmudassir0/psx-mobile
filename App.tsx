@@ -151,6 +151,9 @@ function Root() {
       <Stack.Screen name="Growth" getComponent={() => require('./src/screens/GrowthScreen').default} />
       <Stack.Screen name="Journal" getComponent={() => require('./src/screens/JournalScreen').default} />
       <Stack.Screen name="LogTrade" getComponent={() => require('./src/screens/LogTradeScreen').default} />
+      <Stack.Screen name="DivPayments" getComponent={() => require('./src/screens/DivPaymentsScreen').default} />
+      <Stack.Screen name="AverageDown" getComponent={() => require('./src/screens/AverageDownScreen').default} />
+      <Stack.Screen name="Portfolios" getComponent={() => require('./src/screens/PortfoliosScreen').default} />
       <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
@@ -202,6 +205,9 @@ const linking: LinkingOptions<RootParams> = {
       Growth: 'growth',
       Journal: 'journal',
       LogTrade: 'log-trade',
+      DivPayments: 'dividend-payments',
+      AverageDown: 'average-down/:symbol?',
+      Portfolios: 'portfolios',
       YearReview: 'year-review',
     },
   },

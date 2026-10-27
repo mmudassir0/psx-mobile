@@ -9,6 +9,7 @@ import type { Stock } from '../psx/types';
 import { recentBonus, upcomingPayout } from '../analysis/dividends';
 import type { Row } from './useReviews';
 import { sectorShares, type SectorLimits } from './sectorLimits';
+import { owedPayments, type Received } from './divPayments';
 import { shortSector } from '../sectors';
 
 export interface TodoItem {
@@ -19,7 +20,7 @@ export interface TodoItem {
   /** open this stock when tapped (otherwise My holdings) */
   symbol?: string;
   /** or open this screen */
-  route?: 'Rebalance' | 'Income' | 'Announcements' | 'SectorLimits';
+  route?: 'Rebalance' | 'Income' | 'Announcements' | 'SectorLimits' | 'DivPayments';
 }
 
 const DAY = 864e5;
@@ -93,6 +94,20 @@ export function announcementItem(rows: Row[], seenAt: number, now = Date.now()):
   if (!items.length) return [];
   const syms = [...new Set(items.map((i) => i.symbol))];
   return [{ key: 'ann', text: `${items.length} new announcement${items.length > 1 ? 's' : ''}: ${syms.slice(0, 3).join(', ')}${syms.length > 3 ? '…' : ''}`, tone: 'plain', route: 'Announcements' }];
+}
+
+/** Dividends not ticked as received a month after book closure (on today's shares; the screen uses your records). */
+export function latePaymentItems(rows: Row[], received: Record<string, Received>, now = Date.now()): TodoItem[] {
+  const late = owedPayments({
+    holdings: rows.map((r) => ({ symbol: r.holding.symbol, shares: r.holding.shares, taxRate: 0, list: r.dividends?.list ?? [] })),
+    sharesOn: () => null,
+    received,
+    now,
+    back: 90,
+  }).filter((o) => o.status === 'late');
+  if (!late.length) return [];
+  const syms = [...new Set(late.map((o) => o.symbol))];
+  return [{ key: `late-div-${late.map((o) => o.key).join(',')}`, text: `Dividend from ${syms.slice(0, 3).join(', ')} not ticked as received yet`, tone: 'gold', route: 'DivPayments' }];
 }
 
 /** Sectors over your own limit. */

@@ -181,11 +181,20 @@ function HoldingCard({
         </View>
       </Pressable>
       <TargetBox symbol={r.holding.symbol} price={r.price} avgCost={r.holding.avgCost} fairMid={rv?.upside != null ? r.price * (1 + rv.upside) : null} />
-      <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })}>
-        <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-          Plan a sale: what you'd have in hand ›
-        </T>
-      </Pressable>
+      <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
+        <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })}>
+          <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+            Plan a sale ›
+          </T>
+        </Pressable>
+        {r.price > 0 && r.price < r.holding.avgCost ? (
+          <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('AverageDown', { symbol: r.holding.symbol })}>
+            <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+              Average down ›
+            </T>
+          </Pressable>
+        ) : null}
+      </View>
       {rv ? (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

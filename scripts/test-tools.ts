@@ -2,6 +2,11 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { owedPayments, owedSummary, tick, untick } from '../src/portfolio/divPayments';
+import { averageAfter, averageWithMoney, sharesForAverage, targetSteps } from '../src/portfolio/averageDown';
+import { addPortfolio, renamePortfolio, valueOf } from '../src/portfolio/portfoliosCore';
+import { newsLines } from '../src/analysis/watchNews';
+import { rowsFor } from '../src/widget/rows';
 import { calendarEvents, eventsSig } from '../src/portfolio/calendarEvents';
 import { shadowIndex } from '../src/portfolio/track';
 import { hurtsMost, shockLoss } from '../src/portfolio/stress';
@@ -380,6 +385,66 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
 }
+
+// Dividend payments
+{
+  const now = Date.parse('2026-10-27T07:00:00Z');
+  const bc = (d: string) => Date.parse(d + 'T04:00:00Z');
+  let rec = {};
+  const run = () =>
+    owedPayments({
+      holdings: [{ symbol: 'A', shares: 100, taxRate: 0.15, list: [{ dps: 5, bookClosure: bc('2026-10-20') }, { dps: 4, bookClosure: bc('2026-08-01') }, { dps: 3, bookClosure: bc('2026-11-20') }, { dps: 2, bookClosure: bc('2025-01-01') }] }],
+      sharesOn: (_s, d) => (d < '2026-09-01' ? 50 : null),
+      received: rec,
+      now,
+    });
+  let l = run();
+  check('owed: past book closures in the last year, newest first', l.length === 2 && l[0].day === '2026-10-20' && l[0].status === 'waiting' && l[1].status === 'late' && l[1].shares === 50 && !l[1].assumed && l[0].assumed);
+  check('owed: after tax', Math.abs(l[0].net - 425) < 1e-9);
+  rec = tick(rec, l[1].key, 180, 1);
+  l = run();
+  const sum = owedSummary(l);
+  check('owed: ticked with the amount that came', l[1].status === 'received' && sum.received === 180 && Math.abs(sum.waiting - 425) < 1e-9 && sum.late.length === 0);
+  check('untick', Object.keys(untick(rec, l[1].key)).length === 0);
+}
+
+// Average down
+{
+  const free = { brokerage: 0, minPerShare: 0, salesTax: 0 };
+  const p = sharesForAverage(100, 100, 50, 75, free)!;
+  // plain maths: 100 at 100 plus 100 at 50 = 75 (only the fixed exchange fees left, so one or two more)
+  check('shares for a target average', p.shares >= 100 && p.shares <= 102 && p.newAvg <= 75 + 1e-9, p);
+  check('the fewest shares that get there', averageAfter(100, 100, p.shares - 1, 50, free) > 75);
+  check('impossible targets', sharesForAverage(100, 100, 50, 50) === null && sharesForAverage(100, 100, 50, 120) === null);
+  const m = averageWithMoney(100, 100, 50, 5000)!;
+  check('with money: charges included', m.shares < 100 && m.cost <= 5000 && m.newAvg < 100);
+  check('steps', targetSteps(100, 60).join() === '90,80,70' && targetSteps(50, 60).length === 0);
+}
+
+// Family portfolios
+{
+  let p = { active: 'main', list: [{ id: 'main', name: 'Mine' }] };
+  p = addPortfolio(p, ' Ammi ', 5);
+  check('add, names unique', p.list.length === 2 && p.list[1].id === 'p5' && p.list[1].name === 'Ammi' && addPortfolio(p, 'ammi').list.length === 2);
+  check('rename', renamePortfolio(p, 'p5', 'Ammi (savings)').list[1].name === 'Ammi (savings)' && renamePortfolio(p, 'p5', 'mine').list[1].name === 'Ammi');
+  const v = valueOf([{ symbol: 'A', shares: 10, avgCost: 90 }], () => ({ price: 110, changePct: 10 }));
+  check('value and today', v.value === 1100 && v.pnl === 200 && Math.abs(v.today - 100) < 1e-9);
+}
+
+// Watchlist news lines
+{
+  const l = newsLines(
+    [
+      { symbol: 'A', title: 'Board Meeting', date: '2026-10-27', kind: 'meeting' },
+      { symbol: 'B', title: 'Material Information', date: '2026-10-26', kind: 'material' },
+      { symbol: 'C', title: 'Old notice', date: '2026-09-01', kind: 'other' },
+    ],
+    '2026-10-27',
+  );
+  check('news: recent only, important first', l.length === 2 && l[0].text === 'B · Material information: Material Information' && l[1].symbol === 'A');
+}
+
+check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && rowsFor(undefined) === 4);
 
 // Calendar dates
 {

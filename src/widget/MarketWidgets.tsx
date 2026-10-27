@@ -1,6 +1,8 @@
 /** Two more home screen widgets: your watchlist's prices, and the main indices. Both fetch fresh figures from PSX when Android redraws them. */
 import React from 'react';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
+import { rowsFor } from './rows';
+export { rowsFor };
 
 export interface WatchRow {
   symbol: string;
@@ -67,8 +69,6 @@ function Line({ left, mid, right, color }: { left: string; mid: string; right: s
   );
 }
 
-/** Rows that fit: about one per 26dp after the header. */
-export const rowsFor = (heightDp: number | undefined, min = 2, max = 8) => Math.max(min, Math.min(max, Math.floor(((heightDp ?? 160) - 48) / 26)));
 
 export function WatchWidget({ data, rows = 5 }: { data: WatchData | null; rows?: number }) {
   return (

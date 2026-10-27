@@ -45,6 +45,9 @@ export type RootParams = {
   Growth: undefined;
   Journal: undefined;
   LogTrade: undefined;
+  DivPayments: undefined;
+  AverageDown: { symbol?: string } | undefined;
+  Portfolios: undefined;
   YearReview: { year?: number } | undefined;
 };
 

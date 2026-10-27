@@ -13,6 +13,7 @@ import { valuePortfolio } from '../paper/engine';
 import { shortSector } from '../sectors';
 import { Badge, Button, Card, Empty, Segmented, T } from '../ui/kit';
 import { useHoldings } from '../portfolio/holdings';
+import { portfoliosPref } from '../portfolio/portfolios';
 import { MyHoldings } from './portfolio/MyHoldings';
 import { SectorMix } from '../ui/SectorMix';
 
@@ -155,10 +156,16 @@ export default function PortfolioScreen() {
     }
     nav.setParams({ tab: undefined, view: undefined } as never);
   }, [route.params, nav]);
+  const pfs = portfoliosPref.use();
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
-        <T v="h1">Portfolio</T>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <T v="h1">Portfolio</T>
+          <Pressable accessibilityRole="button" accessibilityLabel="Family portfolios" hitSlop={8} onPress={() => nav.navigate('Portfolios')} style={styles.pf}>
+            <T style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text2 }}>{pfs.list.length > 1 ? `${pfs.list.find((x) => x.id === pfs.active)?.name ?? 'Mine'} ▾` : '👪 Family'}</T>
+          </Pressable>
+        </View>
         {practiceOn ? (
           <Segmented
             options={[
@@ -176,6 +183,7 @@ export default function PortfolioScreen() {
 }
 
 const styles = themed(() => StyleSheet.create({
+  pf: { paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: colors.surface, justifyContent: "center" },
   root: { flex: 1, backgroundColor: colors.ground },
   content: { paddingHorizontal: 20, paddingTop: 8, gap: 22, paddingBottom: 36 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

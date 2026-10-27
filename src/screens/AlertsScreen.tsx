@@ -7,7 +7,8 @@ import { Pressable, ScrollView, Share, StyleSheet, TextInput, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
-import { watchCopiedPref, watchRulesPref } from '../portfolio/prefs';
+import { watchCopiedPref, watchlistCopiedPref, watchRulesPref } from '../portfolio/prefs';
+import { useUser } from '../store/user';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtPrice } from '../format';
 import { describeRule, priceLine, rulesText, type WatchRule } from '../analysis/watch';
@@ -20,6 +21,9 @@ export default function AlertsScreen() {
   const nav = useNavigation();
   const rules = watchRulesPref.use();
   const copied = watchCopiedPref.use();
+  const { watchlist } = useUser();
+  const watchText = watchlist.join(',');
+  const watchCopied = watchlistCopiedPref.use();
   const route = useRoute<RouteProp<RootParams, 'Alerts'>>();
   const { bySymbol } = useMarket();
   const [sym, setSym] = useState(route.params?.symbol ?? '');
@@ -143,6 +147,35 @@ export default function AlertsScreen() {
             <T v="caption" style={{ lineHeight: 18 }}>
               The secret is private: GitHub never shows it in the public logs, and the job prints only how many alerts it checked.
             </T>
+          </Panel>
+        </Section>
+        <Section title="News on your watchlist">
+          <Panel style={{ paddingVertical: 14, gap: 10 }}>
+            <T v="body" style={{ fontSize: 14, lineHeight: 20, color: colors.text2 }}>
+              Each evening, one notification with new PSX announcements (board meetings, material information, payouts, results) for the
+              stocks on your watchlist. Put this list in a secret named WATCHLIST_SYMBOLS the same way. The first evening only notes what's
+              already there; news comes from the next one.
+            </T>
+            <View style={styles.code}>
+              <T v="mono" selectable style={{ fontSize: 13.5 }}>
+                {watchText || 'Your watchlist is empty'}
+              </T>
+            </View>
+            {watchText && watchText !== watchCopied ? (
+              <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+                Your watchlist has changed since you last copied it.
+              </T>
+            ) : null}
+            <Button
+              label="Copy or share the watchlist"
+              tone="ghost"
+              disabled={!watchText}
+              onPress={() =>
+                Share.share({ message: watchText })
+                  .then((r) => (r.action !== Share.dismissedAction ? watchlistCopiedPref.set(watchText) : undefined))
+                  .catch(() => {})
+              }
+            />
           </Panel>
         </Section>
       </ScrollView>

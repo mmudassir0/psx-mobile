@@ -3,7 +3,7 @@
     "name": "Sahm",
     "slug": "sahm-app",
     "scheme": "sahm",
-    "version": "0.47.0",
+    "version": "0.48.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

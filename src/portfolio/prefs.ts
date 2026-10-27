@@ -12,5 +12,7 @@ export const boughtPref = makePref<Record<string, 'recent' | '2022-24' | '2013-2
 /** price alert rules (WATCH_ALERTS), and the text last copied to GitHub, to spot unsynced changes */
 export const watchRulesPref = makePref<WatchRule[]>('real.watchAlerts', []);
 export const watchCopiedPref = makePref<string>('real.watchAlertsCopied', '');
+/** the watchlist last copied for the WATCHLIST_SYMBOLS secret (news alerts) */
+export const watchlistCopiedPref = makePref<string>('user.watchlistCopied', '');
 export const benchmarkPref = makePref<'KSE100' | 'KMI30'>('real.benchmark', 'KSE100');
 export const BENCH_LABEL = { KSE100: 'KSE-100', KMI30: 'KMI-30' } as const;
