@@ -6,6 +6,7 @@
  */
 import { load, save } from './storage';
 import { isSavedScreens } from './analysis/savedScreens';
+import { isPurification } from './portfolio/shariah';
 
 export const BACKUP_KEYS = [
   'user.name',
@@ -29,6 +30,7 @@ export const BACKUP_KEYS = [
   'ui.layout',
   'ui.flags',
   'real.targets',
+  'real.purification',
   'real.costs',
   'real.notes',
   'real.monthlyPlan',
@@ -80,6 +82,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.monthlyPlan': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.amount === 'number' && typeof x.day === 'number',
   'real.notes': (x) => isObj(x) && Object.values(x).every((n) => isObj(n) && typeof n.why === 'string' && isObj(n.then)),
   'real.costs': (x) => isObj(x) && typeof x.brokerage === 'number' && typeof x.salesTax === 'number' && typeof x.minPerShare === 'number',
+  'real.purification': (x) => isPurification(x),
   'real.targets': (x) => isObj(x) && Object.values(x).every((v) => typeof v === 'number' && v >= 0),
   'real.snapshots': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.day === 'string' && typeof e.value === 'number' && isObj(e.pos)),
 };

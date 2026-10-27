@@ -2,6 +2,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { dividendsReceived, setRate, shariahSummary } from '../src/portfolio/shariah';
 import { deleteScreen, markSeen, newSince, sameSettings, saveScreen, suggestName } from '../src/analysis/savedScreens';
 import { move, orderOf, toggle, visibleCards } from '../src/nav/homeCards';
 import { cpiFromNews, marketYields, parsePbsInflation, parseSbp, petrolFromNews } from '../src/analysis/macro';
@@ -367,6 +368,35 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Shariah corner
+{
+  const p = { defaultPct: 2, perStock: { MEBL: 0.5 }, nonCompliantFull: true };
+  const s = shariahSummary(
+    [
+      { symbol: 'MEBL', value: 600, shariah: true, kmi30: true, received: 1000 },
+      { symbol: 'LUCK', value: 300, shariah: true, kmi30: false, received: 500 },
+      { symbol: 'HBL', value: 100, shariah: false, kmi30: false, received: 200 },
+    ],
+    p,
+  );
+  check('compliant share of money', Math.abs(s.compliantShare - 0.9) < 1e-9 && s.notCount === 1);
+  check('purification: own rate, usual rate, all of a non-compliant dividend', Math.abs(s.purify - (5 + 10 + 200)) < 1e-9, s.lines.map((l) => l.purify));
+  check('non-compliant at the usual rate when switched off', Math.abs(shariahSummary(s.lines, { ...p, nonCompliantFull: false }).purify - (5 + 10 + 4)) < 1e-9);
+  check('rate cleared and clamped', setRate(p, 'MEBL', null).perStock.MEBL === undefined && setRate(p, 'X', 150).perStock.X === 100);
+  const bc = (d: string) => Date.parse(d + 'T04:00:00Z');
+  const got = dividendsReceived(
+    [
+      { dps: 5, bookClosure: bc('2026-03-10') },
+      { dps: 3, bookClosure: bc('2025-05-01') },
+      { dps: 0, bookClosure: bc('2026-04-01') },
+    ],
+    (day) => (day < '2026-03-01' ? 100 : 50),
+    '2025-10-27',
+    '2026-10-27',
+  );
+  check('dividends in the period on the shares held the day before', got.total === 250 && got.payments.length === 1, got);
 }
 
 // Saved screens

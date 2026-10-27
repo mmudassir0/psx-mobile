@@ -34,6 +34,7 @@ export const FEATURES: Feature[] = [
   { key: 'results', label: 'Results season', emoji: '📊', group: 'My money', words: 'results earnings eps quarter profit announcement board meeting due', go: (nav) => nav.navigate('Results') },
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
+  { key: 'shariah', label: 'Shariah corner', emoji: '🌙', group: 'My money', words: 'shariah islamic halal kmi compliant purification charity zakat sadqa', go: (nav) => nav.navigate('Shariah') },
   { key: 'taxstatement', label: 'Tax statement', emoji: '📄', group: 'My money', words: 'tax return filing statement pdf capital gains dividends withheld fbr', flags: ['tax'], go: (nav) => nav.navigate('TaxStatement') },
   { key: 'edit', label: 'Edit holdings', emoji: '✏️', group: 'My money', words: 'add paste screenshot import trades history ktrade', go: (nav) => nav.navigate('EditHoldings') },
   { key: 'alerts', label: 'Price alerts', emoji: '🔔', group: 'My money', words: 'alert notify price watch', flags: ['alerts'], go: (nav) => nav.navigate('Alerts') },
