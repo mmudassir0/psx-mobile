@@ -9,7 +9,7 @@ import { cached } from '../psx/cache';
 import { fetchSeries } from '../psx/api';
 import { cashDividends } from '../analysis/dividends';
 import type { Row } from '../portfolio/useReviews';
-import { indexReturns, mixReturns, onSnapshots, snapshots, trackReturns, type Snap } from '../portfolio/track';
+import { indexReturns, mixReturns, onSnapshots, shadowIndex, snapshots, trackReturns, type Snap } from '../portfolio/track';
 import { Panel } from './bits';
 import { BENCH_LABEL, benchmarkPref } from '../portfolio/prefs';
 import { Segmented, T } from './kit';
@@ -95,6 +95,37 @@ function Legend({ mine, index, mineLabel, indexLabel }: { mine: number | null; i
   );
 }
 
+/** In rupees: what you have against the same money put into the index on the same days. */
+function SameMoney({ s, label }: { s: NonNullable<ReturnType<typeof shadowIndex>>; label: string }) {
+  const rs = (v: number) => `Rs ${Math.round(v).toLocaleString('en-US')}`;
+  const diff = s.mine - s.index;
+  return (
+    <View style={{ gap: 6, paddingTop: 4, borderTopWidth: 1, borderTopColor: colors.hairline }}>
+      <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Am I beating the market?</T>
+      <View style={{ flexDirection: 'row', gap: 16 }}>
+        <View style={{ flex: 1 }}>
+          <T v="caption">You have</T>
+          <T v="mono" style={{ fontSize: 16 }}>
+            {rs(s.mine)}
+          </T>
+        </View>
+        <View style={{ flex: 1 }}>
+          <T v="caption">Same money in {label}</T>
+          <T v="mono" style={{ fontSize: 16 }}>
+            {rs(s.index)}
+          </T>
+        </View>
+      </View>
+      <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: Math.abs(diff) < s.invested * 0.005 ? colors.text2 : diff > 0 ? colors.up : colors.downText }}>
+        {Math.abs(diff) < s.invested * 0.005 ? 'About the same as the index.' : diff > 0 ? `${rs(diff)} more than the index would have made.` : `${rs(-diff)} less than the index would have made.`}
+      </T>
+      <T v="caption" style={{ lineHeight: 17 }}>
+        Every rupee you put in since {fmtDay(dayT(s.from))} counted as bought into the index the same day, and money taken out as sold. Yours includes {rs(s.dividends)} of dividends received.
+      </T>
+    </View>
+  );
+}
+
 type View_ = 'actual' | 'mix';
 const RANGES = [
   { key: '63', label: '3M' },
@@ -131,6 +162,7 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
     if (items.some((x) => x.candles.length < 2)) return null;
     return { days, mine: mixReturns(items, days), index: indexReturns(index, days) };
   }, [loading, index, range, rows, candles]);
+  const shadow = useMemo(() => (snaps && index?.length ? shadowIndex(snaps, index) : null), [snaps, index]);
   const v: View_ = view ?? (tracked && tracked.days.length >= 5 ? 'actual' : 'mix');
   const firstDay = snaps?.[0]?.day;
   const shown = v === 'actual' ? tracked : mix;
@@ -171,6 +203,7 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
             <T v="caption">{fmtDay(dayT(shown.days[0]))}</T>
             <T v="caption">{fmtDay(dayT(shown.days[shown.days.length - 1]))}</T>
           </View>
+          {v === 'actual' && shadow ? <SameMoney s={shadow} label={BENCH_LABEL[bench]} /> : null}
         </>
       )}
       <T v="caption" style={{ lineHeight: 18 }}>

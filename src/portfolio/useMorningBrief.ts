@@ -5,7 +5,7 @@
  */
 import { useEffect } from 'react';
 import { makePref } from '../prefs';
-import { cancelReminder, remind, scheduledIds } from '../notify';
+import { cancelReminder, ensureReady, morningOf, remind, scheduledIds } from '../notify';
 import { MPC_DATES } from '../analysis/events';
 import { working } from '../analysis/dividends';
 import { upcomingPayout } from '../analysis/dividends';
@@ -83,6 +83,15 @@ export async function scheduleMorning(rows: Row[], s: MorningSettings): Promise<
   return keep.size;
 }
 
+/** On 1 July: the tax year just finished is ready to look back on. */
+export async function scheduleYearReview(now = Date.now()) {
+  // only when notifications are already allowed: never asks by itself
+  if (!(await ensureReady(false))) return;
+  const d = new Date(now + 5 * 3600_000);
+  const y = d.getUTCMonth() >= 6 ? d.getUTCFullYear() + 1 : d.getUTCFullYear();
+  remind('year-review', morningOf(`${y}-07-01`), `Your tax year ${y - 1}–${String(y).slice(2)} in review`, 'Your return against the index, best and worst holdings, dividends and tax, on one page.', 'sahm://year-review');
+}
+
 /** Call where the holdings' reviews are loaded (Home). */
 export function useMorningBrief(rows: Row[], ready: boolean) {
   const s = morningPref.use();
@@ -90,6 +99,7 @@ export function useMorningBrief(rows: Row[], ready: boolean) {
   useEffect(() => {
     if (!ready) return;
     scheduleMorning(rows, s).catch(() => {});
+    scheduleYearReview().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, sig, s.on, s.time]);
 }

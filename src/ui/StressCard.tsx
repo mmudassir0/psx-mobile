@@ -7,7 +7,7 @@ import { fmtDay } from '../format';
 import type { Candle, SeriesPoint } from '../psx/types';
 import { fetchSeries } from '../psx/api';
 import { cached } from '../psx/cache';
-import { stressTest } from '../portfolio/stress';
+import { hurtsMost, shockLoss, stressTest } from '../portfolio/stress';
 import { Panel } from './bits';
 import { T } from './kit';
 
@@ -18,6 +18,7 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
   const [index, setIndex] = useState<SeriesPoint[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<number | null>(null);
+  const [fall, setFall] = useState(-0.2);
   useEffect(() => {
     cached(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true })
       .then(setIndex)
@@ -31,6 +32,15 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
   if (!res) return <T v="caption">Loading KSE-100 history…</T>;
   const b = res.beta;
   const sens = [...res.betas].filter((x) => x.beta != null).sort((a, c) => (c.beta as number) - (a.beta as number));
+  const values = Object.fromEntries(rows.map((r) => [r.symbol, r.value]));
+  const total = rows.reduce((a, r) => a + r.value, 0);
+  const shock = shockLoss(
+    rows.map((r) => ({ symbol: r.symbol, value: r.value, beta: res.betas.find((x) => x.symbol === r.symbol)?.beta ?? null })),
+    fall,
+    b ?? 1,
+  );
+  const hurt = hurtsMost(res, values);
+  const rs = (v: number) => `Rs ${Math.round(Math.abs(v)).toLocaleString('en-US')}`;
   return (
     <View style={{ gap: 12 }}>
       <Panel style={{ paddingVertical: 16, gap: 8 }}>
@@ -48,6 +58,32 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
         ) : null}
       </Panel>
 
+      <Panel style={{ paddingVertical: 14, gap: 8 }}>
+        <T v="caption">If KSE-100 fell this much now</T>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[-0.1, -0.2, -0.3].map((f) => (
+            <Pressable key={f} accessibilityRole="radio" accessibilityState={{ selected: fall === f }} onPress={() => setFall(f)} style={[styles.pill, fall === f && { backgroundColor: colors.gold }]}>
+              <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: fall === f ? colors.onGold : colors.text2 }}>{Math.round(f * 100)}%</T>
+            </Pressable>
+          ))}
+        </View>
+        <T style={{ fontFamily: fonts.heavy, fontSize: 22, color: colors.downText }}>
+          about −{rs(shock.loss)} ({pc(shock.pct)})
+        </T>
+        <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
+          Most of it from {shock.rows.slice(0, 3).map((x) => `${x.symbol} −${rs(x.loss)}`).join(', ')}.
+        </T>
+        {hurt.length && hurt[0].avgLoss < 0 ? (
+          <T v="body" style={{ fontSize: 13.5, lineHeight: 19 }}>
+            In past falls, <T style={{ fontFamily: fonts.bold, fontSize: 13.5 }}>{hurt[0].symbol}</T> did the most damage: about {Math.round(hurt[0].share * 100)}% of the loss on average ({rs(hurt[0].avgLoss)} at today's
+            value).
+          </T>
+        ) : null}
+        <T v="caption" style={{ lineHeight: 17 }}>
+          A rough guide from each holding's usual swing against the index{total ? `, on ${rs(total)}` : ''}. In a real crash shares often fall together, so it can be worse.
+        </T>
+      </Panel>
+
       <T v="label">The KSE-100's biggest falls (10% or more) since PSX's index history starts</T>
       {res.episodes.length === 0 ? <T v="caption">No fall of 10% or more in the available history.</T> : null}
       {[...res.episodes].reverse().map((ep, i) => (
@@ -63,6 +99,7 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
             </View>
             <T v="body" style={{ fontSize: 14 }}>
               Your holdings today: <T style={{ fontFamily: fonts.bold, fontSize: 14, color: (ep.portfolio ?? 0) < ep.e.fall ? colors.downText : colors.text }}>{pc(ep.portfolio)}</T>
+              {ep.portfolio != null && ep.portfolio < 0 && total ? <T v="caption"> (about −{rs(ep.portfolio * total * ep.coverage)} today)</T> : null}
               {ep.coverage < 0.95 ? <T v="caption"> ({Math.round(ep.coverage * 100)}% of holdings existed then)</T> : null}
             </T>
             <T v="caption">
@@ -102,6 +139,7 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
 
 const styles = themed(() =>
   StyleSheet.create({
+    pill: { paddingHorizontal: 14, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: colors.surface2 },
     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 8, borderTopWidth: 1, borderTopColor: colors.hairline },
   }),
 );

@@ -2,6 +2,11 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { calendarEvents, eventsSig } from '../src/portfolio/calendarEvents';
+import { shadowIndex } from '../src/portfolio/track';
+import { hurtsMost, shockLoss } from '../src/portfolio/stress';
+import { pickConfirmation } from '../src/portfolio/tradeShot';
+import { reviewHtml, yearReview } from '../src/portfolio/yearReview';
 import { portion, sellPlan } from '../src/portfolio/sellPlan';
 import { overLimit, sectorShares, setLimit } from '../src/portfolio/sectorLimits';
 import { growthSources } from '../src/portfolio/growthSources';
@@ -374,6 +379,72 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Calendar dates
+{
+  const t = (d: string) => Date.parse(d + 'T04:00:00Z');
+  const ev = calendarEvents(
+    [
+      { symbol: 'A', payouts: [{ bookClosure: t('2026-11-10'), lastBuyDay: t('2026-11-06'), dps: 5, bonusPct: 0 }, { bookClosure: t('2026-10-01'), lastBuyDay: t('2026-09-29'), dps: 3, bonusPct: 0 }], results: { expected: '2026-11-20', meeting: null, label: 'Q1 2027', basis: 'last year' } },
+      { symbol: 'B', payouts: [{ bookClosure: t('2026-11-03'), lastBuyDay: t('2026-10-30'), dps: 0, bonusPct: 10 }], results: { expected: '2026-11-25', meeting: '2026-11-02', label: 'Q1 2027', basis: 'deadline' } },
+    ],
+    '2026-10-27',
+    ['2026-10-26', '2026-12-14'],
+  );
+  check('calendar: future dates only, in order', ev.map((e) => e.day).join() === '2026-10-30,2026-11-02,2026-11-03,2026-11-06,2026-11-10,2026-11-20,2026-12-14', ev.map((e) => e.day));
+  check('calendar: titles', ev[0].title === 'B: last day to buy for its payout' && ev[1].title.startsWith('B: board meeting') && ev[5].title === 'A: Q1 2027 results likely' && ev[0].notes.includes('10% bonus'));
+  check('calendar: fingerprint changes with dates', eventsSig(ev) !== eventsSig(ev.slice(1)));
+}
+
+// Same money in the index
+{
+  const snap = (day: string, shares: number, cost: number, price: number, div = 0) => ({ day, value: shares * price, pos: { A: [shares, cost, price] as [number, number, number] }, div });
+  const snaps = [snap('2026-01-01', 100, 1000, 10), snap('2026-02-01', 200, 2100, 11), snap('2026-03-01', 200, 2100, 12, 50)];
+  const index = [
+    { t: Date.parse('2026-01-01T10:00:00Z'), v: 100, vol: 0 },
+    { t: Date.parse('2026-02-01T10:00:00Z'), v: 110, vol: 0 },
+    { t: Date.parse('2026-03-01T10:00:00Z'), v: 121, vol: 0 },
+  ];
+  const s = shadowIndex(snaps, index)!;
+  // 1000 buys 10 units; 1100 added on day 2 buys 10 more; 20 units × 121
+  check('same money in the index', Math.abs(s.index - 2420) < 1e-6 && s.invested === 2100 && s.mine === 2450 && s.dividends === 50, s);
+}
+
+// Market shock and past falls
+{
+  const sh = shockLoss([{ symbol: 'A', value: 1000, beta: 1.5 }, { symbol: 'B', value: 1000, beta: null }], -0.2, 0.8);
+  check('shock: by beta, missing beta uses the portfolio\'s', Math.abs(sh.loss - (-300 - 160)) < 1e-9 && sh.rows[0].symbol === 'A' && Math.abs(sh.pct + 0.23) < 1e-9);
+  const res = { beta: 1, coverage: 1, betas: [], episodes: [
+    { e: { peakT: 0, troughT: 1, fall: -0.2, recoveredT: null }, portfolio: null, coverage: 1, worst: null, best: null, rows: [{ symbol: 'A', r: { change: -0.3, recoveryDays: 1 } }, { symbol: 'B', r: { change: -0.1, recoveryDays: 1 } }] },
+    { e: { peakT: 2, troughT: 3, fall: -0.2, recoveredT: null }, portfolio: null, coverage: 1, worst: null, best: null, rows: [{ symbol: 'A', r: { change: -0.1, recoveryDays: 1 } }, { symbol: 'B', r: null }] },
+  ] };
+  const h = hurtsMost(res as never, { A: 1000, B: 3000 });
+  check('hurts most: average rupee loss', h[0].symbol === 'B' && Math.abs(h[0].avgLoss + 300) < 1e-9 && Math.abs(h[1].avgLoss + 200) < 1e-9 && Math.abs(h[0].share + h[1].share - 1) < 1e-9, h);
+}
+
+// Trade from a screenshot
+{
+  const T = (date: string, symbol: string, side: 'buy' | 'sell', shares: number, price: number) => ({ date, symbol, side, shares, price });
+  check('one trade', pickConfirmation([T('2026-10-27', 'LUCK', 'buy', 10, 700)], null).one?.symbol === 'LUCK');
+  const parts = pickConfirmation([T('2026-10-27', 'LUCK', 'buy', 10, 700), T('2026-10-27', 'LUCK', 'buy', 5, 700)], null);
+  check('partial fills added up', parts.one?.shares === 15);
+  const many = pickConfirmation([T('2026-10-27', 'LUCK', 'buy', 10, 700), T('2026-10-26', 'MEBL', 'sell', 5, 250)], null);
+  check('several: pick', many.one === null && many.many.length === 2 && many.many[0].date === '2026-10-27');
+  check('for a given stock: its newest', pickConfirmation([T('2026-10-20', 'LUCK', 'buy', 1, 690), T('2026-10-27', 'LUCK', 'sell', 2, 710), T('2026-10-27', 'MEBL', 'buy', 5, 250)], 'luck').one?.price === 710);
+}
+
+// Year in review
+{
+  const snap = (day: string, a: [number, number, number], b?: [number, number, number]) => ({ day, value: a[0] * a[2] + (b ? b[0] * b[2] : 0), pos: (b ? { A: a, B: b } : { A: a }) as Record<string, [number, number, number]>, div: 0 });
+  const snaps = [snap('2025-06-30', [100, 1000, 10]), snap('2025-12-01', [100, 1000, 12], [10, 500, 50]), snap('2026-06-30', [100, 1000, 15], [10, 500, 40])];
+  const st = { year: 2026, from: '2025-07-01', to: '2026-06-30', sales: [], gains: 0, losses: 0, net: 0, cgt: 0, dividends: [], divGross: 0, divWithheld: 0, divNet: 0, assumed: [] };
+  const r = yearReview({ year: 2026, today: '2026-10-27', snaps, trades: [{ day: '2025-12-01', symbol: 'B', side: 'buy', shares: 10, price: 50, realised: null }, { day: '2024-01-01', symbol: 'A', side: 'buy', shares: 1, price: 1, realised: null }], notesAt: ['2026-01-01', '2024-01-01'], st, index: null });
+  check('year: from the close before it', r.start === '2025-06-30' && r.startValue === 1000 && r.endValue === 1900 && r.added === 500 && !r.partial);
+  check('year: best and worst', r.best[0].symbol === 'A' && Math.abs(r.best[0].change - 0.5) < 1e-9 && r.worst[0].symbol === 'B' && r.worst[0].rupees === -100);
+  check('year: trades and notes in the year only', r.buys.n === 1 && r.buys.amount === 500 && r.notes === 1);
+  check('year: return links the days', r.ret != null && r.ret > 0.25 && r.ret < 0.5, r.ret);
+  check('year: page', reviewHtml(r, { bench: 'KSE-100', made: 'today' }).includes('Tax year 2025–26 in review'));
 }
 
 // Sell planner

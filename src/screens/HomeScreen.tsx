@@ -20,6 +20,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useReviews } from '../portfolio/useReviews';
 import { sectorLimitsPref } from '../portfolio/sectorLimits';
 import { useMorningBrief } from '../portfolio/useMorningBrief';
+import { useCalendarSync } from '../portfolio/calendarSync';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { annSeenPref } from '../analysis/announcements';
@@ -102,6 +103,7 @@ export default function HomeScreen() {
   const targets = targetsPref.use();
   const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...targetItems(rows, targets), ...sectorItems(rows, sectorLimits), ...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, candles, annSeen, targets, sectorLimits]);
   useMorningBrief(rows, !reviewing && rows.length > 0);
+  useCalendarSync(rows, !reviewing && rows.length > 0);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();
   const layout = layoutPref.use();

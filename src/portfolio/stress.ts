@@ -145,3 +145,35 @@ export function stressTest(holdings: StressHolding[], index: SeriesPoint[]): Str
   });
   return { beta: pb, coverage: cov, betas, episodes };
 }
+
+/** A fall of `fall` (e.g. -0.2) in the index today, spread by each holding's beta: the loss in rupees, biggest first. */
+export function shockLoss(holdings: { symbol: string; value: number; beta: number | null }[], fall: number, fallbackBeta = 1) {
+  const rows = holdings
+    .map((h) => {
+      const b = h.beta ?? fallbackBeta;
+      const change = Math.max(-1, b * fall);
+      return { symbol: h.symbol, value: h.value, beta: h.beta, change, loss: h.value * change };
+    })
+    .sort((a, b) => a.loss - b.loss);
+  const total = rows.reduce((a, r) => a + r.value, 0);
+  const loss = rows.reduce((a, r) => a + r.loss, 0);
+  return { rows, loss, pct: total ? loss / total : 0 };
+}
+
+/** Across the past falls, which holding cost the most rupees on average (at today's value), and its share of the damage. */
+export function hurtsMost(res: StressResult, values: Record<string, number>): { symbol: string; avgLoss: number; share: number }[] {
+  const sum = new Map<string, { loss: number; n: number }>();
+  let total = 0;
+  for (const ep of res.episodes)
+    for (const r of ep.rows) {
+      if (!r.r) continue;
+      const loss = (values[r.symbol] ?? 0) * Math.min(0, r.r.change);
+      const a = sum.get(r.symbol) ?? { loss: 0, n: 0 };
+      a.loss += loss;
+      a.n += 1;
+      sum.set(r.symbol, a);
+    }
+  const avg = [...sum].map(([symbol, a]) => ({ symbol, avgLoss: a.loss / a.n }));
+  total = avg.reduce((a, x) => a + x.avgLoss, 0);
+  return avg.map((x) => ({ ...x, share: total ? x.avgLoss / total : 0 })).sort((a, b) => a.avgLoss - b.avgLoss);
+}

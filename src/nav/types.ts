@@ -44,6 +44,8 @@ export type RootParams = {
   SectorLimits: undefined;
   Growth: undefined;
   Journal: undefined;
+  LogTrade: undefined;
+  YearReview: { year?: number } | undefined;
 };
 
 declare global {

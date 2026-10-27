@@ -150,6 +150,8 @@ function Root() {
       <Stack.Screen name="SectorLimits" getComponent={() => require('./src/screens/SectorLimitsScreen').default} />
       <Stack.Screen name="Growth" getComponent={() => require('./src/screens/GrowthScreen').default} />
       <Stack.Screen name="Journal" getComponent={() => require('./src/screens/JournalScreen').default} />
+      <Stack.Screen name="LogTrade" getComponent={() => require('./src/screens/LogTradeScreen').default} />
+      <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
       <Stack.Screen name="Export" getComponent={() => require('./src/screens/ExportScreen').default} />
@@ -199,6 +201,8 @@ const linking: LinkingOptions<RootParams> = {
       SectorLimits: 'sector-limits',
       Growth: 'growth',
       Journal: 'journal',
+      LogTrade: 'log-trade',
+      YearReview: 'year-review',
     },
   },
 };

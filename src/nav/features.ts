@@ -34,6 +34,8 @@ export const FEATURES: Feature[] = [
   { key: 'results', label: 'Results season', emoji: '📊', group: 'My money', words: 'results earnings eps quarter profit announcement board meeting due', go: (nav) => nav.navigate('Results') },
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
+  { key: 'logtrade', label: 'Record a trade', emoji: '✍️', group: 'My money', words: 'record log trade bought sold screenshot order confirmation ktrade add buy sell', go: (nav) => nav.navigate('LogTrade') },
+  { key: 'yearreview', label: 'Year in review', emoji: '🏁', group: 'My money', words: 'year review annual summary tax year june best worst report pdf', go: (nav) => nav.navigate('YearReview') },
   { key: 'sellplan', label: 'Plan a sale', emoji: '🧾', group: 'My money', words: 'sell sale plan exit tax cgt in hand proceeds dividend wait break even', go: (nav) => nav.navigate('SellPlan') },
   { key: 'sectorlimits', label: 'Sector limits', emoji: '🚧', group: 'My money', words: 'sector limit cap concentration too much banks diversify', go: (nav) => nav.navigate('SectorLimits') },
   { key: 'growth', label: 'Where gains came from', emoji: '🌱', group: 'My money', words: 'growth gain dividends reinvest compound drip price return source', go: (nav) => nav.navigate('Growth') },

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CalendarCard } from '../ui/CalendarCard';
 import { MorningCard } from '../ui/MorningCard';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -184,8 +185,9 @@ export default function SettingsScreen() {
         </Section>
         ) : null}
 
-        <Section title="Morning notification">
+        <Section title="Reminders">
           <MorningCard />
+          <CalendarCard />
         </Section>
 
         {lockSupported ? (

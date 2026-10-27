@@ -227,3 +227,27 @@ export function useTrackSnapshot(rows: Row[], loading: boolean) {
     recordSnapshot(rows.map((r) => ({ symbol: r.holding.symbol, shares: r.holding.shares, avgCost: r.holding.avgCost, price: r.price, cash: cashDividends(r.dividends) })));
   }, [loading, rows]);
 }
+
+/**
+ * The same money in the index on the same days: your first snapshot's value buys
+ * index "units" that day, every rupee you add later buys more at that day's level,
+ * and money taken out sells units. Your side is today's value plus the cash
+ * dividends received (before tax), as the index counts them.
+ */
+export function shadowIndex(list: Snap[], index: SeriesPoint[]): { from: string; invested: number; mine: number; index: number; dividends: number } | null {
+  if (list.length < 2 || !index.length) return null;
+  const at = alignIndex(index, list.map((s) => s.day));
+  if (at[0] == null || at[at.length - 1] == null) return null;
+  let units = list[0].value / at[0];
+  let invested = list[0].value;
+  let dividends = 0;
+  for (let i = 1; i < list.length; i++) {
+    const f = flowBetween(list[i - 1], list[i]);
+    const lv = at[i];
+    if (f && lv) units += f / lv;
+    invested += f;
+    dividends += list[i].div;
+  }
+  const last = list[list.length - 1];
+  return { from: list[0].day, invested, mine: last.value + dividends, index: Math.max(0, units) * at[at.length - 1]!, dividends };
+}
