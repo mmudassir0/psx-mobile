@@ -18,3 +18,5 @@ export const benchmarkPref = makePref<'KSE100' | 'KMI30'>('real.benchmark', 'KSE
 export const BENCH_LABEL = { KSE100: 'KSE-100', KMI30: 'KMI-30' } as const;
 /** bonus shares Sahm added (by itself or when you tapped), newest last */
 export const bonusLogPref = makePref<import('./bonusAuto').BonusEntry[]>('real.bonusLog', []);
+/** your own lines on each stock's chart (symbol → lines) */
+export const chartLinesPref = makePref<Record<string, import('../analysis/chartLines').UserLines>>('user.chartLines', {});

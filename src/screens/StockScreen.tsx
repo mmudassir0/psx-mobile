@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { MyLines } from '../ui/MyLines';
+import { trendValues } from '../analysis/chartLines';
+import { chartLinesPref } from '../portfolio/prefs';
 import { Termed } from '../ui/Explain';
 import type { TermId } from '../analysis/glossary';
 import { useFlag } from '../flags';
@@ -151,6 +154,9 @@ export default function StockScreen() {
   // Chart extras, remembered between stocks
   const [moreOpen, setMoreOpen] = useState(false);
   const [extras, setExtras] = useState<Extra[]>([]);
+  const allMyLines = chartLinesPref.use();
+  const myLines = allMyLines[symbol];
+  const [linesOpen, setLinesOpen] = useState(false);
   useEffect(() => {
     loadPref<Extra[]>('chart.extras', []).then(setExtras);
   }, []);
@@ -261,13 +267,15 @@ export default function StockScreen() {
   }, [series]);
   const align = useCallback((vals: (number | null)[]) => bars.map((b) => (byT?.has(b.t) ? vals[byT.get(b.t)!] ?? null : null)), [bars, byT]);
   const maLines = useMemo((): ChartLine[] | undefined => {
-    if (!series || !dailyRange) return undefined;
+    if (!dailyRange) return undefined;
+    if (!series) return myLines?.trends.length ? myLines.trends.map((t) => ({ values: trendValues(bars, t), color: t.kind === 'lows' ? colors.up : colors.downText })) : undefined;
     const out: ChartLine[] = [];
     if (extras.includes('ma'))
       out.push({ values: align(series.e20), color: colors.muted, thin: true }, { values: align(series.e50), color: colors.gold }, { values: align(series.e200), color: colors.shariah });
     if (extras.includes('bb')) out.push({ values: align(series.bbUpper), color: colors.text2, thin: true }, { values: align(series.bbLower), color: colors.text2, thin: true });
-    return out.length ? out : undefined;
-  }, [series, dailyRange, extras, align]);
+    for (const t of myLines?.trends ?? []) out.unshift({ values: trendValues(bars, t), color: t.kind === 'lows' ? colors.up : colors.downText });
+    return out.length ? out.slice(0, 5) : undefined;
+  }, [series, dailyRange, extras, align, myLines, bars]);
   const { feeds } = usePicksFeed();
   const pick = useMemo(() => {
     for (const id of ['all', 'kse100', 'kmi30'] as const) {
@@ -302,8 +310,11 @@ export default function StockScreen() {
       out.push({ price: hi, label: `52-week high ${fmtPrice(hi)}`, color: colors.text2 }, { price: lo, label: `52-week low ${fmtPrice(lo)}`, color: colors.text2 });
     }
     if (extras.includes('fair') && pack.fair) out.push({ price: pack.fair.mid, label: `Fair value ${fmtPrice(pack.fair.mid)}`, color: colors.text2 });
-    return out.length ? out.slice(0, 8) : undefined;
-  }, [dailyRange, extras, analysis, pack.fair, pick, daily]);
+    // your own levels first, so they're never the ones cut off
+    const mine = (myLines?.levels ?? []).map((l) => ({ price: l.price, label: `Your line ${fmtPrice(l.price)}`, color: colors.gold }));
+    const all = [...mine, ...out];
+    return all.length ? all.slice(0, 8) : undefined;
+  }, [dailyRange, extras, analysis, pack.fair, pick, daily, myLines]);
   const fairBand = dailyRange && extras.includes('fair') && pack.fair ? { low: pack.fair.low, high: pack.fair.high, color: colors.up } : null;
   // golden cross (50-day above 200-day) and death cross, over the whole history
   const crosses = useMemo((): ChartMarker[] | undefined => {
@@ -491,6 +502,9 @@ export default function StockScreen() {
                   </Pressable>
                 );
               })}
+              <Pressable accessibilityRole="button" accessibilityState={{ expanded: linesOpen }} onPress={() => setLinesOpen((v) => !v)} style={[styles.extra, (linesOpen || !!myLines?.levels.length || !!myLines?.trends.length) && styles.extraOn]}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>✏️ My lines</T>
+              </Pressable>
               {(() => {
                 const n = extras.filter((e) => MORE_EXTRAS.includes(e)).length;
                 return (
@@ -502,6 +516,7 @@ export default function StockScreen() {
                 );
               })()}
             </ScrollView>
+            {linesOpen ? <MyLines symbol={symbol} daily={daily} /> : null}
             {moreOpen ? (
               <View style={styles.moreGrid}>
                 {(
