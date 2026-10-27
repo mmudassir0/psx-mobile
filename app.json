@@ -3,7 +3,7 @@
     "name": "Sahm",
     "slug": "sahm-app",
     "scheme": "sahm",
-    "version": "0.51.0",
+    "version": "0.52.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -150,7 +150,8 @@
           "microphonePermission": "Sahm records your spoken question so the AI can answer it."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-background-task"
     ]
   }
 }

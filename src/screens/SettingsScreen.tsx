@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IntradayCard } from '../ui/IntradayCard';
 import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
 import { CalendarCard } from '../ui/CalendarCard';
@@ -191,6 +192,7 @@ export default function SettingsScreen() {
 
         <Section title="Reminders">
           <MorningCard />
+          <IntradayCard />
           <CalendarCard />
         </Section>
 

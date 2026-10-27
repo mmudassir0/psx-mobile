@@ -2,7 +2,8 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { RootParams } from '../nav/types';
 import { colors, fonts, space, themed } from '../theme';
 import { makePref } from '../prefs';
 import { useHoldings } from '../portfolio/holdings';
@@ -20,7 +21,8 @@ export default function LearnScreen() {
   const { holdings } = useHoldings();
   const { stocks, bySymbol } = useMarket();
   const { rows } = useReviews(holdings, stocks, bySymbol, null);
-  const [open, setOpen] = useState<number | null>(null);
+  const route = useRoute<RouteProp<RootParams, 'Learn'>>();
+  const [open, setOpen] = useState<number | null>(route.params?.lesson ?? null);
   const [picked, setPicked] = useState<number | null>(null);
 
   const ctx: LessonCtx = useMemo(() => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { TipCard } from '../ui/TipCard';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -197,6 +198,12 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        );
+      case 'tip':
+        return (
+          <View style={styles.pad}>
+            <TipCard />
+          </View>
         );
       case 'mood':
         return (
@@ -398,6 +405,12 @@ export default function HomeScreen() {
         {hasReal ? (
           <View style={styles.pad}>
             <SinceCard rows={rows} watchlist={watchlist} bySymbol={bySymbol} ready={!reviewing && ready && rows.length > 0} hidden={appLocked} />
+          </View>
+        ) : null}
+
+        {!isTabs ? (
+          <View style={styles.pad}>
+            <TipCard />
           </View>
         ) : null}
 

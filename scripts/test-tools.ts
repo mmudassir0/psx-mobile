@@ -2,6 +2,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { intradayHits } from '../src/portfolio/intradayCore';
+import { tipFor, TIPS } from '../src/learn/tips';
 import { crossings } from '../src/analysis/chartLines';
 import { tidyTranscript, voicePrompt } from '../src/ai/voice';
 import { LESSONS } from '../src/learn/lessons';
@@ -377,8 +379,8 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 {
   const l = { order: ['news', 'mood'] as never[], hidden: ['mood'] as never[] };
   const o = orderOf(l);
-  check('saved order kept, missing cards put back in their default place', o.indexOf('news' as never) < o.indexOf('mood' as never) && o[0] === 'indices' && o.length === 9, o);
-  check('hidden cards left out', !visibleCards(l).includes('mood' as never) && visibleCards(l).length === 8);
+  check('saved order kept, missing cards put back in their default place', o.indexOf('news' as never) < o.indexOf('mood' as never) && o[0] === 'indices' && o.length === 10, o);
+  check('hidden cards left out', !visibleCards(l).includes('mood' as never) && visibleCards(l).length === 9);
   const full = { order: orderOf(l), hidden: [] as never[] };
   const m = move(full, 'mood' as never, -1);
   check('move up and toggle', orderOf(m).indexOf('mood' as never) === o.indexOf('mood' as never) - 1 && !toggle(l, 'mood' as never).hidden.length && move(full, 'indices' as never, -1) === full);
@@ -395,6 +397,26 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Alerts during market hours
+{
+  const lines = [
+    { symbol: 'A', level: 100, dir: '<' as const, label: 'your alert line' },
+    { symbol: 'A', level: 120, dir: '>' as const, label: 'your target' },
+    { symbol: 'B', level: 50, dir: 'any' as const, label: 'your chart line' },
+  ];
+  const h = intradayHits(lines, { A: 102, B: 49 }, { A: 99, B: 51 }, new Set(), '2026-10-28');
+  check('intraday: crossed lines in their direction', h.length === 2 && h[0].text.startsWith('A fell below your alert line') && h[1].text.startsWith('B rose above'));
+  check('intraday: once a day', intradayHits(lines, { A: 102 }, { A: 99 }, new Set([h[0].key]), '2026-10-28').length === 0);
+  check('intraday: wrong direction or no move', intradayHits(lines, { A: 98 }, { A: 101 }, new Set(), '2026-10-28').length === 0 && intradayHits(lines, {}, { A: 99 }, new Set(), 'd').length === 0);
+}
+
+// Tip of the day
+{
+  const a = tipFor('2026-10-27');
+  const b = tipFor('2026-10-28');
+  check('tip: one a day, changes, points at a lesson', a.text !== b.text && TIPS.every((t) => LESSONS.some((l) => l.id === t.lesson)) && a.lessonIndex >= 0);
 }
 
 // Line alerts

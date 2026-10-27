@@ -655,6 +655,9 @@ export default function StockScreen() {
 
         <PeBandCard company={company} daily={daily} />
 
+        <Pressable accessibilityRole="button" onPress={() => nav.navigate('StockCard', { symbol })} style={{ paddingHorizontal: space.gutter }}>
+          <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🖼️ Share as a picture</T>
+        </Pressable>
         {Platform.OS === 'android' ? (
           <Pressable
             accessibilityRole="button"

@@ -4,9 +4,12 @@ import { registerWidgetTaskHandler } from 'react-native-android-widget';
 import { widgetTaskHandler } from './src/widget/handler';
 
 import { installCrashLogging } from './src/log';
+import { defineIntradayTask } from './src/portfolio/intraday';
 
 // as early as possible, so a crash while starting is logged too
 installCrashLogging();
+// background tasks must be defined before the app starts
+defineIntradayTask();
 
 import App from './App';
 
