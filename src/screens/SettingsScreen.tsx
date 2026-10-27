@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { OfflineCard } from '../ui/OfflineCard';
 import { CalendarCard } from '../ui/CalendarCard';
 import { MorningCard } from '../ui/MorningCard';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
@@ -216,6 +217,10 @@ export default function SettingsScreen() {
             </View>
           </Section>
         ) : null}
+
+        <Section title="Offline">
+          <OfflineCard />
+        </Section>
 
         <Section title="Trading costs">
           <CostsCard />
