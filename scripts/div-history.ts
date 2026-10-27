@@ -57,6 +57,8 @@ interface SymState {
   read: number;
   fv: number;
   list: DivRow[];
+  /** adjusted ÷ raw price from each day on (bonus issues and splits since), when it changes */
+  fac?: [string, number][];
 }
 interface State {
   updated: string;
@@ -105,7 +107,7 @@ async function notices(sym: string): Promise<Notice[]> {
   return out;
 }
 
-const WANT = /financial results|dividend|book closure|entitlement/i;
+const WANT = /financial results|dividend/i;
 const SKIP = /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|other than financial|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
 
 async function readPdf(id: string, dir: string): Promise<string> {
@@ -123,14 +125,19 @@ async function readPdf(id: string, dir: string): Promise<string> {
     // not a text PDF
   }
   if (text.replace(/\s/g, '').length < 120) {
-    try {
-      await run('pdftoppm', ['-r', '170', '-gray', '-png', '-f', '1', '-l', '2', f, join(dir, `${id}-pg`)], { timeout: 90_000 });
-      const pages = readdirSync(dir).filter((x) => x.startsWith(`${id}-pg`)).sort();
-      text = '';
-      for (const p of pages) text += (await run('tesseract', [join(dir, p), '-', '--psm', '6'], { timeout: 90_000, maxBuffer: 8e6 })).stdout + '\n';
-      for (const p of pages) rmSync(join(dir, p), { force: true });
-    } catch {
-      // unreadable
+    text = '';
+    // scanned: read page 1, and page 2 only if page 1 doesn't settle it
+    for (const pg of [1, 2]) {
+      try {
+        const out = join(dir, `${id}-p${pg}`);
+        await run('pdftoppm', ['-r', '150', '-gray', '-png', '-singlefile', '-f', String(pg), '-l', String(pg), f, out], { timeout: 60_000 });
+        text += (await run('tesseract', [`${out}.png`, '-', '--psm', '6'], { timeout: 60_000, maxBuffer: 8e6, env: { ...process.env, OMP_THREAD_LIMIT: '1' } })).stdout + '\n';
+        rmSync(`${out}.png`, { force: true });
+      } catch {
+        break;
+      }
+      const d = parseDivNotice(text);
+      if (d.dps != null || d.pct != null || d.nil) break;
     }
   }
   rmSync(f, { force: true });
@@ -200,11 +207,14 @@ function universe(): string[] {
 }
 
 async function main() {
+  const shard = Number(process.env.SHARD ?? 0);
+  const shards = Number(process.env.SHARDS ?? 1);
   mkdirSync(stateDir, { recursive: true });
   const tmp = '/tmp/divpdf';
   mkdirSync(tmp, { recursive: true });
-  const file = join(stateDir, 'divs.json');
-  const st: State = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { updated: '', from: FROM, symbols: {} };
+  const file = join(stateDir, process.env.SHARDS ? `divs-${shard}.json` : 'divs.json');
+  const base = join(stateDir, 'divs.json');
+  const st: State = existsSync(base) ? JSON.parse(readFileSync(base, 'utf8')) : { updated: '', from: FROM, symbols: {} };
   for (const [code, key] of [
     ['KMIALLSHR', 'shariah'],
     ['KMI30', 'kmi30'],
@@ -216,7 +226,7 @@ async function main() {
       console.log(`${code}: ${(e as Error).message}`);
     }
   }
-  const syms = process.env.ONLY ? process.env.ONLY.split(',') : universe();
+  const syms: string[] = (process.env.ONLY ? process.env.ONLY.split(',') : universe()).filter((_: string, k: number) => k % shards === shard);
   console.log(`${syms.length} companies, ${syms.filter((s) => st.symbols[s]?.done).length} already done`);
   let did = 0;
   for (const sym of syms) {
@@ -229,9 +239,14 @@ async function main() {
     try {
       const all = await notices(sym);
       const want = all.filter((n) => WANT.test(n.title) && !SKIP.test(n.title));
-      const read = await pool(want, 4, async (n) => {
+      if (process.env.ONLY) console.log(`  ${sym}: ${all.length} notices listed in ${Math.round((Date.now() - t0) / 1000)}s, ${want.length} to read`);
+      const read = await pool(want, Number(process.env.OCR_POOL ?? 4), async (n) => {
         try {
-          return { n, d: parseDivNotice(await readPdf(n.pdf, tmp)) };
+          const t1 = Date.now();
+          const text = await readPdf(n.pdf, tmp);
+          const d = parseDivNotice(text);
+          if (process.env.ONLY) console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} bc ${d.closeFrom ?? '-'}`);
+          return { n, d };
         } catch {
           return { n, d: null as DivNotice | null };
         }
@@ -282,7 +297,20 @@ async function main() {
         }
       }
       list.sort((a, b) => (a.ex < b.ex ? -1 : 1));
-      st.symbols[sym] = { done: true, notices: want.length, read: read.filter((x) => x.d && (x.d.dps || x.d.pct || x.d.nil)).length, fv, list };
+      // how the saved (adjusted) prices relate to the raw ones over time, for earnings per share
+      const fac: [string, number][] = [];
+      const df = join(cacheDir, `daily_3A${encodeURIComponent(sym).replace(/%/g, '_')}.json`);
+      if (existsSync(df)) {
+        const bars = (JSON.parse(readFileSync(df, 'utf8')).data?.bars ?? []) as number[][];
+        for (const b of bars) {
+          const d = new Date(b[0] + 5 * 3600_000).toISOString().slice(0, 10);
+          const r = raw.get(d);
+          if (!r || !(b[4] > 0)) continue;
+          const f = Math.round((b[4] / r) * 1e4) / 1e4;
+          if (!fac.length || Math.abs(f / fac[fac.length - 1][1] - 1) > 0.01) fac.push([d, f]);
+        }
+      }
+      st.symbols[sym] = { done: true, notices: want.length, read: read.filter((x) => x.d && (x.d.dps || x.d.pct || x.d.nil)).length, fv, list, fac };
       did++;
       if (process.env.ONLY) console.log(list.map((r) => `${r.ex} ${r.dps} ${(r.y * 100).toFixed(2)}% ${r.src}${r.approx ? '~' : ''}`).join(' | '));
       console.log(`${sym}: ${want.length} notices, ${st.symbols[sym].read} understood, ${list.length} dividends, fv ${fv}, ${Math.round((Date.now() - t0) / 1000)}s`);
@@ -293,7 +321,7 @@ async function main() {
     writeFileSync(file, JSON.stringify(st));
   }
   const left = syms.filter((s) => !st.symbols[s]?.done).length;
-  writeFileSync(join(stateDir, 'left.txt'), String(left));
+  writeFileSync(join(stateDir, process.env.SHARDS ? `left-${shard}.txt` : 'left.txt'), String(left));
   console.log(`done this run: ${did}, left: ${left}`);
 }
 

@@ -1,7 +1,7 @@
 # Ten years of cash dividends for the backtesting lab, read from PSX announcements
-# (OCR for scanned notices). Resumable: each run continues where the last stopped
-# and starts the next run itself until every company is done. Saved to the
-# divhistory branch. Monthly refresh for new companies.
+# (OCR for scanned notices), split across parallel jobs. Resumable: each run
+# continues where the last stopped and starts the next one itself until every
+# company is done. Saved to the divhistory branch. Monthly refresh for new companies.
 name: Dividend history
 on:
   schedule:
@@ -22,27 +22,60 @@ concurrency:
   group: divhistory
   cancel-in-progress: false
 jobs:
-  divs:
+  shard:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr >/dev/null
+      - run: sudo apt-get install -y -qq --no-install-recommends poppler-utils tesseract-ocr >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends poppler-utils tesseract-ocr >/dev/null)
       - name: Load state
         run: |
           mkdir -p /tmp/state /tmp/picks
-          if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory | tar -x -C /tmp/state; fi
+          if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory divs.json | tar -x -C /tmp/state; fi
           git fetch -q origin picks && git archive origin/picks cache indexes.json | tar -x -C /tmp/picks
       - name: Read dividends
         env:
-          BUDGET_MIN: '300'
+          BUDGET_MIN: '290'
+          SHARD: ${{ matrix.shard }}
+          SHARDS: '12'
           ONLY: ${{ inputs.only }}
-        run: npx tsx scripts/div-history.ts /tmp/state /tmp/picks/cache 2>&1 | tee /tmp/state/log.txt
+        run: npx tsx scripts/div-history.ts /tmp/state /tmp/picks/cache 2>&1 | tee /tmp/state/log-${{ matrix.shard }}.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: divs-${{ matrix.shard }}
+          path: |
+            /tmp/state/divs-${{ matrix.shard }}.json
+            /tmp/state/left-${{ matrix.shard }}.txt
+            /tmp/state/log-${{ matrix.shard }}.txt
+          retention-days: 3
+          if-no-files-found: ignore
+  merge:
+    needs: shard
+    if: always() && inputs.only == ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/shards
+      - name: Merge
+        run: |
+          mkdir -p /tmp/state
+          if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory | tar -x -C /tmp/state; fi
+          npx tsx scripts/div-merge.ts /tmp/state /tmp/shards
+          cat /tmp/shards/*/log-*.txt > /tmp/state/log.txt 2>/dev/null || true
       - name: Save
-        if: always() && inputs.only == ''
         run: |
           cd /tmp/state
           [ -f divs.json ] || exit 0
@@ -51,10 +84,9 @@ jobs:
           git add . && git commit -qm "Dividend history $(date -u +%F)"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" divhistory
       - name: Carry on
-        if: success() && inputs.only == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           left=$(cat /tmp/state/left.txt 2>/dev/null || echo 0)
-          did=$(grep -c "dividends, fv" /tmp/state/log.txt || true)
-          if [ "$left" -gt 0 ] && [ "$did" -gt 0 ]; then gh workflow run divhistory.yml -R ${{ github.repository }} --ref main; echo "started the next run ($left left)"; else echo "nothing left ($left), or no progress"; fi
+          added=$(cat /tmp/state/added.txt 2>/dev/null || echo 0)
+          if [ "$left" -gt 0 ] && [ "$added" -gt 0 ]; then gh workflow run divhistory.yml -R ${{ github.repository }} --ref main; echo "started the next run ($left left)"; else echo "nothing left ($left), or no progress"; fi
