@@ -23,6 +23,7 @@ import { receivedPref } from '../portfolio/divPayments';
 import { useMorningBrief } from '../portfolio/useMorningBrief';
 import { useCalendarSync } from '../portfolio/calendarSync';
 import { useAutoBonus } from '../portfolio/useAutoBonus';
+import { useLineAlerts } from '../portfolio/useLineAlerts';
 import { SinceCard } from '../ui/SinceCard';
 import { useOfflineCopy } from '../offline';
 import { usePicksFeed } from '../picks/feed';
@@ -111,6 +112,7 @@ export default function HomeScreen() {
   useMorningBrief(rows, !reviewing && rows.length > 0);
   useCalendarSync(rows, !reviewing && rows.length > 0);
   useAutoBonus(rows, !reviewing && rows.length > 0);
+  useLineAlerts(ready);
   useOfflineCopy(useMemo(() => [...holdings.map((x) => x.symbol), ...watchlist], [holdings, watchlist]), ready);
   const hasReal = holdingsLoaded && holdings.length > 0;
   const { data: mood } = useMood();

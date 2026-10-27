@@ -49,6 +49,17 @@ export async function remind(id: string, when: Date, title: string, body: string
   }
 }
 
+/** Shows a notification straight away. Never throws. */
+export async function notifyNow(title: string, body: string, url?: string) {
+  if (!supported) return;
+  if (!(await ensureReady(false))) return;
+  try {
+    await Notifications.scheduleNotificationAsync({ content: { title, body, data: url ? { url } : {} }, trigger: { channelId: CHANNEL } as never });
+  } catch (e) {
+    logProblem('reminders', e);
+  }
+}
+
 export async function cancelReminder(id: string) {
   if (!supported) return;
   await Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
