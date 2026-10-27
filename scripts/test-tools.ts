@@ -2,6 +2,11 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { portion, sellPlan } from '../src/portfolio/sellPlan';
+import { overLimit, sectorShares, setLimit } from '../src/portfolio/sectorLimits';
+import { growthSources } from '../src/portfolio/growthSources';
+import { morningLines, morningText, nextTradingDays } from '../src/portfolio/morningBrief';
+import { parseQuery, searchJournal } from '../src/portfolio/journal';
 import { pickExample, TERMS } from '../src/analysis/glossary';
 import { dividendsReceived, setRate, shariahSummary } from '../src/portfolio/shariah';
 import { deleteScreen, markSeen, newSince, sameSettings, saveScreen, suggestName } from '../src/analysis/savedScreens';
@@ -369,6 +374,92 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Sell planner
+{
+  const base = { shares: 100, price: 200, avgCost: 150, status: 'filer' as const, divRate: 0.15 };
+  const p = sellPlan(base)!;
+  check('sell now: proceeds less charges and 15% tax on the gain', Math.abs(p.now.tax - 750) < 1e-6 && p.now.costs > 0 && Math.abs(p.now.inHand - (20000 - p.now.costs - 750)) < 1e-6 && p.wait === null);
+  check('even price gets back the cost', p.evenPrice > 150 && p.evenPrice < 152 && Math.abs(sellPlan({ ...base, price: p.evenPrice })!.now.inHand - 15000) < 1);
+  const w = sellPlan({ ...base, payout: { dps: 10, bookClosure: 2, exDate: 1 } })!;
+  check('hold through the dividend: price less the dividend, dividend after tax', w.wait!.price === 190 && Math.abs(w.wait!.dividend - 850) < 1e-9 && Math.abs(w.wait!.diff - (w.wait!.inHand - w.now.inHand)) < 1e-9);
+  check('a loss pays no tax', sellPlan({ ...base, price: 100 })!.now.tax === 0);
+  check('portions', portion(10, 0.25) === 3 && portion(1, 0.25) === 1 && portion(7, 1) === 7);
+}
+
+// Sector limits
+{
+  const h = [
+    { symbol: 'MEBL', sector: 'Banks', value: 500 },
+    { symbol: 'HBL', sector: 'Banks', value: 100 },
+    { symbol: 'LUCK', sector: 'Cement', value: 400 },
+  ];
+  let l = setLimit({ all: null, per: {} }, null, 50);
+  const rows = sectorShares(h, l);
+  check('shares by sector, over the limit in rupees', rows[0].sector === 'Banks' && Math.abs(rows[0].share - 0.6) < 1e-9 && Math.abs(rows[0].over - 100) < 1e-9 && overLimit(rows).length === 1);
+  l = setLimit(l, 'Banks', 70);
+  check('own sector limit wins', overLimit(sectorShares(h, l)).length === 0 && setLimit(l, 'Banks', null).per.Banks === undefined && setLimit(l, null, 0).all === null);
+}
+
+// Where gains came from
+{
+  const g = growthSources({
+    holdings: [{ symbol: 'A', shares: 110, avgCost: 10, price: 20 }],
+    trades: [
+      { day: '2026-01-01', symbol: 'A', side: 'buy', shares: 100, price: 10, realised: null },
+      { day: '2026-03-01', symbol: 'A', side: 'buy', shares: 10, price: 10, realised: null },
+    ],
+    dividends: [{ day: '2026-02-01', symbol: 'A', amount: 150 }],
+  });
+  check('dividend cash used first by the next buy', g.reinvested === 100 && Math.abs(g.unspent - 50) < 1e-9 && Math.abs(g.fromDividends.A - 10) < 1e-9 && g.reinvestedNow === 200);
+  check('price and dividend gains', g.priceNow === 1100 && g.dividends === 150 && g.priceSold === 0);
+  const before = growthSources({ holdings: [], trades: [{ day: '2026-01-01', symbol: 'A', side: 'buy', shares: 1, price: 10, realised: null }], dividends: [{ day: '2026-02-01', symbol: 'A', amount: 5 }] });
+  check('a buy before the dividend uses none of it', before.reinvested === 0 && before.unspent === 5);
+}
+
+// Morning notification
+{
+  const t = (d: string) => Date.parse(d + 'T00:00:00+05:00');
+  const lines = morningLines({
+    day: '2026-10-28',
+    holdings: [
+      { symbol: 'A', payout: { bookClosure: t('2026-10-30'), lastBuyDay: t('2026-10-28'), dps: 5, bonusPct: 0 }, results: null },
+      { symbol: 'B', payout: { bookClosure: t('2026-10-29'), lastBuyDay: t('2026-10-27'), dps: 0, bonusPct: 10 }, results: { expected: '2026-10-28', meeting: null, label: 'Q1 2027' } },
+      { symbol: 'C', payout: null, results: { expected: '2026-11-20', meeting: '2026-10-29', label: 'Q1 2027' } },
+    ],
+    notesDue: ['D'],
+    lines: [
+      { symbol: 'A', level: 100, close: 102, dir: '<' },
+      { symbol: 'B', level: 100, close: 90, dir: '<' },
+    ],
+  });
+  const txt = lines.map((l) => l.text);
+  check('last day to buy first', txt[0] === 'A: last day to buy for its Rs 5.00 dividend', txt);
+  check('book closure tomorrow, meeting, results, note, close line', txt.includes('B: book closure tomorrow (10% bonus)') && txt.includes('C: board meets tomorrow for Q1 2027 results') && txt.includes('B: Q1 2027 results may come today') && txt.includes('Look again at D (your note)') && txt.includes('A closed 2.0% from your Rs 100 line') && txt.length === 6, txt);
+  const m = morningText(lines)!;
+  check('notification text', m.title.endsWith('6 things') && m.body.split('\n').length === 5 && m.body.endsWith('+2 more') && morningText([]) === null, m);
+  check('trading days skip weekends', nextTradingDays('2026-10-30', 3, (d) => ![0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())).join() === '2026-10-30,2026-11-02,2026-11-03');
+}
+
+// Journal search
+{
+  const known = new Set(['LUCK', 'MEBL']);
+  const notes = [
+    { symbol: 'LUCK', why: 'Cement demand recovering, cheap on P/E', at: Date.parse('2026-03-01T06:00:00Z'), checkOn: null, then: { price: 700, divYield: 2, pe: 6 } },
+    { symbol: 'MEBL', why: 'Islamic bank with a strong dividend', at: Date.parse('2026-05-01T06:00:00Z'), checkOn: null, then: { price: 250, divYield: 9, pe: 5 } },
+  ];
+  const trades = [
+    { day: '2026-03-02', symbol: 'LUCK', side: 'buy' as const, shares: 10, price: 700, realised: null },
+    { day: '2025-09-01', symbol: 'LUCK', side: 'sell' as const, shares: 5, price: 650, realised: -50 },
+  ];
+  const q = parseQuery('Why did I buy luck?', known);
+  check('question parsed', q.symbols.join() === 'LUCK' && q.side === 'buy' && q.words.join() === '', q);
+  const r = searchJournal('why did I buy LUCK', notes, trades, known).hits;
+  check('note first, then the buy only', r.length === 2 && r[0].kind === 'note' && r[1].kind === 'trade' && (r[1] as { trade: { side: string } }).trade.side === 'buy', r);
+  check('words search notes', searchJournal('dividends', notes, trades, known).hits.map((h) => h.symbol).join() === 'MEBL');
+  check('sold in a year', searchJournal('sold 2025', notes, trades, known).hits.length === 1);
+  check('nothing for unknown words', searchJournal('gold', notes, trades, known).hits.length === 0);
 }
 
 // Plain-word explanations

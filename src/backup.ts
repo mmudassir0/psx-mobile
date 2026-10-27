@@ -7,6 +7,7 @@
 import { load, save } from './storage';
 import { isSavedScreens } from './analysis/savedScreens';
 import { isPurification } from './portfolio/shariah';
+import { isSectorLimits } from './portfolio/sectorLimits';
 
 export const BACKUP_KEYS = [
   'user.name',
@@ -39,6 +40,8 @@ export const BACKUP_KEYS = [
   'user.savedScreens',
   'real.priceTargets',
   'ui.homeCards',
+  'ui.morningBrief',
+  'real.sectorLimits',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -74,6 +77,8 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.benchmark': (x) => x === 'KSE100' || x === 'KMI30',
   'real.goal': (x) => x === null || (isObj(x) && typeof x.target === 'number' && typeof x.by === 'string' && typeof x.rate === 'number'),
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
+  'ui.morningBrief': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.time === 'string' && /^\d\d:\d\d$/.test(x.time),
+  'real.sectorLimits': (x) => isSectorLimits(x),
   'ui.homeCards': (x) => isObj(x) && strArr(x.order) && strArr(x.hidden),
   'real.priceTargets': (x) => isObj(x) && Object.values(x).every((t) => isObj(t) && (t.target === null || typeof t.target === 'number') && (t.rethink === null || typeof t.rethink === 'number')),
   'user.savedScreens': (x) => isSavedScreens(x),

@@ -179,7 +179,7 @@ const HOLIDAY_SET = new Set(PSX_HOLIDAYS.map(([d]) => d));
  * closure starts, so a buy must be made two working days before it. Weekends
  * and the PSX holidays Sahm knows (events.ts) are skipped; the broker's ex-date wins.
  */
-const working = (t: number) => {
+export const working = (t: number) => {
   const d = new Date(t + 5 * 3600_000);
   return d.getUTCDay() !== 0 && d.getUTCDay() !== 6 && !HOLIDAY_SET.has(d.toISOString().slice(0, 10));
 };

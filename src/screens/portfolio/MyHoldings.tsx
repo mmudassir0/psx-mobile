@@ -155,6 +155,7 @@ function HoldingCard({
   holdingsAll: Row['holding'][];
 }) {
   const flags = useFlags();
+  const nav = useNavigation();
   const [open, setOpen] = useState(false);
   const [trading, setTrading] = useState(false);
   const rv = r.review;
@@ -180,6 +181,11 @@ function HoldingCard({
         </View>
       </Pressable>
       <TargetBox symbol={r.holding.symbol} price={r.price} avgCost={r.holding.avgCost} fairMid={rv?.upside != null ? r.price * (1 + rv.upside) : null} />
+      <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })}>
+        <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
+          Plan a sale: what you'd have in hand ›
+        </T>
+      </Pressable>
       {rv ? (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

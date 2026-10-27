@@ -146,6 +146,10 @@ function Root() {
       <Stack.Screen name="Economy" getComponent={() => require('./src/screens/EconomyScreen').default} />
       <Stack.Screen name="Shariah" getComponent={() => require('./src/screens/ShariahScreen').default} />
       <Stack.Screen name="Glossary" getComponent={() => require('./src/screens/GlossaryScreen').default} />
+      <Stack.Screen name="SellPlan" getComponent={() => require('./src/screens/SellPlanScreen').default} />
+      <Stack.Screen name="SectorLimits" getComponent={() => require('./src/screens/SectorLimitsScreen').default} />
+      <Stack.Screen name="Growth" getComponent={() => require('./src/screens/GrowthScreen').default} />
+      <Stack.Screen name="Journal" getComponent={() => require('./src/screens/JournalScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
       <Stack.Screen name="Export" getComponent={() => require('./src/screens/ExportScreen').default} />
@@ -191,6 +195,10 @@ const linking: LinkingOptions<RootParams> = {
       Economy: 'economy',
       Shariah: 'shariah',
       Glossary: 'glossary',
+      SellPlan: 'sell/:symbol?',
+      SectorLimits: 'sector-limits',
+      Growth: 'growth',
+      Journal: 'journal',
     },
   },
 };

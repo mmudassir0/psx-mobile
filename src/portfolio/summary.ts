@@ -8,6 +8,8 @@ import { useMemo } from 'react';
 import type { Stock } from '../psx/types';
 import { recentBonus, upcomingPayout } from '../analysis/dividends';
 import type { Row } from './useReviews';
+import { sectorShares, type SectorLimits } from './sectorLimits';
+import { shortSector } from '../sectors';
 
 export interface TodoItem {
   key: string;
@@ -17,7 +19,7 @@ export interface TodoItem {
   /** open this stock when tapped (otherwise My holdings) */
   symbol?: string;
   /** or open this screen */
-  route?: 'Rebalance' | 'Income' | 'Announcements';
+  route?: 'Rebalance' | 'Income' | 'Announcements' | 'SectorLimits';
 }
 
 const DAY = 864e5;
@@ -91,6 +93,17 @@ export function announcementItem(rows: Row[], seenAt: number, now = Date.now()):
   if (!items.length) return [];
   const syms = [...new Set(items.map((i) => i.symbol))];
   return [{ key: 'ann', text: `${items.length} new announcement${items.length > 1 ? 's' : ''}: ${syms.slice(0, 3).join(', ')}${syms.length > 3 ? '…' : ''}`, tone: 'plain', route: 'Announcements' }];
+}
+
+/** Sectors over your own limit. */
+export function sectorItems(rows: Row[], limits: SectorLimits): TodoItem[] {
+  if (limits.all == null && !Object.keys(limits.per).length) return [];
+  return sectorShares(
+    rows.map((r) => ({ symbol: r.holding.symbol, sector: r.stock?.sector ? shortSector(r.stock.sector) : 'Other', value: r.value })),
+    limits,
+  )
+    .filter((s) => s.over > 0)
+    .map((s) => ({ key: `sector-${s.sector}`, text: `${s.sector} is ${(s.share * 100).toFixed(0)}% of your money, over your ${s.limit}% limit`, tone: 'gold' as const, route: 'SectorLimits' as const }));
 }
 
 /** Holdings past your own target or rethink price, live. */

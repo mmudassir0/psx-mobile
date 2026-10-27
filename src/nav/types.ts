@@ -40,6 +40,10 @@ export type RootParams = {
   Economy: undefined;
   Shariah: undefined;
   Glossary: undefined;
+  SellPlan: { symbol?: string } | undefined;
+  SectorLimits: undefined;
+  Growth: undefined;
+  Journal: undefined;
 };
 
 declare global {

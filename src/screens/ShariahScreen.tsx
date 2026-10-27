@@ -31,7 +31,7 @@ function RateInput({ value, placeholder, onDone }: { value: number | null; place
     <TextInput
       value={text}
       onChangeText={setText}
-      onEndEditing={() => {
+      onBlur={() => {
         const t = text.trim().replace(',', '.');
         onDone(t === '' ? null : Number(t));
       }}
