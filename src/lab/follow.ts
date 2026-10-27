@@ -5,7 +5,7 @@
  * the hook is in useLabFollow.
  */
 import type { Lab } from './data';
-import { earliestYear, firstDayOf, type Strategy } from './engine';
+import { earliestYear, firstDayOf, type Strategy, type Trade } from './engine';
 
 export interface Follow {
   id: string;
@@ -45,4 +45,14 @@ export function nextCheck(lab: Lab, st: Strategy, today: string): string {
 export function followPlan(picks: string[], owned: string[]): { missing: string[]; owned: string[] } {
   const mine = new Set(owned);
   return { missing: picks.filter((s) => !mine.has(s)), owned: picks.filter((s) => mine.has(s)) };
+}
+
+/** Early sales (stop or trend) in the strategy's last `days` trading days. */
+export function recentExits(lab: Lab, trades: Trade[], days: number, pending: { symbol: string; why: 'stop' | 'trend' }[] = []): { symbol: string; day: string; why: 'stop' | 'trend' }[] {
+  const from = lab.days.length - days;
+  const last = lab.days[lab.days.length - 1];
+  return [
+    ...pending.map((p) => ({ symbol: p.symbol, day: last, why: p.why })),
+    ...trades.filter((t) => t.side === 'sell' && t.i >= from && (t.why === 'stop' || t.why === 'trend')).map((t) => ({ symbol: t.symbol, day: lab.days[t.i], why: t.why as 'stop' | 'trend' })),
+  ];
 }

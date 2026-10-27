@@ -9,6 +9,10 @@ import { firstDate, parseDivNotice } from '../src/lab/divText';
 import { labPrompt, readLabReply } from '../src/lab/aiStrategy';
 import { checkDue, followPlan, nextCheck } from '../src/lab/follow';
 import { defaultSetup, ideas, summarise, tryIdea } from '../src/lab/hunt';
+import { rollOne, rollStarts, summariseRolling } from '../src/lab/rolling';
+import { reviewTest } from '../src/lab/reviewTest';
+import { labReportHtml } from '../src/lab/report';
+import { recentExits } from '../src/lab/follow';
 
 let failed = 0;
 function check(name: string, ok: boolean, extra?: unknown) {
@@ -208,6 +212,23 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   check('hunt: both periods run', res.every((r) => Number.isFinite(r.train.cagr)) && res.some((r) => r.test));
   const s = summarise(res, 5);
   check('hunt: summary', s.top.length === 5 && s.tried === 30 && s.topHeld <= 5);
+}
+
+{
+  const st = S({ rank: 'mom12', hold: 2, every: 1 });
+  const starts = rollStarts(lab, 1, 3);
+  const rows = starts.map((m) => rollOne(lab, st, m, 1));
+  const sum = summariseRolling(rows, 1)!;
+  check('rolling: starts and summary', starts.length >= 3 && sum.rows.length === starts.length && sum.best.cagr >= sum.worst.cagr);
+  check('rolling: one year span', runBacktest(lab, { ...st, fromDay: `${starts[0]}-01`, untilDay: `${starts[1]}-01` }).value.length < 80);
+  const rv = reviewTest(lab, 'all', 0);
+  check('review test runs', rv.months > 10 && Object.values(rv.groups).some((g) => g.n > 0));
+  const only = runBacktest(lab, S({ only: ['FLAT'], rank: 'value', hold: 5, every: 12 }));
+  check('only these symbols', only.holdings.every((h) => h.symbol === 'FLAT') && only.holdings.length === 1);
+  const html = labReportHtml(lab, st, runBacktest(lab, st), '2026-10-28');
+  check('report html', html.includes('<svg') && html.includes('Year by year') && html.length > 2000);
+  const stop = runBacktest(lab, S({ universe: 'shariah', rank: 'price', desc: true, hold: 1, every: 12, stop: 0.1 }));
+  check('recent exits from trades', recentExits(lab, stop.trades, lab.days.length).length > 0);
 }
 
 if (failed) {

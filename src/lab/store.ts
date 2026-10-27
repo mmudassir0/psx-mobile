@@ -12,7 +12,7 @@ import { getJson } from '../net';
 import { logProblem } from '../log';
 import { decodeLab, isLabFile, type Lab, type LabFile } from './data';
 import type { Strategy } from './engine';
-import { TEMPLATES } from './templates';
+import { BASE, TEMPLATES } from './templates';
 
 export const labStrategiesPref = makePref<Strategy[]>('user.labStrategies', []);
 /** the strategy you follow, if any */
@@ -27,6 +27,14 @@ export const getDraft = () => draft;
 /** Strategies from the last hunt, so their results can be opened. */
 const hunted = new Map<string, Strategy>();
 export const rememberHunted = (list: Strategy[]) => list.forEach((s) => hunted.set(s.id, s));
+
+/** Your current holdings as a strategy: bought in equal amounts at the start and evened out yearly. */
+export function holdingsStrategy(symbols: string[]): Strategy | null {
+  if (!symbols.length) return null;
+  const s: Strategy = { ...BASE, id: 'my-holdings', name: 'Your holdings', only: [...symbols].sort(), universe: 'all', minValue: 0, rank: 'value', desc: true, hold: symbols.length, every: 12, perSector: 0, filters: [] };
+  hunted.set(s.id, s);
+  return s;
+}
 
 export function findStrategy(id: string, mine: Strategy[]): Strategy | null {
   if (id === 'draft') return draft;

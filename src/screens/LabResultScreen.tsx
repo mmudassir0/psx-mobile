@@ -13,6 +13,7 @@ import { describe } from '../lab/describe';
 import { robustness, type Variant } from '../lab/robust';
 import { newId } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
+import { RealSection, ReportButton, RollingSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
 import { Button, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
@@ -294,6 +295,9 @@ export default function LabResultScreen() {
               </Section>
             ) : null}
 
+            <RollingSection lab={lab} st={st} />
+            <RealSection lab={lab} st={st} />
+
             <Section title={`Trades (${res.trades.length})`}>
               <Panel style={{ paddingVertical: 4 }}>
                 {res.trades
@@ -354,6 +358,7 @@ export default function LabResultScreen() {
                 onPress={() => nav.navigate('LabCompare', { ids: [st.id, ...mine.filter((s) => s.id !== st.id).map((s) => s.id), ...(st.id === 'tpl-kse100' ? [] : ['tpl-kse100'])].slice(0, 3) })}
               />
             ) : null}
+            <ReportButton lab={lab} st={st} res={res} />
             {saved ? (
               <Button
                 label="Make a copy to try changes"

@@ -61,6 +61,7 @@ export type RootParams = {
   LabResult: { id: string };
   LabCompare: { ids: string[] };
   LabHunt: undefined;
+  LabReviews: undefined;
   YearReview: { year?: number } | undefined;
 };
 

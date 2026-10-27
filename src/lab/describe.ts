@@ -36,6 +36,8 @@ const rankText = (m: Metric, desc: boolean): string => {
 };
 
 export function describe(s: Strategy): string {
+  if (s.only?.length)
+    return `Your ${s.only.length} holdings in equal amounts, evened out ${EVERY[s.every]}${s.stop > 0 ? `, sold when ${Math.round(s.stop * 100)}% under the best price` : ''}${s.exit200 ? ', sold under the 200-day average' : ''}.`;
   const parts = [`The ${s.hold} ${UNIVERSE[s.universe]} with the ${rankText(s.rank, s.desc)}`];
   if (s.filters.length) parts[0] += `, if ${s.filters.map(filterText).join(' and ')}`;
   parts[0] += `, checked ${EVERY[s.every]}.`;
@@ -79,5 +81,6 @@ export function toStrategy(x: unknown, id?: string): Strategy | null {
     costs: o.costs !== false,
     tax: pick(o.tax, ['filer', 'nonfiler', 'none'] as const, 'filer'),
     bench: pick(o.bench, ['KSE100', 'KMI30'] as const, 'KSE100'),
+    ...(Array.isArray(o.only) && o.only.every((x) => typeof x === 'string') ? { only: (o.only as string[]).slice(0, 80) } : {}),
   };
 }

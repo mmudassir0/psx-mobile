@@ -18,8 +18,8 @@ export function robustness(lab: Lab, st: Strategy, base: Result): Variant[] {
       // skip
     }
   };
-  if (st.hold > 3) tryIt(`Holding ${Math.max(1, st.hold - Math.ceil(st.hold / 3))} instead of ${st.hold}`, { hold: Math.max(1, st.hold - Math.ceil(st.hold / 3)) });
-  tryIt(`Holding ${st.hold + Math.max(2, Math.ceil(st.hold / 2))} instead of ${st.hold}`, { hold: st.hold + Math.max(2, Math.ceil(st.hold / 2)) });
+  if (!st.only && st.hold > 3) tryIt(`Holding ${Math.max(1, st.hold - Math.ceil(st.hold / 3))} instead of ${st.hold}`, { hold: Math.max(1, st.hold - Math.ceil(st.hold / 3)) });
+  if (!st.only) tryIt(`Holding ${st.hold + Math.max(2, Math.ceil(st.hold / 2))} instead of ${st.hold}`, { hold: st.hold + Math.max(2, Math.ceil(st.hold / 2)) });
   const alt = st.every === 1 ? 3 : st.every === 3 ? 1 : 3;
   tryIt(alt === 1 ? 'Checked every month' : 'Checked every three months', { every: alt });
   const first = Math.max(st.from, earliestYear(lab));

@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtDay } from '../format';
-import { findStrategy, labFollowPref, labStrategiesPref, useLab } from '../lab/store';
+import { findStrategy, holdingsStrategy, labFollowPref, labStrategiesPref, useLab } from '../lab/store';
+import { useHoldings } from '../portfolio/holdings';
 import { runBacktest, type Strategy } from '../lab/engine';
 import { TEMPLATES } from '../lab/templates';
 import { describe } from '../lab/describe';
@@ -46,7 +47,9 @@ export default function LabScreen() {
   const follow = labFollowPref.use();
   const followed = follow ? findStrategy(follow.id, mine) : null;
   const [quick, setQuick] = useState<Record<string, { cagr: number; bench: number }>>({});
-  const all = useMemo(() => [...TEMPLATES.map((t) => t.strategy), ...mine], [mine]);
+  const { holdings } = useHoldings();
+  const mineHold = useMemo(() => holdingsStrategy(holdings.map((h) => h.symbol)), [holdings]);
+  const all = useMemo(() => [...TEMPLATES.map((t) => t.strategy), ...mine, ...(mineHold ? [mineHold] : [])], [mine, mineHold]);
   useEffect(() => {
     if (!lab) return;
     let alive = true;
@@ -123,6 +126,22 @@ export default function LabScreen() {
                 </Panel>
               </Section>
             ) : null}
+            {mineHold ? (
+              <Section title="Your own holdings, tested">
+                <Panel style={{ paddingVertical: 4 }}>
+                  <Row s={mineHold} note="What your current stocks would have done if you'd bought them in equal amounts at the start." quick={quick[mineHold.id]} onPress={() => open(mineHold)} last />
+                </Panel>
+              </Section>
+            ) : null}
+            <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabReviews')} style={styles.link}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Would Sahm's warnings have helped?</T>
+                <T v="caption" style={{ lineHeight: 17 }}>
+                  Ten years of its chart and dividend warnings, and what the stocks did next.
+                </T>
+              </View>
+              <T v="caption">›</T>
+            </Pressable>
             <Section title="Ready-made ideas to start from">
               <Panel style={{ paddingVertical: 4 }}>
                 {TEMPLATES.map((t, i) => (
@@ -148,5 +167,6 @@ const styles = themed(() =>
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: 16 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
     border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    link: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.line },
   }),
 );

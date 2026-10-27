@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
 import { changeColor, colors, fonts, space, themed } from '../theme';
-import { findStrategy, labStrategiesPref, useLab } from '../lab/store';
+import { findStrategy, holdingsStrategy, labStrategiesPref, useLab } from '../lab/store';
+import { useHoldings } from '../portfolio/holdings';
 import { runBacktest, type Result, type Strategy } from '../lab/engine';
 import { TEMPLATES } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
@@ -22,7 +23,9 @@ export default function LabCompareScreen() {
   const { lab, busy } = useLab();
   const [ids, setIds] = useState<string[]>(params?.ids?.slice(0, 3) ?? []);
   const [runs, setRuns] = useState<{ s: Strategy; r: Result }[] | null>(null);
-  const choices = useMemo(() => [...mine, ...TEMPLATES.map((t) => t.strategy)], [mine]);
+  const { holdings } = useHoldings();
+  const mineHold = useMemo(() => holdingsStrategy(holdings.map((h) => h.symbol)), [holdings]);
+  const choices = useMemo(() => [...(mineHold ? [mineHold] : []), ...mine, ...TEMPLATES.map((t) => t.strategy)], [mine, mineHold]);
   useEffect(() => {
     if (!lab) return;
     setRuns(null);

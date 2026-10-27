@@ -47,6 +47,11 @@ export interface Strategy {
   bench: 'KSE100' | 'KMI30';
   /** stop at the start of this year (for checking each half of the period) */
   until?: number;
+  /** exact first and end days (YYYY-MM-DD), overriding the years (for checking every start date) */
+  fromDay?: string;
+  untilDay?: string;
+  /** only these symbols (your own holdings) */
+  only?: string[];
 }
 
 export const METRICS: Record<Metric, { label: string; unit: string; hint: string }> = {
@@ -134,6 +139,8 @@ export interface Result {
   };
   /** what the strategy chose at its last rebalance, best first */
   lastPicks: string[];
+  /** sales decided on the last day's close, to make at the next close */
+  pending: { symbol: string; why: 'stop' | 'trend' }[];
   warnings: string[];
 }
 
@@ -225,7 +232,7 @@ export function choose(lab: Lab, preps: Prep[], st: Strategy, i: number): { symb
   for (let k = 0; k < preps.length; k++) {
     const p = preps[k];
     const s = p.s;
-    if (!inUniverse(s, st.universe)) continue;
+    if (st.only ? !st.only.includes(s.symbol) : !inUniverse(s, st.universe)) continue;
     if (!(s.close[i] > 0) || p.first > i - 21) continue;
     const mi = lab.month[i] - 1;
     if (st.minValue > 0 && !(mi >= 0 && s.value[mi] >= st.minValue * 1e6)) continue;
@@ -324,8 +331,13 @@ const prepsOf = (lab: Lab) => {
 
 export function runBacktest(lab: Lab, st: Strategy): Result {
   const preps = prepsOf(lab);
-  const n = st.until ? Math.max(2, firstDayOf(lab, st.until)) : lab.days.length;
-  const start = Math.max(firstDayOf(lab, Math.max(st.from, earliestYear(lab))), 1);
+  const dayAt = (d: string) => {
+    const k = lab.days.findIndex((x) => x >= d);
+    return k < 0 ? lab.days.length - 1 : k;
+  };
+  const n = st.untilDay ? Math.max(2, dayAt(st.untilDay)) : st.until ? Math.max(2, firstDayOf(lab, st.until)) : lab.days.length;
+  const earliest = firstDayOf(lab, earliestYear(lab));
+  const start = Math.min(n - 2, Math.max(st.fromDay ? Math.max(dayAt(st.fromDay), earliest) : firstDayOf(lab, Math.max(st.from, earliestYear(lab))), 1));
   const len = n - start;
   const value = new Float64Array(len);
   const invested = new Float64Array(len);
@@ -556,6 +568,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     if (lab.days[start] < lab.divFrom) warnings.push(`Dividend history is complete from ${lab.divFrom.slice(0, 4)}; before that some dividends may be missing, so dividend rules pick from fewer stocks.`);
   }
   if (st.filters.some((f) => f.m === 'pe') || st.rank === 'pe') warnings.push('P/E needs each year’s earnings, which Sahm has for the last few years only; earlier, no stock passes a P/E rule.');
+  if (st.only?.length) warnings.push('These are stocks you own today, chosen knowing how they’ve done since, so looking back flatters them. It shows what you hold, not a rule you could have followed.');
   if (rebalances > 0 && trades.length === 0) warnings.push('No stock ever passed these rules, so the money stayed in cash.');
   return {
     start,
@@ -589,6 +602,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
       rebalances,
     },
     lastPicks,
+    pending: [...pendingSell].filter(([, w]) => w === 'stop' || w === 'trend').map(([k, w]) => ({ symbol: preps[k].s.symbol, why: w as 'stop' | 'trend' })),
     warnings,
   };
 }
