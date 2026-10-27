@@ -59,7 +59,7 @@ jobs:
           if-no-files-found: ignore
   merge:
     needs: shard
-    if: always() && inputs.only == ''
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,13 +69,22 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: /tmp/shards
+      - name: Test output to the probe branch
+        if: inputs.only != ''
+        run: |
+          mkdir -p /tmp/out && cat /tmp/shards/*/log-*.txt > /tmp/out/out.txt 2>/dev/null || echo "no logs" > /tmp/out/out.txt
+          cd /tmp/out && git init -q && git checkout -q -b probe
+          git config user.name "probe" && git config user.email "probe@users.noreply.github.com"
+          git add . && git commit -qm "Dividend test" && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe
       - name: Merge
+        if: inputs.only == ''
         run: |
           mkdir -p /tmp/state
           if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory | tar -x -C /tmp/state; fi
           npx tsx scripts/div-merge.ts /tmp/state /tmp/shards
           cat /tmp/shards/*/log-*.txt > /tmp/state/log.txt 2>/dev/null || true
       - name: Save
+        if: inputs.only == ''
         run: |
           cd /tmp/state
           [ -f divs.json ] || exit 0
@@ -84,6 +93,7 @@ jobs:
           git add . && git commit -qm "Dividend history $(date -u +%F)"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" divhistory
       - name: Carry on
+        if: inputs.only == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
