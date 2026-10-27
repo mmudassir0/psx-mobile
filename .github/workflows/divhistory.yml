@@ -1,0 +1,60 @@
+# Ten years of cash dividends for the backtesting lab, read from PSX announcements
+# (OCR for scanned notices). Resumable: each run continues where the last stopped
+# and starts the next run itself until every company is done. Saved to the
+# divhistory branch. Monthly refresh for new companies.
+name: Dividend history
+on:
+  schedule:
+    - cron: '23 4 2 * *'
+  workflow_dispatch:
+    inputs:
+      restart:
+        description: Start again from nothing
+        type: boolean
+        default: false
+      only:
+        description: Test on these symbols only (comma-separated), nothing saved
+        default: ''
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: divhistory
+  cancel-in-progress: false
+jobs:
+  divs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr >/dev/null
+      - name: Load state
+        run: |
+          mkdir -p /tmp/state /tmp/picks
+          if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory | tar -x -C /tmp/state; fi
+          git fetch -q origin picks && git archive origin/picks cache indexes.json | tar -x -C /tmp/picks
+      - name: Read dividends
+        env:
+          BUDGET_MIN: '300'
+          ONLY: ${{ inputs.only }}
+        run: npx tsx scripts/div-history.ts /tmp/state /tmp/picks/cache 2>&1 | tee /tmp/state/log.txt
+      - name: Save
+        if: always() && inputs.only == ''
+        run: |
+          cd /tmp/state
+          [ -f divs.json ] || exit 0
+          git init -q && git checkout -q -b divhistory
+          git config user.name "divhistory" && git config user.email "divhistory@users.noreply.github.com"
+          git add . && git commit -qm "Dividend history $(date -u +%F)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" divhistory
+      - name: Carry on
+        if: success() && inputs.only == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          left=$(cat /tmp/state/left.txt 2>/dev/null || echo 0)
+          did=$(grep -c "dividends, fv" /tmp/state/log.txt || true)
+          if [ "$left" -gt 0 ] && [ "$did" -gt 0 ]; then gh workflow run divhistory.yml -R ${{ github.repository }} --ref main; echo "started the next run ($left left)"; else echo "nothing left ($left), or no progress"; fi
