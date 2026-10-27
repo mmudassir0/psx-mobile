@@ -75,6 +75,13 @@ export function buildLab(inp: BuildInput): LabFile {
       if (b) tvSum[m] += b.c * b.v;
     }
     if (!last) continue;
+    // a one-day jump no trading limit allows, on a stock above Rs 15, is a bonus, split or rights issue the
+    // adjusted prices missed: carry the change back so it doesn't count as a gain or a loss
+    for (let i = closes.length - 1; i >= 1; i--) {
+      const a = closes[i - 1];
+      const r = closes[i] / a;
+      if (a >= 1500 && (r < 0.62 || r > 1.6)) for (let j = 0; j < i; j++) closes[j] = Math.round(closes[j] * r);
+    }
     const tv = tvSum.map((v, m) => (tvN[m] ? Math.round(v / tvN[m] / 1000) : 0));
     const peak = Math.max(...tv) * 1000;
     if (peak < (inp.minValue ?? 0)) continue;

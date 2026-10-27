@@ -100,3 +100,4 @@ jobs:
           left=$(cat /tmp/state/left.txt 2>/dev/null || echo 0)
           added=$(cat /tmp/state/added.txt 2>/dev/null || echo 0)
           if [ "$left" -gt 0 ] && [ "$added" -gt 0 ]; then gh workflow run divhistory.yml -R ${{ github.repository }} --ref main; echo "started the next run ($left left)"; else echo "nothing left ($left), or no progress"; fi
+          if [ "$added" -gt 0 ] && [ "$left" -eq 0 ]; then gh workflow run lab.yml -R ${{ github.repository }} --ref main; echo "rebuilding the lab data"; fi

@@ -62,6 +62,12 @@ jobs:
         env:
           PUBLISH: '1'
         run: npx tsx scripts/daily-picks.ts /tmp/state /tmp/history 2>&1 | tee /tmp/state/log.txt
+      - name: Backtesting lab data
+        # ten years of closes, dividends and earnings for the app's backtesting lab (lab.json)
+        if: steps.done.outputs.skip != '1'
+        run: |
+          git fetch -q origin divhistory 2>/dev/null && git show origin/divhistory:divs.json > /tmp/divs.json 2>/dev/null || echo '{"symbols":{}}' > /tmp/divs.json
+          npx tsx scripts/lab-data.ts /tmp/state /tmp/divs.json
       - name: Portfolio alerts
         # Symbols and the alert channel are secrets; the script prints counts only (public logs).
         if: steps.done.outputs.skip != '1' && (inputs.alerts || env.EVENING == '1')

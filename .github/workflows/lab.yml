@@ -1,0 +1,35 @@
+# Rebuilds the backtesting lab's data (lab.json on the picks branch) on its own,
+# e.g. right after the dividend history finishes. The daily job also rebuilds it.
+name: Lab data
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: picks
+  cancel-in-progress: false
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Build
+        env:
+          EVENING: '1'
+        run: |
+          mkdir -p /tmp/state
+          git fetch -q origin picks && git archive origin/picks | tar -x -C /tmp/state
+          git fetch -q origin divhistory 2>/dev/null && git show origin/divhistory:divs.json > /tmp/divs.json 2>/dev/null || echo '{"symbols":{}}' > /tmp/divs.json
+          npx tsx scripts/lab-data.ts /tmp/state /tmp/divs.json
+      - name: Save
+        run: |
+          cd /tmp/state
+          [ -f lab.json ] || exit 1
+          git init -q && git checkout -q -b picks
+          git config user.name "picks" && git config user.email "picks@users.noreply.github.com"
+          git add . && git commit -qm "Lab data $(date -u +%F)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" picks
