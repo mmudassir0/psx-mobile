@@ -5,6 +5,7 @@
  * API keys are never included.
  */
 import { load, save } from './storage';
+import { isSavedScreens } from './analysis/savedScreens';
 
 export const BACKUP_KEYS = [
   'user.name',
@@ -33,6 +34,7 @@ export const BACKUP_KEYS = [
   'real.monthlyPlan',
   'real.goals',
   'user.watchGroups',
+  'user.savedScreens',
   'real.priceTargets',
   'ui.homeCards',
 ] as const;
@@ -72,6 +74,7 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'real.bought': (x) => isObj(x) && Object.values(x).every((v) => ['recent', '2022-24', '2013-22', 'pre2013'].includes(v as string)),
   'ui.homeCards': (x) => isObj(x) && strArr(x.order) && strArr(x.hidden),
   'real.priceTargets': (x) => isObj(x) && Object.values(x).every((t) => isObj(t) && (t.target === null || typeof t.target === 'number') && (t.rethink === null || typeof t.rethink === 'number')),
+  'user.savedScreens': (x) => isSavedScreens(x),
   'user.watchGroups': (x) => Array.isArray(x) && x.every((g) => isObj(g) && typeof g.name === 'string' && strArr(g.symbols)),
   'real.goals': (x) => x === null || (Array.isArray(x) && x.every((g) => isObj(g) && typeof g.name === 'string' && typeof g.target === 'number' && typeof g.by === 'string' && typeof g.share === 'number')),
   'real.monthlyPlan': (x) => isObj(x) && typeof x.on === 'boolean' && typeof x.amount === 'number' && typeof x.day === 'number',

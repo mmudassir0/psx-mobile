@@ -22,6 +22,7 @@ import { Sparkline } from '../ui/PriceChart';
 import { MarketStatus } from './HomeScreen';
 import { FILTERS, FilterId, passes, screenLine, SortId, SORTS, screen } from '../analysis/screener';
 import { balanceSheetFor } from '../analysis/ratios';
+import { deleteScreen, markSeen, newSince, sameSettings, savedScreensPref, saveScreen, suggestName, type SavedScreen, type ScreenSettings } from '../analysis/savedScreens';
 
 type Mode = 'gainers' | 'losers' | 'active' | 'all' | 'watch';
 const MODES: { key: Mode; label: string }[] = [
@@ -106,7 +107,13 @@ export default function MarketScreen() {
     const traded = stocks.filter((s) => (s.volume ?? 0) > 0 && s.changePct != null);
     const up = traded.filter((s) => (s.changePct as number) > 0).length;
     const down = traded.filter((s) => (s.changePct as number) < 0).length;
-    return { up, down, flat: traded.length - up - down, volume: traded.reduce((a, s) => a + (s.volume ?? 0), 0), traded: traded.length };
+    return {
+      up,
+      down,
+      flat: traded.length - up - down,
+      volume: traded.reduce((a, s) => a + (s.volume ?? 0), 0),
+      traded: traded.length,
+    };
   }, [stocks]);
 
   const results = useMemo(() => {
@@ -118,19 +125,59 @@ export default function MarketScreen() {
       .slice(0, 40);
   }, [stocks, query]);
 
-  const list = useMemo(() => {
-    let l = stocks.filter((s) => (!shariahOnly || s.shariah) && (!sector || s.sector === sector) && filters.every((f) => passes(f, s, balanceSheetFor(s.symbol))));
-    if (mode === 'watch') {
-      const g = groups.find((x) => x.id === group);
+  const listFor = (st: ScreenSettings, grp: string | null = group) => {
+    let l = stocks.filter((s) => (!st.shariahOnly || s.shariah) && (!st.sector || s.sector === st.sector) && st.filters.every((f) => passes(f, s, balanceSheetFor(s.symbol))));
+    if (st.mode === 'watch') {
+      const g = groups.find((x) => x.id === grp);
       const syms = g ? g.symbols : watchlist;
       return syms.map((w) => l.find((s) => s.symbol === w)).filter((s): s is (typeof l)[number] => !!s);
     }
-    if (mode === 'all') return screen(l, [], sort, balanceSheetFor);
-    if (mode === 'active') return l.filter((s) => (s.volume ?? 0) > 0).sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
+    if (st.mode === 'all') return screen(l, [], st.sort, balanceSheetFor);
+    if (st.mode === 'active') return l.filter((s) => (s.volume ?? 0) > 0).sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
     l = l.filter((s) => s.changePct != null && (s.volume ?? 0) >= 10_000);
     l.sort((a, b) => (b.changePct as number) - (a.changePct as number));
-    return mode === 'gainers' ? l.filter((s) => (s.changePct as number) > 0) : l.reverse().filter((s) => (s.changePct as number) < 0);
-  }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups]);
+    return st.mode === 'gainers' ? l.filter((s) => (s.changePct as number) > 0) : l.reverse().filter((s) => (s.changePct as number) < 0);
+  };
+  const current: ScreenSettings = { mode, filters, sort, sector, shariahOnly };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const list = useMemo(() => listFor(current), [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups]);
+  const saved = savedScreensPref.use();
+  const [activeSaved, setActiveSaved] = useState<string | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
+  const [freshSyms, setFreshSyms] = useState<string[]>([]);
+  // new matches per saved screen (only for screens of stocks, not today's movers)
+  const savedNew = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!stocks.length) return m;
+    for (const sc of saved)
+      if (sc.mode === 'all' || sc.mode === 'watch')
+        m.set(
+          sc.id,
+          newSince(
+            sc,
+            listFor(sc, null).map((x) => x.symbol),
+          ).length,
+        );
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved, stocks, watchlist, groups]);
+  const isDefault = !filters.length && !shariahOnly && !sector && (mode !== 'all' || sort === 'cap');
+  const matchingSame = saved.find((x) => sameSettings(x, current));
+  const openSaved = (sc: SavedScreen) => {
+    setMode(sc.mode);
+    setFilters(sc.filters);
+    setSort(sc.sort);
+    setSector(sc.sector);
+    setShariahOnly(sc.shariahOnly);
+    setGroup(null);
+    setLimit(sc.mode === 'watch' ? 200 : 30);
+    setActiveSaved(sc.id);
+    const now = listFor(sc, null).map((x) => x.symbol);
+    setFreshSyms(sc.seen.length || sc.seenAt ? newSince(sc, now) : []);
+    savedScreensPref.set(markSeen(saved, sc.id, now));
+  };
+  const activeSc = saved.find((x) => x.id === activeSaved && sameSettings(x, current)) ?? null;
+  const fresh = new Set(activeSc ? freshSyms : []);
   const shown = list.slice(0, limit);
   const open = (symbol: string) => nav.navigate('Stock', { symbol });
 
@@ -183,11 +230,7 @@ export default function MarketScreen() {
               <MoodCard />
             </View>
             <View style={styles.pad}>
-              <Section
-                title="Indices"
-                action={orderedIdx.length > 5 ? (allIndices ? 'Show fewer' : `All ${orderedIdx.length}`) : undefined}
-                onAction={() => setAllIndices((v) => !v)}
-              >
+              <Section title="Indices" action={orderedIdx.length > 5 ? (allIndices ? 'Show fewer' : `All ${orderedIdx.length}`) : undefined} onAction={() => setAllIndices((v) => !v)}>
                 <View style={styles.card}>
                   {shownIdx.map((i, k) => (
                     <Pressable
@@ -198,7 +241,14 @@ export default function MarketScreen() {
                       style={({ pressed }) => [styles.idxRow, k < shownIdx.length - 1 && styles.border, pressed && { opacity: 0.6 }]}
                     >
                       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                        <T style={{ fontFamily: fonts.bold, fontSize: 15, color: colors.text }} numberOfLines={1}>
+                        <T
+                          style={{
+                            fontFamily: fonts.bold,
+                            fontSize: 15,
+                            color: colors.text,
+                          }}
+                          numberOfLines={1}
+                        >
                           {INDEX_NAMES[i.code] ?? i.code}
                         </T>
                         <T v="caption" style={{ color: changeColor(i.change) }}>
@@ -206,7 +256,13 @@ export default function MarketScreen() {
                         </T>
                       </View>
                       {sparks[i.code]?.length ? <Sparkline values={sparks[i.code]} width={64} height={26} /> : <View style={{ width: 64 }} />}
-                      <View style={{ alignItems: 'flex-end', gap: 4, minWidth: 104 }}>
+                      <View
+                        style={{
+                          alignItems: 'flex-end',
+                          gap: 4,
+                          minWidth: 104,
+                        }}
+                      >
                         <T v="mono" style={{ fontSize: 15 }}>
                           {fmtNum(i.current)}
                         </T>
@@ -222,11 +278,31 @@ export default function MarketScreen() {
               <Section title="Market today">
                 <View style={[styles.card, { padding: 16, gap: 10 }]}>
                   <View style={styles.breadth}>
-                    <View style={{ flex: breadth.up || 0.0001, backgroundColor: colors.up }} />
-                    <View style={{ flex: breadth.flat || 0.0001, backgroundColor: colors.faint }} />
-                    <View style={{ flex: breadth.down || 0.0001, backgroundColor: colors.down }} />
+                    <View
+                      style={{
+                        flex: breadth.up || 0.0001,
+                        backgroundColor: colors.up,
+                      }}
+                    />
+                    <View
+                      style={{
+                        flex: breadth.flat || 0.0001,
+                        backgroundColor: colors.faint,
+                      }}
+                    />
+                    <View
+                      style={{
+                        flex: breadth.down || 0.0001,
+                        backgroundColor: colors.down,
+                      }}
+                    />
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <Metric label="Advancing" value={String(breadth.up)} color={colors.up} />
                     <Metric label="Declining" value={String(breadth.down)} color={colors.downText} />
                     <Metric label="Unchanged" value={String(breadth.flat)} />
@@ -256,7 +332,14 @@ export default function MarketScreen() {
                           }}
                           style={[styles.tile, { backgroundColor: bg }, on && styles.tileOn]}
                         >
-                          <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: colors.text }} numberOfLines={1}>
+                          <T
+                            style={{
+                              fontFamily: fonts.bold,
+                              fontSize: 12.5,
+                              color: colors.text,
+                            }}
+                            numberOfLines={1}
+                          >
                             {shortSector(t.name)}
                           </T>
                           <T v="mono" style={{ fontSize: 14 }}>
@@ -273,6 +356,58 @@ export default function MarketScreen() {
 
             <View style={styles.pad}>
               <Section title={sector ? `${shortSector(sector)} stocks` : 'Stocks'}>
+                {saved.length ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, alignItems: 'center' }}>
+                    <T v="caption">Saved:</T>
+                    {saved.map((sc) => {
+                      const on = activeSc?.id === sc.id;
+                      const n = savedNew.get(sc.id) ?? 0;
+                      return (
+                        <Pressable
+                          key={sc.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${sc.name}${n ? `, ${n} new` : ''}`}
+                          onPress={() => openSaved(sc)}
+                          onLongPress={() => {
+                            savedScreensPref.set(deleteScreen(saved, sc.id));
+                            if (on) setActiveSaved(null);
+                          }}
+                          style={[
+                            styles.fchip,
+                            { flexDirection: 'row', gap: 6 },
+                            on && {
+                              borderColor: colors.gold,
+                              backgroundColor: colors.surface2,
+                            },
+                          ]}
+                        >
+                          <T
+                            style={{
+                              fontFamily: fonts.bold,
+                              fontSize: 12.5,
+                              color: on ? colors.gold : colors.text2,
+                            }}
+                          >
+                            {sc.name}
+                          </T>
+                          {n && !on ? (
+                            <View style={styles.badge}>
+                              <T
+                                style={{
+                                  fontFamily: fonts.bold,
+                                  fontSize: 10.5,
+                                  color: colors.onGold,
+                                }}
+                              >
+                                {n} new
+                              </T>
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                ) : null}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                   {MODES.filter((m) => m.key !== 'watch' || watchOn).map((m) => (
                     <Pressable
@@ -285,16 +420,39 @@ export default function MarketScreen() {
                       }}
                       style={[styles.chip, m.key === mode && styles.chipOn]}
                     >
-                      <T style={{ fontFamily: fonts.bold, fontSize: 13, color: m.key === mode ? colors.onGold : colors.text2 }}>{m.label}</T>
+                      <T
+                        style={{
+                          fontFamily: fonts.bold,
+                          fontSize: 13,
+                          color: m.key === mode ? colors.onGold : colors.text2,
+                        }}
+                      >
+                        {m.label}
+                      </T>
                     </Pressable>
                   ))}
                   <Pressable
                     accessibilityRole="switch"
                     accessibilityState={{ checked: shariahOnly }}
                     onPress={() => setShariahOnly((v) => !v)}
-                    style={[styles.chip, shariahOnly && { backgroundColor: colors.shariahSoft, borderColor: colors.shariah, borderWidth: 1 }]}
+                    style={[
+                      styles.chip,
+                      shariahOnly && {
+                        backgroundColor: colors.shariahSoft,
+                        borderColor: colors.shariah,
+                        borderWidth: 1,
+                      },
+                    ]}
                   >
-                    <T style={{ fontFamily: fonts.bold, fontSize: 13, color: shariahOnly ? colors.shariah : colors.text2 }}>Shariah only</T>
+                    <T
+                      style={{
+                        fontFamily: fonts.bold,
+                        fontSize: 13,
+                        color: shariahOnly ? colors.shariah : colors.text2,
+                      }}
+                    >
+                      Shariah only
+                    </T>
                   </Pressable>
                 </ScrollView>
                 {mode === 'watch' ? <GroupBar value={group} onChange={setGroup} /> : null}
@@ -303,7 +461,15 @@ export default function MarketScreen() {
                     const on = filters.includes(f.id);
                     return (
                       <Pressable key={f.id} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleFilter(f.id)} style={[styles.fchip, on && styles.fchipOn]}>
-                        <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.text : colors.faint }}>{f.label}</T>
+                        <T
+                          style={{
+                            fontFamily: fonts.bold,
+                            fontSize: 12.5,
+                            color: on ? colors.text : colors.faint,
+                          }}
+                        >
+                          {f.label}
+                        </T>
                       </Pressable>
                     );
                   })}
@@ -313,21 +479,132 @@ export default function MarketScreen() {
                     <T v="caption">Sort:</T>
                     {SORTS.map((o) => (
                       <Pressable key={o.id} accessibilityRole="tab" accessibilityState={{ selected: o.id === sort }} onPress={() => setSort(o.id)} style={[styles.fchip, o.id === sort && styles.fchipOn]}>
-                        <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: o.id === sort ? colors.text : colors.faint }}>{o.label}</T>
+                        <T
+                          style={{
+                            fontFamily: fonts.bold,
+                            fontSize: 12.5,
+                            color: o.id === sort ? colors.text : colors.faint,
+                          }}
+                        >
+                          {o.label}
+                        </T>
                       </Pressable>
                     ))}
                   </ScrollView>
                 ) : null}
                 {filters.length || shariahOnly ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <T v="caption" style={{ flex: 1 }}>
                       {list.length} stock{list.length === 1 ? '' : 's'} match
                       {filters.some((f) => FILTERS.find((x) => x.id === f)?.needsBalance) ? ' (ROE and debt are known for KSE-100 and KMI-30 members only)' : ''}
                     </T>
                     <Pressable accessibilityRole="button" hitSlop={8} onPress={() => (setFilters([]), setShariahOnly(false))}>
-                      <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>Reset filters</T>
+                      <T
+                        style={{
+                          fontFamily: fonts.semibold,
+                          fontSize: 13,
+                          color: colors.gold,
+                        }}
+                      >
+                        Reset filters
+                      </T>
                     </Pressable>
                   </View>
+                ) : null}
+                {naming != null ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <TextInput
+                      value={naming}
+                      onChangeText={setNaming}
+                      autoFocus
+                      placeholder="Name this screen"
+                      placeholderTextColor={colors.faint}
+                      style={[styles.search, styles.searchInput, { height: 40, flex: 1 }]}
+                      accessibilityLabel="Name for this screen"
+                      onSubmitEditing={() => {
+                        const next = saveScreen(
+                          saved,
+                          naming,
+                          current,
+                          list.map((x) => x.symbol),
+                        );
+                        savedScreensPref.set(next);
+                        setActiveSaved(next.find((x) => sameSettings(x, current))?.id ?? null);
+                        setFreshSyms([]);
+                        setNaming(null);
+                      }}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => {
+                        const next = saveScreen(
+                          saved,
+                          naming,
+                          current,
+                          list.map((x) => x.symbol),
+                        );
+                        savedScreensPref.set(next);
+                        setActiveSaved(next.find((x) => sameSettings(x, current))?.id ?? null);
+                        setFreshSyms([]);
+                        setNaming(null);
+                      }}
+                    >
+                      <T
+                        style={{
+                          fontFamily: fonts.bold,
+                          fontSize: 14,
+                          color: colors.gold,
+                        }}
+                      >
+                        Save
+                      </T>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setNaming(null)}>
+                      <T
+                        style={{
+                          fontFamily: fonts.semibold,
+                          fontSize: 14,
+                          color: colors.faint,
+                        }}
+                      >
+                        Cancel
+                      </T>
+                    </Pressable>
+                  </View>
+                ) : !isDefault && !matchingSame ? (
+                  <Pressable accessibilityRole="button" onPress={() => setNaming(suggestName(current, (f) => FILTERS.find((x) => x.id === f)?.label ?? f, shortSector))} style={{ alignSelf: 'flex-start' }}>
+                    <T
+                      style={{
+                        fontFamily: fonts.semibold,
+                        fontSize: 13,
+                        color: colors.gold,
+                      }}
+                    >
+                      ＋ Save this screen
+                    </T>
+                  </Pressable>
+                ) : activeSc && fresh.size ? (
+                  <T v="caption" style={{ color: colors.gold }}>
+                    {fresh.size} new since you last looked: {[...fresh].slice(0, 6).join(', ')}
+                    {fresh.size > 6 ? '…' : ''}
+                  </T>
+                ) : saved.length && !naming ? (
+                  <T v="caption" style={{ fontSize: 11.5 }}>
+                    Long-press a saved screen to delete it.
+                  </T>
                 ) : null}
                 {shown.length === 0 ? (
                   <Empty title="No stocks here" body="Try another list or clear the filters." />
@@ -337,8 +614,12 @@ export default function MarketScreen() {
                       <StockRow
                         key={s.symbol}
                         stock={s}
-                        highlight={mode === 'all' && (filters.length > 0 || sort !== 'cap')}
-                        sub={mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || undefined : undefined}
+                        highlight={fresh.has(s.symbol) || (mode === 'all' && (filters.length > 0 || sort !== 'cap'))}
+                        sub={
+                          [fresh.has(s.symbol) ? 'New here' : null, mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null]
+                            .filter(Boolean)
+                            .join(' · ') || undefined
+                        }
                         last={i === shown.length - 1}
                         onPress={() => open(s.symbol)}
                       />
@@ -347,11 +628,26 @@ export default function MarketScreen() {
                 )}
                 {list.length > limit ? (
                   <Pressable accessibilityRole="button" onPress={() => setLimit((l) => l + 30)} style={styles.more}>
-                    <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Show more ({list.length - limit} left)</T>
+                    <T
+                      style={{
+                        fontFamily: fonts.semibold,
+                        fontSize: 14,
+                        color: colors.gold,
+                      }}
+                    >
+                      Show more ({list.length - limit} left)
+                    </T>
                   </Pressable>
                 ) : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.shariah }} />
+                  <View
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 4,
+                      backgroundColor: colors.shariah,
+                    }}
+                  />
                   <T v="caption">Shariah-compliant (KMI All Share index)</T>
                 </View>
               </Section>
@@ -374,32 +670,85 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  content: { paddingTop: 8, paddingBottom: 40, gap: 26 },
-  pad: { paddingHorizontal: space.gutter },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 14,
-  },
-  searchInput: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 15, paddingVertical: 0 },
-  card: { backgroundColor: colors.surface, borderRadius: 18, paddingHorizontal: 14 },
-  idxRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, paddingVertical: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-  breadth: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tile: { width: '32%', flexGrow: 1, height: 64, borderRadius: 14, padding: 11, justifyContent: 'space-between' },
-  tileOn: { borderWidth: 2, borderColor: colors.gold },
-  fchip: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
-  fchipOn: { backgroundColor: colors.surface2, borderColor: colors.line },
-  chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  chipOn: { backgroundColor: colors.gold },
-  more: { paddingVertical: 12, alignItems: 'center' },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    content: { paddingTop: 8, paddingBottom: 40, gap: 26 },
+    pad: { paddingHorizontal: space.gutter },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      height: 48,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 14,
+    },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontFamily: fonts.medium,
+      fontSize: 15,
+      paddingVertical: 0,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      paddingHorizontal: 14,
+    },
+    idxRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      minHeight: 66,
+      paddingVertical: 10,
+    },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    breadth: {
+      flexDirection: 'row',
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden',
+      gap: 2,
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    tile: {
+      width: '32%',
+      flexGrow: 1,
+      height: 64,
+      borderRadius: 14,
+      padding: 11,
+      justifyContent: 'space-between',
+    },
+    tileOn: { borderWidth: 2, borderColor: colors.gold },
+    fchip: {
+      height: 32,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    fchipOn: { backgroundColor: colors.surface2, borderColor: colors.line },
+    chip: {
+      height: 36,
+      paddingHorizontal: 14,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipOn: { backgroundColor: colors.gold },
+    more: { paddingVertical: 12, alignItems: 'center' },
+    badge: {
+      backgroundColor: colors.gold,
+      borderRadius: 8,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+    },
+  }),
+);

@@ -2,6 +2,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { deleteScreen, markSeen, newSince, sameSettings, saveScreen, suggestName } from '../src/analysis/savedScreens';
 import { move, orderOf, toggle, visibleCards } from '../src/nav/homeCards';
 import { cpiFromNews, marketYields, parsePbsInflation, parseSbp, petrolFromNews } from '../src/analysis/macro';
 import { buildTimeline } from '../src/portfolio/timeline';
@@ -366,6 +367,21 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Saved screens
+{
+  const st = { mode: 'all' as const, filters: ['div8' as const, 'kse100' as const], sort: 'div' as const, sector: null, shariahOnly: true };
+  let l = saveScreen([], ' Payers ', st, ['MEBL', 'FFC'], 1);
+  check('saved with what matched', l.length === 1 && l[0].name === 'Payers' && l[0].seen.join() === 'FFC,MEBL');
+  check('new since last looked', newSince(l[0], ['FFC', 'MEBL', 'OGDC']).join() === 'OGDC');
+  l = markSeen(l, l[0].id, ['FFC', 'OGDC'], 2);
+  check('marking seen replaces the list', newSince(l[0], ['FFC', 'OGDC', 'MEBL']).join() === 'MEBL' && l[0].seenAt === 2);
+  const again = saveScreen(l, 'payers', { ...st, sort: 'pe' }, [], 3);
+  check('same name replaces, keeps id', again.length === 1 && again[0].id === l[0].id && again[0].sort === 'pe');
+  check('same settings ignores filter order', sameSettings(st, { ...st, filters: ['kse100', 'div8'] }) && !sameSettings(st, { ...st, shariahOnly: false }));
+  check('suggested name', suggestName(st, (f) => f.toUpperCase(), (x) => x) === 'Shariah · DIV8 · KSE100');
+  check('delete', deleteScreen(l, l[0].id).length === 0);
 }
 
 if (failed) {
