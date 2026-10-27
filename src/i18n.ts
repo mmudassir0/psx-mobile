@@ -62,6 +62,7 @@ export const UR: Record<string, string> = {
   'KSE-100': 'KSE-100',
   'KMI-30': 'KMI-30',
   'Words explained': 'اصطلاحات کی وضاحت',
+  'Learn PSX': 'PSX سیکھیں',
   'Trading costs': 'سودے کے اخراجات',
   'Export to Excel': 'ایکسل میں نکالیں',
   'Offline copy': 'آف لائن کاپی',
