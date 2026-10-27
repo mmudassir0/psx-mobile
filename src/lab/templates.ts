@@ -81,6 +81,14 @@ export const TEMPLATES: Template[] = [
     every: 12,
     from: 2023,
   }),
+  t('rotation', 'Sector rotation', 'The 3 sectors whose stocks rose most over six months, then their 3 strongest stocks each. Checked every three months.', {
+    rank: 'mom6',
+    hold: 9,
+    every: 3,
+    topSectors: 3,
+    perSector: 3,
+    minValue: 3,
+  }),
   t('kse100', 'All of the KSE-100', 'Every KSE-100 stock in equal amounts, evened out once a year: a fair yardstick.', {
     universe: 'kse100',
     rank: 'value',

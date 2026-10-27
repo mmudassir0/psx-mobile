@@ -1,11 +1,12 @@
 /** Backtesting lab: test an investing rule on ten years of PSX prices before using real money. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { InteractionManager, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { InteractionManager, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtDay } from '../format';
-import { findStrategy, holdingsStrategy, labFollowPref, labStrategiesPref, useLab } from '../lab/store';
+import { findStrategy, holdingsStrategy, labFollowPref, labStrategiesPref, setDraft, useLab } from '../lab/store';
+import { readCode } from '../lab/share';
 import { useHoldings } from '../portfolio/holdings';
 import { runBacktest, type Strategy } from '../lab/engine';
 import { TEMPLATES } from '../lab/templates';
@@ -45,6 +46,16 @@ export default function LabScreen() {
   const { lab, busy, error, built, reload } = useLab();
   const mine = labStrategiesPref.use();
   const follow = labFollowPref.use();
+  const [code, setCode] = useState('');
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
+  const openCode = () => {
+    const s = readCode(code, 'draft');
+    if (!s) return setCodeMsg("That doesn't look like a Sahm strategy code (it starts with SAHM1-).");
+    setCodeMsg(null);
+    setCode('');
+    setDraft(s);
+    nav.navigate('LabResult', { id: 'draft' });
+  };
   const followed = follow ? findStrategy(follow.id, mine) : null;
   const [quick, setQuick] = useState<Record<string, { cagr: number; bench: number }>>({});
   const { holdings } = useHoldings();
@@ -142,6 +153,17 @@ export default function LabScreen() {
               </View>
               <T v="caption">›</T>
             </Pressable>
+            <Section title="Open a code someone sent you">
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TextInput value={code} onChangeText={setCode} placeholder="SAHM1-…" placeholderTextColor={colors.faint} autoCapitalize="none" autoCorrect={false} style={styles.code} accessibilityLabel="Strategy code" />
+                <Button label="Open" small onPress={openCode} disabled={!code.trim()} />
+              </View>
+              {codeMsg ? (
+                <T v="caption" style={{ color: colors.downText }}>
+                  {codeMsg}
+                </T>
+              ) : null}
+            </Section>
             <Section title="Ready-made ideas to start from">
               <Panel style={{ paddingVertical: 4 }}>
                 {TEMPLATES.map((t, i) => (
@@ -167,6 +189,7 @@ const styles = themed(() =>
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: 16 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
     border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    code: { flex: 1, height: 42, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, paddingHorizontal: 12, color: colors.text, fontFamily: fonts.medium, fontSize: 14 },
     link: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.line },
   }),
 );

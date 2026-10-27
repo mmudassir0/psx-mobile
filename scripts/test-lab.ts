@@ -13,6 +13,8 @@ import { rollOne, rollStarts, summariseRolling } from '../src/lab/rolling';
 import { reviewTest } from '../src/lab/reviewTest';
 import { labReportHtml } from '../src/lab/report';
 import { recentExits } from '../src/lab/follow';
+import { readCode, strategyCode } from '../src/lab/share';
+import { worstFalls } from '../src/lab/stress';
 
 let failed = 0;
 function check(name: string, ok: boolean, extra?: unknown) {
@@ -229,6 +231,25 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   check('report html', html.includes('<svg') && html.includes('Year by year') && html.length > 2000);
   const stop = runBacktest(lab, S({ universe: 'shariah', rank: 'price', desc: true, hold: 1, every: 12, stop: 0.1 }));
   check('recent exits from trades', recentExits(lab, stop.trades, lab.days.length).length > 0);
+}
+
+{
+  const st = S({ name: 'Ünïcode test', filters: [{ m: 'yield', op: '>', v: 6 }], sectors: ['A'], topSectors: 2, lump: 5 });
+  const code = strategyCode(st);
+  const back = readCode(`look at this: ${code} cool`, 'x')!;
+  check('share code round-trip', !!back && back.name === st.name && back.filters[0].v === 6 && back.sectors?.[0] === 'A' && back.topSectors === 2 && back.id === 'x' && back.lump === BASE.lump);
+  check('share code junk', readCode('SAHM1-!!!', 'x') === null && readCode('hello', 'x') === null);
+  const sec = runBacktest(lab, S({ sectors: ['B'], rank: 'price', hold: 3, every: 12 }));
+  check(
+    'sectors: only that sector',
+    sec.holdings.every((h) => h.symbol === 'FLAT'),
+  );
+  const rot = runBacktest(lab, S({ topSectors: 1, rank: 'price', hold: 3, every: 12 }));
+  check('rotation needs 3 stocks in a sector', rot.trades.length === 0);
+  const r = runBacktest(lab, S({ rank: 'mom12', hold: 2, every: 1 }));
+  const profit = r.bySymbol.reduce((a, x) => a + x.pnl, 0);
+  check('stocks behind the result add up', Math.abs(profit - (r.stats.final - r.stats.put)) < 2, { profit, made: r.stats.final - r.stats.put });
+  check('worst falls run', Array.isArray(worstFalls(lab, r)));
 }
 
 if (failed) {

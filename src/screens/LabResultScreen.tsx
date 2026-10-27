@@ -13,7 +13,7 @@ import { describe } from '../lab/describe';
 import { robustness, type Variant } from '../lab/robust';
 import { newId } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
-import { RealSection, ReportButton, RollingSection } from '../ui/LabExtras';
+import { ContributorsSection, RealSection, ReportButton, RollingSection, ShareCodeButton, StressSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
 import { Button, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
@@ -295,6 +295,8 @@ export default function LabResultScreen() {
               </Section>
             ) : null}
 
+            <StressSection lab={lab} st={st} res={res} />
+            <ContributorsSection res={res} onOpen={(symbol) => nav.navigate('Stock', { symbol })} />
             <RollingSection lab={lab} st={st} />
             <RealSection lab={lab} st={st} />
 
@@ -359,6 +361,7 @@ export default function LabResultScreen() {
               />
             ) : null}
             <ReportButton lab={lab} st={st} res={res} />
+            {!st.only ? <ShareCodeButton st={st} /> : null}
             {saved ? (
               <Button
                 label="Make a copy to try changes"

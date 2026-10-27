@@ -5,6 +5,15 @@ import { BASE } from './templates';
 const UNIVERSE = { all: 'liquid PSX stocks', kse100: 'KSE-100 stocks', kmi30: 'KMI-30 stocks', shariah: 'Shariah-compliant stocks' } as const;
 const EVERY = { 1: 'every month', 3: 'every three months', 6: 'every six months', 12: 'once a year' } as const;
 
+/** "COMMERCIAL BANKS" → "commercial banks"; shortened where PSX's names are long. */
+export const sectorName = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/ & /g, ' and ')
+    .replace(/\s*\/.*$/, '')
+    .replace(/^(oil and gas) (marketing|exploration) companies$/, '$1 $2')
+    .trim();
+
 export const filterText = (f: Filter) => {
   if (f.m === 'trend200' && f.v === 0) return f.op === '>' ? 'above their 200-day average' : 'under their 200-day average';
   if (f.m === 'off52h' && f.op === '>' && f.v < 0) return `within ${-f.v}% of their 52-week high`;
@@ -39,6 +48,8 @@ export function describe(s: Strategy): string {
   if (s.only?.length)
     return `Your ${s.only.length} holdings in equal amounts, evened out ${EVERY[s.every]}${s.stop > 0 ? `, sold when ${Math.round(s.stop * 100)}% under the best price` : ''}${s.exit200 ? ', sold under the 200-day average' : ''}.`;
   const parts = [`The ${s.hold} ${UNIVERSE[s.universe]} with the ${rankText(s.rank, s.desc)}`];
+  if (s.sectors?.length) parts[0] += ` in ${s.sectors.length <= 3 ? s.sectors.map(sectorName).join(', ') : `${s.sectors.length} chosen sectors`}`;
+  if (s.topSectors) parts[0] += `, from the ${s.topSectors} sector${s.topSectors > 1 ? 's' : ''} scoring best on average`;
   if (s.filters.length) parts[0] += `, if ${s.filters.map(filterText).join(' and ')}`;
   parts[0] += `, checked ${EVERY[s.every]}.`;
   const sells: string[] = [];
@@ -82,5 +93,7 @@ export function toStrategy(x: unknown, id?: string): Strategy | null {
     tax: pick(o.tax, ['filer', 'nonfiler', 'none'] as const, 'filer'),
     bench: pick(o.bench, ['KSE100', 'KMI30'] as const, 'KSE100'),
     ...(Array.isArray(o.only) && o.only.every((x) => typeof x === 'string') ? { only: (o.only as string[]).slice(0, 80) } : {}),
+    ...(Array.isArray(o.sectors) && o.sectors.length && o.sectors.every((x) => typeof x === 'string') ? { sectors: (o.sectors as string[]).slice(0, 40) } : {}),
+    ...(typeof o.topSectors === 'number' && o.topSectors >= 1 ? { topSectors: Math.min(10, Math.round(o.topSectors)) } : {}),
   };
 }

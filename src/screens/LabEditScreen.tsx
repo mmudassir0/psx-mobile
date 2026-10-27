@@ -8,7 +8,7 @@ import { colors, fonts, space, themed } from '../theme';
 import { findStrategy, getDraft, labStrategiesPref, setDraft, useLab } from '../lab/store';
 import { earliestYear, METRICS, type Filter, type Metric, type Strategy } from '../lab/engine';
 import { BASE, newId } from '../lab/templates';
-import { describe } from '../lab/describe';
+import { describe, sectorName } from '../lab/describe';
 import { labPrompt, readLabReply } from '../lab/aiStrategy';
 import { useAi } from '../store/ai';
 import { Panel } from '../ui/bits';
@@ -95,6 +95,20 @@ export default function LabEditScreen() {
       setAiBusy(false);
     }
   };
+  const sectorList = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const x of lab?.stocks ?? []) n.set(x.sector, (n.get(x.sector) ?? 0) + 1);
+    return [...n]
+      .filter(([, c]) => c >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .map(([sec]) => sec);
+  }, [lab]);
+  const [showSectors, setShowSectors] = useState(!!start.sectors?.length);
+  const toggleSector = (sec: string) => {
+    const cur = s.sectors ?? [];
+    const next = cur.includes(sec) ? cur.filter((x) => x !== sec) : [...cur, sec];
+    put({ sectors: next.length ? next : undefined });
+  };
   const setFilter = (k: number, f: Partial<Filter>) => put({ filters: s.filters.map((x, i) => (i === k ? { ...x, ...f } : x)) });
 
   const run = () => {
@@ -167,6 +181,25 @@ export default function LabEditScreen() {
             <T v="caption" style={{ lineHeight: 17 }}>
               Thinly traded stocks are hard to buy and sell at the price shown, so a floor keeps the test honest.
             </T>
+            <Pressable accessibilityRole="button" onPress={() => setShowSectors(!showSectors)}>
+              <T style={{ color: colors.gold, fontFamily: fonts.semibold, fontSize: 14 }}>
+                {s.sectors?.length ? `Only ${s.sectors.length} sector${s.sectors.length > 1 ? 's' : ''} ${showSectors ? '▴' : '▾'}` : `Only some sectors ${showSectors ? '▴' : '▾'}`}
+              </T>
+            </Pressable>
+            {showSectors ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {sectorList.map((sec) => {
+                  const on = !!s.sectors?.includes(sec);
+                  return (
+                    <Pressable key={sec} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => toggleSector(sec)} style={[styles.chip, on && styles.chipOn]}>
+                      <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: on ? colors.onGold : colors.muted, textTransform: 'capitalize' }}>{sectorName(sec)}</T>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            <T v="caption">Sector rotation: first pick the sectors scoring best (on the ranking below)</T>
+            <Chips label="Sector rotation" options={[0, 1, 2, 3, 4].map((v) => ({ key: v, label: v ? `Top ${v}` : 'Off' }))} value={s.topSectors ?? 0} onChange={(v) => put({ topSectors: v || undefined })} />
           </Panel>
         </Section>
 

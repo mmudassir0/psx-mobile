@@ -1,12 +1,13 @@
 /** Which cards Home shows (in the Tabs layout) and in what order; set in Settings → Home. */
 import { makePref } from '../prefs';
 
-export type HomeCardKey = 'indices' | 'mood' | 'tip' | 'brief' | 'news' | 'events' | 'alerts' | 'watchlist' | 'movers' | 'tools';
+export type HomeCardKey = 'indices' | 'mood' | 'tip' | 'lab' | 'brief' | 'news' | 'events' | 'alerts' | 'watchlist' | 'movers' | 'tools';
 
 export const HOME_CARDS: { key: HomeCardKey; label: string }[] = [
   { key: 'indices', label: 'Indices' },
   { key: 'mood', label: 'Market mood' },
   { key: 'tip', label: 'Tip of the day' },
+  { key: 'lab', label: 'Lab strategy you follow' },
   { key: 'brief', label: 'Weekly brief' },
   { key: 'news', label: 'News' },
   { key: 'events', label: 'Coming up' },

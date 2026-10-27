@@ -1,6 +1,6 @@
 /** Extra sections on a lab result: every start date, against your real portfolio, and the PDF report. */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutChangeEvent, Platform, View } from 'react-native';
+import { LayoutChangeEvent, Platform, Share, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -9,6 +9,9 @@ import type { Lab } from '../lab/data';
 import { runBacktest, type Result, type Strategy } from '../lab/engine';
 import { rollOne, rollStarts, summariseRolling, type RollRow } from '../lab/rolling';
 import { labReportHtml } from '../lab/report';
+import { worstFalls } from '../lab/stress';
+import { strategyCode } from '../lab/share';
+import { describe } from '../lab/describe';
 import { snapshots, trackReturns } from '../portfolio/track';
 import { logProblem } from '../log';
 import { Panel } from './bits';
@@ -194,5 +197,113 @@ export function ReportButton({ lab, st, res }: { lab: Lab; st: Strategy; res: Re
         </T>
       ) : null}
     </View>
+  );
+}
+
+/** The market's worst falls, and the strategy through each. */
+export function StressSection({ lab, st, res }: { lab: Lab; st: Strategy; res: Result }) {
+  const falls = useMemo(() => worstFalls(lab, res), [lab, res]);
+  if (!falls.length) return null;
+  const benchName = st.bench === 'KMI30' ? 'KMI-30' : 'KSE-100';
+  return (
+    <Section title="Through the worst falls">
+      <Panel style={{ paddingVertical: 4 }}>
+        <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.hairline, gap: 6 }}>
+          <T v="label" style={{ flex: 1 }}>
+            Fall
+          </T>
+          <T v="label" style={{ width: 64, textAlign: 'right' }}>
+            {benchName}
+          </T>
+          <T v="label" style={{ width: 64, textAlign: 'right' }}>
+            Strategy
+          </T>
+        </View>
+        {falls.map((f, i) => (
+          <View key={f.from} style={{ paddingVertical: 8, gap: 3, borderBottomWidth: i < falls.length - 1 ? 1 : 0, borderBottomColor: colors.hairline }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <T style={{ flex: 1, fontFamily: fonts.semibold, fontSize: 13 }}>
+                {f.from.slice(0, 7)} to {f.to.slice(0, 7)}
+              </T>
+              <T v="mono" style={{ width: 64, textAlign: 'right', fontSize: 13, color: changeColor(f.index) }}>
+                {pc(f.index, 0)}
+              </T>
+              <T v="mono" style={{ width: 64, textAlign: 'right', fontSize: 13, color: changeColor(f.strategy - f.index) }}>
+                {pc(f.strategy, 0)}
+              </T>
+            </View>
+            {f.indexAfter != null && f.strategyAfter != null ? (
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <T v="caption" style={{ flex: 1 }}>
+                  6 months after the low
+                </T>
+                <T v="mono" style={{ width: 64, textAlign: 'right', fontSize: 12, color: colors.text2 }}>
+                  {pc(f.indexAfter, 0)}
+                </T>
+                <T v="mono" style={{ width: 64, textAlign: 'right', fontSize: 12, color: changeColor(f.strategyAfter - f.indexAfter) }}>
+                  {pc(f.strategyAfter, 0)}
+                </T>
+              </View>
+            ) : null}
+          </View>
+        ))}
+      </Panel>
+      <T v="caption" style={{ lineHeight: 17 }}>
+        Every time the {benchName} (with its dividends) fell 15% or more from a peak, and how the strategy did over the same days and the six months after. Strategy figures in green fell less (or bounced more) than the
+        index.
+      </T>
+    </Section>
+  );
+}
+
+/** Which stocks made, and lost, the money. */
+export function ContributorsSection({ res, onOpen }: { res: Result; onOpen: (s: string) => void }) {
+  const list = res.bySymbol;
+  if (list.length < 2) return null;
+  const total = list.reduce((a, x) => a + x.pnl, 0);
+  const top = list.slice(0, 5);
+  const bottom = list
+    .slice(-3)
+    .reverse()
+    .filter((x) => x.pnl < 0);
+  const best = list[0];
+  const rs = (v: number) => `${v >= 0 ? '+' : '−'}Rs ${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
+  const row = (x: (typeof list)[number], i: number, n: number) => (
+    <View key={x.symbol} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 6, borderBottomWidth: i < n - 1 ? 1 : 0, borderBottomColor: colors.hairline }}>
+      <T accessibilityRole="link" onPress={() => onOpen(x.symbol)} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 14 }}>
+        {x.symbol}
+      </T>
+      <T v="caption" style={{ width: 90, textAlign: 'right' }}>
+        {total > 0 && x.pnl > 0 ? `${Math.round((x.pnl / total) * 100)}% of profit` : ''}
+      </T>
+      <T v="mono" style={{ width: 110, textAlign: 'right', fontSize: 13, color: changeColor(x.pnl) }}>
+        {rs(x.pnl)}
+      </T>
+    </View>
+  );
+  return (
+    <Section title="Stocks behind the result">
+      <Panel style={{ paddingVertical: 4 }}>{top.map((x, i) => row(x, i, top.length))}</Panel>
+      {bottom.length ? <Panel style={{ paddingVertical: 4 }}>{bottom.map((x, i) => row(x, i, bottom.length))}</Panel> : null}
+      <T v="caption" style={{ lineHeight: 17 }}>
+        Profit on each stock over the whole test: what it was sold for and is worth now, plus dividends, less what was paid. {list.length} stocks in all.{' '}
+        {total > 0 && best.pnl / total > 0.4
+          ? `${best.symbol} alone made ${Math.round((best.pnl / total) * 100)}% of the profit, so the result leans heavily on one lucky pick.`
+          : 'The profit was spread across many stocks, not one lucky pick.'}
+      </T>
+    </Section>
+  );
+}
+
+export function ShareCodeButton({ st }: { st: Strategy }) {
+  return (
+    <Button
+      label="Send these rules as a code"
+      tone="ghost"
+      onPress={() => {
+        const code = strategyCode(st);
+        Share.share({ message: `My Sahm backtest strategy "${st.name}": ${describe(st)}\n\nOpen Sahm → Backtesting lab → Open a code, and paste:\n${code}` }).catch(() => {});
+      }}
+    />
   );
 }

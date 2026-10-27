@@ -602,8 +602,8 @@ check(
 {
   const l = { order: ['news', 'mood'] as never[], hidden: ['mood'] as never[] };
   const o = orderOf(l);
-  check('saved order kept, missing cards put back in their default place', o.indexOf('news' as never) < o.indexOf('mood' as never) && o[0] === 'indices' && o.length === 10, o);
-  check('hidden cards left out', !visibleCards(l).includes('mood' as never) && visibleCards(l).length === 9);
+  check('saved order kept, missing cards put back in their default place', o.indexOf('news' as never) < o.indexOf('mood' as never) && o[0] === 'indices' && o.length === 11, o);
+  check('hidden cards left out', !visibleCards(l).includes('mood' as never) && visibleCards(l).length === 10);
   const full = { order: orderOf(l), hidden: [] as never[] };
   const m = move(full, 'mood' as never, -1);
   check('move up and toggle', orderOf(m).indexOf('mood' as never) === o.indexOf('mood' as never) - 1 && !toggle(l, 'mood' as never).hidden.length && move(full, 'indices' as never, -1) === full);

@@ -36,6 +36,7 @@ import { lockPref } from '../ui/AppLock';
 import { targetsPref } from '../portfolio/targets';
 import { activityItems, announcementItem, latePaymentItems, sectorItems, targetItems, nextDividendLine, todoItems, usePortfolioTotals } from '../portfolio/summary';
 import { useLabFollow } from '../lab/useLabFollow';
+import { LabHomeCard } from '../ui/LabHomeCard';
 import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
@@ -206,6 +207,8 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
         );
+      case 'lab':
+        return <LabHomeCard padStyle={styles.pad} />;
       case 'tip':
         return (
           <View style={styles.pad}>

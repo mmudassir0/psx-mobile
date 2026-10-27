@@ -52,6 +52,10 @@ export interface Strategy {
   untilDay?: string;
   /** only these symbols (your own holdings) */
   only?: string[];
+  /** only stocks from these sectors (PSX's sector names) */
+  sectors?: string[];
+  /** sector rotation: first pick this many sectors with the best average of the ranking, then the best stocks in them */
+  topSectors?: number;
 }
 
 export const METRICS: Record<Metric, { label: string; unit: string; hint: string }> = {
@@ -139,6 +143,8 @@ export interface Result {
   };
   /** what the strategy chose at its last rebalance, best first */
   lastPicks: string[];
+  /** each stock's profit over the whole test: sales and today's value, less what was paid, plus dividends; biggest first */
+  bySymbol: { symbol: string; pnl: number; dividends: number; trades: number }[];
   /** sales decided on the last day's close, to make at the next close */
   pending: { symbol: string; why: 'stop' | 'trend' }[];
   warnings: string[];
@@ -233,6 +239,7 @@ export function choose(lab: Lab, preps: Prep[], st: Strategy, i: number): { symb
     const p = preps[k];
     const s = p.s;
     if (st.only ? !st.only.includes(s.symbol) : !inUniverse(s, st.universe)) continue;
+    if (st.sectors?.length && !st.sectors.includes(s.sector)) continue;
     if (!(s.close[i] > 0) || p.first > i - 21) continue;
     const mi = lab.month[i] - 1;
     if (st.minValue > 0 && !(mi >= 0 && s.value[mi] >= st.minValue * 1e6)) continue;
@@ -250,9 +257,22 @@ export function choose(lab: Lab, preps: Prep[], st: Strategy, i: number): { symb
     out.push({ symbol: s.symbol, key, k, p, sector: s.sector, vol: st.weight === 'lowvol' ? metricAt(p, 'vol', i, lab.month) : 0 });
   }
   out.sort((a, b) => (st.desc ? b.key - a.key : a.key - b.key) || (a.symbol < b.symbol ? -1 : 1));
+  let pool = out;
+  if (st.topSectors && st.topSectors > 0) {
+    // the sectors whose stocks (three or more) score best on average
+    const by = new Map<string, number[]>();
+    for (const x of out) by.set(x.sector, [...(by.get(x.sector) ?? []), x.key]);
+    const best = [...by]
+      .filter(([, v]) => v.length >= 3)
+      .map(([sec, v]) => ({ sec, avg: v.reduce((a, b) => a + b, 0) / v.length }))
+      .sort((a, b) => (st.desc ? b.avg - a.avg : a.avg - b.avg))
+      .slice(0, st.topSectors)
+      .map((x) => x.sec);
+    pool = out.filter((x) => best.includes(x.sector));
+  }
   const per = new Map<string, number>();
   const picked: typeof out = [];
-  for (const x of out) {
+  for (const x of pool) {
     if (picked.length >= st.hold) break;
     if (st.perSector > 0 && (per.get(x.sector) ?? 0) >= st.perSector) continue;
     per.set(x.sector, (per.get(x.sector) ?? 0) + 1);
@@ -368,6 +388,12 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
   let investedShare = 0;
   const closeOf = (k: number, i: number) => preps[k].s.close[i];
 
+  const money = new Map<number, { out: number; back: number; div: number }>();
+  const mon = (k: number) => {
+    let m = money.get(k);
+    if (!m) money.set(k, (m = { out: 0, back: 0, div: 0 }));
+    return m;
+  };
   const sell = (k: number, i: number, why: Trade['why'], shares?: number) => {
     const p = pos.get(k);
     if (!p) return;
@@ -381,6 +407,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     gainsThisYear += gain;
     cash += gross - fee;
     costs += fee;
+    mon(k).back += gross - fee;
     trades.push({ i, symbol: preps[k].s.symbol, side: 'sell', shares: q, price: px, why, gain: costPart > 0 ? (gross - fee) / costPart - 1 : 0, held: i - p.since });
     if (q >= p.shares - 1e-9) pos.delete(k);
     else pos.set(k, { ...p, shares: p.shares - q, cost: p.cost - costPart });
@@ -394,6 +421,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     const fee = gross * costRate;
     cash -= gross + fee;
     costs += fee;
+    mon(k).out += gross + fee;
     const p = pos.get(k);
     if (p) pos.set(k, { ...p, shares: p.shares + q, cost: p.cost + gross + fee });
     else pos.set(k, { k, shares: q, cost: gross + fee, since: i, peak: px });
@@ -434,6 +462,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
         const net = p.shares * d * (1 - divTax);
         cash += net;
         dividends += net;
+        mon(p.k).div += net;
         taxPaid += p.shares * d * divTax;
       }
     }
@@ -560,6 +589,8 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     }
   }
   const sales = trades.filter((x) => x.side === 'sell');
+  const tradeCount = new Map<string, number>();
+  for (const t of trades) tradeCount.set(t.symbol, (tradeCount.get(t.symbol) ?? 0) + 1);
   const holdings: Holding[] = [...pos.values()]
     .map((p) => ({ symbol: preps[p.k].s.symbol, shares: p.shares, cost: p.cost, value: p.shares * (closeOf(p.k, n - 1) || 0), since: p.since }))
     .sort((a, b) => b.value - a.value);
@@ -602,6 +633,13 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
       rebalances,
     },
     lastPicks,
+    bySymbol: [...money]
+      .map(([k, m]) => {
+        const p = pos.get(k);
+        const now = p ? p.shares * (closeOf(k, n - 1) || 0) : 0;
+        return { symbol: preps[k].s.symbol, pnl: m.back + now + m.div - m.out, dividends: m.div, trades: tradeCount.get(preps[k].s.symbol) ?? 0 };
+      })
+      .sort((a, b) => b.pnl - a.pnl),
     pending: [...pendingSell].filter(([, w]) => w === 'stop' || w === 'trend').map(([k, w]) => ({ symbol: preps[k].s.symbol, why: w as 'stop' | 'trend' })),
     warnings,
   };
