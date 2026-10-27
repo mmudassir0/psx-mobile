@@ -39,7 +39,8 @@ import { MoodLine } from '../ui/MoodLine';
 import { StoryDeck } from '../ui/StoryDeck';
 import { weekOver } from '../portfolio/weekly';
 import { moodLabel } from '../analysis/mood';
-import { updateWidget } from '../widget/update';
+import { updateMarketWidgets, updateWidget } from '../widget/update';
+import { WIDGET_INDICES } from '../widget/marketData';
 import { EventsCard } from '../ui/EventsCard';
 import { NewsHomeCard } from '../ui/NewsHomeCard';
 import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
@@ -127,6 +128,24 @@ export default function HomeScreen() {
       nextDividend: appLocked ? null : nextDividendLine(rows),
     });
   }, [hasReal, reviewing, ready, real.total, real.today, real.todayPct, real.pnlPct, mood, rows, reminders, appLocked]);
+
+  // and the watchlist and market widgets, from the same prices
+  useEffect(() => {
+    if (!ready || !stocks.length) return;
+    const up = stocks.filter((s) => (s.changePct ?? 0) > 0 && (s.volume ?? 0) > 0).length;
+    const down = stocks.filter((s) => (s.changePct ?? 0) < 0 && (s.volume ?? 0) > 0).length;
+    updateMarketWidgets(
+      { rows: watchlist.map((s) => ({ symbol: s, price: bySymbol.get(s)?.price ?? null, changePct: bySymbol.get(s)?.changePct ?? null })), at: Date.now() },
+      {
+        rows: WIDGET_INDICES.map((c) => indices.find((i) => i.code === c))
+          .filter((i): i is NonNullable<typeof i> => !!i)
+          .map((i) => ({ code: i.code, label: INDEX_NAMES[i.code] ?? i.code, value: i.current, change: i.change, changePct: i.changePct })),
+        up,
+        down,
+        at: Date.now(),
+      },
+    );
+  }, [ready, stocks, indices, watchlist, bySymbol]);
 
   const val = valuePortfolio(account, (s) => bySymbol.get(s));
   const homeIdx = HOME_INDICES.map((c) => indices.find((i) => i.code === c)).filter(Boolean) as typeof indices;

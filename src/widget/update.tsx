@@ -18,3 +18,22 @@ export async function updateWidget(data: WidgetData) {
     // no widget on the home screen, or the native part missing: nothing to do
   }
 }
+
+/** After the app refreshes prices: redraw the watchlist and market widgets with them. */
+let lastMarket = '';
+export async function updateMarketWidgets(watch: import('./MarketWidgets').WatchData, market: import('./MarketWidgets').MarketData) {
+  if (Platform.OS !== 'android') return;
+  const key = JSON.stringify([watch.rows, market.rows]);
+  if (key === lastMarket) return;
+  lastMarket = key;
+  try {
+    const { WATCH_KEY, MARKET_KEY, WATCH_WIDGET, MARKET_WIDGET, WatchWidget, MarketWidget, rowsFor } = await import('./MarketWidgets');
+    await save(WATCH_KEY, watch);
+    await save(MARKET_KEY, market);
+    const { requestWidgetUpdate } = await import('react-native-android-widget');
+    await requestWidgetUpdate({ widgetName: WATCH_WIDGET, renderWidget: (info) => <WatchWidget data={watch} rows={rowsFor(info.height)} /> }).catch(() => {});
+    await requestWidgetUpdate({ widgetName: MARKET_WIDGET, renderWidget: () => <MarketWidget data={market} /> }).catch(() => {});
+  } catch {
+    // widgets not on the home screen
+  }
+}

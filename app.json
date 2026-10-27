@@ -69,6 +69,30 @@
               "resizeMode": "horizontal|vertical",
               "previewImage": "./assets/widget-preview.png",
               "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Watchlist",
+              "label": "Sahm watchlist",
+              "description": "Prices and today's change for your watchlist",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-watch-preview.png",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Market",
+              "label": "Sahm market",
+              "description": "KSE-100, KMI-30 and other indices, and how many stocks are up",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-market-preview.png",
+              "updatePeriodMillis": 1800000
             }
           ]
         }

@@ -57,11 +57,7 @@ export function PortfolioWidget({ data }: { data: WidgetData | null }) {
         <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
       )}
       {data?.nextDividend ? <TextWidget text={`💸 ${data.nextDividend}`} style={{ fontSize: 12, color: '#C3CCD6' }} maxLines={1} /> : null}
-      <TextWidget
-        text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '}
-        style={{ fontSize: 12, color: data?.due ? '#E8B04B' : '#7B8797' }}
-        maxLines={1}
-      />
+      <TextWidget text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '} style={{ fontSize: 12, color: data?.due ? '#E8B04B' : '#7B8797' }} maxLines={1} />
     </FlexWidget>
   );
 }
