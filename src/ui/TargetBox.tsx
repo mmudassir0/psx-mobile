@@ -1,5 +1,6 @@
 /** A holding's target and rethink prices: a bar showing where the price sits between them, set or changed in place. */
 import React, { useState } from 'react';
+import { tt, useLang } from '../i18n';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtPrice } from '../format';
@@ -73,7 +74,7 @@ export function TargetBox({ symbol, price, avgCost, fairMid }: { symbol: string;
     return (
       <Pressable onPress={start} hitSlop={4}>
         <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-          Set a target and a rethink price ›
+          {tt("Set a target and a rethink price ›")}
         </T>
       </Pressable>
     );

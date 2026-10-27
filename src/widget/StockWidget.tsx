@@ -27,7 +27,10 @@ export function StockWidget({ data, width = 250 }: { data: StockWidgetData | nul
   const up = (data?.changePct ?? 0) >= 0;
   const color = up ? '#22C38E' : '#FF8590';
   const w = Math.max(120, Math.min(400, width - 28));
-  const svg = data && data.closes.length > 2 ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="44" viewBox="0 0 ${w} 44"><path d="${sparkPath(data.closes, w, 44)}" stroke="${color}" stroke-width="2" fill="none"/></svg>` : null;
+  const svg =
+    data && data.closes.length > 2
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="44" viewBox="0 0 ${w} 44"><path d="${sparkPath(data.closes, w, 44)}" stroke="${color}" stroke-width="2" fill="none"/></svg>`
+      : null;
   return (
     <FlexWidget
       clickAction="OPEN_URI"

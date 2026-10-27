@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { tt, useLang } from '../i18n';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -91,6 +92,7 @@ export function MarketStatus() {
 }
 
 export default function HomeScreen() {
+  useLang();
   const nav = useNavigation();
   const { ready, indices, stocks, bySymbol, refresh, refreshing } = useMarket();
   const { name, watchlist, account } = useUser();
@@ -219,11 +221,11 @@ export default function HomeScreen() {
       case 'watchlist':
         return on('watchlist') ? (
         <View style={styles.pad}>
-          <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
+          <Section title="Watchlist" action={tt("Find stocks")} onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
             {!ready ? (
-              <Skeleton kind="rows" n={5} label="Loading PSX prices" />
+              <Skeleton kind="rows" n={5} label={tt("Loading PSX prices")} />
             ) : watched.length === 0 ? (
-              <Empty title="Nothing on your watchlist" body="Open any stock and tap the star to follow it here." />
+              <Empty title={tt("Nothing on your watchlist")} body={tt("Open any stock and tap the star to follow it here.")} />
             ) : (
               <View>
                 {watched.map((s, i) => (
@@ -251,9 +253,9 @@ export default function HomeScreen() {
               {moverList.map((s, i) => (
                 <StockRow key={s.symbol} stock={s} sub={volumeLabel(s)} last={i === moverList.length - 1} onPress={() => open(s.symbol)} />
               ))}
-              {ready && moverList.length === 0 ? <Empty title="No movers yet" body="They appear once trading starts." /> : null}
+              {ready && moverList.length === 0 ? <Empty title={tt("No movers yet")} body={tt("They appear once trading starts.")} /> : null}
             </View>
-            {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
+            {movers !== 'active' ? <T v="caption">{tt("Only stocks with at least 100,000 shares traded today.")}</T> : null}
           </Section>
         </View>
         );
@@ -293,7 +295,7 @@ export default function HomeScreen() {
           style={({ pressed }) => [styles.search, pressed && { opacity: 0.8 }]}
         >
           <Icon name="search" size={18} color={colors.muted} />
-          <T style={{ color: colors.faint, fontSize: 15 }}>Search stocks or tools…</T>
+          <T style={{ color: colors.faint, fontSize: 15 }}>{tt("Search stocks or tools…")}</T>
         </Pressable>
 
         <View style={[styles.pad, { gap: 10 }]}>
@@ -312,25 +314,25 @@ export default function HomeScreen() {
             style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <T v="label">My portfolio</T>
+              <T v="label">{tt("My portfolio")}</T>
               <T v="caption">{holdings.length} holdings ›</T>
             </View>
             <T v="monoXl">{fmtPkr(real.total)}</T>
             <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
               <View style={{ gap: 2 }}>
-                <T v="caption">Today</T>
+                <T v="caption">{tt("Today")}</T>
                 <T v="mono" style={{ color: changeColor(real.today) }}>
                   {fmtSigned(real.today, 0)} ({fmtPct(real.todayPct * 100)})
                 </T>
               </View>
               <View style={{ gap: 2 }}>
-                <T v="caption">Total P&L</T>
+                <T v="caption">{tt("Total P&L")}</T>
                 <T v="mono" style={{ color: changeColor(real.pnl) }}>
                   {fmtSigned(real.pnl, 0)} ({fmtPct(real.pnlPct * 100)})
                 </T>
               </View>
               <View style={{ gap: 2 }}>
-                <T v="caption">Invested</T>
+                <T v="caption">{tt("Invested")}</T>
                 <T v="mono">{fmtNum(real.invested, 0)}</T>
               </View>
             </View>
@@ -353,9 +355,9 @@ export default function HomeScreen() {
                 ))}
               </View>
             ) : reviewing ? (
-              <T v="caption">Checking your holdings…</T>
+              <T v="caption">{tt("Checking your holdings…")}</T>
             ) : (
-              <T v="caption">Nothing needs your attention today.</T>
+              <T v="caption">{tt("Nothing needs your attention today.")}</T>
             )}
           </Pressable>
         ) : !on('practice') ? null : (
@@ -365,25 +367,25 @@ export default function HomeScreen() {
           style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <T v="label">Paper account</T>
-            <T v="caption">Practice money</T>
+            <T v="label">{tt("Paper account")}</T>
+            <T v="caption">{tt("Practice money")}</T>
           </View>
           <T v="monoXl">{fmtPkr(val.total)}</T>
           <View style={{ flexDirection: 'row', gap: 18 }}>
             <View style={{ gap: 2 }}>
-              <T v="caption">Today</T>
+              <T v="caption">{tt("Today")}</T>
               <T v="mono" style={{ color: changeColor(val.dayChange) }}>
                 {fmtSigned(val.dayChange, 0)}
               </T>
             </View>
             <View style={{ gap: 2 }}>
-              <T v="caption">Total return</T>
+              <T v="caption">{tt("Total return")}</T>
               <T v="mono" style={{ color: changeColor(val.totalReturn) }}>
                 {fmtPct(val.totalReturnPct)}
               </T>
             </View>
             <View style={{ gap: 2 }}>
-              <T v="caption">Cash</T>
+              <T v="caption">{tt("Cash")}</T>
               <T v="mono">{fmtNum(account.cash, 0)}</T>
             </View>
           </View>
@@ -391,7 +393,7 @@ export default function HomeScreen() {
         )}
         {!hasReal && holdingsLoaded && !stories ? (
           <Pressable accessibilityRole="link" onPress={() => nav.navigate('EditHoldings')} style={styles.pad} hitSlop={6}>
-            <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Add your real holdings ›</T>
+            <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>{tt("Add your real holdings ›")}</T>
           </Pressable>
         ) : null}
 

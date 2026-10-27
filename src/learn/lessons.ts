@@ -38,7 +38,12 @@ export const LESSONS: Lesson[] = [
     ],
     example: (c) => (c.top ? `You own ${c.top.shares.toLocaleString('en-US')} shares of ${c.top.symbol}, worth ${rs(c.top.shares * c.top.price)} at Rs ${c.top.price.toFixed(2)} each.` : null),
     tryIt: { label: 'See the market today', route: 'Tabs', params: { screen: 'Market' } },
-    check: { q: 'Over many years, what mostly decides a share price?', options: ['How many people talk about it', "The company's profits", 'The time of day'], answer: 1, why: "Day to day it's buying and selling; over years prices follow what the business earns." },
+    check: {
+      q: 'Over many years, what mostly decides a share price?',
+      options: ['How many people talk about it', "The company's profits", 'The time of day'],
+      answer: 1,
+      why: "Day to day it's buying and selling; over years prices follow what the business earns.",
+    },
   },
   {
     id: 'account',
@@ -46,11 +51,16 @@ export const LESSONS: Lesson[] = [
     minutes: 3,
     body: [
       'You buy shares through a broker licensed by the SECP (for example KTrade). The broker opens a CDC account for you: the Central Depository holds your shares electronically in your name.',
-      "NCCPL settles the trades and works out capital gains tax. Dividends go straight to the bank account (IBAN) on your CDC record, so keep it right.",
+      'NCCPL settles the trades and works out capital gains tax. Dividends go straight to the bank account (IBAN) on your CDC record, so keep it right.',
       "Being on the FBR's Active Taxpayers List (a filer) halves the tax on dividends and lowers it on gains. Set your status in Sahm's Settings so its figures match.",
     ],
     tryIt: { label: 'Set your tax status', route: 'Settings' },
-    check: { q: 'Where are your shares actually held?', options: ['In your CDC account', "In the broker's own name", 'On paper certificates at home'], answer: 0, why: 'The CDC holds them for you in your name; the broker places the orders.' },
+    check: {
+      q: 'Where are your shares actually held?',
+      options: ['In your CDC account', "In the broker's own name", 'On paper certificates at home'],
+      answer: 0,
+      why: 'The CDC holds them for you in your name; the broker places the orders.',
+    },
   },
   {
     id: 'orders',
@@ -63,7 +73,12 @@ export const LESSONS: Lesson[] = [
     ],
     example: (c) => (c.top ? `Selling all your ${c.top.symbol} at Rs ${c.top.price.toFixed(2)} would cost about ${rs(c.top.shares * c.top.price * 0.002)} in charges, before any tax.` : null),
     tryIt: { label: 'Plan a sale', route: 'SellPlan' },
-    check: { q: 'You want to buy only if the price is Rs 400 or less. Which order?', options: ['Market order', 'Limit order at 400', 'Either, it makes no difference'], answer: 1, why: "A limit order won't fill above your price; a market order takes whatever is on offer." },
+    check: {
+      q: 'You want to buy only if the price is Rs 400 or less. Which order?',
+      options: ['Market order', 'Limit order at 400', 'Either, it makes no difference'],
+      answer: 1,
+      why: "A limit order won't fill above your price; a market order takes whatever is on offer.",
+    },
   },
   {
     id: 'pe',
@@ -74,7 +89,10 @@ export const LESSONS: Lesson[] = [
       'A low P/E can mean cheap, or it can mean the market expects profits to fall. Compare a stock with its own past and its sector, not with every other stock.',
       'Sahm shows each stock against its sector (Peers tab) and against its own history (P/E band on the stock page).',
     ],
-    example: (c) => (c.top?.pe ? `${c.top.symbol}'s P/E is ${c.top.pe.toFixed(1)}: at Rs ${c.top.price.toFixed(2)} you pay for about ${c.top.pe.toFixed(1)} years of its last year's profit (EPS about Rs ${(c.top.price / c.top.pe).toFixed(2)}).` : null),
+    example: (c) =>
+      c.top?.pe
+        ? `${c.top.symbol}'s P/E is ${c.top.pe.toFixed(1)}: at Rs ${c.top.price.toFixed(2)} you pay for about ${c.top.pe.toFixed(1)} years of its last year's profit (EPS about Rs ${(c.top.price / c.top.pe).toFixed(2)}).`
+        : null,
     tryIt: { label: 'Words explained', route: 'Glossary' },
     check: { q: 'A share at Rs 100 earned Rs 10 a share last year. Its P/E is…', options: ['10', '1', '100'], answer: 0, why: '100 ÷ 10 = 10: ten years of that profit.' },
   },
@@ -87,7 +105,12 @@ export const LESSONS: Lesson[] = [
       "To get it, your shares must be on the register the day before book closure. With T+1 settlement that means buying at least two working days before book closure starts. Selling after that doesn't lose it.",
       'Tax is taken before it reaches your bank: 15% for filers on most companies, more for non-filers. The price usually drops by about the dividend when the share goes ex.',
     ],
-    example: (c) => (c.top?.dps ? `${c.top.symbol} paid about Rs ${c.top.dps.toFixed(2)} a share over the last year: about ${rs(c.top.dps * c.top.shares * 0.85)} on your shares after 15% tax.` : c.top?.divYield ? `${c.top.symbol}'s dividend yield is ${c.top.divYield.toFixed(1)}%.` : null),
+    example: (c) =>
+      c.top?.dps
+        ? `${c.top.symbol} paid about Rs ${c.top.dps.toFixed(2)} a share over the last year: about ${rs(c.top.dps * c.top.shares * 0.85)} on your shares after 15% tax.`
+        : c.top?.divYield
+          ? `${c.top.symbol}'s dividend yield is ${c.top.divYield.toFixed(1)}%.`
+          : null,
     tryIt: { label: 'Dividend calendar', route: 'Dividends' },
     check: { q: 'Face value Rs 10, dividend announced 30%. Cash per share?', options: ['Rs 30', 'Rs 3', 'Rs 0.30'], answer: 1, why: '30% of the Rs 10 face value is Rs 3.' },
   },
@@ -101,7 +124,12 @@ export const LESSONS: Lesson[] = [
       'Sahm adds bonus shares to your holding once they settle, and the rights box on a holding works out all three choices in rupees.',
     ],
     tryIt: { label: 'My holdings', route: 'Tabs', params: { screen: 'Portfolio' } },
-    check: { q: "You hold 100 shares and get a 20% bonus. What happens to your holding's value that day?", options: ['It goes up 20%', 'About the same: the price adjusts', 'It halves'], answer: 1, why: 'You have 120 shares, but each is worth less; the total stays about the same.' },
+    check: {
+      q: "You hold 100 shares and get a 20% bonus. What happens to your holding's value that day?",
+      options: ['It goes up 20%', 'About the same: the price adjusts', 'It halves'],
+      answer: 1,
+      why: 'You have 120 shares, but each is worth less; the total stays about the same.',
+    },
   },
   {
     id: 'results',
@@ -113,7 +141,12 @@ export const LESSONS: Lesson[] = [
       'One bad quarter is not a trend. Two or three in a row, with falling sales, is worth a closer look.',
     ],
     tryIt: { label: 'Results season', route: 'Results' },
-    check: { q: 'Best way to judge a quarter?', options: ['Against the quarter before', 'Against the same quarter last year', 'Against the share price'], answer: 1, why: 'The same quarter a year earlier removes seasonal ups and downs.' },
+    check: {
+      q: 'Best way to judge a quarter?',
+      options: ['Against the quarter before', 'Against the same quarter last year', 'Against the share price'],
+      answer: 1,
+      why: 'The same quarter a year earlier removes seasonal ups and downs.',
+    },
   },
   {
     id: 'indices',
@@ -121,7 +154,7 @@ export const LESSONS: Lesson[] = [
     minutes: 2,
     body: [
       'The KSE-100 tracks the 100 biggest companies: "the market". KSE-30 and All Share are other views of it.',
-      "KMI All Share lists every company that passes the Shariah screening (business, debt, interest income and other tests); KMI-30 is its 30 biggest. The list is reviewed twice a year.",
+      'KMI All Share lists every company that passes the Shariah screening (business, debt, interest income and other tests); KMI-30 is its 30 biggest. The list is reviewed twice a year.',
       'Comparing your return with the KSE-100, or the KMI-30 if you only buy Shariah-compliant shares, tells you whether picking stocks beat simply owning the market.',
     ],
     tryIt: { label: 'Shariah corner', route: 'Shariah' },
@@ -136,9 +169,17 @@ export const LESSONS: Lesson[] = [
       'A common rule of thumb: no single stock over about 20% of your money, and no single sector over a third. Keep money you need in the next year or two out of shares, and never invest borrowed money.',
       "The KSE-100 has fallen 30% or more several times. Sahm's stress test shows how your holdings did in those falls.",
     ],
-    example: (c) => (c.top && c.topWeight != null ? `${c.top.symbol} is ${(c.topWeight * 100).toFixed(0)}% of your money${c.topWeight > 0.2 ? ': more than the usual 20% guide' : ''}, across ${c.holdings} holding${c.holdings === 1 ? '' : 's'}.` : null),
+    example: (c) =>
+      c.top && c.topWeight != null
+        ? `${c.top.symbol} is ${(c.topWeight * 100).toFixed(0)}% of your money${c.topWeight > 0.2 ? ': more than the usual 20% guide' : ''}, across ${c.holdings} holding${c.holdings === 1 ? '' : 's'}.`
+        : null,
     tryIt: { label: 'Sector limits', route: 'SectorLimits' },
-    check: { q: "Which spreads risk best?", options: ['All money in the stock you know best', 'Several stocks across different sectors', 'Several banks'], answer: 1, why: 'Different sectors fall for different reasons, so they rarely all fall together.' },
+    check: {
+      q: 'Which spreads risk best?',
+      options: ['All money in the stock you know best', 'Several stocks across different sectors', 'Several banks'],
+      answer: 1,
+      why: 'Different sectors fall for different reasons, so they rarely all fall together.',
+    },
   },
   {
     id: 'tax',
@@ -150,7 +191,12 @@ export const LESSONS: Lesson[] = [
       "On zakat: scholars differ on how to value shares. Sahm shows two common ways (market value for shares bought to sell; the company's zakatable assets for shares held for dividends). If zakat is deducted at source, a CZ-50 declaration may apply.",
     ],
     tryIt: { label: 'Tax statement', route: 'TaxStatement' },
-    check: { q: 'You sold one stock at a Rs 10,000 profit and another at a Rs 4,000 loss in the same tax year. Taxable gain?', options: ['Rs 10,000', 'Rs 6,000', 'Rs 14,000'], answer: 1, why: 'The loss is set off against the gain first: 10,000 − 4,000.' },
+    check: {
+      q: 'You sold one stock at a Rs 10,000 profit and another at a Rs 4,000 loss in the same tax year. Taxable gain?',
+      options: ['Rs 10,000', 'Rs 6,000', 'Rs 14,000'],
+      answer: 1,
+      why: 'The loss is set off against the gain first: 10,000 − 4,000.',
+    },
   },
 ];
 

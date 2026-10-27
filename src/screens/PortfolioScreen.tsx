@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { tt, useLang } from '../i18n';
 import { useFlag } from '../flags';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import type { TabParams } from '../nav/types';
@@ -58,7 +59,7 @@ function PaperPortfolio() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.between}>
           <T v="caption">Practice money, not your real account.</T>
-          <Badge label="Paper account" tone="gold" />
+          <Badge label={tt("Paper account")} tone="gold" />
         </View>
 
         <Card style={styles.summary}>
@@ -69,11 +70,11 @@ function PaperPortfolio() {
             <T v="monoXl">{fmtPkr(val.total)}</T>
           </View>
           <Metric label="Unrealised P&L" value={`${fmtSigned(val.unrealized, 0)} (${fmtPct(val.unrealizedPct)})`} color={changeColor(val.unrealized)} />
-          <Metric label="Today" value={fmtSigned(val.dayChange, 0)} color={changeColor(val.dayChange)} />
+          <Metric label={tt("Today")} value={fmtSigned(val.dayChange, 0)} color={changeColor(val.dayChange)} />
           <Metric label="Realised P&L" value={fmtSigned(account.realized, 0)} color={changeColor(account.realized)} />
-          <Metric label="Total return" value={fmtPct(val.totalReturnPct)} color={changeColor(val.totalReturn)} />
-          <Metric label="Invested" value={fmtNum(val.holdingsValue, 0)} />
-          <Metric label="Cash" value={fmtNum(account.cash, 0)} />
+          <Metric label={tt("Total return")} value={fmtPct(val.totalReturnPct)} color={changeColor(val.totalReturn)} />
+          <Metric label={tt("Invested")} value={fmtNum(val.holdingsValue, 0)} />
+          <Metric label={tt("Cash")} value={fmtNum(account.cash, 0)} />
         </Card>
 
         {holdings.length === 0 ? (
@@ -139,6 +140,7 @@ function Metric({ label, value, color }: { label: string; value: string; color?:
 }
 
 export default function PortfolioScreen() {
+  useLang();
   const { holdings, loaded } = useHoldings();
   const nav = useNavigation();
   const route = useRoute<RouteProp<TabParams, 'Portfolio'>>();
@@ -161,7 +163,7 @@ export default function PortfolioScreen() {
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <T v="h1">Portfolio</T>
+          <T v="h1">{tt('Portfolio')}</T>
           <Pressable accessibilityRole="button" accessibilityLabel="Family portfolios" hitSlop={8} onPress={() => nav.navigate('Portfolios')} style={styles.pf}>
             <T style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text2 }}>{pfs.list.length > 1 ? `${pfs.list.find((x) => x.id === pfs.active)?.name ?? 'Mine'} ▾` : '👪 Family'}</T>
           </Pressable>
@@ -169,8 +171,8 @@ export default function PortfolioScreen() {
         {practiceOn ? (
           <Segmented
             options={[
-              { key: 'real', label: `My holdings${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
-              { key: 'paper', label: 'Practice' },
+              { key: 'real', label: `${tt('My holdings')}${loaded && holdings.length ? ` (${holdings.length})` : ''}` },
+              { key: 'paper', label: tt("Practice") },
             ]}
             value={tab}
             onChange={setTab}

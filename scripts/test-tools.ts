@@ -2,6 +2,10 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { crossings } from '../src/analysis/chartLines';
+import { tidyTranscript, voicePrompt } from '../src/ai/voice';
+import { LESSONS } from '../src/learn/lessons';
+import { sparkPath } from '../src/widget/spark';
 import { autoTrend, swings, trendNow, trendValues } from '../src/analysis/chartLines';
 import { sinceLast } from '../src/portfolio/sinceLast';
 import { tr, UR, UR_TERMS } from '../src/i18n';
@@ -394,6 +398,26 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
 }
+
+// Line alerts
+{
+  const D = 864e5;
+  const c = [100, 104].map((v, i) => ({ t: Date.UTC(2026, 9, 26) + i * D, o: v, h: v, l: v, c: v, v: 1 }));
+  const x = crossings(c, { levels: [{ price: 102 }, { price: 90 }], trends: [{ t1: 0, p1: 101, t2: D, p2: 101, kind: 'highs' }] });
+  check('line alerts: crossed a level and a trend, not the far one', x.length === 2 && x[0].dir === 'above' && x[0].key.endsWith('2026-10-27') && x[1].what.includes('over the highs'), x);
+  check('line alerts: no cross', crossings(c, { levels: [{ price: 200 }], trends: [] }).length === 0);
+}
+
+// Voice
+check('voice: symbols back in capitals', tidyTranscript(' why is luck  down today ', ['LUCK', 'MEBL']) === 'why is LUCK down today');
+check('voice: prompt carries symbols', voicePrompt(['LUCK']).endsWith('LUCK'));
+
+// Lessons
+check('ten lessons, each answer one of its options', LESSONS.length === 10 && LESSONS.every((l) => l.check.answer >= 0 && l.check.answer < l.check.options.length && l.body.length >= 2));
+check('lesson examples from holdings', LESSONS[3].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: 5, divYield: 8, dps: 8, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('EPS about Rs 20.00') && LESSONS[8].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: null, divYield: null, dps: null, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('more than the usual 20%'));
+
+// Widget chart
+check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0') && sparkPath([1], 10, 10) === '');
 
 // Chart lines
 {

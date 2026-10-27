@@ -82,7 +82,7 @@ by hand.
 **3. A Groq model was retired.** The AI answers "model not found" or similar.
 Model names are in `src/ai/cloud.ts` (`CLOUD_MODELS`) and
 `src/portfolio/screenshot.ts` (`GROQ_VISION`, for reading broker screenshots).
-Pick current ones from console.groq.com/docs/models.
+Pick current ones from console.groq.com/docs/models. Spoken questions use Groq's Whisper (`WHISPER_MODELS` in `src/ai/voice.ts`).
 
 **4. A news feed moved.** News stops from one source. Feeds are listed in
 `src/analysis/news.ts` (`NEWS_FEEDS`); `scripts/probe-news.ts` tests them.

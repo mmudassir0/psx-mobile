@@ -29,7 +29,16 @@ export default function LearnScreen() {
     const st = top ? (top.stock ?? bySymbol.get(top.holding.symbol)) : undefined;
     return {
       top: top
-        ? { symbol: top.holding.symbol, shares: top.holding.shares, price: top.price, avgCost: top.holding.avgCost, pe: st?.pe ?? null, divYield: st?.divYield ?? null, dps: top.dividends?.ttm ?? null, sector: st?.sector ?? null }
+        ? {
+            symbol: top.holding.symbol,
+            shares: top.holding.shares,
+            price: top.price,
+            avgCost: top.holding.avgCost,
+            pe: st?.pe ?? null,
+            divYield: st?.divYield ?? null,
+            dps: top.dividends?.ttm ?? null,
+            sector: st?.sector ?? null,
+          }
         : null,
       holdings: rows.length,
       topWeight: top && total ? top.value / total : null,
