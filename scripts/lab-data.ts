@@ -85,7 +85,11 @@ async function main() {
     };
     const ds = divs.symbols[symbol];
     // dividends in the same adjusted rupees as the prices: the yield on the raw price × the adjusted close
-    const dv = (ds?.list ?? []).map((r) => ({ day: r.ex, dps: r.y * (before(r.ex) ?? 0) })).filter((r) => r.dps > 0);
+    // a single dividend over a quarter of the price is far more likely a misread notice than real
+    const dv = (ds?.list ?? [])
+      .filter((r) => r.y > 0 && r.y <= 0.25)
+      .map((r) => ({ day: r.ex, dps: r.y * (before(r.ex) ?? 0) }))
+      .filter((r) => r.dps > 0);
     // yearly EPS from the company page, known about three months after the year ends
     const eps: { day: string; eps: number }[] = [];
     const cf = join(cacheDir, `company_3A${encodeURIComponent(symbol).replace(/%/g, '_')}.json`);
