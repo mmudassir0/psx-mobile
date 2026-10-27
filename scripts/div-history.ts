@@ -69,7 +69,12 @@ interface State {
   kse100?: string[];
 }
 
-const strip = (h: string) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+const strip = (h: string) =>
+  h
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 const annDay = (s: string) => {
   const m = s.match(/([A-Za-z]{3})[a-z]*\s+(\d{1,2}),\s*(\d{4})/);
@@ -108,7 +113,8 @@ async function notices(sym: string): Promise<Notice[]> {
 }
 
 const WANT = /financial results|dividend/i;
-const SKIP = /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|other than financial|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
+const SKIP =
+  /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|other than financial|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
 
 async function readPdf(id: string, dir: string): Promise<string> {
   const f = join(dir, `${id}.pdf`);
@@ -245,7 +251,8 @@ async function main() {
           const t1 = Date.now();
           const text = await readPdf(n.pdf, tmp);
           const d = parseDivNotice(text);
-          if (process.env.ONLY) console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} bc ${d.closeFrom ?? '-'}`);
+          if (process.env.ONLY)
+            console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} bc ${d.closeFrom ?? '-'}`);
           return { n, d };
         } catch {
           return { n, d: null as DivNotice | null };

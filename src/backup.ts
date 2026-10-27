@@ -5,6 +5,7 @@
  * API keys are never included.
  */
 import { load, save } from './storage';
+import { toStrategy } from './lab/describe';
 import { isSavedScreens } from './analysis/savedScreens';
 import { isPurification } from './portfolio/shariah';
 import { isSectorLimits } from './portfolio/sectorLimits';
@@ -53,6 +54,8 @@ export const BACKUP_KEYS = [
   'pf.store',
   'ui.quiet',
   'real.cash',
+  'user.labStrategies',
+  'user.labFollow',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -77,6 +80,8 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'journal.v1': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.symbol === 'string' && typeof e.day === 'string' && typeof e.price === 'number'),
   'sahm:theme': (x) => typeof x === 'string',
   'ui.quiet': (x) => isObj(x) && typeof x.quiet === 'boolean' && typeof x.digest === 'boolean' && typeof x.from === 'string' && typeof x.to === 'string' && typeof x.digestAt === 'string',
+  'user.labFollow': (x) => x === null || (isObj(x) && typeof x.id === 'string' && typeof x.since === 'string'),
+  'user.labStrategies': (x) => Array.isArray(x) && x.length <= 100 && x.every((s) => toStrategy(s) != null),
   'real.cash': (x) => isObj(x) && typeof x.amount === 'number' && x.amount >= 0,
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,

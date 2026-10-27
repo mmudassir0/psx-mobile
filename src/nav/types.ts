@@ -54,6 +54,12 @@ export type RootParams = {
   SinceBought: undefined;
   DivGrowth: undefined;
   SellSignals: undefined;
+  Lab: undefined;
+  /** id: a saved strategy or template to change; none for a new one */
+  LabEdit: { id?: string };
+  /** id of a saved strategy or template, or 'draft' for the one being edited */
+  LabResult: { id: string };
+  LabCompare: { ids: string[] };
   YearReview: { year?: number } | undefined;
 };
 

@@ -20,7 +20,7 @@ export interface TodoItem {
   /** open this stock when tapped (otherwise My holdings) */
   symbol?: string;
   /** or open this screen */
-  route?: 'Rebalance' | 'Income' | 'Announcements' | 'SectorLimits' | 'DivPayments';
+  route?: 'Rebalance' | 'Income' | 'Announcements' | 'SectorLimits' | 'DivPayments' | 'Lab';
 }
 
 const DAY = 864e5;

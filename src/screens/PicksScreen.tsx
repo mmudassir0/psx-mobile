@@ -154,6 +154,18 @@ export default function PicksScreen({ asTab }: { asTab?: boolean } = {}) {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
       >
+        {asTab ? (
+          <Pressable accessibilityRole="button" onPress={() => nav.navigate('Lab')} style={styles.lab}>
+            <T style={{ fontSize: 22 }}>🧪</T>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Backtesting lab</T>
+              <T v="caption" style={{ lineHeight: 17 }}>
+                Test your own buying and selling rules on ten years of PSX prices.
+              </T>
+            </View>
+            <T v="caption">›</T>
+          </Pressable>
+        ) : null}
         <Segmented options={LISTS.map((l) => ({ key: l.id, label: l.label }))} value={list} onChange={setList} />
         <StaleNote feed={feed} />
         {!feed ? (
@@ -280,6 +292,7 @@ export default function PicksScreen({ asTab }: { asTab?: boolean } = {}) {
 
 const styles = themed(() =>
   StyleSheet.create({
+    lab: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.line },
     root: { flex: 1, backgroundColor: colors.ground },
     topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: space.section },

@@ -45,6 +45,8 @@ export interface Strategy {
   costs: boolean;
   tax: 'filer' | 'nonfiler' | 'none';
   bench: 'KSE100' | 'KMI30';
+  /** stop at the start of this year (for checking each half of the period) */
+  until?: number;
 }
 
 export const METRICS: Record<Metric, { label: string; unit: string; hint: string }> = {
@@ -286,6 +288,33 @@ export function firstDayOf(lab: Lab, year: number): number {
 /** The earliest year a strategy can start: a year of history first, for the 12-month figures. */
 export const earliestYear = (lab: Lab) => Number(lab.days[Math.min(lab.days.length - 1, Y + 5)].slice(0, 4)) + 1;
 
+/**
+ * The index's own dividends, which its points leave out: on each day, the average
+ * dividend yield paid that day by the index's (current) members. An estimate, so
+ * the comparison is like for like with strategies that collect dividends.
+ */
+const benchDivCache = new WeakMap<Lab, Record<'KSE100' | 'KMI30', Float64Array>>();
+export function benchDividends(lab: Lab): Record<'KSE100' | 'KMI30', Float64Array> {
+  let c = benchDivCache.get(lab);
+  if (c) return c;
+  const n = lab.days.length;
+  const make = (inIt: (s: LabStock) => boolean) => {
+    const out = new Float64Array(n);
+    const members = lab.stocks.filter(inIt);
+    const live = new Float64Array(n);
+    for (const s of members) for (let i = 0; i < n; i++) if (s.close[i] > 0) live[i]++;
+    for (const s of members)
+      for (const d of s.divs) {
+        const prev = d.i > 0 ? s.close[d.i - 1] : NaN;
+        if (prev > 0 && live[d.i] > 0) out[d.i] += d.dps / prev / live[d.i];
+      }
+    return out;
+  };
+  c = { KSE100: make((s) => s.kse100), KMI30: make((s) => s.kmi30) };
+  benchDivCache.set(lab, c);
+  return c;
+}
+
 const prepCache = new WeakMap<Lab, Prep[]>();
 const prepsOf = (lab: Lab) => {
   let p = prepCache.get(lab);
@@ -295,7 +324,7 @@ const prepsOf = (lab: Lab) => {
 
 export function runBacktest(lab: Lab, st: Strategy): Result {
   const preps = prepsOf(lab);
-  const n = lab.days.length;
+  const n = st.until ? Math.max(2, firstDayOf(lab, st.until)) : lab.days.length;
   const start = Math.max(firstDayOf(lab, Math.max(st.from, earliestYear(lab))), 1);
   const len = n - start;
   const value = new Float64Array(len);
@@ -304,6 +333,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
   const growth = new Float64Array(len);
   const benchGrowth = new Float64Array(len);
   const idx = lab.index[st.bench];
+  const benchDiv = benchDividends(lab)[st.bench];
   const costRate = st.costs ? COST_RATE : 0;
   const divTax = DIV_TAX[st.tax];
   const cgt = CGT[st.tax];
@@ -451,6 +481,8 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     const v = worth(i);
     value[t] = v;
     invested[t] = put;
+    // the index's dividends, after the same tax, bought back into it
+    if (benchDiv[i] > 0) units *= 1 + benchDiv[i] * (1 - divTax);
     bench[t] = units * (idx[i] > 0 ? idx[i] : idx[i - 1]);
     if (t > 0 && before > 0) g *= (v - flow) / before;
     if (t > 0 && benchBefore > 0) bg *= (bench[t] - flow) / benchBefore;

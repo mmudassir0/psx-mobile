@@ -50,6 +50,7 @@ export const FEATURES: Feature[] = [
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
   { key: 'sincebought', label: 'Since you bought', emoji: '🧭', group: 'My money', words: 'since bought buy price best worst high low drawdown peak history holding', go: (nav) => nav.navigate('SinceBought') },
+  { key: 'lab', label: 'Backtesting lab', emoji: '🧪', group: 'Ideas', words: 'backtest lab strategy test rules history past simulate momentum dividend value what if returns', go: (nav) => nav.navigate('Lab') },
   { key: 'warnings', label: 'Warning signs', emoji: '🚩', group: 'My money', words: 'sell signals warning rethink broken trim review cut dividend results down risk exit', go: (nav) => nav.navigate('SellSignals') },
   { key: 'divgrowth', label: 'Dividend growth', emoji: '📶', group: 'My money', words: 'dividend growth grown cut increase history years dps payout trend', flags: ['dividends'], go: (nav) => nav.navigate('DivGrowth') },
   { key: 'diary', label: 'Portfolio diary', emoji: '📔', group: 'My money', words: 'diary daily log day by day what happened today yesterday history line', go: (nav) => nav.navigate('Diary') },

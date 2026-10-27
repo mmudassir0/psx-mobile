@@ -35,6 +35,7 @@ import { homeCardsPref, visibleCards, type HomeCardKey } from '../nav/homeCards'
 import { lockPref } from '../ui/AppLock';
 import { targetsPref } from '../portfolio/targets';
 import { activityItems, announcementItem, latePaymentItems, sectorItems, targetItems, nextDividendLine, todoItems, usePortfolioTotals } from '../portfolio/summary';
+import { useLabFollow } from '../lab/useLabFollow';
 import { useReminderTodos } from '../portfolio/reminderTodos';
 import { Icon } from '../ui/kit';
 import { MoodCard, useMood } from '../ui/MoodCard';
@@ -107,11 +108,12 @@ export default function HomeScreen() {
   const real = usePortfolioTotals(rows, bySymbol);
   const applied = appliedBonusesPref.use();
   const reminders = useReminderTodos();
+  const settled = useSettled();
+  const labTodo = useLabFollow(useMemo(() => rows.map((r) => r.holding.symbol), [rows]), settled && !reviewing);
   const annSeen = annSeenPref.use();
   const appLocked = lockPref.use();
   const targets = targetsPref.use();
-  const todo = useMemo(() => [...reminders, ...(reviewing ? [] : [...targetItems(rows, targets), ...sectorItems(rows, sectorLimits), ...(Object.keys(received).length ? latePaymentItems(rows, received) : []), ...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, candles, annSeen, targets, sectorLimits, received]);
-  const settled = useSettled();
+  const todo = useMemo(() => [...reminders, ...labTodo, ...(reviewing ? [] : [...targetItems(rows, targets), ...sectorItems(rows, sectorLimits), ...(Object.keys(received).length ? latePaymentItems(rows, received) : []), ...todoItems(rows, applied), ...activityItems(rows, candles), ...announcementItem(rows, annSeen)])].slice(0, 5), [rows, applied, reviewing, reminders, labTodo, candles, annSeen, targets, sectorLimits, received]);
   useEffect(() => {
     if (ready && stocks.length) markReady();
   }, [ready, stocks.length]);

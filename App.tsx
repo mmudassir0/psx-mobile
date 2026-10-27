@@ -155,6 +155,10 @@ function Root() {
       <Stack.Screen name="SinceBought" getComponent={() => require('./src/screens/SinceBoughtScreen').default} />
       <Stack.Screen name="DivGrowth" getComponent={() => require('./src/screens/DivGrowthScreen').default} />
       <Stack.Screen name="SellSignals" getComponent={() => require('./src/screens/SellSignalsScreen').default} />
+      <Stack.Screen name="Lab" getComponent={() => require('./src/screens/LabScreen').default} />
+      <Stack.Screen name="LabEdit" getComponent={() => require('./src/screens/LabEditScreen').default} />
+      <Stack.Screen name="LabResult" getComponent={() => require('./src/screens/LabResultScreen').default} />
+      <Stack.Screen name="LabCompare" getComponent={() => require('./src/screens/LabCompareScreen').default} />
       <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
@@ -216,6 +220,10 @@ const linking: LinkingOptions<RootParams> = {
       SinceBought: 'since-bought',
       DivGrowth: 'dividend-growth',
       SellSignals: 'warnings',
+      Lab: 'lab',
+      LabEdit: 'lab/edit',
+      LabResult: 'lab/result/:id',
+      LabCompare: 'lab/compare',
       YearReview: 'year-review',
     },
   },
