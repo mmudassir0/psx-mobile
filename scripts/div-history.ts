@@ -297,6 +297,15 @@ async function main() {
         }
       }
       list.sort((a, b) => (a.ex < b.ex ? -1 : 1));
+      // the same dividend found twice (results notice and a later dividend notice): keep the one with a real book closure
+      const dedup: DivRow[] = [];
+      for (const r of list) {
+        const k = dedup.findIndex((d) => Math.abs(d.dps - r.dps) <= Math.max(0.011, d.dps * 0.01) && Math.abs(Date.parse(d.ex) - Date.parse(r.ex)) < 45 * 864e5);
+        if (k < 0) dedup.push(r);
+        else if (dedup[k].approx && !r.approx) dedup[k] = r;
+      }
+      list.length = 0;
+      list.push(...dedup);
       // how the saved (adjusted) prices relate to the raw ones over time, for earnings per share
       const fac: [string, number][] = [];
       const df = join(cacheDir, `daily_3A${encodeURIComponent(sym).replace(/%/g, '_')}.json`);
