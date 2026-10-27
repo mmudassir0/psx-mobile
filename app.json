@@ -93,6 +93,18 @@
               "resizeMode": "horizontal|vertical",
               "previewImage": "./assets/widget-market-preview.png",
               "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Stock",
+              "label": "Sahm stock",
+              "description": "One stock you choose: price, today's change and a 3-month chart",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/widget-stock-preview.png",
+              "updatePeriodMillis": 1800000
             }
           ]
         }

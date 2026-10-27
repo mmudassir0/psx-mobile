@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { pinStockWidget } from '../widget/update';
 import { MyLines } from '../ui/MyLines';
 import { trendValues } from '../analysis/chartLines';
 import { chartLinesPref } from '../portfolio/prefs';
@@ -6,7 +7,7 @@ import { Termed } from '../ui/Explain';
 import type { TermId } from '../analysis/glossary';
 import { useFlag } from '../flags';
 import { Skeleton } from '../ui/Skeleton';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { RootParams } from '../nav/types';
@@ -157,6 +158,7 @@ export default function StockScreen() {
   const allMyLines = chartLinesPref.use();
   const myLines = allMyLines[symbol];
   const [linesOpen, setLinesOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
   useEffect(() => {
     loadPref<Extra[]>('chart.extras', []).then(setExtras);
   }, []);
@@ -652,6 +654,21 @@ export default function StockScreen() {
         ) : null}
 
         <PeBandCard company={company} daily={daily} />
+
+        {Platform.OS === 'android' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={async () => {
+              await pinStockWidget(symbol, company?.name ?? stock?.name ?? symbol);
+              setPinned(true);
+            }}
+            style={{ paddingHorizontal: space.gutter }}
+          >
+            <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>
+              {pinned ? '📌 On the Sahm stock widget (long-press your home screen → Widgets → Sahm to add it)' : '📌 Show on the stock widget'}
+            </T>
+          </Pressable>
+        ) : null}
 
         {news.length ? (
           <Section title="Latest announcements" action="See all" onAction={() => setTab('news')}>

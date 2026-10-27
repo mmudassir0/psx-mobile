@@ -1,5 +1,5 @@
 /** Fresh figures for the watchlist and market widgets, fetched from PSX (in the app or in the background). */
-import { fetchBoard, fetchIndices, INDEX_NAMES } from '../psx/api';
+import { fetchBoard, fetchIndices, fetchSeries, INDEX_NAMES } from '../psx/api';
 import { load, save } from '../storage';
 import { MARKET_KEY, WATCH_KEY, type MarketData, type WatchData } from './MarketWidgets';
 
@@ -42,5 +42,23 @@ export async function freshMarket(): Promise<MarketData | null> {
     return data;
   } catch {
     return load<MarketData | null>(MARKET_KEY, null);
+  }
+}
+
+/** The chosen stock for the stock widget, with its last three months of closes. */
+export async function freshStock(): Promise<import('./StockWidget').StockWidgetData | null> {
+  const { STOCK_KEY, STOCK_PICK_KEY } = await import('./StockWidget');
+  const pick = await load<{ symbol: string; name: string } | null>(STOCK_PICK_KEY, null);
+  if (!pick) return null;
+  const last = await load<import('./StockWidget').StockWidgetData | null>(STOCK_KEY, null);
+  try {
+    const [board, series] = await Promise.all([fetchBoard(), fetchSeries('eod', pick.symbol).catch(() => null)]);
+    const q = board.find((b) => b.symbol === pick.symbol);
+    const closes = series?.length ? series.slice(-63).map((p) => p.v) : last?.symbol === pick.symbol ? last.closes : [];
+    const data = { symbol: pick.symbol, name: pick.name, price: q?.price ?? last?.price ?? null, changePct: q?.changePct ?? null, closes, at: Date.now() };
+    await save(STOCK_KEY, data);
+    return data;
+  } catch {
+    return last?.symbol === pick.symbol ? last : { symbol: pick.symbol, name: pick.name, price: null, changePct: null, closes: [], at: 0 };
   }
 }

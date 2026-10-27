@@ -37,3 +37,18 @@ export async function updateMarketWidgets(watch: import('./MarketWidgets').Watch
     // widgets not on the home screen
   }
 }
+
+/** From the stock page: show this stock on the stock widget, drawn straight away. */
+export async function pinStockWidget(symbol: string, name: string): Promise<void> {
+  const { STOCK_PICK_KEY, STOCK_WIDGET, StockWidget } = await import('./StockWidget');
+  await save(STOCK_PICK_KEY, { symbol, name });
+  if (Platform.OS !== 'android') return;
+  try {
+    const { freshStock } = await import('./marketData');
+    const data = await freshStock();
+    const { requestWidgetUpdate } = await import('react-native-android-widget');
+    await requestWidgetUpdate({ widgetName: STOCK_WIDGET, renderWidget: (info) => <StockWidget data={data} width={info.width} /> });
+  } catch {
+    // no stock widget on the home screen yet
+  }
+}
