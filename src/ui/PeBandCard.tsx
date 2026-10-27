@@ -1,5 +1,6 @@
 /** A stock's P/E over the last few years with its usual range shaded, and where today's sits. */
 import React, { useMemo } from 'react';
+import { Explain } from './Explain';
 import { View } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { colors, fonts } from '../theme';
@@ -36,7 +37,7 @@ export function PeBandCard({ company, daily }: { company: CompanyInfo | null; da
   const verdict = pct >= 75 ? 'cheap against its own history' : pct <= 25 ? 'expensive against its own history' : 'in its usual range';
   const tone = pct >= 75 ? colors.up : pct <= 25 ? colors.downText : colors.text;
   return (
-    <Section title="P/E against its own history">
+    <Section title="P/E against its own history" extra={<Explain id="peBand" />}>
       <Panel style={{ paddingVertical: 14, gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
           <T v="mono" style={{ fontSize: 22, color: tone }}>

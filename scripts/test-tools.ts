@@ -2,6 +2,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { peBand, profitsFrom } from '../src/analysis/peBand';
+import { pickExample, TERMS } from '../src/analysis/glossary';
 import { dividendsReceived, setRate, shariahSummary } from '../src/portfolio/shariah';
 import { deleteScreen, markSeen, newSince, sameSettings, saveScreen, suggestName } from '../src/analysis/savedScreens';
 import { move, orderOf, toggle, visibleCards } from '../src/nav/homeCards';
@@ -368,6 +369,18 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
   check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+}
+
+// Plain-word explanations
+{
+  const mine = [
+    { symbol: 'SMALL', price: 10, shares: 10, pe: 4, divYield: 12, marketCap: 1e9 },
+    { symbol: 'BIG', price: 100, shares: 1000, pe: null, divYield: 8, marketCap: 5e10 },
+  ];
+  check('example from the biggest holding that has the figure', pickExample(TERMS.pe, mine)!.startsWith('SMALL') && pickExample(TERMS.divYield, mine)!.startsWith('BIG'));
+  check('no example without holdings or for plain terms', pickExample(TERMS.pe, []) === null && pickExample(TERMS.kibor, mine) === null);
+  check('every term has a title and body', Object.values(TERMS).every((t) => t.title && t.body.length > 40));
+  check('dividend example in rupees', pickExample(TERMS.divYield, mine)!.includes('Rs 8,000'), pickExample(TERMS.divYield, mine));
 }
 
 // Shariah corner

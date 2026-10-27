@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Termed } from '../ui/Explain';
+import type { TermId } from '../analysis/glossary';
 import { useFlag } from '../flags';
 import { Skeleton } from '../ui/Skeleton';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -76,10 +78,10 @@ function barsFor(range: Range, daily: Candle[], intraday: Candle[]): { bars: Can
   }
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub, term }: { label: string; value: string; sub?: string; term?: TermId }) {
   return (
     <View style={styles.stat}>
-      <T v="caption">{label}</T>
+      {term ? <Termed label={label} id={term} /> : <T v="caption">{label}</T>}
       <T v="mono" style={{ fontSize: 14.5 }}>
         {value}
       </T>
@@ -622,12 +624,12 @@ export default function StockScreen() {
           <Section title="Key figures">
             <Panel style={{ paddingVertical: 16, gap: 14 }}>
               <View style={styles.grid}>
-                <Stat label="P/E" value={company.pe != null ? fmtNum(company.pe) : '—'} />
-                <Stat label="Dividend yield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
-                <Stat label="Market cap" value={fmtCompact(company.marketCap)} />
+                <Stat label="P/E" term="pe" value={company.pe != null ? fmtNum(company.pe) : '—'} />
+                <Stat label="Dividend yield" term="divYield" value={stock?.divYield != null ? fmtPct(stock.divYield, false) : '—'} />
+                <Stat label="Market cap" term="marketCap" value={fmtCompact(company.marketCap)} />
                 <Stat label="1-year" value={fmtPct(company.change1y)} />
                 <Stat label="YTD" value={fmtPct(company.ytd)} />
-                <Stat label="Free float" value={company.freeFloatPct != null ? fmtPct(company.freeFloatPct, false) : '—'} />
+                <Stat label="Free float" term="freeFloat" value={company.freeFloatPct != null ? fmtPct(company.freeFloatPct, false) : '—'} />
               </View>
               <More label="See fundamentals" onPress={() => setTab('fundamentals')} />
             </Panel>

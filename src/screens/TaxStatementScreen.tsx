@@ -1,5 +1,6 @@
 /** A tax-year statement: shares sold with gains and capital gains tax, cash dividends with tax withheld; shared as a PDF. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { Explain } from '../ui/Explain';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -112,7 +113,7 @@ export default function TaxStatementScreen() {
           </T>
         ) : null}
 
-        <Section title={`Shares sold (${st.sales.length})`}>
+        <Section title={`Shares sold (${st.sales.length})`} extra={<Explain id="cgt" />}>
           <Panel style={{ paddingVertical: 4 }}>
             {st.sales.length ? (
               st.sales.map((x, i) => (

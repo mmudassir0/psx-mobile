@@ -1,5 +1,6 @@
 /** Shariah corner: compliance of each holding, the share of money that's compliant, dividend purification and zakat in one place. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { Explain } from '../ui/Explain';
 import { Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -108,7 +109,7 @@ export default function ShariahScreen() {
               </T>
             </Panel>
 
-            <Section title="Your holdings">
+            <Section title="Your holdings" extra={<Explain id="kmi" />}>
               <Panel style={{ paddingVertical: 4 }}>
                 {sum.lines.map((l, i) => (
                   <Pressable key={l.symbol} accessibilityRole="button" onPress={() => nav.navigate('Stock', { symbol: l.symbol })} style={[styles.row, i < sum.lines.length - 1 && styles.border]}>
@@ -129,7 +130,7 @@ export default function ShariahScreen() {
               </T>
             </Section>
 
-            <Section title="Dividend purification">
+            <Section title="Dividend purification" extra={<Explain id="purification" />}>
               <Segmented
                 options={[
                   { key: '12m', label: 'Last 12 months' },

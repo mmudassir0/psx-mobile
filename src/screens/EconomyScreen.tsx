@@ -1,5 +1,7 @@
 /** Pakistan's economy in the numbers that move shares, with what each usually means for the market. */
 import React, { useMemo } from 'react';
+import { Termed } from '../ui/Explain';
+import type { TermId } from '../analysis/glossary';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -33,11 +35,11 @@ function Spark({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function Stat({ label, value, sub, spark, sparkColor }: { label: string; value: string; sub?: string; spark?: number[]; sparkColor?: string }) {
+function Stat({ label, value, sub, spark, sparkColor, term }: { label: string; value: string; sub?: string; spark?: number[]; sparkColor?: string; term?: TermId }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 }}>
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="caption">{label}</T>
+        {term ? <Termed label={label} id={term} /> : <T v="caption">{label}</T>}
         <T v="mono" style={{ fontSize: 20 }}>
           {value}
         </T>
@@ -89,7 +91,7 @@ export default function EconomyScreen() {
               <Panel style={{ paddingVertical: 12, gap: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <View style={{ flex: 1 }}>
-                    <T v="caption">KSE-100 earnings yield</T>
+                    <Termed label="KSE-100 earnings yield" id="earningsYield" />
                     <T v="mono" style={{ fontSize: 20 }}>
                       {p2(y.earningsYield)}
                     </T>
@@ -122,17 +124,18 @@ export default function EconomyScreen() {
             <Section title="Interest rates">
               <Panel style={{ paddingVertical: 4 }}>
                 <Stat
+                  term="policyRate"
                   label="State Bank policy rate"
                   value={p2(n.policy)}
                   sub={[n.mpc ? `Last decision: ${n.mpc.charAt(0).toUpperCase()}${n.mpc.slice(1)}` : null, nextMpc ? `Next decision ${fmtDay(dayT(nextMpc))}` : null].filter(Boolean).join('. ')}
                   spark={hist.map((r) => r[1]).filter((v): v is number => v != null).slice(-180)}
                 />
                 <View style={styles.hair} />
-                <Stat label="T-bills (latest auction)" value={`${p2(n.tbills.m3)} · ${p2(n.tbills.m6)} · ${p2(n.tbills.m12)}`} sub="3, 6 and 12 months" />
+                <Stat term="tbill" label="T-bills (latest auction)" value={`${p2(n.tbills.m3)} · ${p2(n.tbills.m6)} · ${p2(n.tbills.m12)}`} sub="3, 6 and 12 months" />
                 <View style={styles.hair} />
                 <Stat label="Government bonds (PIBs)" value={`${p2(n.pibs.y3)} · ${p2(n.pibs.y5)} · ${p2(n.pibs.y10)}`} sub={`3, 5 and 10 years${n.pibs.asOf ? `, auction ${n.pibs.asOf}` : ''}`} />
                 <View style={styles.hair} />
-                <Stat label="KIBOR (what banks lend at)" value={`${p2(n.kibor.m3)} · ${p2(n.kibor.m6)}`} sub={`3 and 6 months${n.kibor.asOf ? `, ${n.kibor.asOf}` : ''}`} />
+                <Stat term="kibor" label="KIBOR (what banks lend at)" value={`${p2(n.kibor.m3)} · ${p2(n.kibor.m6)}`} sub={`3 and 6 months${n.kibor.asOf ? `, ${n.kibor.asOf}` : ''}`} />
               </Panel>
               <T v="caption" style={{ lineHeight: 17 }}>
                 Falling rates usually help shares (cheaper loans, lower T-bill returns to compete with), and banks' profits slip a little. Rising

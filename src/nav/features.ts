@@ -55,6 +55,7 @@ export const FEATURES: Feature[] = [
   { key: 'ideas', label: 'Ideas & picks', emoji: '💡', group: 'Ideas', words: 'picks long-term list experiment setups', flags: ['ideas'], go: tab('Ideas') },
   { key: 'record', label: "Sahm's record", emoji: '🏅', group: 'Ideas', words: 'track record verdicts scorecard', flags: ['ideas'], go: (nav) => nav.navigate('Record') },
   { key: 'ai', label: 'Ask AI', emoji: '✨', group: 'Ideas', words: 'ai chat question gemini groq', flags: ['ai'], go: tab('AI') },
+  { key: 'glossary', label: 'Words explained', emoji: '📖', group: 'App', words: 'glossary meaning explain what is pe eps yield book closure kibor fair value roe help learn', go: (nav) => nav.navigate('Glossary') },
   { key: 'costs', label: 'Trading costs', emoji: '🧮', group: 'App', words: 'fees brokerage charges commission break even cdc', go: (nav) => nav.navigate('Settings') },
   { key: 'export', label: 'Export to Excel', emoji: '📗', group: 'App', words: 'excel xlsx spreadsheet export download sheet accountant', go: (nav) => nav.navigate('Export') },
   { key: 'settings', label: 'Settings', emoji: '⚙️', group: 'App', words: 'settings theme backup keys tax status layout', go: (nav) => nav.navigate('Settings') },

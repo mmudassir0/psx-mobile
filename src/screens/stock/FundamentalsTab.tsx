@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Explain } from '../../ui/Explain';
 import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { colors, fonts, space, tabular, themed } from '../../theme';
@@ -124,7 +125,7 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
         </View>
       ) : null}
 
-      <Section title="Fair value">
+      <Section title="Fair value" extra={<Explain id="fairValue" />}>
         {fair && price ? (
           <FairValueCard f={fair} price={price} />
         ) : (
@@ -157,7 +158,7 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
         </Panel>
       </Section>
 
-      <Section title="Dividends">
+      <Section title="Dividends" extra={<Explain id="bookClosure" />}>
         <DividendsCard company={company} price={price} divYield={stock?.divYield ?? null} />
       </Section>
 

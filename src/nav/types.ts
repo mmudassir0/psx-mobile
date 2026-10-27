@@ -39,6 +39,7 @@ export type RootParams = {
   Timeline: undefined;
   Economy: undefined;
   Shariah: undefined;
+  Glossary: undefined;
 };
 
 declare global {

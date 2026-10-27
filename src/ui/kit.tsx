@@ -197,11 +197,14 @@ export function Empty({ title, body }: { title: string; body?: string }) {
 /** Section heading with an optional action on the right. */
 export function Section({
   title,
+  extra,
   action,
   onAction,
   children,
 }: {
   title: string;
+  /** shown right after the title, e.g. an ⓘ */
+  extra?: React.ReactNode;
   action?: string;
   onAction?: () => void;
   children: React.ReactNode;
@@ -209,7 +212,14 @@ export function Section({
   return (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <T v="title">{title}</T>
+        {extra ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
+            <T v="title">{title}</T>
+            {extra}
+          </View>
+        ) : (
+          <T v="title">{title}</T>
+        )}
         {action ? (
           <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10}>
             <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>{action}</T>
