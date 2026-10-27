@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-26T06:36:41+00:00",
+ "generatedAt": "2026-10-27T06:38:54+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -1317,25 +1317,23 @@
    }
   },
   "NESTLE": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 19637255000,
-   "assets": 96002023000,
-   "liabilities": 76364768000,
-   "currentAssets": 58850385000,
-   "currentLiabilities": 69112311000,
-   "borrowings": null,
-   "cash": 2287764000,
-   "warnings": [
-    "borrowing line 4. not found in the statement"
-   ],
+   "equity": 14525148000,
+   "assets": 85867828000,
+   "liabilities": 71342680000,
+   "currentAssets": 50035848000,
+   "currentLiabilities": 64012390000,
+   "borrowings": 2595177000.0,
+   "cash": 3338587000,
+   "warnings": [],
    "source": {
-    "title": "Transmission of Quarterly Financial Statements for the Period Ended June 30, 2026",
-    "url": "https://dps.psx.com.pk/download/document/280990.pdf",
-    "date": "2026-08-11",
+    "title": "Transmission of Quarterly Report for the Period Ended 30 September 2026",
+    "url": "https://dps.psx.com.pk/download/document/286984.pdf",
+    "date": "2026-10-27",
     "pages": [
-     5
+     4
     ],
     "method": "text"
    }
@@ -2098,7 +2096,7 @@
     12
    ],
    "model": {
-    "statement": "standalone",
+    "statement": "consolidated",
     "period_end": "2026-03-31",
     "unit": 1,
     "is_bank": false,
@@ -2195,7 +2193,7 @@
    "reason": "no full report listed on PSX"
   },
   "SSGC": {
-   "reason": "missing equity or total assets",
+   "reason": "total_assets 1,114,507,599 is in the comparative (prior period) column; missing equity or total assets",
    "report": {
     "kind": "quarterly",
     "date": "2026-03-02",
@@ -2211,17 +2209,12 @@
     "unit": 1000,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "1,137,520,664",
+    "total_assets": "1,114,507,599",
     "total_liabilities": null,
-    "current_assets": "879,972,713",
+    "current_assets": "872,249,543",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "450,895"
-     }
-    ],
-    "cash": "2,057,463"
+    "borrowing_lines": [],
+    "cash": "1,187,075"
    }
   },
   "TPLRF1": {
