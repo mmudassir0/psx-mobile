@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { startPref } from '../startup';
 import { IntradayCard } from '../ui/IntradayCard';
+import { QuietCard } from '../ui/QuietCard';
 import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
 import { CalendarCard } from '../ui/CalendarCard';
@@ -167,7 +168,6 @@ export default function SettingsScreen() {
           <T v="caption">“Phone” follows your phone's light or dark mode.</T>
         </Section>
 
-
         <Section title="Tax status">
           <Segmented
             options={[
@@ -178,23 +178,24 @@ export default function SettingsScreen() {
             onChange={(v: TaxStatus) => taxStatusPref.set(v)}
           />
           <T v="caption" style={{ lineHeight: 18 }}>
-            Used for dividends and selling tax. On the FBR Active Taxpayers List (a filer): 15% on dividends, 7.5% from power producers. Not on
-            it: 30% and 15%. Rates for 2026-27; your broker's statement shows what was actually withheld.
+            Used for dividends and selling tax. On the FBR Active Taxpayers List (a filer): 15% on dividends, 7.5% from power producers. Not on it: 30% and 15%. Rates for 2026-27; your broker's statement shows what was
+            actually withheld.
           </T>
         </Section>
 
         {flagOn('alerts') ? (
-        <Section title="Price alerts">
-          <Button label="Set up price alerts" tone="ghost" onPress={() => nav.navigate('Alerts')} />
-          <T v="caption" style={{ lineHeight: 18 }}>
-            A notification the evening any stock closes past a price or its 200-day average.
-          </T>
-        </Section>
+          <Section title="Price alerts">
+            <Button label="Set up price alerts" tone="ghost" onPress={() => nav.navigate('Alerts')} />
+            <T v="caption" style={{ lineHeight: 18 }}>
+              A notification the evening any stock closes past a price or its 200-day average.
+            </T>
+          </Section>
         ) : null}
 
         <Section title="Reminders">
           <MorningCard />
           <IntradayCard />
+          <QuietCard />
           <CalendarCard />
         </Section>
 
@@ -220,7 +221,11 @@ export default function SettingsScreen() {
                   thumbColor={colors.surface}
                 />
               </View>
-              {lockMsg ? <T v="caption" style={{ color: colors.downText }}>{lockMsg}</T> : null}
+              {lockMsg ? (
+                <T v="caption" style={{ color: colors.downText }}>
+                  {lockMsg}
+                </T>
+              ) : null}
               <View style={[styles.row, { borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 10 }]}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T v="body">Hide Sahm on screen</T>
@@ -255,9 +260,8 @@ export default function SettingsScreen() {
               Gemini (Google)
             </T>
             <T v="caption" style={{ lineHeight: 18 }}>
-              Used first when added. Create a key at aistudio.google.com (Get API key). Flash works on the free tier. Pro and Argon
-              have no free quota: they need billing turned on for the key's Google Cloud project (a Gemini app subscription does not
-              cover the API).
+              Used first when added. Create a key at aistudio.google.com (Get API key). Flash works on the free tier. Pro and Argon have no free quota: they need billing turned on for the key's Google Cloud project (a
+              Gemini app subscription does not cover the API).
             </T>
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}>
               <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open aistudio.google.com ›</T>
@@ -268,29 +272,20 @@ export default function SettingsScreen() {
                   <T v="body">Key added</T>
                   <Button label="Remove" small tone="ghost" onPress={() => ai.setGeminiKey(null)} />
                 </View>
-                <Segmented
-                  options={GEMINI_MODELS.map((m) => ({ key: m.key, label: m.label.replace('Gemini ', '') }))}
-                  value={ai.gemini.key}
-                  onChange={ai.setGemini}
-                />
+                <Segmented options={GEMINI_MODELS.map((m) => ({ key: m.key, label: m.label.replace('Gemini ', '') }))} value={ai.gemini.key} onChange={ai.setGemini} />
                 <T v="caption">{ai.gemini.note} If it isn't available, Sahm uses Flash, then Groq.</T>
               </>
             ) : (
               <View style={{ gap: 10 }}>
-                <TextInput
-                  value={gemInput}
-                  onChangeText={setGemInput}
-                  placeholder="AIza…"
-                  placeholderTextColor={colors.faint}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                  style={styles.input}
-                />
+                <TextInput value={gemInput} onChangeText={setGemInput} placeholder="AIza…" placeholderTextColor={colors.faint} autoCapitalize="none" autoCorrect={false} secureTextEntry style={styles.input} />
                 <Button label={gemTesting ? 'Checking…' : 'Save key'} disabled={!gemInput.trim() || gemTesting} onPress={saveGemini} />
               </View>
             )}
-            {gemMsg ? <T v="caption" style={{ color: gemMsg.startsWith('Key saved') ? colors.up : colors.downText }}>{gemMsg}</T> : null}
+            {gemMsg ? (
+              <T v="caption" style={{ color: gemMsg.startsWith('Key saved') ? colors.up : colors.downText }}>
+                {gemMsg}
+              </T>
+            ) : null}
           </View>
 
           <View style={styles.card}>
@@ -298,8 +293,8 @@ export default function SettingsScreen() {
               Groq (free)
             </T>
             <T v="caption" style={{ lineHeight: 18 }}>
-              GPT-OSS 120B on Groq's free tier, used after Gemini. Sign in at console.groq.com, open API Keys, create a key and paste
-              it here. Keys stay encrypted on this phone; questions and stock data are sent to the provider that answers.
+              GPT-OSS 120B on Groq's free tier, used after Gemini. Sign in at console.groq.com, open API Keys, create a key and paste it here. Keys stay encrypted on this phone; questions and stock data are sent to the
+              provider that answers.
             </T>
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://console.groq.com/keys')}>
               <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open console.groq.com ›</T>
@@ -311,22 +306,16 @@ export default function SettingsScreen() {
               </View>
             ) : (
               <View style={{ gap: 10 }}>
-                <TextInput
-                  value={keyInput}
-                  onChangeText={setKeyInput}
-                  placeholder="gsk_…"
-                  placeholderTextColor={colors.faint}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                  style={styles.input}
-                />
+                <TextInput value={keyInput} onChangeText={setKeyInput} placeholder="gsk_…" placeholderTextColor={colors.faint} autoCapitalize="none" autoCorrect={false} secureTextEntry style={styles.input} />
                 <Button label={testing ? 'Checking…' : 'Save key'} disabled={!keyInput.trim() || testing} onPress={saveKey} />
               </View>
             )}
-            {keyMsg ? <T v="caption" style={{ color: keyMsg.startsWith('Key saved') ? colors.up : colors.downText }}>{keyMsg}</T> : null}
+            {keyMsg ? (
+              <T v="caption" style={{ color: keyMsg.startsWith('Key saved') ? colors.up : colors.downText }}>
+                {keyMsg}
+              </T>
+            ) : null}
           </View>
-
         </Section>
 
         <Section title="Problem log">

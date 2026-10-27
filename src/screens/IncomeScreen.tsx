@@ -13,6 +13,7 @@ import { payMonths } from '../portfolio/income';
 import { benchmarkPref, taxStatusPref } from '../portfolio/prefs';
 import { dividendTaxRate, payerKind } from '../analysis/dividends';
 import { Panel } from '../ui/bits';
+import { YieldOnCost } from '../ui/YieldOnCost';
 import { Skeleton } from '../ui/Skeleton';
 import { Empty, IconButton, Section, T } from '../ui/kit';
 
@@ -31,7 +32,13 @@ export default function IncomeScreen() {
   const [open, setOpen] = useState<string | null>(null);
 
   const plan = useMemo(
-    () => (loading ? null : incomePlan(rows.map((r) => ({ symbol: r.holding.symbol, shares: r.holding.shares, sector: r.stock?.sector ?? null, dividends: r.dividends })), tax)),
+    () =>
+      loading
+        ? null
+        : incomePlan(
+            rows.map((r) => ({ symbol: r.holding.symbol, shares: r.holding.shares, sector: r.stock?.sector ?? null, dividends: r.dividends })),
+            tax,
+          ),
     [rows, loading, tax],
   );
   const cost = rows.reduce((a, r) => a + r.holding.shares * r.holding.avgCost, 0);
@@ -81,8 +88,25 @@ export default function IncomeScreen() {
                   const h = (m.net / maxMonth) * 100;
                   const k = m.net ? (m.known / m.net) * h : 0;
                   return (
-                    <Pressable key={m.month} accessibilityRole="button" accessibilityLabel={`${label(m.month)} ${rs(m.net)}`} onPress={() => setOpen(open === m.month ? null : m.month)} style={{ flex: 1, height: 120, justifyContent: 'flex-end' }}>
-                      <View style={{ height: Math.max(m.net ? 3 : 1, h - k), backgroundColor: m.net ? colors.goldSoft : colors.hairline, borderTopLeftRadius: 3, borderTopRightRadius: 3, borderWidth: m.net ? 1 : 0, borderColor: colors.gold, borderBottomWidth: 0, borderStyle: 'dashed' }} />
+                    <Pressable
+                      key={m.month}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${label(m.month)} ${rs(m.net)}`}
+                      onPress={() => setOpen(open === m.month ? null : m.month)}
+                      style={{ flex: 1, height: 120, justifyContent: 'flex-end' }}
+                    >
+                      <View
+                        style={{
+                          height: Math.max(m.net ? 3 : 1, h - k),
+                          backgroundColor: m.net ? colors.goldSoft : colors.hairline,
+                          borderTopLeftRadius: 3,
+                          borderTopRightRadius: 3,
+                          borderWidth: m.net ? 1 : 0,
+                          borderColor: colors.gold,
+                          borderBottomWidth: 0,
+                          borderStyle: 'dashed',
+                        }}
+                      />
                       {k > 0 ? <View style={{ height: k, backgroundColor: colors.gold }} /> : null}
                     </Pressable>
                   );
@@ -100,6 +124,8 @@ export default function IncomeScreen() {
                 <Key fill={colors.goldSoft} border text="Expected from last year" />
               </View>
             </Panel>
+
+            <YieldOnCost rows={rows} tax={tax} />
 
             {rows.some((r) => (r.dividends?.list ?? []).some((x) => x.dps > 0)) ? (
               <Section title="Who usually pays when">
@@ -125,7 +151,17 @@ export default function IncomeScreen() {
                             const n = pm.get(i) ?? 0;
                             return (
                               <View key={m} style={{ flex: 1, alignItems: 'center' }}>
-                                <View style={{ width: n ? 12 : 4, height: n ? 12 : 4, borderRadius: 6, backgroundColor: n >= 3 ? colors.gold : n === 2 ? colors.gold : n === 1 ? colors.goldSoft : colors.hairline, borderWidth: n === 1 ? 1 : 0, borderColor: colors.gold, opacity: n === 2 ? 0.75 : 1 }} />
+                                <View
+                                  style={{
+                                    width: n ? 12 : 4,
+                                    height: n ? 12 : 4,
+                                    borderRadius: 6,
+                                    backgroundColor: n >= 3 ? colors.gold : n === 2 ? colors.gold : n === 1 ? colors.goldSoft : colors.hairline,
+                                    borderWidth: n === 1 ? 1 : 0,
+                                    borderColor: colors.gold,
+                                    opacity: n === 2 ? 0.75 : 1,
+                                  }}
+                                />
                               </View>
                             );
                           })}
@@ -180,8 +216,8 @@ export default function IncomeScreen() {
                 </T>
               ) : null}
               <T v="caption" style={{ lineHeight: 18 }}>
-                "Expected" repeats each dividend from the last 12 months a year later, at the same amount; companies change them with their
-                results. Payment is about two weeks after book closure. Bonus shares and today's share counts only.
+                "Expected" repeats each dividend from the last 12 months a year later, at the same amount; companies change them with their results. Payment is about two weeks after book closure. Bonus shares and today's
+                share counts only.
               </T>
             </Section>
 
@@ -213,8 +249,8 @@ export default function IncomeScreen() {
                   <T v="caption">No index stock you don't own has a dividend yield between 5% and 18% right now.</T>
                 )}
                 <T v="caption" style={{ lineHeight: 18 }}>
-                  {bench === 'KMI30' ? 'KMI-30 members' : 'KSE-100 and KMI-30 members'} you don't own, yield 5–18%, after tax. A very high yield
-                  can mean a one-off payout or a falling price: open each and check its dividend history before buying. Information, not advice.
+                  {bench === 'KMI30' ? 'KMI-30 members' : 'KSE-100 and KMI-30 members'} you don't own, yield 5–18%, after tax. A very high yield can mean a one-off payout or a falling price: open each and check its
+                  dividend history before buying. Information, not advice.
                 </T>
               </Panel>
             </Section>
@@ -240,6 +276,18 @@ const styles = themed(() =>
     topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
     content: { paddingHorizontal: space.gutter, paddingTop: 8, paddingBottom: 36, gap: 16 },
     border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-    amount: { width: 130, height: 42, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12, fontSize: 15, color: colors.text, fontFamily: fonts.monoMedium, textAlign: 'right' },
+    amount: {
+      width: 130,
+      height: 42,
+      borderRadius: 10,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 12,
+      fontSize: 15,
+      color: colors.text,
+      fontFamily: fonts.monoMedium,
+      textAlign: 'right',
+    },
   }),
 );

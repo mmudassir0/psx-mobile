@@ -1,5 +1,6 @@
 /** Results season for your holdings: what's just out (against a year earlier), and when the rest are due. */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { MarketResults } from '../ui/MarketResults';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -11,7 +12,7 @@ import { useReviews } from '../portfolio/useReviews';
 import { resultsLine } from '../analysis/results';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
 
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
 const KIND = { quarter: 'quarter', half: 'half year', year: 'full year' };
@@ -23,6 +24,7 @@ export default function ResultsScreen() {
   const { stocks, bySymbol } = useMarket();
   const { rows, loading } = useReviews(holdings, stocks, bySymbol, null);
   const today = new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
+  const [scope, setScope] = useState<'mine' | 'market'>('mine');
 
   const out = useMemo(() => rows.filter((r) => r.results?.latest && Date.now() - dayT(r.results.latest.date) < 30 * 864e5).sort((a, b) => b.results!.latest!.date.localeCompare(a.results!.latest!.date)), [rows]);
   const due = useMemo(() => rows.filter((r) => r.next && !out.includes(r)).sort((a, b) => (a.next!.meeting ? -1 : 0) - (b.next!.meeting ? -1 : 0) || a.next!.expected.localeCompare(b.next!.expected)), [rows, out]);
@@ -37,7 +39,17 @@ export default function ResultsScreen() {
         <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {loaded && !holdings.length ? (
+        <Segmented
+          options={[
+            { key: 'mine', label: 'My holdings' },
+            { key: 'market', label: 'Whole market' },
+          ]}
+          value={scope}
+          onChange={setScope}
+        />
+        {scope === 'market' ? (
+          <MarketResults />
+        ) : loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to follow their results." />
         ) : loading && !rows.some((r) => r.next || r.results) ? (
           <Skeleton kind="rows" n={5} label="Reading each company's announcements" />
@@ -98,8 +110,8 @@ export default function ResultsScreen() {
                         </View>
                         <T v="caption" style={{ lineHeight: 17 }}>
                           {n.label} ({KIND[n.kind]} to {Number(end.slice(8, 10))} {MON[Number(end.slice(5, 7)) - 1]}) ·{' '}
-                          {n.meeting ? `notice on ${fmtDay(dayT(n.meeting))}, results usually follow within days` : n.basis === 'last year' ? 'around when it reported last year' : 'no date last year to go by'} · PSX deadline{' '}
-                          {fmtDay(dayT(n.deadline))}
+                          {n.meeting ? `notice on ${fmtDay(dayT(n.meeting))}, results usually follow within days` : n.basis === 'last year' ? 'around when it reported last year' : 'no date last year to go by'} · PSX
+                          deadline {fmtDay(dayT(n.deadline))}
                         </T>
                         {n.lastYear ? (
                           <T v="caption">
@@ -118,8 +130,8 @@ export default function ResultsScreen() {
               </Panel>
             </Section>
             <T v="caption" style={{ lineHeight: 18 }}>
-              Dates are estimates from when each company reported the same period last year; PSX's rules give 30 days after a quarter, 60
-              after the half year and 120 after the full year. Your evening alert also tells you when results come out.
+              Dates are estimates from when each company reported the same period last year; PSX's rules give 30 days after a quarter, 60 after the half year and 120 after the full year. Your evening alert also tells you
+              when results come out.
             </T>
           </>
         )}

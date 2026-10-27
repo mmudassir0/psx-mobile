@@ -5,6 +5,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
 import { fmtNum, fmtPrice } from '../format';
 import { load, save } from '../storage';
+import { cashPref } from '../portfolio/prefs';
 import { planMoney } from '../portfolio/plan';
 import type { Row } from '../portfolio/useReviews';
 import { Panel } from './bits';
@@ -19,8 +20,14 @@ export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | nul
   const moodOn = useFlag('mood');
   const { data: moodData } = useMood();
   const mood = moodOn ? moodData : null;
+  const cash = cashPref.use();
   useEffect(() => {
-    load<string>(KEY, '').then((v) => v && setText(v));
+    load<string>(KEY, '').then(async (v) => {
+      if (v) return setText(v);
+      // nothing typed yet: start from the cash waiting at the broker
+      const c = await cashPref.get();
+      if (c.amount > 0) setText(String(Math.round(c.amount)));
+    });
   }, []);
   const amount = Number(text.replace(/[^\d.]/g, '')) || 0;
   const plan = useMemo(
@@ -53,18 +60,33 @@ export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | nul
           accessibilityLabel="Money to invest in rupees"
         />
       </View>
+      {cash.amount > 0 && Math.round(cash.amount) !== Math.round(amount) ? (
+        <T
+          accessibilityRole="button"
+          onPress={() => {
+            setText(String(Math.round(cash.amount)));
+            save(KEY, String(Math.round(cash.amount)));
+          }}
+          style={{ color: colors.gold, fontSize: 13, fontFamily: fonts.semibold }}
+        >
+          Use the Rs {fmtNum(cash.amount, 0)} cash at your broker
+        </T>
+      ) : null}
       {mood ? (
         <T v="caption" style={{ lineHeight: 18 }}>
-          Market mood today: <T v="caption" style={{ color: moodColor(mood.now.score), fontFamily: fonts.bold }}>{mood.now.score}, {moodLabel(mood.now.score)}</T>.{' '}
+          Market mood today:{' '}
+          <T v="caption" style={{ color: moodColor(mood.now.score), fontFamily: fonts.bold }}>
+            {mood.now.score}, {moodLabel(mood.now.score)}
+          </T>
+          .{' '}
           {mood.outcomes.length && mood.outcomes.every((o) => o.avg > 0)
-            ? 'In the last few years every mood was followed by gains six months later on average, so the plan doesn\'t wait for a better moment: the same amount each month evens out the price you pay.'
-            : 'Shown for context; the plan doesn\'t try to time the market.'}
+            ? "In the last few years every mood was followed by gains six months later on average, so the plan doesn't wait for a better moment: the same amount each month evens out the price you pay."
+            : "Shown for context; the plan doesn't try to time the market."}
         </T>
       ) : null}
       {!plan ? (
         <T v="caption" style={{ lineHeight: 18 }}>
-          Enter what you're adding this month. Sahm splits it across holdings you already own, skipping any marked Review or Trim, any with a
-          broken chart, and any that would go over 10% of your portfolio.
+          Enter what you're adding this month. Sahm splits it across holdings you already own, skipping any marked Review or Trim, any with a broken chart, and any that would go over 10% of your portfolio.
         </T>
       ) : (
         <>
@@ -101,13 +123,12 @@ export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | nul
           ) : null}
           {plan.dilute.map((d) => (
             <T key={d.symbol} v="caption" style={{ lineHeight: 18 }}>
-              {d.symbol} is {(d.weight * 100).toFixed(0)}% of your portfolio. Adding about Rs {fmtNum(Math.ceil(d.needed / 1000) * 1000, 0)} to other holdings brings it
-              under 20% without selling it, so no tax or fees.
+              {d.symbol} is {(d.weight * 100).toFixed(0)}% of your portfolio. Adding about Rs {fmtNum(Math.ceil(d.needed / 1000) * 1000, 0)} to other holdings brings it under 20% without selling it, so no tax or fees.
             </T>
           ))}
           {plan.skipped.length ? (
             <T v="caption" style={{ lineHeight: 18 }}>
-              Left out: {plan.skipped.map((s) => `${s.symbol}, ${s.why}`).join("; ")}.
+              Left out: {plan.skipped.map((s) => `${s.symbol}, ${s.why}`).join('; ')}.
             </T>
           ) : null}
         </>
@@ -118,7 +139,19 @@ export function PlanCard({ rows, breadth }: { rows: Row[]; breadth: number | nul
 
 const styles = themed(() =>
   StyleSheet.create({
-    input: { width: 130, height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text, textAlign: 'right' },
+    input: {
+      width: 130,
+      height: 44,
+      borderRadius: 10,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 10,
+      fontFamily: fonts.mono,
+      fontSize: 15,
+      color: colors.text,
+      textAlign: 'right',
+    },
     line: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
     border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
     note: { backgroundColor: colors.goldSoft, borderRadius: 8, padding: 10 },

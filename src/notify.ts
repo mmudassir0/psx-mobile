@@ -6,6 +6,13 @@
 import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { logProblem } from './log';
+import { makePref } from './prefs';
+import { load, save } from './storage';
+import { QUIET_DEFAULT, heldText, hold, holdUntil, type HeldAlert, type QuietSettings } from './quietCore';
+
+export const quietPref = makePref<QuietSettings>('ui.quiet', QUIET_DEFAULT);
+const HELD_KEY = 'ui.heldAlerts';
+const HELD_ID = 'held-alerts';
 
 const CHANNEL = 'reminders';
 const supported = Platform.OS === 'android';
@@ -49,11 +56,29 @@ export async function remind(id: string, when: Date, title: string, body: string
   }
 }
 
-/** Shows a notification straight away. Never throws. */
+/**
+ * Shows a notification straight away, or keeps it for later in the quiet hours
+ * or for the evening summary (one notification for all of them). Never throws.
+ */
 export async function notifyNow(title: string, body: string, url?: string) {
   if (!supported) return;
   if (!(await ensureReady(false))) return;
   try {
+    const now = Date.now();
+    const at = holdUntil(now, await load<QuietSettings>('ui.quiet', QUIET_DEFAULT));
+    if (at != null) {
+      const q = hold(await load<HeldAlert[]>(HELD_KEY, []), { t: now, at, title, body, url }, now);
+      await save(HELD_KEY, q);
+      const text = heldText(q, at);
+      if (!text) return;
+      await Notifications.cancelScheduledNotificationAsync(HELD_ID + at).catch(() => {});
+      await Notifications.scheduleNotificationAsync({
+        identifier: HELD_ID + at,
+        content: { title: text.title, body: text.body, data: { url: text.url } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at), channelId: CHANNEL },
+      });
+      return;
+    }
     await Notifications.scheduleNotificationAsync({ content: { title, body, data: url ? { url } : {} }, trigger: { channelId: CHANNEL } as never });
   } catch (e) {
     logProblem('reminders', e);
@@ -87,7 +112,9 @@ export function installReminderHandlers() {
   };
   Notifications.addNotificationResponseReceivedListener(open);
   // the app was closed and opened by tapping a reminder
-  Notifications.getLastNotificationResponseAsync().then(open).catch(() => {});
+  Notifications.getLastNotificationResponseAsync()
+    .then(open)
+    .catch(() => {});
 }
 
 /** A day (YYYY-MM-DD) at 10:00 Pakistan time. */

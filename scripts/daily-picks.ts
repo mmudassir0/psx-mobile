@@ -8,27 +8,15 @@
  * ntfy channel, which is where the app reads it.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { type ResultsFeed, type ResultsRow } from '../src/analysis/marketResults';
+import { nextResults, resultsStatus } from '../src/analysis/results';
 import { join } from 'path';
 import { KeyValueStore, readEntry, setStorage, writeEntry } from '../src/psx/cache';
 import { dailyCandles, lastSource } from '../src/psx/history';
 import type { Candle } from '../src/psx/types';
 import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
-import {
-  breadthOf,
-  choosePicks,
-  ListId,
-  listOf,
-  liveRecord,
-  LISTS,
-  PicksFeed,
-  pkDay,
-  RULES,
-  ScoredPick,
-  scorePick,
-  statsOf,
-  Universe,
-} from '../src/picks/build';
+import { breadthOf, choosePicks, ListId, listOf, liveRecord, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
 import { buildMatcher, buildNews, NEWS_FEEDS, parseRss, type NewsFeed, type RawItem } from '../src/analysis/news';
 import { parsePbsInflation, parseSbp, petrolFromNews, type MacroFeed, type MacroNow, type MacroRow } from '../src/analysis/macro';
 import { fetchCompany, fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
@@ -96,8 +84,7 @@ async function main() {
   // Index members, from PSX; the last good list if PSX doesn't answer.
   const membersPath = join(stateDir, 'indexes.json');
   const members: Record<string, string[]> = existsSync(membersPath) ? JSON.parse(readFileSync(membersPath, 'utf8')) : {};
-  if (!members.KSE100 && historyDir && existsSync(join(historyDir, 'index.json')))
-    members.KSE100 = JSON.parse(readFileSync(join(historyDir, 'index.json'), 'utf8')).sets?.KSE100 ?? [];
+  if (!members.KSE100 && historyDir && existsSync(join(historyDir, 'index.json'))) members.KSE100 = JSON.parse(readFileSync(join(historyDir, 'index.json'), 'utf8')).sets?.KSE100 ?? [];
   for (const code of ['KSE100', 'KMI30']) {
     for (let a = 0; a < 4; a++) {
       try {
@@ -162,8 +149,7 @@ async function main() {
   for (const sym of new Set(history.filter((p) => p.result === 'open').map((p) => p.symbol))) {
     const pay = await cached(`payouts:${sym}`, 20 * 3600_000, () => fetchPayouts(sym), { persist: true }).catch(() => null);
     const c = bySymbol.get(sym);
-    if (pay && c?.length)
-      cashOf.set(sym, cashDividends(dividends(pay, { price: c[c.length - 1].c, divYield: screener.get(sym)?.divYield ?? null, fiscalEndMonth: 11 })));
+    if (pay && c?.length) cashOf.set(sym, cashDividends(dividends(pay, { price: c[c.length - 1].c, divYield: screener.get(sym)?.divYield ?? null, fiscalEndMonth: 11 })));
     await sleep(300);
   }
   for (let k = 0; k < history.length; k++) {
@@ -301,19 +287,7 @@ async function main() {
     ...(stale ? { stale: true } : {}),
     sectors: [...groups]
       .filter(([, g]) => g.r1m.length >= 2)
-      .map(
-        ([name, g]) =>
-          [
-            name,
-            g.r1m.length,
-            r3(mean(g.r1w)),
-            r3(mean(g.r1m)),
-            Math.round(mean(g.vol) * 100) / 100,
-            r3(g.up / g.r1m.length),
-            r3(mean(g.r3m)),
-            r3(mean(g.r6m)),
-          ] as MarketFeed['sectors'][number],
-      )
+      .map(([name, g]) => [name, g.r1m.length, r3(mean(g.r1w)), r3(mean(g.r1m)), Math.round(mean(g.vol) * 100) / 100, r3(g.up / g.r1m.length), r3(mean(g.r3m)), r3(mean(g.r6m))] as MarketFeed['sectors'][number])
       .sort((a, b) => b[3] - a[3]),
   };
   // 7. Market mood (0 fear … 100 greed) from the liquid stocks and the KSE-100, with what followed each mood.
@@ -363,6 +337,29 @@ async function main() {
   writeFileSync(join(stateDir, 'calendar.json'), JSON.stringify(calendar));
   console.log(`dividend calendar: ${rows.length} upcoming from ${checked} stocks`);
 
+  // 8b. Results season for the whole market: KSE-100 and KMI-30 companies' board meetings, fresh results and likely dates.
+  try {
+    const rr: ResultsRow[] = [];
+    let seen = 0;
+    for (const sym of indexMembers) {
+      const c = await cached(`company:${sym}`, 20 * 3600_000, () => fetchCompany(sym), { persist: true }).catch(() => null);
+      if (!c) continue;
+      seen++;
+      const st = resultsStatus(c, now);
+      if (st.meetingNotice) rr.push([sym, 'meeting', st.meetingNotice.date, st.meetingNotice.title.slice(0, 80)]);
+      const lastRes = (c.announcements ?? []).filter((a) => a.category === 'Financial Results' || /financial results?/i.test(a.title)).sort((a, b) => b.date.localeCompare(a.date))[0];
+      if (lastRes && now - Date.parse(lastRes.date + 'T12:00:00Z') < 14 * DAY) rr.push([sym, 'out', lastRes.date, lastRes.title.slice(0, 80)]);
+      const nx = nextResults(c, now);
+      if (nx) rr.push([sym, 'due', nx.expected, nx.label]);
+      await sleep(250);
+    }
+    const resultsFeed: ResultsFeed = { v: 1, kind: 'results', day, generatedAt: new Date(now).toISOString(), checked: seen, rows: rr };
+    writeFileSync(join(stateDir, 'results.json'), JSON.stringify(resultsFeed));
+    console.log(`results season: ${rr.length} rows from ${seen} companies`);
+  } catch (e) {
+    console.log(`results season failed: ${(e as Error).message}`);
+  }
+
   // 9. Long-term list (an experiment, shown as one): formed on the first run of each month, then scored.
   try {
     const ltItems = [];
@@ -406,9 +403,7 @@ async function main() {
           .map(({ m, r }) => ({ month: m.month, day: m.day, n: r!.n, ret: r3(r!.ret), base: r3(r!.base) })),
       };
       writeFileSync(join(stateDir, 'longterm.json'), JSON.stringify(lt));
-      console.log(
-        `long-term list ${thisMonth.month}: ${thisMonth.picks.length} stocks; today ${ltToday.list.length} pass of ${ltToday.valued} valued, ${ltToday.belowTrend} only below trend`,
-      );
+      console.log(`long-term list ${thisMonth.month}: ${thisMonth.picks.length} stocks; today ${ltToday.list.length} pass of ${ltToday.valued} valued, ${ltToday.belowTrend} only below trend`);
     }
   } catch (e) {
     console.log(`long-term list failed: ${(e as Error).message}`);
@@ -475,7 +470,7 @@ async function main() {
       cpi: lastCpi?.[1] ?? prev?.now.cpi ?? null,
       cpiMonth: lastCpi?.[0] ?? prev?.now.cpiMonth ?? null,
       petrol: petrol ?? prev?.now.petrol ?? null,
-      petrolFrom: petrol != null ? pkDay(petrolStory!.t) : prev?.now.petrolFrom ?? null,
+      petrolFrom: petrol != null ? pkDay(petrolStory!.t) : (prev?.now.petrolFrom ?? null),
     };
     if (nowMacro.tbills.m12 == null && prev) nowMacro.tbills = prev.now.tbills;
     if (nowMacro.pibs.y10 == null && prev) nowMacro.pibs = prev.now.pibs;
@@ -485,7 +480,9 @@ async function main() {
     const history = [...(prev?.history ?? []).filter((r) => r[0] !== day), row].slice(-800);
     const feed: MacroFeed = { v: 1, kind: 'macro', generatedAt: new Date(now).toISOString(), now: nowMacro, history };
     if (nowMacro.policy != null || nowMacro.usd != null) writeFileSync(macroPath, JSON.stringify({ ...feed, inflation: inflation.slice(-36) }));
-    console.log(`economy: policy ${nowMacro.policy ?? '–'}, 12m T-bill ${nowMacro.tbills.m12 ?? '–'}, USD ${nowMacro.usd ?? '–'}, CPI ${nowMacro.cpi ?? '–'} (${nowMacro.cpiMonth ?? '–'}), petrol ${nowMacro.petrol ?? '–'}`);
+    console.log(
+      `economy: policy ${nowMacro.policy ?? '–'}, 12m T-bill ${nowMacro.tbills.m12 ?? '–'}, USD ${nowMacro.usd ?? '–'}, CPI ${nowMacro.cpi ?? '–'} (${nowMacro.cpiMonth ?? '–'}), petrol ${nowMacro.petrol ?? '–'}`,
+    );
   } catch (e) {
     console.log(`economy failed: ${(e as Error).message}`);
   }

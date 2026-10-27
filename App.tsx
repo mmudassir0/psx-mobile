@@ -9,14 +9,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer, type LinkingOptions } fro
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  useFonts,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
+import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import { colors, fonts } from './src/theme';
 import type { RootParams, TabParams } from './src/nav/types';
 import { MarketProvider } from './src/store/market';
@@ -161,6 +154,7 @@ function Root() {
       <Stack.Screen name="StockCard" getComponent={() => require('./src/screens/StockCardScreen').default} />
       <Stack.Screen name="SinceBought" getComponent={() => require('./src/screens/SinceBoughtScreen').default} />
       <Stack.Screen name="DivGrowth" getComponent={() => require('./src/screens/DivGrowthScreen').default} />
+      <Stack.Screen name="SellSignals" getComponent={() => require('./src/screens/SellSignalsScreen').default} />
       <Stack.Screen name="YearReview" getComponent={() => require('./src/screens/YearReviewScreen').default} />
       <Stack.Screen name="Timeline" getComponent={() => require('./src/screens/TimelineScreen').default} />
       <Stack.Screen name="ShareCard" getComponent={() => require('./src/screens/ShareCardScreen').default} />
@@ -221,6 +215,7 @@ const linking: LinkingOptions<RootParams> = {
       StockCard: 'card/:symbol',
       SinceBought: 'since-bought',
       DivGrowth: 'dividend-growth',
+      SellSignals: 'warnings',
       YearReview: 'year-review',
     },
   },

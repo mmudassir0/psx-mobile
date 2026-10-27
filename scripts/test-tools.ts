@@ -14,6 +14,10 @@ import { crossings } from '../src/analysis/chartLines';
 import { tidyTranscript, voicePrompt } from '../src/ai/voice';
 import { LESSONS } from '../src/learn/lessons';
 import { sparkPath } from '../src/widget/spark';
+import { resultsWindow, type ResultsFeed } from '../src/analysis/marketResults';
+import { yieldOnCost } from '../src/portfolio/yieldOnCost';
+import { sellSignals } from '../src/portfolio/sellSignals';
+import { QUIET_DEFAULT, heldText, hold, holdUntil, inWindow, nextAt } from '../src/quietCore';
 import { autoTrend, swings, trendNow, trendValues } from '../src/analysis/chartLines';
 import { sinceLast } from '../src/portfolio/sinceLast';
 import { peerCompare } from '../src/analysis/peers';
@@ -70,12 +74,57 @@ function check(label: string, ok: boolean, detail?: unknown) {
 // compare stocks
 check('change over n sessions', Math.abs(changeOver([100, 110, 121], 2)! - 21) < 1e-9 && changeOver([1], 5) === null);
 check('worst fall from a high', Math.abs(maxDrawdown([...Array(10).fill(100), 120, 90, 100, ...Array(10).fill(100)])! - -25) < 1e-9);
-const rb = rebased([[{ t: 0, c: 10 }, { t: 864e5, c: 11 }, { t: 2 * 864e5, c: 12 }], [{ t: 864e5, c: 50 }, { t: 2 * 864e5, c: 25 }]]);
+const rb = rebased([
+  [
+    { t: 0, c: 10 },
+    { t: 864e5, c: 11 },
+    { t: 2 * 864e5, c: 12 },
+  ],
+  [
+    { t: 864e5, c: 50 },
+    { t: 2 * 864e5, c: 25 },
+  ],
+]);
 check('rebased to 100 from the first shared day', rb.length === 2 && rb[0].v[0] === 100 && rb[0].v[1] === 100 && Math.abs(rb[1].v[0] - 109.0909) < 1e-3 && rb[1].v[1] === 50, rb);
-const mk = (sym: string, pe: number, dy: number) => ({ pack: { stock: { symbol: sym, name: sym, sector: 'Cement', price: 100, change: 0, changePct: 0, ldcp: 100, volume: 1, shariah: true, indexes: ['KSE100'], marketCap: 1e10, pe, divYield: dy, change1y: 0, bid: null, bidVol: null, ask: null, askVol: null }, company: null, analysis: null, tech: null, ratios: null, balance: null, peers: [], today: '2026-10-26' }, closes: Array.from({ length: 300 }, (_, i) => 100 + i * (sym === 'A' ? 0.1 : -0.1)) });
+const mk = (sym: string, pe: number, dy: number) => ({
+  pack: {
+    stock: {
+      symbol: sym,
+      name: sym,
+      sector: 'Cement',
+      price: 100,
+      change: 0,
+      changePct: 0,
+      ldcp: 100,
+      volume: 1,
+      shariah: true,
+      indexes: ['KSE100'],
+      marketCap: 1e10,
+      pe,
+      divYield: dy,
+      change1y: 0,
+      bid: null,
+      bidVol: null,
+      ask: null,
+      askVol: null,
+    },
+    company: null,
+    analysis: null,
+    tech: null,
+    ratios: null,
+    balance: null,
+    peers: [],
+    today: '2026-10-26',
+  },
+  closes: Array.from({ length: 300 }, (_, i) => 100 + i * (sym === 'A' ? 0.1 : -0.1)),
+});
 const cr = compareRows([mk('A', 8, 5), mk('B', 12, 5)]);
 const row = (l: string) => cr.find((r) => r.label === l)!;
-check('compare: lower P/E wins, equal yields have no star, 1-year leader marked', row('P/E').best.join() === '0' && row('Dividend yield').best.length === 0 && row('1 year').best.join() === '0' && row('Price').best.length === 0, cr.map((r) => [r.label, r.values, r.best]));
+check(
+  'compare: lower P/E wins, equal yields have no star, 1-year leader marked',
+  row('P/E').best.join() === '0' && row('Dividend yield').best.length === 0 && row('1 year').best.join() === '0' && row('Price').best.length === 0,
+  cr.map((r) => [r.label, r.values, r.best]),
+);
 
 // --- end compare
 
@@ -84,7 +133,12 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const now = Date.parse('2026-10-26T07:00:00Z');
   const D = 864e5;
   const div = (list: { announced: number; dps: number; bookClosure: number | null }[], cut: string | null = null) => ({
-    faceValue: 10, ttm: 0, ttmYield: null, years: [], cut, lower: null,
+    faceValue: 10,
+    ttm: 0,
+    ttmYield: null,
+    years: [],
+    cut,
+    lower: null,
     list: list.map((p) => ({ ...p, period: null, periodType: null, bonusPct: 0 })),
   });
   check('months from now to a year on', nextMonths(now).join() === '2026-10,2026-11,2026-12,2027-01,2027-02,2027-03,2027-04,2027-05,2027-06,2027-07,2027-08,2027-09,2027-10', nextMonths(now));
@@ -96,9 +150,25 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const plan = incomePlan(
     [
       // announced: book closure in 10 days, Rs 5; and last year's final in Feb (Rs 8) repeats
-      { symbol: 'AAA', shares: 100, sector: 'Cement', dividends: div([{ announced: now - 5 * D, dps: 5, bookClosure: now + 10 * D }, { announced: now - 250 * D, dps: 8, bookClosure: now - 230 * D }]) },
+      {
+        symbol: 'AAA',
+        shares: 100,
+        sector: 'Cement',
+        dividends: div([
+          { announced: now - 5 * D, dps: 5, bookClosure: now + 10 * D },
+          { announced: now - 250 * D, dps: 8, bookClosure: now - 230 * D },
+        ]),
+      },
       // last year's interim a year ago (10 days before now): already announced again this year → not doubled
-      { symbol: 'BBB', shares: 10, sector: 'Power Generation & Distribution', dividends: div([{ announced: now - 20 * D, dps: 4, bookClosure: now + 3 * D }, { announced: now - 360 * D, dps: 4, bookClosure: now - 345 * D }]) },
+      {
+        symbol: 'BBB',
+        shares: 10,
+        sector: 'Power Generation & Distribution',
+        dividends: div([
+          { announced: now - 20 * D, dps: 4, bookClosure: now + 3 * D },
+          { announced: now - 360 * D, dps: 4, bookClosure: now - 345 * D },
+        ]),
+      },
       { symbol: 'CUT', shares: 50, sector: 'Cement', dividends: div([{ announced: now - 100 * D, dps: 2, bookClosure: now - 80 * D }], 'Dividend cut') },
       { symbol: 'NIL', shares: 50, sector: 'Cement', dividends: div([{ announced: now - 500 * D, dps: 2, bookClosure: now - 480 * D }]) },
     ],
@@ -107,7 +177,11 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   );
   const sym = (s: string) => plan.items.filter((i) => i.symbol === s);
   check('announced dividend counted once, paid two weeks after book closure', sym('AAA').filter((i) => i.known).length === 1 && sym('AAA').find((i) => i.known)!.month === '2026-11');
-  check("last year's dividend expected again a year on", sym('AAA').some((i) => !i.known && i.dps === 8 && i.month === '2027-03'), sym('AAA'));
+  check(
+    "last year's dividend expected again a year on",
+    sym('AAA').some((i) => !i.known && i.dps === 8 && i.month === '2027-03'),
+    sym('AAA'),
+  );
   check('same dividend already announced this year is not counted twice', sym('BBB').length === 1 && sym('BBB')[0].known, sym('BBB'));
   check('power producer taxed at 7.5%, others 15% (filer)', Math.abs(sym('BBB')[0].net - 40 * 0.925) < 1e-9 && Math.abs(sym('AAA')[0].net - 500 * 0.85) < 1e-9);
   check('cut and non-payers listed, not estimated', plan.cut.join() === 'CUT' && plan.none.join() === 'NIL' && !sym('CUT').length && !sym('NIL').length);
@@ -124,7 +198,19 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
     false,
   );
   check('income ideas: index members, 5-18% yield, not owned, highest first', ideas.map((s) => s.symbol).join() === 'A,C', ideas);
-  check('income ideas: Shariah keeps KMI-30 only', incomeIdeas([{ symbol: 'A', divYield: 12, indexes: ['KSE100'], price: 10 }, { symbol: 'C', divYield: 9, indexes: ['KMI30'], price: 10 }], new Set(), true).map((s) => s.symbol).join() === 'C');
+  check(
+    'income ideas: Shariah keeps KMI-30 only',
+    incomeIdeas(
+      [
+        { symbol: 'A', divYield: 12, indexes: ['KSE100'], price: 10 },
+        { symbol: 'C', divYield: 9, indexes: ['KMI30'], price: 10 },
+      ],
+      new Set(),
+      true,
+    )
+      .map((s) => s.symbol)
+      .join() === 'C',
+  );
 }
 
 // rebalance
@@ -142,7 +228,15 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('buy and sell: trims the overweight, buys the rest, weights close to target', t(r2, 'A') === -50 && t(r2, 'B') === 0 && t(r2, 'C') === 200 && r2.maxGap < 1.5 && r2.trades[0].shares < 0, r2);
   const r3 = rebalance(pos, { A: 1, B: 1, C: 1 }, 1000, false);
   check('too little cash: spread over the gaps, within the cash', r3.trades.reduce((a, x) => a + x.value, 0) <= 1000 + 1e-9 && t(r3, 'C') > 0 && r3.leftover >= 0 && r3.leftover < 50, r3);
-  const r4 = rebalance([{ symbol: 'A', shares: 10, price: 100 }, { symbol: 'B', shares: 10, price: 100 }], { A: 50, B: 50 }, 0, true);
+  const r4 = rebalance(
+    [
+      { symbol: 'A', shares: 10, price: 100 },
+      { symbol: 'B', shares: 10, price: 100 },
+    ],
+    { A: 50, B: 50 },
+    0,
+    true,
+  );
   check('already on target: nothing to do', r4.trades.length === 0 && r4.maxGap < 1e-9);
 }
 
@@ -208,7 +302,11 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 // buy-zone alerts
 {
   const { rules, bad } = parseRules('MEBL yield>9, LUCK<fair, HUBC >fair, SYS<100, PPL<200d, X yield<200d, OGDC yield > 12.5%');
-  check('parse yield and fair rules', rules.length === 6 && bad.join() === 'X yield<200d' && rules[0].yield === true && rules[0].level === 9 && rules[1].level === 'fair' && rules[2].dir === '>' && rules[5].level === 12.5 && rules[5].symbol === 'OGDC', rules);
+  check(
+    'parse yield and fair rules',
+    rules.length === 6 && bad.join() === 'X yield<200d' && rules[0].yield === true && rules[0].level === 9 && rules[1].level === 'fair' && rules[2].dir === '>' && rules[5].level === 12.5 && rules[5].symbol === 'OGDC',
+    rules,
+  );
   check('rules round-trip as text', rulesText(rules) === 'MEBL yield>9, LUCK<fair, HUBC>fair, SYS<100, PPL<200d, OGDC yield>12.5', rulesText(rules));
   check('described in words', describeRule(rules[0]) === "MEBL's dividend yield goes above 9%" && describeRule(rules[1]) === "LUCK closes below Sahm's fair value range");
   // Rs 30 a year in dividends: 9% at Rs 333; the close falls from 340 to 330
@@ -225,22 +323,46 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
     { day: '2026-02-01', symbol: 'BBB', side: 'sell' as const, shares: 10, price: 40, avgCost: 60, realised: -200 },
     { day: '2026-08-01', symbol: 'AAA', side: 'sell' as const, shares: 10, price: 90, avgCost: 50, realised: 400 }, // next tax year
   ];
-  check('shares at a date, walked back from today through the trades', sharesFromTrades(trades, 'AAA', '2025-11-30', 50) === 100 && sharesFromTrades(trades, 'AAA', '2026-01-01', 50) === 60 && sharesFromTrades(trades, 'ZZZ', '2026-01-01', 5) === null);
+  check(
+    'shares at a date, walked back from today through the trades',
+    sharesFromTrades(trades, 'AAA', '2025-11-30', 50) === 100 && sharesFromTrades(trades, 'AAA', '2026-01-01', 50) === 60 && sharesFromTrades(trades, 'ZZZ', '2026-01-01', 5) === null,
+  );
   const bc = (d: string) => Date.parse(d + 'T00:00:00+05:00');
-  const div = (list: { dps: number; bookClosure: number }[]) => ({ faceValue: 10, ttm: 0, ttmYield: null, years: [], cut: null, lower: null, list: list.map((p) => ({ ...p, announced: p.bookClosure - 20 * 864e5, period: null, periodType: null, bonusPct: 0 })) });
+  const div = (list: { dps: number; bookClosure: number }[]) => ({
+    faceValue: 10,
+    ttm: 0,
+    ttmYield: null,
+    years: [],
+    cut: null,
+    lower: null,
+    list: list.map((p) => ({ ...p, announced: p.bookClosure - 20 * 864e5, period: null, periodType: null, bonusPct: 0 })),
+  });
   const st = taxStatement({
     year: 2026,
     trades,
     status: 'filer',
     bought: {},
     holdings: [
-      { symbol: 'AAA', shares: 50, sector: 'Cement', dividends: div([{ dps: 5, bookClosure: bc('2025-10-15') }, { dps: 3, bookClosure: bc('2026-03-01') }, { dps: 9, bookClosure: bc('2026-09-01') }]) },
+      {
+        symbol: 'AAA',
+        shares: 50,
+        sector: 'Cement',
+        dividends: div([
+          { dps: 5, bookClosure: bc('2025-10-15') },
+          { dps: 3, bookClosure: bc('2026-03-01') },
+          { dps: 9, bookClosure: bc('2026-09-01') },
+        ]),
+      },
       { symbol: 'CCC', shares: 20, sector: 'Power Generation & Distribution', dividends: div([{ dps: 2, bookClosure: bc('2026-04-10') }]) },
     ],
     snapshotShares: snapshotLookup([{ day: '2026-04-01', pos: { CCC: [30, 0, 0] } }]),
   });
   check('sales in the tax year only, losses set off before tax', st.sales.length === 2 && st.gains === 1200 && st.losses === 200 && st.net === 1000 && Math.abs(st.cgt - 150) < 1e-9, st);
-  check('dividends on the shares held at book closure', st.dividends.length === 3 && st.dividends[0].shares === 100 && st.dividends[1].shares === 60 && st.dividends[2].symbol === 'CCC' && st.dividends[2].shares === 30, st.dividends);
+  check(
+    'dividends on the shares held at book closure',
+    st.dividends.length === 3 && st.dividends[0].shares === 100 && st.dividends[1].shares === 60 && st.dividends[2].symbol === 'CCC' && st.dividends[2].shares === 30,
+    st.dividends,
+  );
   check('tax withheld by payer (power 7.5%)', Math.abs(st.divWithheld - (500 * 0.15 + 180 * 0.15 + 60 * 0.075)) < 1e-9 && st.assumed.length === 0, st.divWithheld);
   const html = statementHtml(st, { name: 'M & co', status: 'filer', made: '27 Oct 2026' });
   check('statement page has the totals and escapes text', html.includes('tax year 2026') && html.includes('Rs 1,000') && html.includes('M &amp; co') && !html.includes('M & co'));
@@ -254,8 +376,23 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('treemap: areas in proportion, inside the box', t.length === 7 && t.every((r) => Math.abs(area(r) - r.item) < 1e-9 && r.x >= -1e-9 && r.y >= -1e-9 && r.x + r.w <= 6 + 1e-9 && r.y + r.h <= 4 + 1e-9), t);
   const overlap = t.some((a, i) => t.some((b, j) => i < j && a.x < b.x + b.w - 1e-9 && b.x < a.x + a.w - 1e-9 && a.y < b.y + b.h - 1e-9 && b.y < a.y + a.h - 1e-9));
   check('treemap: no overlaps', !overlap);
-  check('treemap: tiles are not slivers', t.every((r) => Math.max(r.w / r.h, r.h / r.w) < 4), t.map((r) => (r.w / r.h).toFixed(2)));
-  const n = nested([{ s: 'A', v: 3 }, { s: 'A', v: 1 }, { s: 'B', v: 4 }, { s: 'C', v: 0 }], (x) => x.s, (x) => x.v, { x: 0, y: 0, w: 100, h: 100 }, 10);
+  check(
+    'treemap: tiles are not slivers',
+    t.every((r) => Math.max(r.w / r.h, r.h / r.w) < 4),
+    t.map((r) => (r.w / r.h).toFixed(2)),
+  );
+  const n = nested(
+    [
+      { s: 'A', v: 3 },
+      { s: 'A', v: 1 },
+      { s: 'B', v: 4 },
+      { s: 'C', v: 0 },
+    ],
+    (x) => x.s,
+    (x) => x.v,
+    { x: 0, y: 0, w: 100, h: 100 },
+    10,
+  );
   check('nested: groups sized by their totals, empty items left out', n.length === 2 && Math.abs(area(n[0].rect) - 5000) < 1e-6 && n.reduce((a, g) => a + g.tiles.length, 0) === 3);
 }
 
@@ -270,7 +407,13 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
       ann('2026-04-22', 'Financial Results for the Quarter Ended - March 31, 2026'),
       ann('2026-09-15', 'Financial Results for the Year Ended - June 30, 2026'),
     ],
-    financialsQuarterly: { periods: ['Q4 2026', 'Q3 2026', 'Q2 2026', 'Q1 2026'], rows: [{ label: 'EPS', values: [5, 4, 3, 2.5] }, { label: 'Profit after Taxation', values: [500, 400, 300, 250] }] },
+    financialsQuarterly: {
+      periods: ['Q4 2026', 'Q3 2026', 'Q2 2026', 'Q1 2026'],
+      rows: [
+        { label: 'EPS', values: [5, 4, 3, 2.5] },
+        { label: 'Profit after Taxation', values: [500, 400, 300, 250] },
+      ],
+    },
     financialsAnnual: null,
   } as never;
   const n = nextResults(company, Date.parse('2026-10-27T07:00:00Z'))!;
@@ -297,7 +440,11 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
     1e6,
     now,
   );
-  check('shares over 100% are scaled down', Math.abs(gs[0].value - 666666.67) < 1 && Math.abs(gs[1].value - 333333.33) < 1, gs.map((g) => g.value));
+  check(
+    'shares over 100% are scaled down',
+    Math.abs(gs[0].value - 666666.67) < 1 && Math.abs(gs[1].value - 333333.33) < 1,
+    gs.map((g) => g.value),
+  );
   check('each goal gets its own monthly need and course check', gs[0].status.reach != null && gs[1].status.reach === null && gs[1].status.need > 0);
 }
 
@@ -319,9 +466,20 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 // announcements inbox
 {
   const a = (date: string, title: string, category = 'Others') => ({ date, title, url: null, category });
-  check('announcement kinds', kindOf(a('', 'Financial Results for the Quarter Ended', 'Financial Results')) === 'results' && kindOf(a('', 'Credit of final cash dividend')) === 'payout' && kindOf(a('', 'Material Information')) === 'material' && kindOf(a('', 'Disclosure of Interest by a Director CEO u/c 5.6.1.(d)')) === 'insider' && kindOf(a('', 'Board Meeting', 'Board Meetings')) === 'meeting');
+  check(
+    'announcement kinds',
+    kindOf(a('', 'Financial Results for the Quarter Ended', 'Financial Results')) === 'results' &&
+      kindOf(a('', 'Credit of final cash dividend')) === 'payout' &&
+      kindOf(a('', 'Material Information')) === 'material' &&
+      kindOf(a('', 'Disclosure of Interest by a Director CEO u/c 5.6.1.(d)')) === 'insider' &&
+      kindOf(a('', 'Board Meeting', 'Board Meetings')) === 'meeting',
+  );
   const now = Date.parse('2026-10-27T07:00:00Z');
-  const items = inbox({ LUCK: [a('2026-10-26', 'Material Information'), a('2026-10-20', 'Board Meeting', 'Board Meetings'), a('2026-07-01', 'Old')], MEBL: [a('2026-10-26', 'Credit of final cash dividend')] }, Date.parse('2026-10-21T07:00:00Z'), now);
+  const items = inbox(
+    { LUCK: [a('2026-10-26', 'Material Information'), a('2026-10-20', 'Board Meeting', 'Board Meetings'), a('2026-07-01', 'Old')], MEBL: [a('2026-10-26', 'Credit of final cash dividend')] },
+    Date.parse('2026-10-21T07:00:00Z'),
+    now,
+  );
   check('inbox: last 60 days, newest first, new since last look', items.length === 3 && items[0].symbol === 'LUCK' && items[1].symbol === 'MEBL' && items[0].fresh && !items[2].fresh, items);
   check('nothing is "new" the first time', inbox({ X: [a('2026-10-26', 'x')] }, 0, now)[0].fresh === false);
 }
@@ -330,10 +488,25 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 {
   check('column names', colName(0) === 'A' && colName(25) === 'Z' && colName(26) === 'AA' && colName(701) === 'ZZ');
   check('base64', toBase64(new Uint8Array([77, 97, 110])) === 'TWFu' && toBase64(new Uint8Array([77])) === 'TQ==');
-  const z = unzipSync(xlsx([{ name: 'A/B', rows: [['h', 'n'], ['x & <y>', 1.5]] }, { name: 'A/B', rows: [] }]));
+  const z = unzipSync(
+    xlsx([
+      {
+        name: 'A/B',
+        rows: [
+          ['h', 'n'],
+          ['x & <y>', 1.5],
+        ],
+      },
+      { name: 'A/B', rows: [] },
+    ]),
+  );
   const wb = strFromU8(z['xl/workbook.xml']);
   const sh = strFromU8(z['xl/worksheets/sheet1.xml']);
-  check('workbook: safe unique sheet names, escaped text, numbers as numbers', wb.includes('name="A B"') && wb.includes('name="A B 2"') && sh.includes('x &amp; &lt;y&gt;') && sh.includes('<v>1.5</v>') && !!z['xl/styles.xml'], wb);
+  check(
+    'workbook: safe unique sheet names, escaped text, numbers as numbers',
+    wb.includes('name="A B"') && wb.includes('name="A B 2"') && sh.includes('x &amp; &lt;y&gt;') && sh.includes('<v>1.5</v>') && !!z['xl/styles.xml'],
+    wb,
+  );
 }
 
 // targets per holding
@@ -341,9 +514,21 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const t = { target: 500, rethink: 300 };
   check('position between rethink and target', position(400, t) === 0.5 && position(250, t)! < 0 && position(550, t)! > 1 && position(400, { target: 300, rethink: 500 }) === null);
   check('reached, broken, between', stateOf(500, t) === 'reached' && stateOf(299, t) === 'broken' && stateOf(400, t) === 'between' && stateOf(400, undefined) === null);
-  const rules = [{ symbol: 'LUCK', dir: '>' as const, level: 450 }, { symbol: 'LUCK', dir: '<' as const, level: 'ma200' as const }, { symbol: 'MEBL', dir: '>' as const, level: 450 }];
+  const rules = [
+    { symbol: 'LUCK', dir: '>' as const, level: 450 },
+    { symbol: 'LUCK', dir: '<' as const, level: 'ma200' as const },
+    { symbol: 'MEBL', dir: '>' as const, level: 450 },
+  ];
   const r1 = withTargetRules(rules, 'LUCK', { target: 450, rethink: null }, { target: 500, rethink: 300 });
-  check('alert rules follow the targets: old one swapped, others kept', r1.length === 4 && !r1.some((r) => r.symbol === 'LUCK' && r.level === 450) && r1.some((r) => r.symbol === 'LUCK' && r.level === 500 && r.dir === '>') && r1.some((r) => r.symbol === 'LUCK' && r.level === 300 && r.dir === '<') && r1.some((r) => r.symbol === 'MEBL'), r1);
+  check(
+    'alert rules follow the targets: old one swapped, others kept',
+    r1.length === 4 &&
+      !r1.some((r) => r.symbol === 'LUCK' && r.level === 450) &&
+      r1.some((r) => r.symbol === 'LUCK' && r.level === 500 && r.dir === '>') &&
+      r1.some((r) => r.symbol === 'LUCK' && r.level === 300 && r.dir === '<') &&
+      r1.some((r) => r.symbol === 'MEBL'),
+    r1,
+  );
   check('clearing targets removes their alerts', withTargetRules(r1, 'LUCK', { target: 500, rethink: 300 }, { target: null, rethink: null }).filter((r) => r.symbol === 'LUCK').length === 1);
 }
 
@@ -353,8 +538,29 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const now = Date.parse('2026-10-27T07:00:00Z');
   const snap = (day: string, value: number, shares: number, price: number) => ({ day, value, pos: { AAA: [shares, shares * 100, price] as [number, number, number] }, div: 0 });
   const ev = buildTimeline({
-    trades: [{ day: '2026-10-01', symbol: 'AAA', side: 'buy', shares: 100, price: 100, avgCost: 100, realised: null }, { day: '2026-10-20', symbol: 'AAA', side: 'sell', shares: 20, price: 120, avgCost: 100, realised: 400 }],
-    holdings: [{ symbol: 'AAA', shares: 80, dividends: { faceValue: 10, ttm: 0, ttmYield: null, years: [], cut: null, lower: null, list: [{ announced: now - 30 * D, period: null, periodType: null, dps: 5, bonusPct: 0, bookClosure: Date.parse('2026-10-15T00:00:00+05:00') }, { announced: now - 400 * D, period: null, periodType: null, dps: 3, bonusPct: 0, bookClosure: now - 380 * D }] }, announcements: [{ date: '2026-10-22', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }] }],
+    trades: [
+      { day: '2026-10-01', symbol: 'AAA', side: 'buy', shares: 100, price: 100, avgCost: 100, realised: null },
+      { day: '2026-10-20', symbol: 'AAA', side: 'sell', shares: 20, price: 120, avgCost: 100, realised: 400 },
+    ],
+    holdings: [
+      {
+        symbol: 'AAA',
+        shares: 80,
+        dividends: {
+          faceValue: 10,
+          ttm: 0,
+          ttmYield: null,
+          years: [],
+          cut: null,
+          lower: null,
+          list: [
+            { announced: now - 30 * D, period: null, periodType: null, dps: 5, bonusPct: 0, bookClosure: Date.parse('2026-10-15T00:00:00+05:00') },
+            { announced: now - 400 * D, period: null, periodType: null, dps: 3, bonusPct: 0, bookClosure: now - 380 * D },
+          ],
+        },
+        announcements: [{ date: '2026-10-22', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }],
+      },
+    ],
     notes: { AAA: { why: 'cheap', at: Date.parse('2026-10-02T07:00:00Z') } },
     snaps: [snap('2026-10-01', 10000, 100, 100), snap('2026-10-02', 10500, 100, 105), snap('2026-10-03', 10400, 100, 104)],
     sharesOn: (_s, day) => (day < '2026-10-20' ? 100 : 80),
@@ -374,10 +580,21 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('SBP: T-bill and PIB cut-offs with dates', sbp.tbills.m3 === 11.9999 && sbp.tbills.m12 === 12.4999 && sbp.tbills.asOf === 'Oct 14, 2026' && sbp.pibs.y10 === 12.5 && sbp.pibs.y5 === 12.49, [sbp.tbills, sbp.pibs]);
   check('SBP: dollar rate and reserves', sbp.usd === 276.8118 && sbp.reserves.total === 26833 && sbp.reserves.sbp === 21488.6, [sbp.usd, sbp.reserves]);
   const inf = parsePbsInflation(readFileSync(join(__dirname, 'fixtures', 'pbs_inflation_chart.txt'), 'utf8'));
-  check('PBS inflation: every month from the chart, newest last', inf.length === 33 && inf[0][0] === '2024-01' && inf[0][1] === 28.3 && inf[32][0] === '2026-09' && inf[32][1] === 10.3 && inf[32][2] === 1.3 && inf[26][0] === '2026-03', [inf[0], inf[26], inf[32]]);
-  check('petrol price from the news', petrolFromNews('Following the revision, the price of HSD was increased from Rs393.66 to Rs395.82 per litre, while petrol price went up from Rs377.71 to Rs379.25 per litre.') === 379.25);
+  check(
+    'PBS inflation: every month from the chart, newest last',
+    inf.length === 33 && inf[0][0] === '2024-01' && inf[0][1] === 28.3 && inf[32][0] === '2026-09' && inf[32][1] === 10.3 && inf[32][2] === 1.3 && inf[26][0] === '2026-03',
+    [inf[0], inf[26], inf[32]],
+  );
+  check(
+    'petrol price from the news',
+    petrolFromNews('Following the revision, the price of HSD was increased from Rs393.66 to Rs395.82 per litre, while petrol price went up from Rs377.71 to Rs379.25 per litre.') === 379.25,
+  );
   check('inflation from the news', cpiFromNews('Pakistan’s CPI inflation clocked in at 5.6% in September, PBS data showed')?.cpi === 5.6 && cpiFromNews('Inflation eases to 4.2pc in August')?.month === 'August');
-  const y = marketYields([{ indexes: ['KSE100'], marketCap: 100, pe: 5, divYield: 10 }, { indexes: ['KSE100'], marketCap: 100, pe: 10, divYield: 4 }, { indexes: ['KSE100'], marketCap: 50, pe: null, divYield: null }]);
+  const y = marketYields([
+    { indexes: ['KSE100'], marketCap: 100, pe: 5, divYield: 10 },
+    { indexes: ['KSE100'], marketCap: 100, pe: 10, divYield: 4 },
+    { indexes: ['KSE100'], marketCap: 50, pe: null, divYield: null },
+  ]);
   check('market earnings and dividend yield, weighted by value', Math.abs(y.pe! - 200 / 30) < 1e-9 && Math.abs(y.earningsYield! - 15) < 1e-9 && Math.abs(y.dividendYield! - 5.6) < 1e-9, y);
 }
 
@@ -398,11 +615,26 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const t0 = Date.UTC(2023, 0, 2);
   // 1,000 shares; profit Rs 10,000 for FY2023 (June year), Rs 20,000 for FY2024; price 100 flat then 150
   const candles = Array.from({ length: 900 }, (_, i) => ({ t: t0 + i * D, o: 0, h: 0, l: 0, c: i < 700 ? 100 : 150, v: 1 }));
-  const b = peBand({ candles, profits: [{ fy: '2023', profit: 10_000 }, { fy: '2024', profit: 20_000 }], fyEndMonth: 5, shares: 1000 })!;
+  const b = peBand({
+    candles,
+    profits: [
+      { fy: '2023', profit: 10_000 },
+      { fy: '2024', profit: 20_000 },
+    ],
+    fyEndMonth: 5,
+    shares: 1000,
+  })!;
   check('P/E from market value and the profit known then', Math.abs(b.points[0].pe - 10) < 1e-9 && b.points[0].t >= Date.UTC(2023, 9, 1), b.points[0]);
-  check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
+  check(
+    'the newer year counts from three months after its end',
+    b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D),
+  );
   check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
-  check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
+  check(
+    'profits from the PSX table (thousands → rupees), losses left out',
+    profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 &&
+      profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000,
+  );
 }
 
 // Since you bought
@@ -413,7 +645,20 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
     { day: '2025-06-05', symbol: 'A', side: 'buy' as const, shares: 5 },
     { day: '2025-07-01', symbol: 'A', side: 'buy' as const, shares: 5 },
   ];
-  check('start: first buy after last held none', startDay('A', tr, [])?.day === '2025-06-05' && startDay('B', [], [{ day: '2026-01-01', has: true }, { day: '2026-01-02', has: false }, { day: '2026-02-01', has: true }])?.day === '2026-02-01' && startDay('C', [], []) === null);
+  check(
+    'start: first buy after last held none',
+    startDay('A', tr, [])?.day === '2025-06-05' &&
+      startDay(
+        'B',
+        [],
+        [
+          { day: '2026-01-01', has: true },
+          { day: '2026-01-02', has: false },
+          { day: '2026-02-01', has: true },
+        ],
+      )?.day === '2026-02-01' &&
+      startDay('C', [], []) === null,
+  );
   const D = 864e5;
   const c = [100, 120, 80, 90].map((v, i) => ({ t: Date.parse('2026-01-01T05:00:00Z') + i * D, o: v, h: v, l: v, c: v, v: 1 }));
   const x = sinceBought({ symbol: 'A', candles: c, start: { day: '2026-01-01', basis: 'trade' }, avgCost: 95, price: 90 });
@@ -422,10 +667,39 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 
 // Dividend growth
 {
-  const g = divGrowth([{ fy: '2026', dps: 3 }, { fy: '2025', dps: 16 }, { fy: '2024', dps: 13 }, { fy: '2023', dps: 11 }, { fy: '2022', dps: 10 }, { fy: '2021', dps: 9 }], '2025');
+  const g = divGrowth(
+    [
+      { fy: '2026', dps: 3 },
+      { fy: '2025', dps: 16 },
+      { fy: '2024', dps: 13 },
+      { fy: '2023', dps: 11 },
+      { fy: '2022', dps: 10 },
+      { fy: '2021', dps: 9 },
+    ],
+    '2025',
+  );
   check('dividend growth: growing, streak, current year left out', g.verdict === 'growing' && g.streak === 4 && g.years.length === 5 && g.years[4].fy === '2025' && Math.abs(g.cagr! - ((16 / 9) ** 0.25 - 1)) < 1e-9, g);
-  check('dividend cut', divGrowth([{ fy: '2025', dps: 4 }, { fy: '2024', dps: 10 }, { fy: '2023', dps: 10 }], '2025').verdict === 'cut');
-  check('dividend gaps count as zero', divGrowth([{ fy: '2025', dps: 4 }, { fy: '2022', dps: 4 }], '2025').verdict === 'irregular' && divGrowth([], null).verdict === 'none');
+  check(
+    'dividend cut',
+    divGrowth(
+      [
+        { fy: '2025', dps: 4 },
+        { fy: '2024', dps: 10 },
+        { fy: '2023', dps: 10 },
+      ],
+      '2025',
+    ).verdict === 'cut',
+  );
+  check(
+    'dividend gaps count as zero',
+    divGrowth(
+      [
+        { fy: '2025', dps: 4 },
+        { fy: '2022', dps: 4 },
+      ],
+      '2025',
+    ).verdict === 'irregular' && divGrowth([], null).verdict === 'none',
+  );
 }
 
 // Picks against your portfolio
@@ -468,7 +742,16 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
 // Who pays when
 {
   const t = (d: string) => Date.parse(d + 'T04:00:00Z');
-  const m = payMonths([{ dps: 5, bookClosure: t('2026-03-10') }, { dps: 4, bookClosure: t('2025-03-12') }, { dps: 2, bookClosure: t('2025-09-01') }, { dps: 0, bookClosure: t('2026-06-01') }, { dps: 9, bookClosure: t('2020-03-01') }], Date.parse('2026-10-27T00:00:00Z'));
+  const m = payMonths(
+    [
+      { dps: 5, bookClosure: t('2026-03-10') },
+      { dps: 4, bookClosure: t('2025-03-12') },
+      { dps: 2, bookClosure: t('2025-09-01') },
+      { dps: 0, bookClosure: t('2026-06-01') },
+      { dps: 9, bookClosure: t('2020-03-01') },
+    ],
+    Date.parse('2026-10-27T00:00:00Z'),
+  );
   check('pay months over three years', m.get(2) === 2 && m.get(8) === 1 && !m.has(5) && m.size === 2);
 }
 
@@ -507,7 +790,11 @@ check('voice: prompt carries symbols', voicePrompt(['LUCK']).endsWith('LUCK'));
 
 // Lessons
 check('ten lessons, each answer one of its options', LESSONS.length === 10 && LESSONS.every((l) => l.check.answer >= 0 && l.check.answer < l.check.options.length && l.body.length >= 2));
-check('lesson examples from holdings', LESSONS[3].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: 5, divYield: 8, dps: 8, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('EPS about Rs 20.00') && LESSONS[8].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: null, divYield: null, dps: null, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('more than the usual 20%'));
+check(
+  'lesson examples from holdings',
+  LESSONS[3].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: 5, divYield: 8, dps: 8, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('EPS about Rs 20.00') &&
+    LESSONS[8].example!({ top: { symbol: 'A', shares: 10, price: 100, avgCost: 90, pe: null, divYield: null, dps: null, sector: null }, holdings: 3, topWeight: 0.3 })!.includes('more than the usual 20%'),
+);
 
 // Widget chart
 check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0') && sparkPath([1], 10, 10) === '');
@@ -529,13 +816,26 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
 // Since you last looked
 {
   const now = Date.parse('2026-10-27T10:00:00Z');
-  const base = { now, holdings: [{ symbol: 'A', shares: 10 }], watchlist: ['W'], announcements: { A: [{ date: '2026-10-27', title: 'Board meeting' }, { date: '2026-10-01', title: 'old' }] }, payouts: { A: [{ bookClosure: now - 3600_000 }] } };
+  const base = {
+    now,
+    holdings: [{ symbol: 'A', shares: 10 }],
+    watchlist: ['W'],
+    announcements: {
+      A: [
+        { date: '2026-10-27', title: 'Board meeting' },
+        { date: '2026-10-01', title: 'old' },
+      ],
+    },
+    payouts: { A: [{ bookClosure: now - 3600_000 }] },
+  };
   const s = sinceLast({ ...base, last: { at: now - 20 * 3600_000, prices: { A: 100, W: 50 } }, price: (x) => (x === 'A' ? 105 : 45) })!;
-  check('since: change on today\'s shares, movers, news, book closures', s.change === 50 && Math.abs(s.pct - 0.05) < 1e-9 && s.movers[0].symbol === 'W' && !s.movers[0].held && s.news.length === 1 && s.bookClosures.length === 1);
+  check(
+    "since: change on today's shares, movers, news, book closures",
+    s.change === 50 && Math.abs(s.pct - 0.05) < 1e-9 && s.movers[0].symbol === 'W' && !s.movers[0].held && s.news.length === 1 && s.bookClosures.length === 1,
+  );
   check('since: not shown after a short time away', sinceLast({ ...base, last: { at: now - 3600_000, prices: { A: 100 } }, price: () => 105 }) === null);
   check('since: nothing to say', sinceLast({ ...base, announcements: {}, payouts: {}, last: { at: now - 20 * 3600_000, prices: { A: 100, W: 50 } }, price: (x) => (x === 'A' ? 100 : 50) }) === null);
 }
-
 
 // Peers
 {
@@ -560,7 +860,13 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
   const base = { holdings: [{ symbol: 'A', shares: 100, avgCost: 110 }], bonuses: { A: { pct: 10, key: 'k1', bookClosure: bc } }, applied: [] as string[], now: bc + 12 * 864e5 };
   const due = dueBonuses({ ...base, sharesOn: () => 100 });
   check('bonus: added after settling, average lowered', due.length === 1 && due[0].after.shares === 110 && due[0].after.avgCost === 100 && due[0].key === 'A:k1');
-  check('bonus: not before 10 days, not twice, not when shares changed or unknown', dueBonuses({ ...base, now: bc + 5 * 864e5, sharesOn: () => 100 }).length === 0 && dueBonuses({ ...base, applied: ['A:k1'], sharesOn: () => 100 }).length === 0 && dueBonuses({ ...base, sharesOn: () => 90 }).length === 0 && dueBonuses({ ...base, sharesOn: () => null }).length === 0);
+  check(
+    'bonus: not before 10 days, not twice, not when shares changed or unknown',
+    dueBonuses({ ...base, now: bc + 5 * 864e5, sharesOn: () => 100 }).length === 0 &&
+      dueBonuses({ ...base, applied: ['A:k1'], sharesOn: () => 100 }).length === 0 &&
+      dueBonuses({ ...base, sharesOn: () => 90 }).length === 0 &&
+      dueBonuses({ ...base, sharesOn: () => null }).length === 0,
+  );
   check('bonus: under one share', bonusAfter(5, 100, 10).shares === 5);
   check('bonus: undo only while unchanged', canUndo(due[0], { shares: 110, avgCost: 100 }) && !canUndo(due[0], { shares: 120, avgCost: 100 }));
 }
@@ -571,7 +877,11 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
   const s = [snap('2026-10-20', [100, 1000, 10], [10, 1000, 100]), snap('2026-10-21', [100, 1000, 11], [10, 1000, 98]), snap('2026-10-23', [200, 2100, 11], [10, 1000, 98], 50)];
   const ex = diaryExtras({ trades: [{ day: '2026-10-22', symbol: 'A', side: 'buy', shares: 100 }], notes: [], bookClosures: [{ symbol: 'B', day: '2026-10-21' }] });
   const d = diary({ snaps: s, extras: ex });
-  check('diary: newest first, with the day between folded in', d.length === 2 && d[0].day === '2026-10-23' && d[0].text.includes('Bought 100 A') && d[0].text.includes('Rs 1,100 added') && d[0].text.includes('dividends Rs 50'), d.map((x) => x.text));
+  check(
+    'diary: newest first, with the day between folded in',
+    d.length === 2 && d[0].day === '2026-10-23' && d[0].text.includes('Bought 100 A') && d[0].text.includes('Rs 1,100 added') && d[0].text.includes('dividends Rs 50'),
+    d.map((x) => x.text),
+  );
   check('diary: leader and laggard', d[1].text.startsWith('Up 4.0% (+Rs 80)') && d[1].text.includes('A led (+10.0%)') && d[1].text.includes('B lagged (−2.0%)') && d[1].text.includes('B book closure'), d[1].text);
   check('diary: by month', byMonth(d).length === 1);
 }
@@ -579,7 +889,13 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
 // Offline copy timing
 {
   const t = (s: string) => Date.parse(s);
-  check('offline: due after the close if the last copy is older', offlineDue(t('2026-10-27T05:00:00Z'), t('2026-10-27T12:00:00Z')) && !offlineDue(t('2026-10-27T11:30:00Z'), t('2026-10-27T12:00:00Z')) && !offlineDue(t('2026-10-26T12:00:00Z'), t('2026-10-27T08:00:00Z')) && offlineDue(0));
+  check(
+    'offline: due after the close if the last copy is older',
+    offlineDue(t('2026-10-27T05:00:00Z'), t('2026-10-27T12:00:00Z')) &&
+      !offlineDue(t('2026-10-27T11:30:00Z'), t('2026-10-27T12:00:00Z')) &&
+      !offlineDue(t('2026-10-26T12:00:00Z'), t('2026-10-27T08:00:00Z')) &&
+      offlineDue(0),
+  );
 }
 
 // Dividend payments
@@ -589,13 +905,28 @@ check('stock widget line', sparkPath([1, 2, 3], 100, 44).startsWith('M0.0 42.0')
   let rec = {};
   const run = () =>
     owedPayments({
-      holdings: [{ symbol: 'A', shares: 100, taxRate: 0.15, list: [{ dps: 5, bookClosure: bc('2026-10-20') }, { dps: 4, bookClosure: bc('2026-08-01') }, { dps: 3, bookClosure: bc('2026-11-20') }, { dps: 2, bookClosure: bc('2025-01-01') }] }],
+      holdings: [
+        {
+          symbol: 'A',
+          shares: 100,
+          taxRate: 0.15,
+          list: [
+            { dps: 5, bookClosure: bc('2026-10-20') },
+            { dps: 4, bookClosure: bc('2026-08-01') },
+            { dps: 3, bookClosure: bc('2026-11-20') },
+            { dps: 2, bookClosure: bc('2025-01-01') },
+          ],
+        },
+      ],
       sharesOn: (_s, d) => (d < '2026-09-01' ? 50 : null),
       received: rec,
       now,
     });
   let l = run();
-  check('owed: past book closures in the last year, newest first', l.length === 2 && l[0].day === '2026-10-20' && l[0].status === 'waiting' && l[1].status === 'late' && l[1].shares === 50 && !l[1].assumed && l[0].assumed);
+  check(
+    'owed: past book closures in the last year, newest first',
+    l.length === 2 && l[0].day === '2026-10-20' && l[0].status === 'waiting' && l[1].status === 'late' && l[1].shares === 50 && !l[1].assumed && l[0].assumed,
+  );
   check('owed: after tax', Math.abs(l[0].net - 425) < 1e-9);
   rec = tick(rec, l[1].key, 180, 1);
   l = run();
@@ -647,13 +978,24 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   const t = (d: string) => Date.parse(d + 'T04:00:00Z');
   const ev = calendarEvents(
     [
-      { symbol: 'A', payouts: [{ bookClosure: t('2026-11-10'), lastBuyDay: t('2026-11-06'), dps: 5, bonusPct: 0 }, { bookClosure: t('2026-10-01'), lastBuyDay: t('2026-09-29'), dps: 3, bonusPct: 0 }], results: { expected: '2026-11-20', meeting: null, label: 'Q1 2027', basis: 'last year' } },
+      {
+        symbol: 'A',
+        payouts: [
+          { bookClosure: t('2026-11-10'), lastBuyDay: t('2026-11-06'), dps: 5, bonusPct: 0 },
+          { bookClosure: t('2026-10-01'), lastBuyDay: t('2026-09-29'), dps: 3, bonusPct: 0 },
+        ],
+        results: { expected: '2026-11-20', meeting: null, label: 'Q1 2027', basis: 'last year' },
+      },
       { symbol: 'B', payouts: [{ bookClosure: t('2026-11-03'), lastBuyDay: t('2026-10-30'), dps: 0, bonusPct: 10 }], results: { expected: '2026-11-25', meeting: '2026-11-02', label: 'Q1 2027', basis: 'deadline' } },
     ],
     '2026-10-27',
     ['2026-10-26', '2026-12-14'],
   );
-  check('calendar: future dates only, in order', ev.map((e) => e.day).join() === '2026-10-30,2026-11-02,2026-11-03,2026-11-06,2026-11-10,2026-11-20,2026-12-14', ev.map((e) => e.day));
+  check(
+    'calendar: future dates only, in order',
+    ev.map((e) => e.day).join() === '2026-10-30,2026-11-02,2026-11-03,2026-11-06,2026-11-10,2026-11-20,2026-12-14',
+    ev.map((e) => e.day),
+  );
   check('calendar: titles', ev[0].title === 'B: last day to buy for its payout' && ev[1].title.startsWith('B: board meeting') && ev[5].title === 'A: Q1 2027 results likely' && ev[0].notes.includes('10% bonus'));
   check('calendar: fingerprint changes with dates', eventsSig(ev) !== eventsSig(ev.slice(1)));
 }
@@ -674,12 +1016,44 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
 
 // Market shock and past falls
 {
-  const sh = shockLoss([{ symbol: 'A', value: 1000, beta: 1.5 }, { symbol: 'B', value: 1000, beta: null }], -0.2, 0.8);
-  check('shock: by beta, missing beta uses the portfolio\'s', Math.abs(sh.loss - (-300 - 160)) < 1e-9 && sh.rows[0].symbol === 'A' && Math.abs(sh.pct + 0.23) < 1e-9);
-  const res = { beta: 1, coverage: 1, betas: [], episodes: [
-    { e: { peakT: 0, troughT: 1, fall: -0.2, recoveredT: null }, portfolio: null, coverage: 1, worst: null, best: null, rows: [{ symbol: 'A', r: { change: -0.3, recoveryDays: 1 } }, { symbol: 'B', r: { change: -0.1, recoveryDays: 1 } }] },
-    { e: { peakT: 2, troughT: 3, fall: -0.2, recoveredT: null }, portfolio: null, coverage: 1, worst: null, best: null, rows: [{ symbol: 'A', r: { change: -0.1, recoveryDays: 1 } }, { symbol: 'B', r: null }] },
-  ] };
+  const sh = shockLoss(
+    [
+      { symbol: 'A', value: 1000, beta: 1.5 },
+      { symbol: 'B', value: 1000, beta: null },
+    ],
+    -0.2,
+    0.8,
+  );
+  check("shock: by beta, missing beta uses the portfolio's", Math.abs(sh.loss - (-300 - 160)) < 1e-9 && sh.rows[0].symbol === 'A' && Math.abs(sh.pct + 0.23) < 1e-9);
+  const res = {
+    beta: 1,
+    coverage: 1,
+    betas: [],
+    episodes: [
+      {
+        e: { peakT: 0, troughT: 1, fall: -0.2, recoveredT: null },
+        portfolio: null,
+        coverage: 1,
+        worst: null,
+        best: null,
+        rows: [
+          { symbol: 'A', r: { change: -0.3, recoveryDays: 1 } },
+          { symbol: 'B', r: { change: -0.1, recoveryDays: 1 } },
+        ],
+      },
+      {
+        e: { peakT: 2, troughT: 3, fall: -0.2, recoveredT: null },
+        portfolio: null,
+        coverage: 1,
+        worst: null,
+        best: null,
+        rows: [
+          { symbol: 'A', r: { change: -0.1, recoveryDays: 1 } },
+          { symbol: 'B', r: null },
+        ],
+      },
+    ],
+  };
   const h = hurtsMost(res as never, { A: 1000, B: 3000 });
   check('hurts most: average rupee loss', h[0].symbol === 'B' && Math.abs(h[0].avgLoss + 300) < 1e-9 && Math.abs(h[1].avgLoss + 200) < 1e-9 && Math.abs(h[0].share + h[1].share - 1) < 1e-9, h);
 }
@@ -697,10 +1071,26 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
 
 // Year in review
 {
-  const snap = (day: string, a: [number, number, number], b?: [number, number, number]) => ({ day, value: a[0] * a[2] + (b ? b[0] * b[2] : 0), pos: (b ? { A: a, B: b } : { A: a }) as Record<string, [number, number, number]>, div: 0 });
+  const snap = (day: string, a: [number, number, number], b?: [number, number, number]) => ({
+    day,
+    value: a[0] * a[2] + (b ? b[0] * b[2] : 0),
+    pos: (b ? { A: a, B: b } : { A: a }) as Record<string, [number, number, number]>,
+    div: 0,
+  });
   const snaps = [snap('2025-06-30', [100, 1000, 10]), snap('2025-12-01', [100, 1000, 12], [10, 500, 50]), snap('2026-06-30', [100, 1000, 15], [10, 500, 40])];
   const st = { year: 2026, from: '2025-07-01', to: '2026-06-30', sales: [], gains: 0, losses: 0, net: 0, cgt: 0, dividends: [], divGross: 0, divWithheld: 0, divNet: 0, assumed: [] };
-  const r = yearReview({ year: 2026, today: '2026-10-27', snaps, trades: [{ day: '2025-12-01', symbol: 'B', side: 'buy', shares: 10, price: 50, realised: null }, { day: '2024-01-01', symbol: 'A', side: 'buy', shares: 1, price: 1, realised: null }], notesAt: ['2026-01-01', '2024-01-01'], st, index: null });
+  const r = yearReview({
+    year: 2026,
+    today: '2026-10-27',
+    snaps,
+    trades: [
+      { day: '2025-12-01', symbol: 'B', side: 'buy', shares: 10, price: 50, realised: null },
+      { day: '2024-01-01', symbol: 'A', side: 'buy', shares: 1, price: 1, realised: null },
+    ],
+    notesAt: ['2026-01-01', '2024-01-01'],
+    st,
+    index: null,
+  });
   check('year: from the close before it', r.start === '2025-06-30' && r.startValue === 1000 && r.endValue === 1900 && r.added === 500 && !r.partial);
   check('year: best and worst', r.best[0].symbol === 'A' && Math.abs(r.best[0].change - 0.5) < 1e-9 && r.worst[0].symbol === 'B' && r.worst[0].rupees === -100);
   check('year: trades and notes in the year only', r.buys.n === 1 && r.buys.amount === 500 && r.notes === 1);
@@ -768,7 +1158,16 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   });
   const txt = lines.map((l) => l.text);
   check('last day to buy first', txt[0] === 'A: last day to buy for its Rs 5.00 dividend', txt);
-  check('book closure tomorrow, meeting, results, note, close line', txt.includes('B: book closure tomorrow (10% bonus)') && txt.includes('C: board meets tomorrow for Q1 2027 results') && txt.includes('B: Q1 2027 results may come today') && txt.includes('Look again at D (your note)') && txt.includes('A closed 2.0% from your Rs 100 line') && txt.length === 6, txt);
+  check(
+    'book closure tomorrow, meeting, results, note, close line',
+    txt.includes('B: book closure tomorrow (10% bonus)') &&
+      txt.includes('C: board meets tomorrow for Q1 2027 results') &&
+      txt.includes('B: Q1 2027 results may come today') &&
+      txt.includes('Look again at D (your note)') &&
+      txt.includes('A closed 2.0% from your Rs 100 line') &&
+      txt.length === 6,
+    txt,
+  );
   const m = morningText(lines)!;
   check('notification text', m.title.endsWith('6 things') && m.body.split('\n').length === 5 && m.body.endsWith('+2 more') && morningText([]) === null, m);
   check('trading days skip weekends', nextTradingDays('2026-10-30', 3, (d) => ![0, 6].includes(new Date(d + 'T12:00:00Z').getUTCDay())).join() === '2026-10-30,2026-11-02,2026-11-03');
@@ -789,7 +1188,12 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   check('question parsed', q.symbols.join() === 'LUCK' && q.side === 'buy' && q.words.join() === '', q);
   const r = searchJournal('why did I buy LUCK', notes, trades, known).hits;
   check('note first, then the buy only', r.length === 2 && r[0].kind === 'note' && r[1].kind === 'trade' && (r[1] as { trade: { side: string } }).trade.side === 'buy', r);
-  check('words search notes', searchJournal('dividends', notes, trades, known).hits.map((h) => h.symbol).join() === 'MEBL');
+  check(
+    'words search notes',
+    searchJournal('dividends', notes, trades, known)
+      .hits.map((h) => h.symbol)
+      .join() === 'MEBL',
+  );
   check('sold in a year', searchJournal('sold 2025', notes, trades, known).hits.length === 1);
   check('nothing for unknown words', searchJournal('gold', notes, trades, known).hits.length === 0);
 }
@@ -802,7 +1206,10 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   ];
   check('example from the biggest holding that has the figure', pickExample(TERMS.pe, mine)!.startsWith('SMALL') && pickExample(TERMS.divYield, mine)!.startsWith('BIG'));
   check('no example without holdings or for plain terms', pickExample(TERMS.pe, []) === null && pickExample(TERMS.kibor, mine) === null);
-  check('every term has a title and body', Object.values(TERMS).every((t) => t.title && t.body.length > 40));
+  check(
+    'every term has a title and body',
+    Object.values(TERMS).every((t) => t.title && t.body.length > 40),
+  );
   check('dividend example in rupees', pickExample(TERMS.divYield, mine)!.includes('Rs 8,000'), pickExample(TERMS.divYield, mine));
 }
 
@@ -818,7 +1225,11 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
     p,
   );
   check('compliant share of money', Math.abs(s.compliantShare - 0.9) < 1e-9 && s.notCount === 1);
-  check('purification: own rate, usual rate, all of a non-compliant dividend', Math.abs(s.purify - (5 + 10 + 200)) < 1e-9, s.lines.map((l) => l.purify));
+  check(
+    'purification: own rate, usual rate, all of a non-compliant dividend',
+    Math.abs(s.purify - (5 + 10 + 200)) < 1e-9,
+    s.lines.map((l) => l.purify),
+  );
   check('non-compliant at the usual rate when switched off', Math.abs(shariahSummary(s.lines, { ...p, nonCompliantFull: false }).purify - (5 + 10 + 4)) < 1e-9);
   check('rate cleared and clamped', setRate(p, 'MEBL', null).perStock.MEBL === undefined && setRate(p, 'X', 150).perStock.X === 100);
   const bc = (d: string) => Date.parse(d + 'T04:00:00Z');
@@ -846,8 +1257,92 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   const again = saveScreen(l, 'payers', { ...st, sort: 'pe' }, [], 3);
   check('same name replaces, keeps id', again.length === 1 && again[0].id === l[0].id && again[0].sort === 'pe');
   check('same settings ignores filter order', sameSettings(st, { ...st, filters: ['kse100', 'div8'] }) && !sameSettings(st, { ...st, shariahOnly: false }));
-  check('suggested name', suggestName(st, (f) => f.toUpperCase(), (x) => x) === 'Shariah · DIV8 · KSE100');
+  check(
+    'suggested name',
+    suggestName(
+      st,
+      (f) => f.toUpperCase(),
+      (x) => x,
+    ) === 'Shariah · DIV8 · KSE100',
+  );
   check('delete', deleteScreen(l, l[0].id).length === 0);
+}
+
+{
+  // whole-market results window
+  const f: ResultsFeed = {
+    v: 1,
+    kind: 'results',
+    day: '2026-10-27',
+    generatedAt: '',
+    checked: 3,
+    rows: [
+      ['OGDC', 'meeting', '2026-10-25', ''],
+      ['FFC', 'out', '2026-10-20', 'Q3 2026'],
+      ['OLD', 'out', '2026-09-01', 'Q2'],
+      ['OGDC', 'due', '2026-10-29', 'Q1'],
+      ['MEBL', 'due', '2026-11-10', 'Q3'],
+      ['FAR', 'due', '2026-12-30', 'Q3'],
+      ['PAST', 'due', '2026-10-20', 'Q3'],
+    ],
+  };
+  const w = resultsWindow(f, '2026-10-27');
+  check('results: meetings in the last two weeks', w.meetings.map((r) => r[0]).join() === 'OGDC');
+  check('results: out drops old ones', w.out.map((r) => r[0]).join() === 'FFC');
+  check('results: due skips met, past and far', w.due.map((r) => r[0]).join() === 'MEBL');
+
+  // yield on cost
+  const y = yieldOnCost([
+    { symbol: 'A', shares: 100, avgCost: 50, price: 100, dps: 10, tax: 0.15 },
+    { symbol: 'B', shares: 100, avgCost: 100, price: 50, dps: 5, tax: 0.15 },
+    { symbol: 'C', shares: 10, avgCost: 10, price: 10, dps: 0, tax: 0.15 },
+  ]);
+  check('yoc: per holding, best first', y.rows.map((r) => r.symbol).join() === 'A,B' && Math.abs(y.rows[0].onCost - 0.2) < 1e-9 && Math.abs(y.rows[0].now - 0.1) < 1e-9);
+  check('yoc: after tax', Math.abs(y.rows[0].onCostNet - 0.17) < 1e-9 && Math.abs(y.rows[0].income - 850) < 1e-9);
+  check('yoc: whole portfolio', Math.abs(y.onCost! - 1500 / 15100) < 1e-9 && Math.abs(y.now! - 1500 / 15100) < 1e-9);
+
+  // sell signals
+  const base = {
+    price: 100,
+    value: 1000,
+    pnlPct: 0,
+    action: 'Hold',
+    headline: null,
+    fundamentalBreaks: [],
+    technicalBreaks: [],
+    rethink: null,
+    target: null,
+    divCut: null,
+    divLower: null,
+    epsChange: null,
+    resultsPeriod: null,
+  };
+  const ss = sellSignals([
+    { ...base, symbol: 'OK' },
+    { ...base, symbol: 'CHART', technicalBreaks: ['Below its 200-day average'] },
+    { ...base, symbol: 'BAD', rethink: 110, divCut: 'Dividend cut by 60%', epsChange: -0.3, resultsPeriod: 'Q3' },
+    { ...base, symbol: 'HIGH', target: 90 },
+  ]);
+  check('signals: strongest first, clear listed', ss.flagged.map((f) => f.symbol).join() === 'BAD,CHART,HIGH' && ss.clear.join() === 'OK');
+  check('signals: reasons in order', ss.flagged[0].signals[0].kind === 'rethink' && ss.flagged[0].signals.some((s) => s.text.includes('down 30% in Q3')));
+
+  // quiet hours and the evening summary
+  const at = (s: string) => Date.parse(s + '+05:00');
+  check('quiet: window across midnight', inWindow('23:30', '22:00', '08:00') && inWindow('07:59', '22:00', '08:00') && !inWindow('08:00', '22:00', '08:00') && !inWindow('12:00', '22:00', '08:00'));
+  check('quiet: next time', nextAt(at('2026-10-27T10:00:00'), '16:00') === at('2026-10-27T16:00:00') && nextAt(at('2026-10-27T17:00:00'), '16:00') === at('2026-10-28T16:00:00'));
+  check('quiet: off sends now', holdUntil(at('2026-10-27T23:00:00'), QUIET_DEFAULT) === null);
+  const q = { ...QUIET_DEFAULT, quiet: true };
+  check('quiet: night waits for the morning', holdUntil(at('2026-10-27T23:00:00'), q) === at('2026-10-28T08:00:00') && holdUntil(at('2026-10-28T02:00:00'), q) === at('2026-10-28T08:00:00'));
+  check('quiet: daytime sends now', holdUntil(at('2026-10-27T11:00:00'), q) === null);
+  const d = { ...QUIET_DEFAULT, digest: true };
+  check('digest: held for the evening', holdUntil(at('2026-10-27T11:00:00'), d) === at('2026-10-27T16:00:00'));
+  check('digest in quiet hours waits', holdUntil(at('2026-10-27T11:00:00'), { ...d, quiet: true, digestAt: '23:00' } as typeof d) === at('2026-10-28T08:00:00'));
+  const t1 = at('2026-10-27T16:00:00');
+  let hq = hold([{ t: 0, at: at('2026-10-26T16:00:00'), title: 'old', body: 'old' }], { t: 1, at: t1, title: 'FFC crossed', body: 'FFC above 400' }, at('2026-10-27T11:00:00'));
+  check('held: drops sent ones', hq.length === 1 && heldText(hq, t1)!.title === 'FFC crossed');
+  hq = hold(hq, { t: 2, at: t1, title: 'x', body: 'OGDC under 200\nFFC above 400' }, at('2026-10-27T12:00:00'));
+  const ht = heldText(hq, t1)!;
+  check('held: one summary, lines once', ht.title === '2 alerts while you were away' && ht.body === 'FFC above 400\nOGDC under 200');
 }
 
 if (failed) {

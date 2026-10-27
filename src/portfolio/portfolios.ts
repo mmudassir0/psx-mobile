@@ -28,6 +28,7 @@ export const PORTFOLIO_KEYS = [
   'real.divReceived',
   'real.bonusLog',
   'real.healthHistory',
+  'real.cash',
 ] as const;
 
 export const portfoliosPref = makePref<Portfolios>('ui.portfolios', { active: 'main', list: [{ id: 'main', name: 'Mine' }] });

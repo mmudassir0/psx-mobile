@@ -51,6 +51,8 @@ export const BACKUP_KEYS = [
   'user.learn',
   'user.chartLines',
   'pf.store',
+  'ui.quiet',
+  'real.cash',
 ] as const;
 type Key = (typeof BACKUP_KEYS)[number];
 
@@ -69,12 +71,13 @@ const VALID: Record<Key, (x: unknown) => boolean> = {
   'user.name': (x) => x === null || typeof x === 'string',
   'user.watchlist': strArr,
   'user.taxStatus': (x) => x === 'filer' || x === 'non-filer',
-  'real.holdings': (x) =>
-    Array.isArray(x) && x.every((h) => isObj(h) && typeof h.symbol === 'string' && typeof h.shares === 'number' && h.shares > 0 && typeof h.avgCost === 'number' && h.avgCost > 0),
+  'real.holdings': (x) => Array.isArray(x) && x.every((h) => isObj(h) && typeof h.symbol === 'string' && typeof h.shares === 'number' && h.shares > 0 && typeof h.avgCost === 'number' && h.avgCost > 0),
   'real.appliedBonuses': strArr,
   'paper.account': (x) => isObj(x) && typeof x.cash === 'number' && isObj(x.positions) && Array.isArray(x.orders),
   'journal.v1': (x) => Array.isArray(x) && x.every((e) => isObj(e) && typeof e.symbol === 'string' && typeof e.day === 'string' && typeof e.price === 'number'),
   'sahm:theme': (x) => typeof x === 'string',
+  'ui.quiet': (x) => isObj(x) && typeof x.quiet === 'boolean' && typeof x.digest === 'boolean' && typeof x.from === 'string' && typeof x.to === 'string' && typeof x.digestAt === 'string',
+  'real.cash': (x) => isObj(x) && typeof x.amount === 'number' && x.amount >= 0,
   'plan.amount': (x) => typeof x === 'string',
   'chart.extras': strArr,
   'ui.flags': (x) => isObj(x) && Object.values(x).every((v) => typeof v === 'boolean'),
@@ -135,7 +138,7 @@ export function readBackup(raw: string): { ok: true; restore: Restore } | { ok: 
   try {
     j = JSON.parse(m[0]);
   } catch {
-    return { ok: false, error: "The backup text is incomplete or changed; copy all of it again." };
+    return { ok: false, error: 'The backup text is incomplete or changed; copy all of it again.' };
   }
   if (!isObj(j) || j.app !== 'sahm' || j.v !== 1 || !isObj(j.data)) return { ok: false, error: "That isn't a Sahm backup." };
   const data: Restore['data'] = {};

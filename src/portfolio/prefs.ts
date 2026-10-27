@@ -22,3 +22,10 @@ export const bonusLogPref = makePref<import('./bonusAuto').BonusEntry[]>('real.b
 export const chartLinesPref = makePref<Record<string, import('../analysis/chartLines').UserLines>>('user.chartLines', {});
 /** weekly health score points */
 export const healthHistoryPref = makePref<import('./healthScore').HealthPoint[]>('real.healthHistory', []);
+
+/** Money waiting at the broker, not yet in shares (entered by hand, with when). */
+export interface Cash {
+  amount: number;
+  at: number;
+}
+export const cashPref = makePref<Cash>('real.cash', { amount: 0, at: 0 });

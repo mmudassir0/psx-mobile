@@ -12,7 +12,7 @@ import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
 import { currentRights, dividendTaxRate, payerKind, recentBonus, rightsMaths, upcomingPayout, type Dividends } from '../../analysis/dividends';
 import { applyBonus, applyTrade, setHoldings } from '../../portfolio/holdings';
 import { logTrade } from '../../portfolio/trades';
-import { appliedBonusesPref, bonusLogPref, boughtPref, taxStatusPref } from '../../portfolio/prefs';
+import { appliedBonusesPref, bonusLogPref, boughtPref, cashPref, taxStatusPref } from '../../portfolio/prefs';
 import { BOUGHT_LABEL, heldSince2023, saleLine, saleTax, type Bought } from '../../portfolio/tax';
 import { useMarket } from '../../store/market';
 import { useHoldings } from '../../portfolio/holdings';
@@ -23,6 +23,7 @@ import { shortSector } from '../../sectors';
 import { Panel } from '../../ui/bits';
 import { StressCard } from '../../ui/StressCard';
 import { PlanCard } from '../../ui/PlanCard';
+import { CashBox } from '../../ui/CashBox';
 import { resultsLine } from '../../analysis/results';
 import { TradeSheet } from '../../ui/TradeSheet';
 import { pkToday, record } from '../../journal/store';
@@ -97,11 +98,7 @@ function SaleTaxLine({ r }: { r: Row }) {
       <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
         {saleLine(t, (v) => fmtNum(v, 0))}
       </T>
-      <Pressable
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={() => boughtPref.set({ ...bought, [r.holding.symbol]: BOUGHT_ORDER[(BOUGHT_ORDER.indexOf(b) + 1) % BOUGHT_ORDER.length] })}
-      >
+      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => boughtPref.set({ ...bought, [r.holding.symbol]: BOUGHT_ORDER[(BOUGHT_ORDER.indexOf(b) + 1) % BOUGHT_ORDER.length] })}>
         <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
           Bought: {BOUGHT_LABEL[b]} ▾ (tap to change; older shares are taxed less)
         </T>
@@ -138,8 +135,8 @@ function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }
       </View>
       {m ? (
         <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
-          Subscribing costs Rs {fmtNum(m.cost, 0)} for {fmtNum(m.entitled, 0)} shares. Once the new shares exist the price should settle near Rs{' '}
-          {m.terp.toFixed(2)} (from {fmtPrice(r.price)}), so each right is worth about Rs {m.perRight.toFixed(2)}
+          Subscribing costs Rs {fmtNum(m.cost, 0)} for {fmtNum(m.entitled, 0)} shares. Once the new shares exist the price should settle near Rs {m.terp.toFixed(2)} (from {fmtPrice(r.price)}), so each right is worth
+          about Rs {m.perRight.toFixed(2)}
           {m.perRight > 0 ? `: Rs ${fmtNum(m.valueOfRights, 0)} in all, which you'd lose by doing nothing.` : '. The offer is above the market price, so subscribing costs more than buying on the market.'}
         </T>
       ) : null}
@@ -184,19 +181,7 @@ function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }
   );
 }
 
-function HoldingCard({
-  r,
-  onOpen,
-  taxRate,
-  applied,
-  holdingsAll,
-}: {
-  r: Row;
-  onOpen: () => void;
-  taxRate: number;
-  applied: string[];
-  holdingsAll: Row['holding'][];
-}) {
+function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onOpen: () => void; taxRate: number; applied: string[]; holdingsAll: Row['holding'][] }) {
   const flags = useFlags();
   const nav = useNavigation();
   const [open, setOpen] = useState(false);
@@ -305,8 +290,7 @@ function HoldingCard({
             return (
               <View style={styles.payout}>
                 <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
-                  {b.pct}% bonus shares, book closure {fmtDay(b.bookClosure)}. Once they show in your broker account, add them here so shares and
-                  average price stay right.
+                  {b.pct}% bonus shares, book closure {fmtDay(b.bookClosure)}. Once they show in your broker account, add them here so shares and average price stay right.
                 </T>
                 <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
                   <Pressable
@@ -318,7 +302,16 @@ function HoldingCard({
                       await appliedBonusesPref.set([...applied, key]);
                       await bonusLogPref.set([
                         ...(await bonusLogPref.get()),
-                        { key, symbol: r.holding.symbol, pct: b.pct, day: new Date(b.bookClosure + 5 * 3600_000).toISOString().slice(0, 10), before: { shares: r.holding.shares, avgCost: r.holding.avgCost }, after, at: Date.now(), auto: false },
+                        {
+                          key,
+                          symbol: r.holding.symbol,
+                          pct: b.pct,
+                          day: new Date(b.bookClosure + 5 * 3600_000).toISOString().slice(0, 10),
+                          before: { shares: r.holding.shares, avgCost: r.holding.avgCost },
+                          after,
+                          at: Date.now(),
+                          auto: false,
+                        },
                       ]);
                     }}
                   >
@@ -348,15 +341,9 @@ function HoldingCard({
             );
           })()}
           {open && (r.results?.latest?.fresh || r.results?.meetingNotice) ? (
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => r.results?.latest?.url && Linking.openURL(r.results.latest.url)}
-              style={styles.results}
-            >
+            <Pressable accessibilityRole="link" onPress={() => r.results?.latest?.url && Linking.openURL(r.results.latest.url)} style={styles.results}>
               <T v="body" style={{ fontSize: 13, lineHeight: 18, color: colors.text2 }}>
-                {r.results!.latest?.fresh
-                  ? resultsLine(r.results!.latest!)
-                  : `Board meeting notice on ${fmtDay(Date.parse(r.results!.meetingNotice!.date + 'T12:00:00Z'))}: results are probably due within days.`}
+                {r.results!.latest?.fresh ? resultsLine(r.results!.latest!) : `Board meeting notice on ${fmtDay(Date.parse(r.results!.meetingNotice!.date + 'T12:00:00Z'))}: results are probably due within days.`}
               </T>
             </Pressable>
           ) : null}
@@ -457,6 +444,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   const setView = (v: 'holdings' | 'invest' | 'risk') => (onView ? onView(v) : setOwnView(v));
   const breadth = feed?.breadth ?? null;
   const { rows, total, sectors, loading, candles } = useReviews(holdings, stocks, bySymbol, breadth);
+  const cash = cashPref.use();
   // Keep a record of each holding decision shown, to score it later.
   useEffect(() => {
     if (loading) return;
@@ -491,10 +479,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   if (!holdings.length)
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <Empty
-          title="Add your real holdings"
-          body="Type or paste each holding as: symbol, shares, average price. They are saved on this phone only."
-        />
+        <Empty title="Add your real holdings" body="Type or paste each holding as: symbol, shares, average price. They are saved on this phone only." />
         <Button label="Add holdings" onPress={() => nav.navigate('EditHoldings')} />
       </ScrollView>
     );
@@ -521,16 +506,21 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
         <T v="mono" style={{ color: changeColor(pnl) }}>
           {fmtSigned(pnl, 0)} ({pct(invested ? total / invested - 1 : 0)}) on {fmtNum(invested, 0)} invested
         </T>
+        <CashBox shares={total} />
         {!loading && income > 0 ? (
           <T v="caption" style={{ lineHeight: 18 }}>
-            Dividends: about Rs {fmtNum(netIncome, 0)} a year after tax as a {taxStatus === 'filer' ? 'filer' : 'non-filer'} (
-            {((netIncome / total) * 100).toFixed(1)}% yield), Rs {fmtNum(income, 0)} before tax, at the last 12 months' rate
+            Dividends: about Rs {fmtNum(netIncome, 0)} a year after tax as a {taxStatus === 'filer' ? 'filer' : 'non-filer'} ({((netIncome / total) * 100).toFixed(1)}% yield), Rs {fmtNum(income, 0)} before tax, at the
+            last 12 months' rate
           </T>
         ) : null}
         {!loading ? (
           <T v="body" style={{ fontSize: 14, color: colors.text2 }}>
             {counts.map(([a, n]) => `${n} ${a.toLowerCase()}`).join(' · ')}
             {watching ? ` (${watching} to watch)` : ''}
+            {'  '}
+            <T accessibilityRole="link" onPress={() => nav.navigate('SellSignals')} style={{ color: colors.gold, fontSize: 14, fontFamily: fonts.semibold }}>
+              Warning signs ›
+            </T>
           </T>
         ) : (
           <T v="caption">Checking each holding…</T>
@@ -538,8 +528,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
       </Panel>
       {breadth != null && breadth < 0.5 ? (
         <T v="caption" style={{ lineHeight: 18 }}>
-          Only {Math.round(breadth * 100)}% of liquid PSX stocks are above their 200-day average, so most chart warnings below reflect the whole
-          market falling, not these companies.
+          Only {Math.round(breadth * 100)}% of liquid PSX stocks are above their 200-day average, so most chart warnings below reflect the whole market falling, not these companies.
         </T>
       ) : null}
 
@@ -555,18 +544,12 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
       {view === 'holdings' ? (
         <>
-          {newTrade ? (
-            <TradeSheet onDone={() => setNewTrade(false)} />
-          ) : (
-            <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />
-          )}
+          {newTrade ? <TradeSheet onDone={() => setNewTrade(false)} /> : <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />}
 
           {!loading && (reported.length || due.length) ? (
             <Panel style={{ paddingVertical: 12, gap: 4 }}>
               <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Results season</T>
-              {reported.length ? (
-                <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T>
-              ) : null}
+              {reported.length ? <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T> : null}
               {due.length ? <T v="caption">Results due soon (board meeting called): {due.join(', ')}.</T> : null}
             </Panel>
           ) : null}
@@ -598,22 +581,15 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
                 ))}
               </Panel>
               <T v="caption" style={{ lineHeight: 18 }}>
-                "Buy by" counts two working days back from book closure, as PSX settles a day after the trade, skipping weekends and PSX
-                holidays. Moon-dependent holidays can move, so check the ex-date in your broker app if it's close.
+                "Buy by" counts two working days back from book closure, as PSX settles a day after the trade, skipping weekends and PSX holidays. Moon-dependent holidays can move, so check the ex-date in your broker app
+                if it's close.
               </T>
             </Section>
           ) : null}
 
           <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
             {sorted.map((r) => (
-              <HoldingCard
-                key={r.holding.symbol}
-                r={r}
-                taxRate={rateOf(r)}
-                applied={applied}
-                holdingsAll={holdings}
-                onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })}
-              />
+              <HoldingCard key={r.holding.symbol} r={r} taxRate={rateOf(r)} applied={applied} holdingsAll={holdings} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
             ))}
           </Section>
         </>
@@ -621,14 +597,12 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
 
       {view === 'invest' ? (
         <>
-        {on('summary') ? (
-          <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
-            <GoalCard value={total} tracked={null} />
-          </Section>
-        ) : null}
-        <Section title="Where should new money go?">
-          {loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}
-        </Section>
+          {on('summary') ? (
+            <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
+              <GoalCard value={total + cash.amount} tracked={null} />
+            </Section>
+          ) : null}
+          <Section title="Where should new money go?">{loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}</Section>
         </>
       ) : null}
 
@@ -636,9 +610,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
         <>
           {on('health') ? (
             <>
-              <Section title="Health check">
-                {loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}
-              </Section>
+              <Section title="Health check">{loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}</Section>
               <Section title="How you're doing">
                 <PerformanceCard rows={rows} candles={candles} loading={loading} />
               </Section>
@@ -679,17 +651,9 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
             </Section>
           ) : null}
 
-          {on('zakat') ? (
-            <Section title="Zakat on your shares">
-              {loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}
-            </Section>
-          ) : null}
+          {on('zakat') ? <Section title="Zakat on your shares">{loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}</Section> : null}
 
-          {on('health') ? (
-            <Section title="Stress test">
-              {loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}
-            </Section>
-          ) : null}
+          {on('health') ? <Section title="Stress test">{loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}</Section> : null}
         </>
       ) : null}
       <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>
@@ -704,9 +668,8 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
         </T>
       </Pressable>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Review means the business has weakened (losses or falling earnings). Trim means one holding is over 20% of your money, or it is far above fair
-        value with a broken chart. Add more needs a price below fair value, an uptrend, and under 10% of your portfolio. A weak chart alone only says
-        watch. A second opinion from fixed rules, not advice.
+        Review means the business has weakened (losses or falling earnings). Trim means one holding is over 20% of your money, or it is far above fair value with a broken chart. Add more needs a price below fair value,
+        an uptrend, and under 10% of your portfolio. A weak chart alone only says watch. A second opinion from fixed rules, not advice.
       </T>
     </ScrollView>
   );

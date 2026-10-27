@@ -53,6 +53,7 @@ export type RootParams = {
   StockCard: { symbol: string };
   SinceBought: undefined;
   DivGrowth: undefined;
+  SellSignals: undefined;
   YearReview: { year?: number } | undefined;
 };
 
