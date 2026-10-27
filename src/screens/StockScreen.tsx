@@ -15,6 +15,7 @@ import { FundamentalsTab } from './stock/FundamentalsTab';
 import { NewsTab } from './stock/NewsTab';
 import { StockPress } from '../ui/StockPress';
 import { NoteCard } from '../ui/NoteCard';
+import { PeBandCard } from '../ui/PeBandCard';
 import { StockLists } from '../ui/WatchGroups';
 import { ProfileTab } from './stock/ProfileTab';
 import { PeersTab } from './stock/PeersTab';
@@ -632,6 +633,8 @@ export default function StockScreen() {
             </Panel>
           </Section>
         ) : null}
+
+        <PeBandCard company={company} daily={daily} />
 
         {news.length ? (
           <Section title="Latest announcements" action="See all" onAction={() => setTab('news')}>

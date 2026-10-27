@@ -1,6 +1,7 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { peBand, profitsFrom } from '../src/analysis/peBand';
 import { move, orderOf, toggle, visibleCards } from '../src/nav/homeCards';
 import { cpiFromNews, marketYields, parsePbsInflation, parseSbp, petrolFromNews } from '../src/analysis/macro';
 import { buildTimeline } from '../src/portfolio/timeline';
@@ -352,6 +353,19 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   const full = { order: orderOf(l), hidden: [] as never[] };
   const m = move(full, 'mood' as never, -1);
   check('move up and toggle', orderOf(m).indexOf('mood' as never) === o.indexOf('mood' as never) - 1 && !toggle(l, 'mood' as never).hidden.length && move(full, 'indices' as never, -1) === full);
+}
+
+// P/E against its own history
+{
+  const D = 864e5;
+  const t0 = Date.UTC(2023, 0, 2);
+  // 1,000 shares; profit Rs 10,000 for FY2023 (June year), Rs 20,000 for FY2024; price 100 flat then 150
+  const candles = Array.from({ length: 900 }, (_, i) => ({ t: t0 + i * D, o: 0, h: 0, l: 0, c: i < 700 ? 100 : 150, v: 1 }));
+  const b = peBand({ candles, profits: [{ fy: '2023', profit: 10_000 }, { fy: '2024', profit: 20_000 }], fyEndMonth: 5, shares: 1000 })!;
+  check('P/E from market value and the profit known then', Math.abs(b.points[0].pe - 10) < 1e-9 && b.points[0].t >= Date.UTC(2023, 9, 1), b.points[0]);
+  check('the newer year counts from three months after its end', b.points.some((p) => p.t >= Date.UTC(2024, 9, 1) && Math.abs(p.pe - 5) < 1e-9 && p.t < t0 + 700 * D));
+  check('today and where it sits', Math.abs(b.now - 7.5) < 1e-9 && b.min === 5 && b.max === 10 && b.cheaperThan > 0.3 && b.cheaperThan < 0.7, b);
+  check('profits from the PSX table (thousands → rupees), losses left out', profitsFrom({ periods: ['2026', '2025'], rows: [{ label: 'Profit after Taxation', values: [46629367, -5] }] }).length === 1 && profitsFrom({ periods: ['2026'], rows: [{ label: 'Profit after Taxation', values: [46629367] }] })[0].profit === 46629367000);
 }
 
 if (failed) {
