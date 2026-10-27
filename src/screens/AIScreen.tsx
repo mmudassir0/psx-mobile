@@ -1,4 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { useUser } from '../store/user';
+import { VoiceButton } from '../ui/VoiceButton';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, themed } from '../theme';
@@ -43,6 +45,8 @@ interface Turn {
 export default function AIScreen() {
   const { stocks, indices, bySymbol } = useMarket();
   const { holdings } = useHoldings();
+  const { watchlist: voiceWatch } = useUser();
+  const voiceSymbols = useMemo(() => [...new Set([...holdings.map((h) => h.symbol), ...voiceWatch])], [holdings, voiceWatch]);
   const { rows } = useReviews(holdings, stocks, bySymbol, null);
   const [last30, setLast30] = useState<{ you: number | null; kse: number | null }>({ you: null, kse: null });
   React.useEffect(() => {
@@ -62,6 +66,7 @@ export default function AIScreen() {
   const ai = useAi();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
+  const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
   const handle = useRef<Generation | null>(null);
   const scroll = useRef<ScrollView>(null);
   const busy = turns.some((t) => t.status === 'reading' || t.status === 'writing');
@@ -255,7 +260,23 @@ export default function AIScreen() {
           </T>
         </ScrollView>
 
+        {voiceMsg ? (
+          <T v="caption" style={{ paddingHorizontal: 18, paddingVertical: 6, backgroundColor: colors.nav }}>
+            {voiceMsg}
+          </T>
+        ) : null}
         <View style={styles.inputBar}>
+          {Platform.OS !== 'web' ? (
+            <VoiceButton
+              symbols={voiceSymbols}
+              disabled={!ready || busy}
+              onStatus={setVoiceMsg}
+              onText={(t) => {
+                setInput(t);
+                ask(t);
+              }}
+            />
+          ) : null}
           <TextInput
             value={input}
             onChangeText={setInput}
