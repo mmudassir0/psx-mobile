@@ -16,6 +16,7 @@ import { UpdatesCard } from '../ui/UpdatesCard';
 import { BackupCard } from '../ui/BackupCard';
 import { ProblemLogCard } from '../ui/ProblemLogCard';
 import { CostsCard } from '../ui/CostsCard';
+import { HomeCardsCard } from '../ui/HomeCardsCard';
 import { canLock, confirmIdentity, lockPref, lockSupported } from '../ui/AppLock';
 import { taxStatusPref } from '../portfolio/prefs';
 import type { TaxStatus } from '../analysis/dividends';
@@ -119,6 +120,12 @@ export default function SettingsScreen() {
           </Panel>
           <T v="caption">Every screen is in every layout; only the way you reach them changes. Try each for a day.</T>
         </Section>
+
+        {layout === 'tabs' ? (
+          <Section title="Home cards">
+            <HomeCardsCard />
+          </Section>
+        ) : null}
 
         <Section title="Features">
           <Panel style={{ paddingVertical: 4 }}>

@@ -1,6 +1,7 @@
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { move, orderOf, toggle, visibleCards } from '../src/nav/homeCards';
 import { cpiFromNews, marketYields, parsePbsInflation, parseSbp, petrolFromNews } from '../src/analysis/macro';
 import { buildTimeline } from '../src/portfolio/timeline';
 import { position, stateOf, withTargetRules } from '../src/portfolio/targets';
@@ -340,6 +341,17 @@ check('compare: lower P/E wins, equal yields have no star, 1-year leader marked'
   check('inflation from the news', cpiFromNews('Pakistan’s CPI inflation clocked in at 5.6% in September, PBS data showed')?.cpi === 5.6 && cpiFromNews('Inflation eases to 4.2pc in August')?.month === 'August');
   const y = marketYields([{ indexes: ['KSE100'], marketCap: 100, pe: 5, divYield: 10 }, { indexes: ['KSE100'], marketCap: 100, pe: 10, divYield: 4 }, { indexes: ['KSE100'], marketCap: 50, pe: null, divYield: null }]);
   check('market earnings and dividend yield, weighted by value', Math.abs(y.pe! - 200 / 30) < 1e-9 && Math.abs(y.earningsYield! - 15) < 1e-9 && Math.abs(y.dividendYield! - 5.6) < 1e-9, y);
+}
+
+// home cards
+{
+  const l = { order: ['news', 'mood'] as never[], hidden: ['mood'] as never[] };
+  const o = orderOf(l);
+  check('saved order kept, missing cards put back in their default place', o.indexOf('news' as never) < o.indexOf('mood' as never) && o[0] === 'indices' && o.length === 9, o);
+  check('hidden cards left out', !visibleCards(l).includes('mood' as never) && visibleCards(l).length === 8);
+  const full = { order: orderOf(l), hidden: [] as never[] };
+  const m = move(full, 'mood' as never, -1);
+  check('move up and toggle', orderOf(m).indexOf('mood' as never) === o.indexOf('mood' as never) - 1 && !toggle(l, 'mood' as never).hidden.length && move(full, 'indices' as never, -1) === full);
 }
 
 if (failed) {

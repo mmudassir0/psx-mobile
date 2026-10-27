@@ -21,6 +21,7 @@ import { useReviews } from '../portfolio/useReviews';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
 import { annSeenPref } from '../analysis/announcements';
+import { homeCardsPref, visibleCards, type HomeCardKey } from '../nav/homeCards';
 import { lockPref } from '../ui/AppLock';
 import { targetsPref } from '../portfolio/targets';
 import { activityItems, announcementItem, targetItems, nextDividendLine, todoItems, usePortfolioTotals } from '../portfolio/summary';
@@ -133,6 +134,103 @@ export default function HomeScreen() {
 
   const watched = watchlist.map((s) => bySymbol.get(s)).filter(Boolean) as typeof stocks;
   const open = (symbol: string) => nav.navigate('Stock', { symbol });
+
+  const homeLayout = homeCardsPref.use();
+  const homeCards = visibleCards(homeLayout).filter((k) => k !== 'tools' || layout !== 'menu');
+  const card = (k: HomeCardKey): React.ReactNode => {
+    switch (k) {
+      case 'indices':
+        return (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
+          {homeIdx.length === 0 && !ready ? <Skeleton kind="chips" n={3} /> : null}
+          {homeIdx.map((i) => (
+            <Pressable
+              key={i.code}
+              style={({ pressed }) => [styles.index, pressed && { opacity: 0.8 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}
+              onPress={() => nav.navigate('Index', { code: i.code })}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text2 }}>{INDEX_NAMES[i.code] ?? i.code}</T>
+                <Change pct={i.changePct} style={{ fontSize: 12.5 }} />
+              </View>
+              <T v="monoLg">{fmtNum(i.current)}</T>
+              <Sparkline values={sparks[i.code] ?? []} width={148} height={34} />
+              <T v="caption" style={{ color: changeColor(i.change) }}>
+                {fmtSigned(i.change)} pts
+              </T>
+            </Pressable>
+          ))}
+        </ScrollView>
+        );
+      case 'mood':
+        return (
+          <>
+        {on('mood') ? (
+          <View style={styles.pad}>
+            <MoodCard />
+          </View>
+        ) : null}
+          </>
+        );
+      case 'brief':
+        return hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null;
+      case 'news':
+        return <NewsHomeCard />;
+      case 'events':
+        return <EventsCard rows={rows} padded />;
+      case 'alerts':
+        return <AlertsHomeCard padded />;
+      case 'watchlist':
+        return on('watchlist') ? (
+        <View style={styles.pad}>
+          <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
+            {!ready ? (
+              <Skeleton kind="rows" n={5} label="Loading PSX prices" />
+            ) : watched.length === 0 ? (
+              <Empty title="Nothing on your watchlist" body="Open any stock and tap the star to follow it here." />
+            ) : (
+              <View>
+                {watched.map((s, i) => (
+                  <StockRow key={s.symbol} stock={s} last={i === watched.length - 1} onPress={() => open(s.symbol)} />
+                ))}
+              </View>
+            )}
+          </Section>
+        </View>
+        ) : null;
+      case 'movers':
+        return (
+        <View style={styles.pad}>
+          <Section title="Movers today">
+            <Segmented
+              options={[
+                { key: 'gainers', label: 'Gainers' },
+                { key: 'losers', label: 'Losers' },
+                { key: 'active', label: 'Most traded' },
+              ]}
+              value={movers}
+              onChange={setMovers}
+            />
+            <View>
+              {moverList.map((s, i) => (
+                <StockRow key={s.symbol} stock={s} sub={volumeLabel(s)} last={i === moverList.length - 1} onPress={() => open(s.symbol)} />
+              ))}
+              {ready && moverList.length === 0 ? <Empty title="No movers yet" body="They appear once trading starts." /> : null}
+            </View>
+            {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
+          </Section>
+        </View>
+        );
+      case 'tools':
+        return (
+          <View style={styles.pad}>
+            <ToolsGrid />
+          </View>
+        );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -271,88 +369,9 @@ export default function HomeScreen() {
         ) : null}
         {compact && hasReal && weekOver() ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
 
-        {isTabs ? (
-        <>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter }}>
-          {homeIdx.length === 0 && !ready ? <Skeleton kind="chips" n={3} /> : null}
-          {homeIdx.map((i) => (
-            <Pressable
-              key={i.code}
-              style={({ pressed }) => [styles.index, pressed && { opacity: 0.8 }]}
-              accessibilityRole="button"
-              accessibilityLabel={`${INDEX_NAMES[i.code] ?? i.code} ${fmtNum(i.current)}, ${fmtPct(i.changePct)}`}
-              onPress={() => nav.navigate('Index', { code: i.code })}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text2 }}>{INDEX_NAMES[i.code] ?? i.code}</T>
-                <Change pct={i.changePct} style={{ fontSize: 12.5 }} />
-              </View>
-              <T v="monoLg">{fmtNum(i.current)}</T>
-              <Sparkline values={sparks[i.code] ?? []} width={148} height={34} />
-              <T v="caption" style={{ color: changeColor(i.change) }}>
-                {fmtSigned(i.change)} pts
-              </T>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {on('mood') ? (
-          <View style={styles.pad}>
-            <MoodCard />
-          </View>
-        ) : null}
-
-        {hasReal ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
-        <NewsHomeCard />
-        <EventsCard rows={rows} padded />
-        <AlertsHomeCard padded />
-
-
-        {on('watchlist') ? (
-        <>
-        <View style={styles.pad}>
-          <Section title="Watchlist" action="Find stocks" onAction={() => nav.navigate('Tabs', { screen: 'Market' })}>
-            {!ready ? (
-              <Skeleton kind="rows" n={5} label="Loading PSX prices" />
-            ) : watched.length === 0 ? (
-              <Empty title="Nothing on your watchlist" body="Open any stock and tap the star to follow it here." />
-            ) : (
-              <View>
-                {watched.map((s, i) => (
-                  <StockRow key={s.symbol} stock={s} last={i === watched.length - 1} onPress={() => open(s.symbol)} />
-                ))}
-              </View>
-            )}
-          </Section>
-        </View>
-
-        <View style={styles.pad}>
-          <Section title="Movers today">
-            <Segmented
-              options={[
-                { key: 'gainers', label: 'Gainers' },
-                { key: 'losers', label: 'Losers' },
-                { key: 'active', label: 'Most traded' },
-              ]}
-              value={movers}
-              onChange={setMovers}
-            />
-            <View>
-              {moverList.map((s, i) => (
-                <StockRow key={s.symbol} stock={s} sub={volumeLabel(s)} last={i === moverList.length - 1} onPress={() => open(s.symbol)} />
-              ))}
-              {ready && moverList.length === 0 ? <Empty title="No movers yet" body="They appear once trading starts." /> : null}
-            </View>
-            {movers !== 'active' ? <T v="caption">Only stocks with at least 100,000 shares traded today.</T> : null}
-          </Section>
-        </View>
-        </>
-        ) : null}
-
-        </>
-        ) : null}
-
-        {layout !== 'menu' ? (
+        {isTabs
+          ? homeCards.map((k) => <React.Fragment key={k}>{card(k)}</React.Fragment>)
+          : layout !== 'menu' ? (
           <View style={styles.pad}>
             <ToolsGrid />
           </View>
