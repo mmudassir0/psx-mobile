@@ -23,6 +23,7 @@ import { receivedPref } from '../portfolio/divPayments';
 import { useMorningBrief } from '../portfolio/useMorningBrief';
 import { useCalendarSync } from '../portfolio/calendarSync';
 import { useAutoBonus } from '../portfolio/useAutoBonus';
+import { SinceCard } from '../ui/SinceCard';
 import { useOfflineCopy } from '../offline';
 import { usePicksFeed } from '../picks/feed';
 import { appliedBonusesPref } from '../portfolio/prefs';
@@ -390,6 +391,12 @@ export default function HomeScreen() {
           <Pressable accessibilityRole="link" onPress={() => nav.navigate('EditHoldings')} style={styles.pad} hitSlop={6}>
             <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>Add your real holdings ›</T>
           </Pressable>
+        ) : null}
+
+        {hasReal ? (
+          <View style={styles.pad}>
+            <SinceCard rows={rows} watchlist={watchlist} bySymbol={bySymbol} ready={!reviewing && ready && rows.length > 0} hidden={appLocked} />
+          </View>
         ) : null}
 
         {compact ? (
