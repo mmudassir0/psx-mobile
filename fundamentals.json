@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-27T06:38:54+00:00",
+ "generatedAt": "2026-10-28T07:12:22+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -1176,25 +1176,25 @@
    }
   },
   "MEBL": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
-   "isBank": false,
-   "equity": 288656485000,
-   "assets": 5142014249000,
-   "liabilities": 4853357764000,
+   "isBank": true,
+   "equity": 297934131000,
+   "assets": 5397590990000,
+   "liabilities": 5099656859000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 760249516000.0,
-   "cash": 326087709000,
+   "borrowings": 852143233000.0,
+   "cash": 363340042000,
    "warnings": [
     "ignored non-borrowing line 'Bills payable'"
    ],
    "source": {
-    "title": "TRANSMISSION OF QUARTERLY REPORT OF MEEZAN BANK LIMITED FOR THE PERIOD ENDED JUNE 30, 2026",
-    "url": "https://dps.psx.com.pk/download/document/281668.pdf",
-    "date": "2026-08-25",
+    "title": "TRANSMISSION OF QUARTERLY REPORT OF MEEZAN BANK LIMITED FOR THE PERIOD ENDED SEPTEMBER 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/287198.pdf",
+    "date": "2026-10-28",
     "pages": [
-     15
+     14
     ],
     "method": "text"
    }
@@ -1839,23 +1839,23 @@
    }
   },
   "SYS": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 50632847155,
-   "assets": 68018033259,
-   "liabilities": 17385186104,
-   "currentAssets": 42253837848,
-   "currentLiabilities": 16971683414,
-   "borrowings": 7522993903.0,
-   "cash": 2138299140,
+   "equity": 52280651914,
+   "assets": 73473668779,
+   "liabilities": 21193016865,
+   "currentAssets": 48040556312,
+   "currentLiabilities": 20746714472,
+   "borrowings": 9246433255.0,
+   "cash": 4404020834,
    "warnings": [],
    "source": {
-    "title": "Transmission of Half Yearly Report for the Period Ended June 30, 2026",
-    "url": "https://dps.psx.com.pk/download/document/281936.pdf",
-    "date": "2026-08-28",
+    "title": "Transmission of Quarterly Report for the Period Ended September 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/287062.pdf",
+    "date": "2026-10-27",
     "pages": [
-     14
+     13
     ],
     "method": "text"
    }
@@ -2063,6 +2063,15 @@
     "cash": "205,776,104"
    }
   },
+  "BNWM": {
+   "reason": "balance sheet page not found",
+   "report": {
+    "kind": "annual",
+    "date": "2026-10-01",
+    "title": "Transmission of Annual Report for the Year Ended June 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/284094.pdf"
+   }
+  },
   "DCR": {
    "reason": "balance sheet page not found",
    "report": {
@@ -2096,7 +2105,7 @@
     12
    ],
    "model": {
-    "statement": "consolidated",
+    "statement": "standalone",
     "period_end": "2026-03-31",
     "unit": 1,
     "is_bank": false,
@@ -2131,7 +2140,7 @@
    }
   },
   "POL": {
-   "reason": "total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term deposits'; ignored non-borrowing line 'Long term loans and advances'; missing equity or total assets",
+   "reason": "total_assets 196,163 is in the comparative (prior period) column; ignored non-borrowing line 'Long term loans and advances'; missing equity or total assets",
    "report": {
     "kind": "annual",
     "date": "2026-09-29",
@@ -2152,10 +2161,6 @@
     "current_assets": null,
     "current_liabilities": null,
     "borrowing_lines": [
-     {
-      "label": "Long term deposits",
-      "amount": "1,078"
-     },
      {
       "label": "Long term loans and advances",
       "amount": "53"
@@ -2193,7 +2198,7 @@
    "reason": "no full report listed on PSX"
   },
   "SSGC": {
-   "reason": "total_assets 1,114,507,599 is in the comparative (prior period) column; missing equity or total assets",
+   "reason": "missing equity or total assets",
    "report": {
     "kind": "quarterly",
     "date": "2026-03-02",
@@ -2209,12 +2214,12 @@
     "unit": 1000,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "1,114,507,599",
+    "total_assets": "1,137,520,664",
     "total_liabilities": null,
-    "current_assets": "872,249,543",
+    "current_assets": "879,972,713",
     "current_liabilities": null,
     "borrowing_lines": [],
-    "cash": "1,187,075"
+    "cash": "2,057,463"
    }
   },
   "TPLRF1": {
