@@ -114,9 +114,11 @@ async function notices(sym: string): Promise<Notice[]> {
   return out;
 }
 
-const WANT = /financial results|dividend/i;
+const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board/i;
+/** "other than financial results" intimations only give the meeting date; their "results of the board meeting" follow-ups carry interim dividends */
+const PRE_MEETING = /other th[ae]n financial/i;
 const SKIP =
-  /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|other than financial|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
+  /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
 
 async function readPdf(id: string, dir: string): Promise<string> {
   const f = join(dir, `${id}.pdf`);
@@ -246,7 +248,7 @@ async function main() {
     const t0 = Date.now();
     try {
       const all = await notices(sym);
-      const want = all.filter((n) => WANT.test(n.title) && !SKIP.test(n.title));
+      const want = all.filter((n) => WANT.test(n.title) && !SKIP.test(n.title) && !(PRE_MEETING.test(n.title) && !/material information|results of|outcome/i.test(n.title)));
       if (process.env.ONLY) console.log(`  ${sym}: ${all.length} notices listed in ${Math.round((Date.now() - t0) / 1000)}s, ${want.length} to read`);
       const read = await pool(want, Number(process.env.OCR_POOL ?? 4), async (n) => {
         try {
