@@ -184,7 +184,13 @@ const cases: [string, string][] = [
   ['DIVIDEND\n Basic earnings per share 12 18.54 24.57', '-'],
 ];
 for (const [t, want] of cases) check(`notice: ${want}`, notice(t) === want, { got: notice(t), t: t.slice(0, 50) });
-check('notice: face value hint', parseDivNotice('Final Cash Dividend @ Rs.15/- per share i.e. 150% for the').pctToo === 150);
+check('notice: final', parseDivNotice('We are pleased to inform you that the Final Cash Dividend @ Rs.15/- per share').kind === 'final');
+check('notice: interim', parseDivNotice('An Interim cash dividend for the quarter ended September 30, 2024 @ Rs 3.00 per share').kind === 'interim');
+check('notice: closed on', parseDivNotice('Cash Dividend Rs. 2 per share. The Share Transfer Books of the Company will be closed on 10 September 2025').closeFrom === '2025-09-10');
+check('notice: closed for the period', parseDivNotice('Rs. 2 per share. Share transfer books shall be closed for the period from 15-03-2026 to 22-03-2026').closeFrom === '2026-03-15');
+check('notice: book closure line', parseDivNotice('Cash Dividend Rs 4 per share\nBook Closure: 07-04-2026 to 14-04-2026').closeFrom === '2026-04-07');
+check('notice: closed period is not a book closure', parseDivNotice('Rs 4 per share. The closed period from 1 March 2026 until the results').closeFrom === null);
+check('notice: face value hint',parseDivNotice('Final Cash Dividend @ Rs.15/- per share i.e. 150% for the').pctToo === 150);
 check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && firstDate('w.e.f 05-11-2018') === '2018-11-05');
 
 {

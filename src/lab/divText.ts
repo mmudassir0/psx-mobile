@@ -14,6 +14,8 @@ export interface DivNotice {
   pctToo: number | null;
   /** first day the share transfer books are closed, YYYY-MM-DD */
   closeFrom: string | null;
+  /** 'final' needs the shareholders' meeting first, so its book closure comes weeks later than an interim one; null when the notice doesn't say */
+  kind: 'final' | 'interim' | null;
 }
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -73,8 +75,25 @@ export function parseDivNotice(raw: string): DivNotice {
       if (pm && !/bonus|right/i.test(win.slice(0, pm.index!))) pct = num(pm[1]);
     }
   }
+  // final or interim, from the words just before the first dividend mention that carries an amount
+  let kind: DivNotice['kind'] = null;
+  const fk = text.match(/\b(final|interim|first interim|second interim|third interim)\b[^.]{0,30}?dividend/i);
+  if (fk) kind = /interim/i.test(fk[1]) ? 'interim' : 'final';
   let closeFrom: string | null = null;
   const bc = text.match(/(?:remain|be|will be)\s+closed\s+(?:from|w\.?e\.?f\.?)\s+(.{0,60})/i) ?? text.match(/book closure[^.]{0,40}?from\s+(.{0,60})/i);
   if (bc) closeFrom = firstDate(bc[1]);
-  return { dps, pct: dps == null ? pct : null, nil: nil && dps == null && pct == null, pctToo, closeFrom };
+  if (!closeFrom) {
+    // other wordings, as long as share transfer books are what's closed: "closed on 10 September 2025",
+    // "closed for the period from ...", "Book Closure: 15-03-2026 to 22-03-2026"
+    for (const m of text.matchAll(/closed\s+(?:on|for the period from|during|with effect from|from)\s+(.{0,60})/gi)) {
+      if (!/book|transfer|register/i.test(text.slice(Math.max(0, m.index! - 160), m.index!))) continue;
+      closeFrom = firstDate(m[1]);
+      if (closeFrom) break;
+    }
+  }
+  if (!closeFrom) {
+    const m = text.match(/book\s*closure\s*(?:dates?|period)?\s*[:\-–]?\s*(.{0,40})/i);
+    if (m) closeFrom = firstDate(m[1]);
+  }
+  return { dps, pct: dps == null ? pct : null, nil: nil && dps == null && pct == null, pctToo, closeFrom, kind };
 }

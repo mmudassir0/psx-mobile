@@ -114,7 +114,7 @@ async function notices(sym: string): Promise<Notice[]> {
   return out;
 }
 
-const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board/i;
+const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board|book closure|closure of (the )?(share )?transfer|entitlement/i;
 /** "other than financial results" intimations only give the meeting date; their "results of the board meeting" follow-ups carry interim dividends */
 const PRE_MEETING = /other th[ae]n financial/i;
 const SKIP =
@@ -147,7 +147,8 @@ async function readPdf(id: string, dir: string): Promise<string> {
         break;
       }
       const d = parseDivNotice(text);
-      if (d.dps != null || d.pct != null || d.nil) break;
+      // page 2 often has the book closure the amount on page 1 needs
+      if (d.nil || ((d.dps != null || d.pct != null) && d.closeFrom)) break;
     }
   }
   rmSync(f, { force: true });
@@ -265,7 +266,7 @@ async function main() {
                 .join('\n')}`,
             );
           if (process.env.ONLY)
-            console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} bc ${d.closeFrom ?? '-'}`);
+            console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} ${d.kind ?? ''} bc ${d.closeFrom ?? '-'}`);
           return { n, d };
         } catch {
           return { n, d: null as DivNotice | null };
@@ -278,13 +279,15 @@ async function main() {
       // without prices the yields can't be worked out: leave the company for the next run rather than save it empty
       if (raw.size < 100) throw new Error('no price history from PSX');
       const days = [...raw.keys()].sort();
-      const found: { day: string; dps: number; bc: string | null }[] = [];
+      const found: { day: string; dps: number; bc: string | null; final: boolean }[] = [];
       for (const x of read) {
         const d = x.d;
         if (!d) continue;
         const dps = d.dps ?? (d.pct != null ? (d.pct / 100) * fv : null);
         if (!dps) continue;
-        found.push({ day: x.n.day, dps, bc: d.closeFrom && d.closeFrom >= x.n.day && d.closeFrom <= addDays(x.n.day, 75) ? d.closeFrom : null });
+        // final dividends wait for the shareholders' meeting: the notice says so, or it's the full-year results
+        const final = d.kind ? d.kind === 'final' : /year ended|annual/i.test(x.n.title) && !/half|quarter|months|interim/i.test(x.n.title);
+        found.push({ day: x.n.day, dps, bc: d.closeFrom && d.closeFrom >= x.n.day && d.closeFrom <= addDays(x.n.day, 100) ? d.closeFrom : null, final });
       }
       found.sort((a, b) => (a.day < b.day ? -1 : 1));
       // the same dividend in a results notice and a book-closure notice: keep one, with a book closure if any has it
@@ -293,24 +296,38 @@ async function main() {
         const same = merged.find((m) => Math.abs(m.dps - f.dps) < 0.011 && Math.abs(Date.parse(m.day) - Date.parse(f.day)) < 50 * 864e5);
         if (same) {
           if (!same.bc && f.bc) same.bc = f.bc;
+          same.final ||= f.final;
         } else merged.push({ ...f });
       }
-      // without a book closure date, the ex-date is guessed from this company's usual gap between notice and ex-date (else two weeks)
+      // without a book closure date, the ex-date is guessed from this company's usual gap between notice and ex-date,
+      // kept apart for final dividends (after the shareholders' meeting: weeks later) and interim ones
       const exOf = (bc: string) => new Date(exDate(Date.parse(bc + 'T07:00:00Z')) + 5 * 3600_000).toISOString().slice(0, 10);
-      const gaps = merged
-        .filter((m) => m.bc)
-        .map((m) => Math.round((Date.parse(exOf(m.bc!)) - Date.parse(m.day)) / 864e5))
-        .filter((g) => g > 0 && g < 70)
-        .sort((a, b) => a - b);
-      const guessDays = gaps.length >= 2 ? gaps[Math.floor(gaps.length / 2)] : 14;
+      const gapsOf = (final: boolean) =>
+        merged
+          .filter((m) => m.bc && m.final === final)
+          .map((m) => Math.round((Date.parse(exOf(m.bc!)) - Date.parse(m.day)) / 864e5))
+          .filter((g) => g > 0 && g < 95)
+          .sort((a, b) => a - b);
+      const median = (g: number[]) => (g.length >= 2 ? g[Math.floor(g.length / 2)] : g.length === 1 ? g[0] : null);
+      const gapFinal = median(gapsOf(true));
+      const gapInterim = median(gapsOf(false)) ?? 14;
+      // a final without this company's own history: June year-ends hold the meeting in October (results Aug-Oct), others about 3-4 weeks on
+      const guessDays = (m: (typeof merged)[number]) => {
+        if (!m.final) return gapInterim;
+        if (gapFinal != null) return gapFinal;
+        const mon = +m.day.slice(5, 7);
+        return mon >= 7 && mon <= 10 ? 50 : 26;
+      };
       const list: DivRow[] = [];
       const truth: { ex: string; dps: number }[] = [];
       for (const m of merged) {
-        const ex = m.bc ? exOf(m.bc) : addDays(m.day, guessDays);
+        const ex = m.bc ? exOf(m.bc) : addDays(m.day, guessDays(m));
         const c = closeBefore(raw, days, ex);
-        if (!c) continue;
-        const y = m.dps / c;
-        if (!(y > 0 && y < 0.5)) continue;
+        const y = c ? m.dps / c : NaN;
+        if (!c || !(y > 0 && y < 0.5)) {
+          if (VALIDATE) console.log(`    dropped ${m.dps}@${ex}: close before ${c ?? 'none'} (prices ${days[0]}..${days[days.length - 1]})`);
+          continue;
+        }
         list.push({ ex, dps: Math.round(m.dps * 100) / 100, y: Math.round(y * 1e5) / 1e5, src: 'r', ...(m.bc ? {} : { approx: 1 as const }) });
       }
       // late 2024 onwards: PSX's payouts table, saved by the daily job
