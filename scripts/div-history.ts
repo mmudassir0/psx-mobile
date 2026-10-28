@@ -238,7 +238,7 @@ async function main() {
   console.log(`${syms.length} companies, ${syms.filter((s) => st.symbols[s]?.done).length} already done`);
   let did = 0;
   for (const sym of syms) {
-    if (st.symbols[sym]?.done) continue;
+    if (st.symbols[sym]?.done && !process.env.ONLY) continue;
     if (Date.now() > BUDGET) {
       console.log('time budget reached');
       break;
