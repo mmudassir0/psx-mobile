@@ -23,8 +23,10 @@ for (const f of files) {
   if (/divs-\d+\.json$/.test(f)) {
     const s = JSON.parse(readFileSync(f, 'utf8'));
     for (const [sym, v] of Object.entries(s.symbols ?? {})) {
-      if (!(v as { done?: boolean }).done) continue;
-      if (!st.symbols[sym]?.done) added++;
+      const nv = v as { done?: boolean; v?: number };
+      if (!nv.done) continue;
+      // new, or read again with a better reader: both are progress for the next run
+      if (!st.symbols[sym]?.done || (st.symbols[sym].v ?? 1) < (nv.v ?? 1)) added++;
       st.symbols[sym] = v;
     }
     for (const k of ['shariah', 'kmi30', 'kse100']) if (Array.isArray(s[k]) && s[k].length) st[k] = s[k];

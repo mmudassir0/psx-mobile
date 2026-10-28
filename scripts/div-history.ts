@@ -53,8 +53,12 @@ export interface DivRow {
   /** ex-date guessed from the announcement date (no book closure found) */
   approx?: 1;
 }
+/** bumped when the reading improves: companies read with an older version are read again (their old dividends stay until then) */
+const READER = 2;
 interface SymState {
   done: boolean;
+  /** READER version this company was read with */
+  v?: number;
   notices: number;
   read: number;
   fv: number;
@@ -238,10 +242,11 @@ async function main() {
     }
   }
   const syms: string[] = (process.env.ONLY ? process.env.ONLY.split(',') : universe()).filter((_: string, k: number) => k % shards === shard);
-  console.log(`${syms.length} companies, ${syms.filter((s) => st.symbols[s]?.done).length} already done`);
+  const isDone = (s: string) => !!st.symbols[s]?.done && (st.symbols[s].v ?? 1) >= READER;
+  console.log(`${syms.length} companies, ${syms.filter(isDone).length} already done`);
   let did = 0;
   for (const sym of syms) {
-    if (st.symbols[sym]?.done && !process.env.ONLY) continue;
+    if (isDone(sym) && !process.env.ONLY) continue;
     if (Date.now() > BUDGET) {
       console.log('time budget reached');
       break;
@@ -403,7 +408,7 @@ async function main() {
           if (!fac.length || Math.abs(f / fac[fac.length - 1][1] - 1) > 0.01) fac.push([d, f]);
         }
       }
-      st.symbols[sym] = { done: true, notices: want.length, read: read.filter((x) => x.d && (x.d.dps || x.d.pct || x.d.nil)).length, fv, list, fac };
+      st.symbols[sym] = { done: true, v: READER, notices: want.length, read: read.filter((x) => x.d && (x.d.dps || x.d.pct || x.d.nil)).length, fv, list, fac };
       did++;
       if (process.env.ONLY) console.log(list.map((r) => `${r.ex} ${r.dps} ${(r.y * 100).toFixed(2)}% ${r.src}${r.approx ? '~' : ''}`).join(' | '));
       console.log(`${sym}: ${want.length} notices, ${st.symbols[sym].read} understood, ${list.length} dividends, fv ${fv}, ${Math.round((Date.now() - t0) / 1000)}s`);
@@ -413,7 +418,7 @@ async function main() {
     st.updated = new Date().toISOString();
     writeFileSync(file, JSON.stringify(st));
   }
-  const left = syms.filter((s) => !st.symbols[s]?.done).length;
+  const left = syms.filter((s) => !isDone(s)).length;
   writeFileSync(join(stateDir, process.env.SHARDS ? `left-${shard}.txt` : 'left.txt'), String(left));
   console.log(`done this run: ${did}, left: ${left}`);
 }
