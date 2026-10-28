@@ -20,7 +20,7 @@ export interface IndexEvent {
 /** Whether the lists read from a notice agree with the counts it states (OCR-free text can still split columns wrongly). */
 export function trustworthy(e: IndexEvent, size: number): { inOut: boolean; full: boolean } {
   const st = e.stated;
-  const near = (a: number, b: number | null | undefined) => b == null || Math.abs(a - b) <= Math.max(2, b * 0.1);
+  const near = (a: number, b: number | null | undefined) => b == null || Math.abs(a - b) <= Math.max(4, b * 0.15);
   const inOut = (e.in.length > 0 || e.out.length > 0) && near(e.in.length, st?.added) && near(e.out.length, st?.removed) && e.in.length < size * 0.6;
   const full = !!e.full && (st?.total != null ? near(e.full.length, st.total) : Math.abs(e.full.length - size) <= Math.max(3, size * 0.25));
   return { inOut, full };
