@@ -22,8 +22,10 @@ import { parseDivNotice, type DivNotice } from '../src/lab/divText';
 const run = promisify(execFile);
 const [stateDir, cacheDir] = process.argv.slice(2);
 const BUDGET = Date.now() + Number(process.env.BUDGET_MIN ?? 300) * 60_000;
-const FROM = '2016-07-01';
-const TO = '2024-12-31';
+/** VALIDATE=1: read the notices PSX's payouts table also covers (late 2024 on) and report how often the reading agrees */
+const VALIDATE = !!process.env.VALIDATE;
+const FROM = VALIDATE ? '2024-11-20' : '2016-07-01';
+const TO = VALIDATE ? new Date().toISOString().slice(0, 10) : '2024-12-31';
 const MAX = Number(process.env.MAX_SYMBOLS ?? 230);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function retry<T>(f: () => Promise<T>, n = 4): Promise<T> {
@@ -281,6 +283,7 @@ async function main() {
         } else merged.push({ ...f });
       }
       const list: DivRow[] = [];
+      const truth: { ex: string; dps: number }[] = [];
       for (const m of merged) {
         const ex = m.bc ? new Date(exDate(Date.parse(m.bc + 'T07:00:00Z')) + 5 * 3600_000).toISOString().slice(0, 10) : addDays(m.day, 21);
         const c = closeBefore(raw, days, ex);
@@ -297,6 +300,10 @@ async function main() {
           const pct = p.items.filter((i) => i.type === 'D').reduce((s, i) => s + i.pct, 0);
           if (!pct || !p.bookClosure) continue;
           const ex = new Date(exDate(p.bookClosure) + 5 * 3600_000).toISOString().slice(0, 10);
+          if (VALIDATE) {
+            if (ex >= '2024-12-10' && ex <= TO) truth.push({ ex, dps: (pct / 100) * fv });
+            continue;
+          }
           if (ex <= TO) continue;
           const c = closeBefore(raw, days, ex);
           const dps = (pct / 100) * fv;
@@ -313,6 +320,34 @@ async function main() {
       }
       list.length = 0;
       list.push(...dedup);
+      if (VALIDATE) {
+        // compare the reading with PSX's own table
+        const used = new Set<number>();
+        let ok = 0,
+          wrongAmount = 0,
+          wrongDate = 0;
+        const notes: string[] = [];
+        for (const t of truth) {
+          const k = list.findIndex((r, i) => !used.has(i) && Math.abs(Date.parse(r.ex) - Date.parse(t.ex)) <= 40 * 864e5 && Math.abs(r.dps - t.dps) <= Math.max(0.02, t.dps * 0.02));
+          if (k >= 0) {
+            used.add(k);
+            if (Math.abs(Date.parse(list[k].ex) - Date.parse(t.ex)) <= 7 * 864e5) ok++;
+            else {
+              wrongDate++;
+              notes.push(`date ${list[k].ex} vs ${t.ex}${list[k].approx ? ' (guessed)' : ''}`);
+            }
+            continue;
+          }
+          const near = list.findIndex((r, i) => !used.has(i) && Math.abs(Date.parse(r.ex) - Date.parse(t.ex)) <= 20 * 864e5);
+          if (near >= 0) {
+            used.add(near);
+            wrongAmount++;
+            notes.push(`amount ${list[near].dps} vs ${t.dps.toFixed(2)} on ${t.ex}`);
+          } else notes.push(`missed ${t.dps.toFixed(2)} on ${t.ex}`);
+        }
+        const extra = list.filter((_, i) => !used.has(i)).map((r) => `${r.dps}@${r.ex}`);
+        console.log(`VALIDATE ${sym}: ${truth.length} paid, ${ok} right, ${wrongDate} late date, ${wrongAmount} wrong amount, ${truth.length - ok - wrongDate - wrongAmount} missed, ${extra.length} extra | ${notes.join('; ')}${extra.length ? ` | extra ${extra.join(', ')}` : ''}`);
+      }
       // how the saved (adjusted) prices relate to the raw ones over time, for earnings per share
       const fac: [string, number][] = [];
       const df = join(cacheDir, `daily_3A${encodeURIComponent(sym).replace(/%/g, '_')}.json`);
