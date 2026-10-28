@@ -50,12 +50,12 @@ export function parseDivNotice(raw: string): DivNotice {
     const before = text.slice(Math.max(0, m.index - 40), m.index).toLowerCase();
     if (/unclaimed|unpaid|payable|income|withh|mandate|e-|register|regulation/.test(before)) continue;
     const win = text.slice(m.index, m.index + 240);
-    if ((/nil\b/i.test(win.slice(0, 45)) && !/\d/.test(win.slice(0, 45))) || /\bnil\W{0,3}\s*(?:cash\s+)?$/i.test(before)) {
+    if ((/nil\b/i.test(win.slice(0, 64)) && !/\d/.test(win.slice(0, 64))) || /\bnil\W{0,3}\s*(?:cash\s+)?$/i.test(before)) {
       nil = true;
       continue;
     }
     // the amount: "@ Rs. 15/- per share", "of Rs 8.50 per share", "at the rate of Rs. 10/- per share", "@ 134/- per share"
-    const am = win.match(/(?:rs\.?|@|rate of|of)\s*(?:rs\.?\s*)?([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:\/-|\/=)?\s*(?:\(\w+\)\s*)?per\s+(?:ordinary\s+)?share/i);
+    const am = win.match(/(?:rs\.?|pkr|rupees|@|rate of|of)\s*(?:(?:rs\.?|pkr|rupees)\s*)?([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:\/-|\/=)?\s*(?:\(\w+\)\s*)?per\s+(?:ordinary\s+)?share/i);
     if (am) {
       const head = win.slice(0, am.index!).toLowerCase();
       if (!/earning|eps|already paid|in addition|face value|each/.test(head)) {

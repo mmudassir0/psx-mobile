@@ -284,10 +284,18 @@ async function main() {
           if (!same.bc && f.bc) same.bc = f.bc;
         } else merged.push({ ...f });
       }
+      // without a book closure date, the ex-date is guessed from this company's usual gap between notice and ex-date (else two weeks)
+      const exOf = (bc: string) => new Date(exDate(Date.parse(bc + 'T07:00:00Z')) + 5 * 3600_000).toISOString().slice(0, 10);
+      const gaps = merged
+        .filter((m) => m.bc)
+        .map((m) => Math.round((Date.parse(exOf(m.bc!)) - Date.parse(m.day)) / 864e5))
+        .filter((g) => g > 0 && g < 70)
+        .sort((a, b) => a - b);
+      const guessDays = gaps.length >= 2 ? gaps[Math.floor(gaps.length / 2)] : 14;
       const list: DivRow[] = [];
       const truth: { ex: string; dps: number }[] = [];
       for (const m of merged) {
-        const ex = m.bc ? new Date(exDate(Date.parse(m.bc + 'T07:00:00Z')) + 5 * 3600_000).toISOString().slice(0, 10) : addDays(m.day, 21);
+        const ex = m.bc ? exOf(m.bc) : addDays(m.day, guessDays);
         const c = closeBefore(raw, days, ex);
         if (!c) continue;
         const y = m.dps / c;

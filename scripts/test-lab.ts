@@ -179,6 +179,8 @@ const cases: [string, string][] = [
   ],
   ['The Board has recommended a final cash dividend of 45% (Rs. 4.50 per share). Books will remain closed from 16-09-2019 to 23-09-2019', '4.5 2019-09-16'],
   ['Cash dividend @ 25% i.e.', 'pct25'],
+  ['(i) Cash Dividend PKR 5.00/- per share', '5'],
+  ['Cash dividend/Bonus/Rights/Any other entitlement: Nil', 'nil'],
   ['DIVIDEND\n Basic earnings per share 12 18.54 24.57', '-'],
 ];
 for (const [t, want] of cases) check(`notice: ${want}`, notice(t) === want, { got: notice(t), t: t.slice(0, 50) });
