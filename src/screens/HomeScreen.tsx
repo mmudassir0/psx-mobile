@@ -44,6 +44,7 @@ import { MoodCard, useMood } from '../ui/MoodCard';
 import { layoutPref } from '../nav/layout';
 import { useFlags } from '../flags';
 import { ToolsGrid } from '../ui/ToolsGrid';
+import { HomeCardsCard } from '../ui/HomeCardsCard';
 import { TodayList } from '../ui/TodayList';
 import { MoodLine } from '../ui/MoodLine';
 import { StoryDeck } from '../ui/StoryDeck';
@@ -58,6 +59,10 @@ import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
+/** watchlist rows on Home before "Show all" */
+const WATCH_ROWS = 6;
+/** things to look at, in the portfolio card, before "more" */
+const TODO_ROWS = 3;
 
 function greeting() {
   const h = Math.floor(pkNow().minutes / 60);
@@ -100,6 +105,8 @@ export default function HomeScreen() {
   const { ready, indices, stocks, bySymbol, refresh, refreshing } = useMarket();
   const { name, watchlist, account } = useUser();
   const [movers, setMovers] = useState<'gainers' | 'losers' | 'active'>('gainers');
+  const [allWatched, setAllWatched] = useState(false);
+  const [arranging, setArranging] = useState(false);
   const sparks = useIndexSeries(HOME_INDICES);
   const { holdings, loaded: holdingsLoaded } = useHoldings();
   const { feed } = usePicksFeed();
@@ -271,9 +278,14 @@ export default function HomeScreen() {
                 <Empty title="Nothing on your watchlist" body="Open any stock and tap the star to follow it here." />
               ) : (
                 <View>
-                  {watched.map((s, i) => (
-                    <StockRow key={s.symbol} stock={s} last={i === watched.length - 1} onPress={() => open(s.symbol)} />
+                  {(allWatched ? watched : watched.slice(0, WATCH_ROWS)).map((s, i, list) => (
+                    <StockRow key={s.symbol} stock={s} last={i === list.length - 1 && watched.length <= WATCH_ROWS} onPress={() => open(s.symbol)} />
                   ))}
+                  {watched.length > WATCH_ROWS ? (
+                    <Pressable accessibilityRole="button" onPress={() => setAllWatched((x) => !x)} hitSlop={6} style={{ paddingTop: 10 }}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{allWatched ? 'Show fewer' : `Show all ${watched.length}`}</T>
+                    </Pressable>
+                  ) : null}
                 </View>
               )}
             </Section>
@@ -370,7 +382,7 @@ export default function HomeScreen() {
             </View>
             {todo.length ? (
               <View style={styles.todo}>
-                {todo.map((t) => (
+                {todo.slice(0, TODO_ROWS).map((t) => (
                   <Pressable
                     key={t.key}
                     accessibilityRole="button"
@@ -385,6 +397,7 @@ export default function HomeScreen() {
                     <T v="caption">›</T>
                   </Pressable>
                 ))}
+                {todo.length > TODO_ROWS ? <T v="caption">and {todo.length - TODO_ROWS} more in Portfolio ›</T> : null}
               </View>
             ) : reviewing ? (
               <T v="caption">Checking your holdings…</T>
@@ -446,7 +459,17 @@ export default function HomeScreen() {
         {compact && hasReal && weekOver() ? <WeeklyBriefCard rows={rows} candles={candles} breadth={feed?.breadth ?? null} ready={!reviewing && ready} /> : null}
 
         {isTabs ? (
-          homeCards.map((k) => <React.Fragment key={k}>{card(k)}</React.Fragment>)
+          <>
+            {homeCards.map((k) => (
+              <React.Fragment key={k}>{card(k)}</React.Fragment>
+            ))}
+            <View style={[styles.pad, { gap: 10 }]}>
+              <Pressable accessibilityRole="button" onPress={() => setArranging((x) => !x)} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
+                <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{arranging ? 'Done arranging' : 'Arrange Home: hide or move cards'}</T>
+              </Pressable>
+              {arranging ? <HomeCardsCard /> : null}
+            </View>
+          </>
         ) : layout !== 'menu' ? (
           <View style={styles.pad}>
             <ToolsGrid />

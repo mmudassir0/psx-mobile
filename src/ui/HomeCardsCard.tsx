@@ -2,7 +2,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { colors, fonts, themed } from '../theme';
-import { HOME_CARDS, homeCardsPref, move, orderOf, toggle } from '../nav/homeCards';
+import { HOME_CARDS, homeCardsPref, isHidden, move, orderOf, toggle } from '../nav/homeCards';
 import { T } from './kit';
 
 export function HomeCardsCard() {
@@ -12,7 +12,7 @@ export function HomeCardsCard() {
   return (
     <View style={styles.card}>
       {order.map((k, i) => {
-        const on = !l.hidden.includes(k);
+        const on = !isHidden(l, k);
         return (
           <View key={k} style={[styles.row, i < order.length - 1 && styles.border]}>
             <View style={{ flexDirection: 'row', gap: 4 }}>
