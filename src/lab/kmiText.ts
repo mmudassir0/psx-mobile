@@ -13,6 +13,17 @@ export interface IndexEvent {
   out: string[];
   /** the whole list after the change, when the notice includes it */
   full?: string[];
+  /** what the notice says in words: companies in the index after, added, removed */
+  stated?: { total: number | null; added: number | null; removed: number | null };
+}
+
+/** Whether the lists read from a notice agree with the counts it states (OCR-free text can still split columns wrongly). */
+export function trustworthy(e: IndexEvent, size: number): { inOut: boolean; full: boolean } {
+  const st = e.stated;
+  const near = (a: number, b: number | null | undefined) => b == null || Math.abs(a - b) <= Math.max(2, b * 0.1);
+  const inOut = (e.in.length > 0 || e.out.length > 0) && near(e.in.length, st?.added) && near(e.out.length, st?.removed) && e.in.length < size * 0.6;
+  const full = !!e.full && (st?.total != null ? near(e.full.length, st.total) : Math.abs(e.full.length - size) <= Math.max(3, size * 0.25));
+  return { inOut, full };
 }
 
 const SYM = /^[A-Z][A-Z0-9]{1,9}$/;
@@ -73,7 +84,16 @@ export function parseIndexNotice(text: string, noticeDay: string): IndexEvent | 
     }
   }
   if (!ins.length && !outs.length && !full) return null;
-  return { date, in: [...new Set(ins)], out: [...new Set(outs)], ...(full ? { full: [...new Set(full)] } : {}) };
+  const n = (re: RegExp) => {
+    const m = text.match(re);
+    return m ? Number(m[1]) : null;
+  };
+  const stated = {
+    total: n(/(?:consist of|comprise of|comprising of|comprises of)\s+(\d+)\s+companies/i),
+    added: n(/(\d+)\s+(?:new\s+)?companies\s+(?:have been|are|were|will be)\s+(?:added|included)/i),
+    removed: n(/(\d+)\s+companies\s+(?:have been|are|were|will be)\s+(?:removed|excluded)/i),
+  };
+  return { date, in: [...new Set(ins)], out: [...new Set(outs)], ...(full ? { full: [...new Set(full)] } : {}), stated };
 }
 
 /** Who was in the index from each date on, newest last: [from, members]. `now` is today's list. */
@@ -81,8 +101,11 @@ export function membershipHistory(now: string[], events: IndexEvent[]): { from: 
   const ev = [...events].sort((a, b) => (a.date < b.date ? 1 : -1));
   const out: { from: string; members: string[] }[] = [];
   let after = new Set(now);
-  for (const e of ev) {
-    const set = e.full ? new Set(e.full) : after;
+  for (const e0 of ev) {
+    const ok = trustworthy(e0, after.size);
+    if (!ok.inOut && !ok.full) continue;
+    const e = { ...e0, in: ok.inOut ? e0.in : [], out: ok.inOut ? e0.out : [] };
+    const set = ok.full ? new Set(e.full) : after;
     out.push({ from: e.date, members: [...set].sort() });
     const before = new Set(set);
     for (const s of e.in) before.delete(s);

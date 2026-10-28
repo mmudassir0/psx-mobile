@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { fetchIndexConstituents, fetchRaw } from '../src/psx/api';
 import { membershipHistory, parseIndexNotice, spansOf, type IndexEvent } from '../src/lab/kmiText';
 
-const out = process.argv[2] ?? 'kmi.json';
+const out = process.argv[2] ?? '/tmp/out/kmi.json';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const day = (s: string) => {
@@ -48,7 +48,7 @@ async function main() {
       if (e) {
         events[which].push(e);
         read++;
-        console.log(`${which} ${n.day} → ${e.date}: +${e.in.length} −${e.out.length}${e.full ? `, full list ${e.full.length}` : ''}`);
+        console.log(`${which} ${n.day} → ${e.date}: +${e.in.length} −${e.out.length}${e.full ? `, full list ${e.full.length}` : ''} (says ${JSON.stringify(e.stated)})`);
       }
     } catch (err) {
       console.log(`${n.day} ${n.title.slice(0, 50)}: ${(err as Error).message}`);
@@ -59,7 +59,7 @@ async function main() {
     kmiall: (await fetchIndexConstituents('KMIALLSHR')).map((c) => c.symbol),
     kmi30: (await fetchIndexConstituents('KMI30')).map((c) => c.symbol),
   };
-  const result: Record<string, unknown> = { built: new Date().toISOString().slice(0, 10) };
+  const result: Record<string, unknown> = { built: new Date().toISOString().slice(0, 10), events, now };
   for (const k of ['kmiall', 'kmi30'] as const) {
     const hist = membershipHistory(now[k], events[k]);
     result[k] = { from: events[k].map((e) => e.date).sort()[0] ?? null, spans: Object.fromEntries(spansOf(hist)) };
