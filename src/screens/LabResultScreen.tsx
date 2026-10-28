@@ -13,7 +13,7 @@ import { describe } from '../lab/describe';
 import { robustness, type Variant } from '../lab/robust';
 import { newId } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
-import { ContributorsSection, RealSection, ReportButton, RollingSection, ShareCodeButton, StressSection } from '../ui/LabExtras';
+import { RuleWhatIf, ContributorsSection, RealSection, ReportButton, RollingSection, ShareCodeButton, StressSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
 import { Button, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
 
@@ -299,6 +299,7 @@ export default function LabResultScreen() {
               </Section>
             ) : null}
 
+            {st.only ? <RuleWhatIf lab={lab} st={st} /> : null}
             <StressSection lab={lab} st={st} res={res} />
             <ContributorsSection res={res} onOpen={(symbol) => nav.navigate('Stock', { symbol })} />
             <RollingSection lab={lab} st={st} />
@@ -378,8 +379,11 @@ export default function LabResultScreen() {
             ) : null}
             <T v="caption" style={{ lineHeight: 17 }}>
               How it's worked out: each check uses only the closes known the day before, and trades at that day's close. Costs are 0.2% each way; dividends are paid on the ex-date after{' '}
-              {st.tax === 'none' ? 'no' : st.tax === 'filer' ? '15%' : '30%'} tax; gains are taxed at the end of each June. The index's own dividends are estimated from what its members paid, and added to it. Today's
-              index lists are used for the whole period and stocks that were delisted aren't in the data, which flatters every strategy a little. The past doesn't promise the future. Information, not advice.
+              {st.tax === 'none' ? 'no' : st.tax === 'filer' ? '15%' : '30%'} tax; gains are taxed at the end of each June. The index's own dividends are estimated from what its members paid, and added to it.{' '}
+              {lab.listsFrom
+                ? `Shariah and KMI-30 stocks follow the lists of the time from ${lab.listsFrom.slice(0, 4)} (the earliest known list before that); the KSE-100 uses today's list.`
+                : "Today's index lists are used for the whole period."}{' '}
+              Stocks that were delisted aren't in the data, which flatters every strategy a little. The past doesn't promise the future. Information, not advice.
             </T>
           </>
         )}

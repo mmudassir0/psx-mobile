@@ -6,7 +6,7 @@
  * Earnings-based warnings aren't here: Sahm doesn't have ten years of results.
  */
 import type { Lab, LabStock } from './data';
-import { earliestYear, firstDayOf, runBacktest, type Strategy, type Universe } from './engine';
+import { earliestYear, firstDayOf, inUniverse, runBacktest, type Strategy, type Universe } from './engine';
 import { BASE } from './templates';
 
 export type Group = 'chart' | 'cut' | 'uptrend' | 'clear';
@@ -86,7 +86,7 @@ export interface ReviewTest {
 }
 
 export function reviewTest(lab: Lab, universe: Universe = 'kse100', minValue = 3): ReviewTest {
-  const stocks = lab.stocks.filter((s) => (universe === 'all' ? true : universe === 'kse100' ? s.kse100 : universe === 'kmi30' ? s.kmi30 : s.shariah));
+  const stocks = lab.stocks.filter((s) => (universe === 'all' || universe === 'kse100' ? inUniverse(s, universe) : s.shariahOn || s.kmi30On || inUniverse(s, universe)));
   const preps = stocks.map(prep);
   const start = firstDayOf(lab, earliestYear(lab));
   const n = lab.days.length;
@@ -104,6 +104,7 @@ export function reviewTest(lab: Lab, universe: Universe = 'kse100', minValue = 3
     const d = i - 1; // decided on yesterday's close
     const rows: { g: Group; fwd: (number | null)[] }[] = [];
     for (const p of preps) {
+      if (!inUniverse(p.s, universe, d)) continue;
       const mi = lab.month[i] - 1;
       if (minValue > 0 && !(mi >= 0 && p.s.value[mi] >= minValue * 1e6)) continue;
       const g = groupAt(p, d);

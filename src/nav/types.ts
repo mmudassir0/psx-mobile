@@ -62,6 +62,7 @@ export type RootParams = {
   LabCompare: { ids: string[] };
   LabHunt: undefined;
   LabReviews: undefined;
+  LabDividends: undefined;
   YearReview: { year?: number } | undefined;
 };
 

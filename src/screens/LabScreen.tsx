@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtDay } from '../format';
-import { findStrategy, holdingsStrategy, labFollowPref, labStrategiesPref, setDraft, useLab } from '../lab/store';
+import { findStrategy, holdingsStrategy, labAskedPref, labFollowPref, labStrategiesPref, rememberHunted, setDraft, useLab } from '../lab/store';
 import { readCode } from '../lab/share';
 import { useHoldings } from '../portfolio/holdings';
 import { runBacktest, type Strategy } from '../lab/engine';
@@ -46,6 +46,8 @@ export default function LabScreen() {
   const { lab, busy, error, built, reload } = useLab();
   const mine = labStrategiesPref.use();
   const follow = labFollowPref.use();
+  const asked = labAskedPref.use();
+  useEffect(() => rememberHunted(asked.map((a) => a.strategy)), [asked]);
   const [code, setCode] = useState('');
   const [codeMsg, setCodeMsg] = useState<string | null>(null);
   const openCode = () => {
@@ -144,6 +146,24 @@ export default function LabScreen() {
                 </Panel>
               </Section>
             ) : null}
+            {asked.length ? (
+              <Section title="Asked in the AI chat" action="Clear" onAction={() => labAskedPref.set([])}>
+                <Panel style={{ paddingVertical: 4 }}>
+                  {asked.slice(0, 6).map((a, i, all) => (
+                    <Row key={a.strategy.id} s={a.strategy} note={`${a.at} · ${describe(a.strategy)}`} quick={null} onPress={() => open(a.strategy)} last={i === all.length - 1} />
+                  ))}
+                </Panel>
+              </Section>
+            ) : null}
+            <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabDividends')} style={styles.link}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Who pays dividends when</T>
+                <T v="caption" style={{ lineHeight: 17 }}>
+                  Each month's usual payers across the market, from ten years of notices.
+                </T>
+              </View>
+              <T v="caption">›</T>
+            </Pressable>
             <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabReviews')} style={styles.link}>
               <View style={{ flex: 1, gap: 2 }}>
                 <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Would Sahm's warnings have helped?</T>

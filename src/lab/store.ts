@@ -15,6 +15,13 @@ import type { Strategy } from './engine';
 import { BASE, TEMPLATES } from './templates';
 
 export const labStrategiesPref = makePref<Strategy[]>('user.labStrategies', []);
+/** backtests built from questions in the AI chat, newest first */
+export interface Asked {
+  q: string;
+  at: string;
+  strategy: Strategy;
+}
+export const labAskedPref = makePref<Asked[]>('user.labAsked', []);
 /** the strategy you follow, if any */
 export const labFollowPref = makePref<{ id: string; since: string } | null>('user.labFollow', null);
 

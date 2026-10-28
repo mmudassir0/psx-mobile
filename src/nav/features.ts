@@ -50,6 +50,7 @@ export const FEATURES: Feature[] = [
   { key: 'income', label: 'Dividend income', emoji: '💰', group: 'My money', words: 'dividend income cash payout yearly monthly passive', flags: ['dividends'], go: (nav) => nav.navigate('Income') },
   { key: 'tax', label: 'Tax & zakat', emoji: '🧾', group: 'My money', words: 'capital gains cgt zakat tax year', flags: ['tax', 'zakat'], any: true, go: tab('Portfolio', { view: 'risk' }) },
   { key: 'sincebought', label: 'Since you bought', emoji: '🧭', group: 'My money', words: 'since bought buy price best worst high low drawdown peak history holding', go: (nav) => nav.navigate('SinceBought') },
+  { key: 'labdivs', label: 'Who pays when (10 years)', emoji: '🗓️', group: 'Market', words: 'dividend calendar month ex-date payers history when pay book closure', go: (nav) => nav.navigate('LabDividends') },
   { key: 'labhunt', label: 'Strategy hunt', emoji: '🔎', group: 'Ideas', words: 'hunt search best strategy rules overfitting luck test later years backtest', go: (nav) => nav.navigate('LabHunt') },
   { key: 'lab', label: 'Backtesting lab', emoji: '🧪', group: 'Ideas', words: 'backtest lab strategy test rules history past simulate momentum dividend value what if returns', go: (nav) => nav.navigate('Lab') },
   { key: 'warnings', label: 'Warning signs', emoji: '🚩', group: 'My money', words: 'sell signals warning rethink broken trim review cut dividend results down risk exit', go: (nav) => nav.navigate('SellSignals') },

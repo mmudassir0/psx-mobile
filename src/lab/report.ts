@@ -78,6 +78,6 @@ export function labReportHtml(lab: Lab, st: Strategy, r: Result, made: string): 
   <h2>Year by year</h2>
   <table><tr><th>Year</th><th class="n">Strategy</th><th class="n">${benchName}</th><th class="n">Difference</th></tr>${yearRows}</table>
   <h2>What it would hold now</h2><div>${holds}</div>
-  <div class="foot">Made with Sahm's backtesting lab on ${esc(made)}. Each check uses only the closes known the day before and trades at that day's close; costs 0.2% each way; dividends on the ex-date after tax; the index's dividends are estimated from what its members paid. Today's index lists are used for the whole period and delisted stocks aren't in the data, which flatters every strategy a little. The past doesn't promise the future. Information, not advice.</div>
+  <div class="foot">Made with Sahm's backtesting lab on ${esc(made)}. Each check uses only the closes known the day before and trades at that day's close; costs 0.2% each way; dividends on the ex-date after tax; the index's dividends are estimated from what its members paid. ${lab.listsFrom ? `Shariah and KMI-30 stocks follow the lists of the time from ${lab.listsFrom.slice(0, 4)}; the KSE-100 uses today's list` : "Today's index lists are used for the whole period"}, and delisted stocks aren't in the data, which flatters every strategy a little. The past doesn't promise the future. Information, not advice.</div>
   </body></html>`;
 }

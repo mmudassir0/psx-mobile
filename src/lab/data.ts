@@ -25,6 +25,9 @@ export interface LabFileStock {
   dv: [number, number][];
   /** annual earnings per share: [calendar index the result was known, EPS in paisa] */
   ep: [number, number][];
+  /** day spans [from, to) in the KMI All Share (Shariah) and KMI-30 lists, when known */
+  sh?: [number, number][];
+  k3?: [number, number][];
 }
 
 export interface LabFile {
@@ -40,6 +43,8 @@ export interface LabFile {
   stocks: LabFileStock[];
   /** where dividends are complete from (YYYY-MM-DD); before it some may be missing */
   divFrom: string;
+  /** first day the Shariah and KMI-30 lists' history is known; before it, the earliest known list is used */
+  listsFrom?: string;
 }
 
 export interface LabStock {
@@ -48,6 +53,9 @@ export interface LabStock {
   kse100: boolean;
   kmi30: boolean;
   shariah: boolean;
+  /** in the Shariah list (KMI All Share) / KMI-30 on each day, when the history is known */
+  shariahOn?: Uint8Array;
+  kmi30On?: Uint8Array;
   /** close on every calendar day, NaN before listing; carried forward on days without a trade */
   close: Float64Array;
   /** average traded value a day by calendar month, Rs */
@@ -65,6 +73,7 @@ export interface Lab {
   index: { KSE100: Float64Array; KMI30: Float64Array };
   stocks: LabStock[];
   divFrom: string;
+  listsFrom?: string;
 }
 
 const undelta = (a: number[]): number[] => {
@@ -80,6 +89,12 @@ const addDays = (d: string, n: number) => new Date(Date.parse(d + 'T00:00:00Z') 
 export const isLabFile = (x: unknown): x is LabFile => {
   const f = x as LabFile | null;
   return !!f && f.v === 1 && f.kind === 'lab' && Array.isArray(f.stocks) && Array.isArray(f.dd) && typeof f.d0 === 'string';
+};
+
+const spansToDays = (spans: [number, number][], n: number) => {
+  const a = new Uint8Array(n);
+  for (const [x, y] of spans) a.fill(1, Math.max(0, x), Math.min(n, y));
+  return a;
 };
 
 export function decodeLab(f: LabFile): Lab {
@@ -113,11 +128,13 @@ export function decodeLab(f: LabFile): Lab {
       kse100: s.f.includes('k'),
       kmi30: s.f.includes('m'),
       shariah: s.f.includes('s'),
+      ...(s.sh ? { shariahOn: spansToDays(s.sh, n) } : {}),
+      ...(s.k3 ? { kmi30On: spansToDays(s.k3, n) } : {}),
       close,
       value,
       divs: s.dv.map(([i, p]) => ({ i, dps: p / 100 })),
       eps: s.ep.map(([i, p]) => ({ i, eps: p / 100 })),
     };
   });
-  return { built: f.built, days, month, index: { KSE100: ix(f.ix.KSE100), KMI30: ix(f.ix.KMI30) }, stocks, divFrom: f.divFrom };
+  return { built: f.built, days, month, index: { KSE100: ix(f.ix.KSE100), KMI30: ix(f.ix.KMI30) }, stocks, divFrom: f.divFrom, listsFrom: f.listsFrom };
 }

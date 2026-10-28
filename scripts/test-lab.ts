@@ -17,7 +17,9 @@ import { readCode, strategyCode } from '../src/lab/share';
 import { worstFalls } from '../src/lab/stress';
 import { runMix } from '../src/lab/mix';
 import { isLabQuestion, labResultText } from '../src/lab/aiLab';
-import { breadthOf } from '../src/lab/engine';
+import { breadthOf, inUniverse } from '../src/lab/engine';
+import { membershipHistory, parseIndexNotice, spansOf } from '../src/lab/kmiText';
+import { divCalendar } from '../src/lab/divCalendar';
 
 let failed = 0;
 function check(name: string, ok: boolean, extra?: unknown) {
@@ -286,6 +288,47 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   check('cash earns', cashOnly.stats.final > 100000 * 1.1 && cashOnly.stats.cashProfit > 0);
   check('lab questions spotted', isLabQuestion('How did buying banks after a 20% fall do since 2019?') && isLabQuestion('backtest dividend stocks') && !isLabQuestion('What is the P/E of FFC?'));
   check('lab result text', labResultText(lab, a, runBacktest(lab, a)).includes('a year against'));
+}
+
+{
+  const text = `The recomposed Index will be implemented w.e.f Friday July 15, 2022.
+                                      LIST OF INCOMING / OUTGOING COMPANIES
+ Sr.no                          Incoming                                            Outgoing
+   1       AABS       Al-Abbas Sugar Mills Ltd               ADOS      Ados Pakistan Limited.
+   2       AIRLINK    Air Link Communication Limited         AGHA      Agha Steel Industries Ltd.
+   3       ALNRS      Al-Noor Sugar Mills Ltd.
+`;
+  const e = parseIndexNotice(text, '2022-07-07')!;
+  check('index notice: in, out, date', e.date === '2022-07-15' && e.in.join() === 'AABS,AIRLINK,ALNRS' && e.out.join() === 'ADOS,AGHA', e);
+  const names = parseIndexNotice(
+    `  Sr.no.   Incoming Companies                 Outgoing Companies
+    1      GlaxoSmithKline Pakistan Ltd       Lotte Chemical Pakistan Ltd.
+    2      ICI Pakistan Limited               Hascol Petroleum Ltd.
+    3      Kohat Cement Company Ltd           Indus Motor Company Ltd.
+`,
+    '2020-12-04',
+  );
+  check('index notice: names only are ignored', names === null || (!names.in.length && !names.out.length));
+  const h = membershipHistory(
+    ['A', 'B', 'C'],
+    [
+      { date: '2022-07-15', in: ['C'], out: ['D'] },
+      { date: '2021-01-01', in: ['B'], out: ['E'] },
+    ],
+  );
+  const sp = spansOf(h);
+  check('membership walks back', h[0].members.join() === 'A,D,E' && sp.get('C')![0][0] === '2022-07-15' && sp.get('D')![0][1] === '2022-07-15');
+  const withSpans = buildLab({
+    built: '2020-12-31',
+    index: { KSE100: index, KMI30: index },
+    divFrom: '2016-01-01',
+    stocks: [{ symbol: 'UPCO', sector: 'A', kse100: true, kmi30: true, shariah: true, bars: UP, divs: [], eps: [], shariahSpans: [[pk(days[600]), '']] }],
+  });
+  const l2 = decodeLab(JSON.parse(JSON.stringify(withSpans)));
+  const up = l2.stocks[0];
+  check('shariah of the time', !inUniverse(up, 'shariah', 100) && inUniverse(up, 'shariah', 700) && inUniverse(up, 'shariah'));
+  const cal = divCalendar(lab, 2016);
+  check('dividend calendar', cal.length === 12 && cal.flat().every((x) => x.years <= x.of));
 }
 
 if (failed) {

@@ -11,7 +11,7 @@ import { usePicksFeed } from '../picks/feed';
 import { chatContext } from '../ai/chat';
 import { isLabQuestion, labResultText } from '../lab/aiLab';
 import { labPrompt, readLabReply } from '../lab/aiStrategy';
-import { loadLab, rememberHunted } from '../lab/store';
+import { labAskedPref, loadLab, rememberHunted } from '../lab/store';
 import { runBacktest } from '../lab/engine';
 import { BASE } from '../lab/templates';
 import { PORTFOLIO_QUESTIONS, portfolioContext } from '../ai/portfolioContext';
@@ -126,6 +126,8 @@ export default function AIScreen() {
             if (got) {
               const res = runBacktest(lab, got.strategy);
               rememberHunted([got.strategy]);
+              const asked = await labAskedPref.get();
+              await labAskedPref.set([{ q, at: new Date().toISOString().slice(0, 10), strategy: { ...got.strategy, name: q.length > 40 ? `${q.slice(0, 38)}…` : q } }, ...asked].slice(0, 20));
               labText = labResultText(lab, got.strategy, res) + (got.note ? `\nAssumed: ${got.note}` : '');
               patch(idx, { lab: got.strategy.id });
             }

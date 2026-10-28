@@ -10,7 +10,7 @@ import { fetchRaw } from '../src/psx/api';
 import { parseHistorical } from '../src/psx/parse';
 import { buildLab, pkDay, type Bar, type BuildStock } from '../src/lab/build';
 
-const [stateDir, divsFile] = process.argv.slice(2);
+const [stateDir, divsFile, kmiFile] = process.argv.slice(2);
 const cacheDir = join(stateDir, 'cache');
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function retry<T>(f: () => Promise<T>, n = 4): Promise<T> {
@@ -61,6 +61,10 @@ async function main() {
   const kmi = new Set(idx.KMI30 ?? divs.kmi30 ?? []);
   const shariah = new Set([...(divs.shariah ?? []), ...kmi]);
   const [KSE100, KMI30] = [await indexHistory('KSE100'), await indexHistory('KMI30')];
+  // Shariah and KMI-30 lists over the years (from PSX's recomposition notices), when the job has them
+  type Lists = { from: string | null; spans: Record<string, [string, string][]> };
+  const kmiLists: { kmiall?: Lists; kmi30?: Lists } = kmiFile && existsSync(kmiFile) ? JSON.parse(readFileSync(kmiFile, 'utf8')) : {};
+  const listsOk = !!kmiLists.kmiall?.from && Object.keys(kmiLists.kmiall.spans).length > 100;
   if (KSE100.size < 1000) throw new Error('no index history');
   const stocks: BuildStock[] = [];
   for (const f of readdirSync(cacheDir).filter((x) => x.startsWith('daily_3A'))) {
@@ -110,10 +114,28 @@ async function main() {
         // skip
       }
     }
-    stocks.push({ symbol, sector: sectors[symbol], kse100: kse.has(symbol), kmi30: kmi.has(symbol), shariah: shariah.has(symbol), bars, divs: dv, eps });
+    stocks.push({
+      symbol,
+      sector: sectors[symbol],
+      kse100: kse.has(symbol),
+      kmi30: kmi.has(symbol),
+      shariah: shariah.has(symbol),
+      bars,
+      divs: dv,
+      eps,
+      ...(listsOk ? { shariahSpans: kmiLists.kmiall?.spans[symbol] ?? [], kmi30Spans: kmiLists.kmi30?.spans[symbol] ?? [] } : {}),
+    });
   }
   const withDivs = Object.keys(divs.symbols).length;
-  const file = buildLab({ built: pkDay(Date.now()), index: { KSE100, KMI30 }, stocks, divFrom: withDivs > 50 ? '2017-01-01' : '2024-11-01', minValue: 3e6, max: 320 });
+  const file = buildLab({
+    built: pkDay(Date.now()),
+    index: { KSE100, KMI30 },
+    stocks,
+    divFrom: withDivs > 50 ? '2017-01-01' : '2024-11-01',
+    ...(listsOk ? { listsFrom: kmiLists.kmiall!.from! } : {}),
+    minValue: 3e6,
+    max: 320,
+  });
   const json = JSON.stringify(file);
   writeFileSync(join(stateDir, 'lab.json'), json);
   console.log(`lab: ${file.stocks.length} stocks, ${file.dd.length} days, ${file.stocks.reduce((a, s) => a + s.dv.length, 0)} dividends, ${Math.round(json.length / 1024)} KB`);

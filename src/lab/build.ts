@@ -13,6 +13,9 @@ export interface BuildStock {
   kse100: boolean;
   kmi30: boolean;
   shariah: boolean;
+  /** when it was in the KMI All Share and KMI-30 lists: [from, to) dates, to '' = still in */
+  shariahSpans?: [string, string][];
+  kmi30Spans?: [string, string][];
   /** daily bars, adjusted for bonus issues and splits */
   bars: Bar[];
   /** cash dividends: ex-date YYYY-MM-DD and Rs per share in today's (adjusted) shares */
@@ -27,6 +30,7 @@ export interface BuildInput {
   index: { KSE100: Map<string, number>; KMI30: Map<string, number> };
   stocks: BuildStock[];
   divFrom: string;
+  listsFrom?: string;
   /** keep stocks that traded at least this much a day (Rs) in some month */
   minValue?: number;
   max?: number;
@@ -56,6 +60,8 @@ export function buildLab(inp: BuildInput): LabFile {
     return r;
   };
 
+  const toIdx = (spans: [string, string][]): [number, number][] =>
+    spans.map(([a, b]): [number, number] => [a <= days[0] ? 0 : Math.max(0, onOrAfter(a)), b ? (onOrAfter(b) < 0 ? days.length : onOrAfter(b)) : days.length]).filter(([a, b]) => b > a);
   const rows: { s: LabFileStock; peak: number }[] = [];
   for (const st of inp.stocks) {
     const bars = st.bars.filter((b) => b[4] > 0).map((b) => ({ d: pkDay(b[0]), c: b[4], v: b[5] }));
@@ -103,6 +109,8 @@ export function buildLab(inp: BuildInput): LabFile {
         s: st.symbol,
         sec: st.sector,
         f: `${st.kse100 ? 'k' : ''}${st.kmi30 ? 'm' : ''}${st.shariah ? 's' : ''}`,
+        ...(st.shariahSpans ? { sh: toIdx(st.shariahSpans) } : {}),
+        ...(st.kmi30Spans ? { k3: toIdx(st.kmi30Spans) } : {}),
         at: first,
         c: delta(closes),
         tv,
@@ -134,5 +142,6 @@ export function buildLab(inp: BuildInput): LabFile {
     ix: { KSE100: ix(inp.index.KSE100), KMI30: ix(inp.index.KMI30) },
     stocks: keep,
     divFrom: inp.divFrom,
+    ...(inp.listsFrom ? { listsFrom: inp.listsFrom } : {}),
   };
 }

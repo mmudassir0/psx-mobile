@@ -67,7 +67,8 @@ jobs:
         if: steps.done.outputs.skip != '1'
         run: |
           git fetch -q origin divhistory 2>/dev/null && git show origin/divhistory:divs.json > /tmp/divs.json 2>/dev/null || echo '{"symbols":{}}' > /tmp/divs.json
-          npx tsx scripts/lab-data.ts /tmp/state /tmp/divs.json
+          git show origin/divhistory:kmi.json > /tmp/kmi.json 2>/dev/null || echo '{}' > /tmp/kmi.json
+          npx tsx scripts/lab-data.ts /tmp/state /tmp/divs.json /tmp/kmi.json
       - name: Portfolio alerts
         # Symbols and the alert channel are secrets; the script prints counts only (public logs).
         if: steps.done.outputs.skip != '1' && (inputs.alerts || env.EVENING == '1')

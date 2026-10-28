@@ -240,7 +240,9 @@ export function metricAt(p: Prep, m: Metric, i: number, month: Int32Array): numb
   }
 }
 
-const inUniverse = (s: LabStock, u: Universe) => (u === 'all' ? true : u === 'kse100' ? s.kse100 : u === 'kmi30' ? s.kmi30 : s.shariah);
+/** In the universe on day `i`: Shariah and KMI-30 by the lists of that time when Sahm has their history, today's lists otherwise. */
+export const inUniverse = (s: LabStock, u: Universe, i?: number) =>
+  u === 'all' ? true : u === 'kse100' ? s.kse100 : u === 'kmi30' ? (s.kmi30On && i != null ? s.kmi30On[i] === 1 : s.kmi30) : s.shariahOn && i != null ? s.shariahOn[i] === 1 : s.shariah;
 
 /** Ranks the stocks that pass the filters on day `i`, best first. */
 export function choose(lab: Lab, preps: Prep[], st: Strategy, i: number): { symbol: string; k: number; p: Prep }[] {
@@ -248,7 +250,7 @@ export function choose(lab: Lab, preps: Prep[], st: Strategy, i: number): { symb
   for (let k = 0; k < preps.length; k++) {
     const p = preps[k];
     const s = p.s;
-    if (st.only ? !st.only.includes(s.symbol) : !inUniverse(s, st.universe)) continue;
+    if (st.only ? !st.only.includes(s.symbol) : !inUniverse(s, st.universe, i)) continue;
     if (st.sectors?.length && !st.sectors.includes(s.sector)) continue;
     if (!(s.close[i] > 0) || p.first > i - 21) continue;
     const mi = lab.month[i] - 1;
@@ -335,19 +337,18 @@ export function benchDividends(lab: Lab): Record<'KSE100' | 'KMI30', Float64Arra
   let c = benchDivCache.get(lab);
   if (c) return c;
   const n = lab.days.length;
-  const make = (inIt: (s: LabStock) => boolean) => {
+  const make = (inIt: (s: LabStock, i: number) => boolean) => {
     const out = new Float64Array(n);
-    const members = lab.stocks.filter(inIt);
     const live = new Float64Array(n);
-    for (const s of members) for (let i = 0; i < n; i++) if (s.close[i] > 0) live[i]++;
-    for (const s of members)
+    for (const s of lab.stocks) for (let i = 0; i < n; i++) if (s.close[i] > 0 && inIt(s, i)) live[i]++;
+    for (const s of lab.stocks)
       for (const d of s.divs) {
         const prev = d.i > 0 ? s.close[d.i - 1] : NaN;
-        if (prev > 0 && live[d.i] > 0) out[d.i] += d.dps / prev / live[d.i];
+        if (prev > 0 && live[d.i] > 0 && inIt(s, d.i)) out[d.i] += d.dps / prev / live[d.i];
       }
     return out;
   };
-  c = { KSE100: make((s) => s.kse100), KMI30: make((s) => s.kmi30) };
+  c = { KSE100: make((s) => s.kse100), KMI30: make((s, i) => inUniverse(s, 'kmi30', i)) };
   benchDivCache.set(lab, c);
   return c;
 }

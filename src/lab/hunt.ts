@@ -16,7 +16,11 @@ export interface HuntIdea {
   test: { cagr: number; bench: number; drop: number } | null;
 }
 
+/** bumped when the list of ideas changes, so old saved hunts aren't matched to the wrong ideas */
+export const HUNT_VERSION = 2;
+
 export interface HuntSetup {
+  v?: number;
   universe: Universe;
   /** first year of the later (check) period */
   split: number;
@@ -34,13 +38,14 @@ const RANKS: { rank: Metric; desc: boolean; label: string }[] = [
   { rank: 'off52h', desc: true, label: 'Closest to the high' },
   { rank: 'trend200', desc: true, label: 'Furthest above the 200-day' },
 ];
-const FILTERS: { f: Filter[]; label: string }[] = [
+const FILTERS: { f: Filter[]; label: string; topSectors?: number }[] = [
   { f: [], label: '' },
   { f: [{ m: 'trend200', op: '>', v: 0 }], label: 'above the 200-day' },
   { f: [{ m: 'yield', op: '>', v: 4 }], label: 'yield over 4%' },
   { f: [{ m: 'yield', op: '>', v: 7 }], label: 'yield over 7%' },
   { f: [{ m: 'vol', op: '<', v: 35 }], label: 'calm (swings under 35%)' },
   { f: [{ m: 'mom12', op: '>', v: 0 }], label: 'up on the year' },
+  { f: [], label: 'from the 3 best sectors', topSectors: 3 },
   {
     f: [
       { m: 'trend200', op: '>', v: 0 },
@@ -51,10 +56,11 @@ const FILTERS: { f: Filter[]; label: string }[] = [
 ];
 const HOLDS = [6, 10, 15];
 const EVERY: Strategy['every'][] = [1, 3, 6];
-const EXITS: { stop: number; exit200: boolean; label: string }[] = [
+const EXITS: { stop: number; exit200: boolean; pause?: number; label: string }[] = [
   { stop: 0, exit200: false, label: '' },
   { stop: 0.2, exit200: false, label: '20% stop' },
   { stop: 0, exit200: true, label: 'out under the 200-day' },
+  { stop: 0, exit200: false, pause: 0.4, label: 'cash in weak markets' },
 ];
 const EVERY_LABEL = { 1: 'monthly', 3: 'every 3 months', 6: 'every 6 months', 12: 'yearly' } as const;
 
@@ -82,6 +88,9 @@ export function ideas(setup: HuntSetup): Strategy[] {
               every,
               stop: x.stop,
               exit200: x.exit200,
+              ...(x.pause ? { pauseBelow: x.pause } : {}),
+              ...(f.topSectors ? { topSectors: f.topSectors } : {}),
+              cashEarns: true,
               perSector: 3,
               lump: 100000,
               monthly: 0,
@@ -151,5 +160,5 @@ export function summarise(all: HuntIdea[], topN = 12): HuntSummary {
 export function defaultSetup(lab: Lab, universe: Universe = 'all'): HuntSetup {
   const last = Number(lab.days[lab.days.length - 1].slice(0, 4));
   const from = earliestYear(lab);
-  return { universe, from, split: Math.max(from + 3, last - 3), tax: 'filer' };
+  return { v: HUNT_VERSION, universe, from, split: Math.max(from + 3, last - 3), tax: 'filer' };
 }

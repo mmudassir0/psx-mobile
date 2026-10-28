@@ -23,7 +23,12 @@ async function main() {
   for (const query of ['recomposition', 're-composition', 'KMI']) {
     const h = await fetchRaw('/announcements', { type: 'E', symbol: '', query, count: '100', offset: '0', date_from: '2016-01-01', date_to: '2030-12-31', page: 'annc' });
     for (const m of h.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
-      const cells = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) => c[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+      const cells = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) =>
+        c[1]
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      );
       const link = m[1].match(/href="(\/download\/attachment\/[^"]+\.pdf)"/)?.[1];
       const d = day(cells[0] ?? '');
       if (link && d) notices.set(link, { day: d, title: cells[2] ?? '' });

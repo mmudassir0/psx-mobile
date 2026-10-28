@@ -376,3 +376,51 @@ export function MixSection({ lab, strategies }: { lab: Lab; strategies: Strategy
     </Section>
   );
 }
+
+/** Your holdings with a selling rule added: what would it have changed? */
+export function RuleWhatIf({ lab, st }: { lab: Lab; st: Strategy }) {
+  const rows = useMemo(() => {
+    const base = { ...st, stop: 0, exit200: false, pauseBelow: undefined, cashEarns: true };
+    const v: [string, Strategy][] = [
+      ['Just holding them', base],
+      ['Sell at 20% under the best price', { ...base, stop: 0.2 }],
+      ['Sell under the 200-day average', { ...base, exit200: true }],
+      ['Cash in weak markets', { ...base, pauseBelow: 0.4 }],
+    ];
+    return v.map(([label, s]) => {
+      const r = runBacktest(lab, s);
+      return { label, cagr: r.stats.cagr, drop: r.stats.maxDrop };
+    });
+  }, [lab, st]);
+  return (
+    <Section title="With a selling rule">
+      <Panel style={{ paddingVertical: 4 }}>
+        <View style={{ flexDirection: 'row', paddingVertical: 8, gap: 6, borderBottomWidth: 1, borderBottomColor: colors.hairline }}>
+          <T v="label" style={{ flex: 1 }}>
+            Your holdings…
+          </T>
+          <T v="label" style={{ width: 66, textAlign: 'right' }}>
+            A year
+          </T>
+          <T v="label" style={{ width: 66, textAlign: 'right' }}>
+            Worst fall
+          </T>
+        </View>
+        {rows.map((r, i) => (
+          <View key={r.label} style={{ flexDirection: 'row', paddingVertical: 9, gap: 6, borderBottomWidth: i < rows.length - 1 ? 1 : 0, borderBottomColor: colors.hairline }}>
+            <T style={{ flex: 1, fontSize: 13.5, fontFamily: i === 0 ? fonts.bold : fonts.medium }}>{r.label}</T>
+            <T v="mono" style={{ width: 66, textAlign: 'right', fontSize: 13, color: changeColor(r.cagr - rows[0].cagr) }}>
+              {pc(r.cagr)}
+            </T>
+            <T v="mono" style={{ width: 66, textAlign: 'right', fontSize: 13, color: r.drop > rows[0].drop + 0.01 ? colors.up : colors.text2 }}>
+              {pc(r.drop, 0)}
+            </T>
+          </View>
+        ))}
+      </Panel>
+      <T v="caption" style={{ lineHeight: 17 }}>
+        The same stocks with a rule for selling; money from a sale waits in cash (earning money-market profit) until the next yearly check. Green: better than just holding. Information, not advice.
+      </T>
+    </Section>
+  );
+}

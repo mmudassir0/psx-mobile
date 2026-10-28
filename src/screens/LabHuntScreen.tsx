@@ -80,7 +80,7 @@ export default function LabHuntScreen() {
   const list = useMemo(() => (setup ? ideas(setup) : []), [setup]);
   const mine = saved[universe];
   const results = useMemo<HuntIdea[]>(() => {
-    if (!mine || !setup || mine.setup.split !== setup.split || mine.setup.from !== setup.from) return [];
+    if (!mine || !setup || mine.setup.split !== setup.split || mine.setup.from !== setup.from || mine.setup.v !== setup.v) return [];
     const byId = new Map(list.map((x) => [x.id, x]));
     return mine.rows.filter((r) => byId.has(r[0])).map((r) => ({ strategy: byId.get(r[0])!, train: { cagr: r[1], bench: r[2], drop: r[3] }, test: r[4] != null ? { cagr: r[4], bench: r[5]!, drop: r[6]! } : null }));
   }, [mine, setup, list]);
