@@ -536,7 +536,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
         options={[
           { key: 'holdings', label: 'Holdings' },
           { key: 'invest', label: 'Invest cash' },
-          { key: 'risk', label: 'Returns & risk' },
+          { key: 'risk', label: 'Returns' },
         ]}
         value={view}
         onChange={setView}

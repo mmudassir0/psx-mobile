@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import { fetchBoard, fetchIndices, fetchScreener, fetchSymbols } from '../psx/api';
 import type { BoardQuote, IndexQuote, ScreenerRow, Stock, SymbolInfo } from '../psx/types';
-import { isMarketOpen } from '../market-hours';
+import { haveFinalPrices, isMarketOpen, lastSessionEnd } from '../market-hours';
 import { loadCached, saveCached } from '../storage';
 import { logProblem } from '../log';
 
@@ -42,6 +42,8 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const busy = useRef(false);
   const lastAt = useRef(0);
   const failed = useRef(false);
+  /** when the prices on screen were fetched (for deciding whether a download is needed at all) */
+  const pricesAt = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
@@ -56,6 +58,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       saveCached('psx.indices', idx);
       saveCached('psx.board', brd);
       setUpdatedAt(Date.now());
+      pricesAt.current = Date.now();
       setError(null);
       failed.current = false;
 
@@ -82,6 +85,11 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       ]);
     } catch (e) {
       const msg = (e as Error).message || 'Could not reach PSX';
+      // after the close, prices already fetched since then are final: a failed check isn't worth a warning
+      if (haveFinalPrices(pricesAt.current)) {
+        failed.current = false;
+        return;
+      }
       setError(msg);
       // no signal is normal; anything else (PSX slow, changed or down) is worth a look later
       if (!failed.current && !/No connection/.test(msg)) logProblem('market prices', e);
@@ -96,16 +104,12 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   // Show the last saved snapshot instantly, then go to the network.
   useEffect(() => {
     (async () => {
-      const [idx, brd, syms, scr] = await Promise.all([
-        loadCached<IndexQuote[]>('psx.indices'),
-        loadCached<BoardQuote[]>('psx.board'),
-        loadCached<SymbolInfo[]>('psx.symbols'),
-        loadCached<ScreenerRow[]>('psx.screener'),
-      ]);
+      const [idx, brd, syms, scr] = await Promise.all([loadCached<IndexQuote[]>('psx.indices'), loadCached<BoardQuote[]>('psx.board'), loadCached<SymbolInfo[]>('psx.symbols'), loadCached<ScreenerRow[]>('psx.screener')]);
       if (idx) setIndices(idx.data);
       if (brd) {
         setBoard(brd.data);
         setUpdatedAt(brd.at);
+        pricesAt.current = brd.at;
       }
       if (syms) {
         setSymbols(syms.data);
@@ -116,6 +120,11 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
         screenerAt.current = scr.at;
       }
       if (brd || scr) setReady(true);
+      // market shut and the saved prices are from after the last close: they're final, no download needed
+      if (brd && haveFinalPrices(brd.at)) {
+        setReady(true);
+        return;
+      }
       refresh();
     })();
   }, [refresh]);
@@ -125,16 +134,20 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     const id = setInterval(() => {
       const active = AppState.currentState === 'active';
       if (active && isMarketOpen()) refresh();
-      // after a failed download, try again every minute until it works (the connection may be back)
-      else if (active && failed.current && Date.now() - lastAt.current > 60_000) refresh();
-      else setMarketOpen(isMarketOpen());
+      // after a failed download, try again every minute until it works, unless the prices on screen are already final
+      else if (active && failed.current && !haveFinalPrices(pricesAt.current) && Date.now() - lastAt.current > 60_000) refresh();
+      // the session just ended: one more download for the closing prices
+      else if (active && !failed.current && pricesAt.current != null && !haveFinalPrices(pricesAt.current) && !isMarketOpen() && Date.now() >= lastSessionEnd()) {
+        if (Date.now() - lastAt.current > 5 * 60_000) refresh();
+        else setMarketOpen(false);
+      } else setMarketOpen(isMarketOpen());
     }, LIVE_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
       // back in the app: prices move only while the market is open, so after the close
       // a quick look at the phone doesn't need another download
       const age = Date.now() - lastAt.current;
-      if (isMarketOpen() ? age > 20_000 : age > 15 * 60_000) refresh();
+      if (isMarketOpen() ? age > 20_000 : !haveFinalPrices(pricesAt.current) && age > 60_000) refresh();
       else setMarketOpen(isMarketOpen());
     });
     return () => {
@@ -146,10 +159,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const stocks = useMemo(() => mergeStocks(symbols, screener, board), [symbols, screener, board]);
   const bySymbol = useMemo(() => new Map(stocks.map((s) => [s.symbol, s])), [stocks]);
 
-  const value = useMemo(
-    () => ({ ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh }),
-    [ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh],
-  );
+  const value = useMemo(() => ({ ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh }), [ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

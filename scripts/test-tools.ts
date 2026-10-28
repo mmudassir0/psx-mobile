@@ -1345,6 +1345,17 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   check('held: one summary, lines once', ht.title === '2 alerts while you were away' && ht.body === 'FFC above 400\nOGDC under 200');
 }
 
+// market hours: final prices after the close
+{
+  const { lastSessionEnd, haveFinalPrices } = require('../src/market-hours');
+  const at = (s: string) => Date.parse(s + '+05:00');
+  check('session end: Wednesday evening is that day', lastSessionEnd(at('2026-10-28T20:00:00')) === at('2026-10-28T16:05:00'));
+  check('session end: Wednesday noon is Tuesday', lastSessionEnd(at('2026-10-28T12:00:00')) === at('2026-10-27T16:05:00'));
+  check('session end: Sunday is Friday (later close)', lastSessionEnd(at('2026-11-01T10:00:00')) === at('2026-10-30T17:05:00'));
+  check('final prices after the close', haveFinalPrices(at('2026-10-28T18:56:00'), at('2026-10-28T20:20:00')) && !haveFinalPrices(at('2026-10-28T15:00:00'), at('2026-10-28T20:20:00')));
+  check('not final while open', !haveFinalPrices(at('2026-10-28T11:00:00'), at('2026-10-28T11:05:00')));
+}
+
 if (failed) {
   console.log(`\n${failed} failed`);
   process.exit(1);

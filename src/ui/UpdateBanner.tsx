@@ -14,7 +14,7 @@ export function UpdateBanner() {
   const notes = latest.notes.split('\n')[0];
   return (
     <View style={styles.card}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', columnGap: 8, rowGap: 2 }}>
         <T style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.gold }}>Update available</T>
         <T v="caption">
           v{latest.version} · build {latest.build} · {mb(latest.size)}
@@ -39,7 +39,11 @@ export function UpdateBanner() {
       ) : (
         <Button small label={status === 'error' ? 'Try again' : 'Download and install'} onPress={download} />
       )}
-      {status === 'error' && error ? <T v="caption" style={{ color: colors.down }}>{error}</T> : null}
+      {status === 'error' && error ? (
+        <T v="caption" style={{ color: colors.down }}>
+          {error}
+        </T>
+      ) : null}
       {status === 'downloading' || status === 'error' || status === 'available' ? (
         <Pressable accessibilityRole="link" onPress={openInBrowser} hitSlop={8}>
           <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Download in browser instead ›</T>
@@ -75,14 +79,10 @@ export function VersionRow() {
         : status === 'available' || status === 'ready' || status === 'downloading'
           ? `Version ${latest?.version} (build ${latest?.build}) is ready above`
           : status === 'error'
-            ? error ?? 'Could not check'
+            ? (error ?? 'Could not check')
             : 'Check for updates';
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => check(true)}
-      style={({ pressed }) => [styles.version, pressed && { opacity: 0.7 }]}
-    >
+    <Pressable accessibilityRole="button" onPress={() => check(true)} style={({ pressed }) => [styles.version, pressed && { opacity: 0.7 }]}>
       <T v="caption">
         Sahm {VERSION}
         {BUILD ? ` · build ${BUILD}` : ''}
@@ -94,17 +94,19 @@ export function VersionRow() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  card: {
-    marginHorizontal: space.gutter,
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: colors.gold + '55',
-  },
-  track: { height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 3, backgroundColor: colors.gold },
-  version: { alignItems: 'center', gap: 2, paddingVertical: 8 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    card: {
+      marginHorizontal: space.gutter,
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      padding: 16,
+      gap: 10,
+      borderWidth: 1,
+      borderColor: colors.gold + '55',
+    },
+    track: { height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' },
+    fill: { height: 6, borderRadius: 3, backgroundColor: colors.gold },
+    version: { alignItems: 'center', gap: 2, paddingVertical: 8 },
+  }),
+);

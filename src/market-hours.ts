@@ -18,3 +18,21 @@ export function isMarketOpen(now = Date.now()): boolean {
   if (day === 5 && minutes > 12 * 60 + 15 && minutes < 14 * 60 + 15) return false;
   return minutes >= open && minutes <= close;
 }
+
+/** When the latest finished session ended (its close, plus a little for PSX to publish), at or before `now`. */
+export function lastSessionEnd(now = Date.now()): number {
+  const settle = 20; // minutes after the close for final prices
+  for (let back = 0; back < 8; back++) {
+    const t = now - back * 864e5;
+    const d = new Date(t + 5 * 3600_000);
+    const day = d.getUTCDay();
+    if (day === 0 || day === 6) continue;
+    const closeMin = (day === 5 ? 16 * 60 + 45 : 15 * 60 + 45) + settle;
+    const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - 5 * 3600_000 + closeMin * 60_000;
+    if (end <= now) return end;
+  }
+  return now - 7 * 864e5;
+}
+
+/** Prices fetched after the last session ended, while the market is shut: nothing newer will come until it opens. */
+export const haveFinalPrices = (updatedAt: number | null, now = Date.now()) => !isMarketOpen(now) && updatedAt != null && updatedAt >= lastSessionEnd(now);

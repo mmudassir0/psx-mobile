@@ -1,15 +1,5 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text as RNText,
-  TextProps,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text as RNText, TextProps, TextStyle, View, ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { changeColor, changeSoft, colors, fonts, tabular, themed } from '../theme';
 import { arrowPct } from '../format';
@@ -28,23 +18,20 @@ const variants: Record<Variant, TextStyle> = themed(() => ({
   monoXl: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text, ...tabular },
 }));
 
+/** Large system font sizes are honoured up to this much, so text still fits its boxes. */
+export const MAX_FONT_SCALE = 1.2;
+const shrink = { flexShrink: 1 } as const;
+
 export function T({ v = 'body', style, ...rest }: TextProps & { v?: Variant }) {
-  return <RNText {...rest} style={[variants[v], style]} />;
+  // flexShrink lets text in a row wrap within its box instead of running past it
+  return <RNText maxFontSizeMultiplier={MAX_FONT_SCALE} {...rest} style={[shrink, variants[v], style]} />;
 }
 
 export function Card({ style, children }: { style?: StyleProp<ViewStyle>; children: React.ReactNode }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-export function Change({
-  pct,
-  style,
-  pill,
-}: {
-  pct: number | null | undefined;
-  style?: StyleProp<TextStyle>;
-  pill?: boolean;
-}) {
+export function Change({ pct, style, pill }: { pct: number | null | undefined; style?: StyleProp<TextStyle>; pill?: boolean }) {
   if (pill) {
     return (
       <View style={[styles.pill, { backgroundColor: changeSoft(pct) }]}>
@@ -77,7 +64,9 @@ export function Badge({ label, tone = 'shariah' }: { label: string; tone?: 'shar
   const [fg, bg] = map[tone];
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
-      <RNText style={[styles.badgeText, { color: fg }]}>{label}</RNText>
+      <RNText maxFontSizeMultiplier={MAX_FONT_SCALE} style={[styles.badgeText, { color: fg }]}>
+        {label}
+      </RNText>
     </View>
   );
 }
@@ -117,37 +106,27 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={fg} />
       ) : (
-        <RNText style={{ color: fg, fontFamily: fonts.heavy, fontSize: small ? 14 : 16 }}>{label}</RNText>
+        <RNText maxFontSizeMultiplier={MAX_FONT_SCALE} style={{ color: fg, fontFamily: fonts.heavy, fontSize: small ? 14 : 16 }}>
+          {label}
+        </RNText>
       )}
     </Pressable>
   );
 }
 
-export function Segmented<K extends string>({
-  options,
-  value,
-  onChange,
-  colorFor,
-}: {
-  options: { key: K; label: string }[];
-  value: K;
-  onChange: (k: K) => void;
-  colorFor?: (k: K) => string;
-}) {
+export function Segmented<K extends string>({ options, value, onChange, colorFor }: { options: { key: K; label: string }[]; value: K; onChange: (k: K) => void; colorFor?: (k: K) => string }) {
   return (
     <View style={styles.segment} accessibilityRole="tablist">
       {options.map((o) => {
         const on = o.key === value;
         const activeBg = colorFor ? colorFor(o.key) : colors.line;
         return (
-          <Pressable
-            key={o.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(o.key)}
-            style={[styles.segmentItem, on && { backgroundColor: activeBg }]}
-          >
+          <Pressable key={o.key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(o.key)} style={[styles.segmentItem, on && { backgroundColor: activeBg }]}>
             <RNText
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
               style={{
                 fontFamily: fonts.bold,
                 fontSize: 13,
@@ -165,13 +144,10 @@ export function Segmented<K extends string>({
 
 export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress?: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: !!on }}
-      onPress={onPress}
-      style={[styles.chip, on && { backgroundColor: colors.shariahSoft, borderColor: colors.shariah }]}
-    >
-      <RNText style={{ fontFamily: fonts.bold, fontSize: 13, color: on ? colors.shariah : colors.muted }}>{label}</RNText>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={onPress} style={[styles.chip, on && { backgroundColor: colors.shariahSoft, borderColor: colors.shariah }]}>
+      <RNText maxFontSizeMultiplier={MAX_FONT_SCALE} style={{ fontFamily: fonts.bold, fontSize: 13, color: on ? colors.shariah : colors.muted }}>
+        {label}
+      </RNText>
     </Pressable>
   );
 }
@@ -189,7 +165,11 @@ export function Empty({ title, body }: { title: string; body?: string }) {
   return (
     <View style={{ padding: 28, alignItems: 'center', gap: 6 }}>
       <T v="title">{title}</T>
-      {body ? <T v="caption" style={{ textAlign: 'center', lineHeight: 18 }}>{body}</T> : null}
+      {body ? (
+        <T v="caption" style={{ textAlign: 'center', lineHeight: 18 }}>
+          {body}
+        </T>
+      ) : null}
     </View>
   );
 }
@@ -276,9 +256,7 @@ export function Icon({ name, size = 22, color = colors.text }: { name: IconName;
       {name === 'back' && <Path {...p} d="m15 5-7 7 7 7" />}
       {name === 'close' && <Path {...p} d="M6 6l12 12M18 6 6 18" />}
       {name === 'star' && <Path {...p} d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z" />}
-      {name === 'starFilled' && (
-        <Path fill={color} d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z" />
-      )}
+      {name === 'starFilled' && <Path fill={color} d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z" />}
       {name === 'refresh' && (
         <>
           <Path {...p} d="M20 11a8 8 0 1 0-2.3 5.7" />
@@ -312,73 +290,42 @@ export function Icon({ name, size = 22, color = colors.text }: { name: IconName;
   );
 }
 
-export type IconName =
-  | 'home'
-  | 'market'
-  | 'trade'
-  | 'portfolio'
-  | 'ai'
-  | 'search'
-  | 'back'
-  | 'close'
-  | 'star'
-  | 'starFilled'
-  | 'refresh'
-  | 'settings'
-  | 'link'
-  | 'doc'
-  | 'chevron';
+export type IconName = 'home' | 'market' | 'trade' | 'portfolio' | 'ai' | 'search' | 'back' | 'close' | 'star' | 'starFilled' | 'refresh' | 'settings' | 'link' | 'doc' | 'chevron';
 
-export function IconButton({
-  name,
-  label,
-  onPress,
-  color,
-  filled = true,
-}: {
-  name: IconName;
-  label: string;
-  onPress?: () => void;
-  color?: string;
-  filled?: boolean;
-}) {
+export function IconButton({ name, label, onPress, color, filled = true }: { name: IconName; label: string; onPress?: () => void; color?: string; filled?: boolean }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.iconButton, !filled && { backgroundColor: 'transparent' }, pressed && { opacity: 0.7 }]}
-    >
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6} style={({ pressed }) => [styles.iconButton, !filled && { backgroundColor: 'transparent' }, pressed && { opacity: 0.7 }]}>
       <Icon name={name} size={20} color={color} />
     </Pressable>
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.hairline },
-  badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, alignSelf: 'center' },
-  badgeText: { fontFamily: fonts.bold, fontSize: 11 },
-  pill: { minWidth: 76, paddingHorizontal: 8, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  button: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-  segment: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3, gap: 3 },
-  segmentItem: { flex: 1, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  chip: {
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    card: { backgroundColor: colors.surface, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.hairline },
+    badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, alignSelf: 'center' },
+    badgeText: { fontFamily: fonts.bold, fontSize: 11 },
+    pill: { minWidth: 76, paddingHorizontal: 8, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    button: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+    segment: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3, gap: 3 },
+    segmentItem: { flex: 1, minHeight: 36, paddingHorizontal: 4, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+    chip: {
+      height: 38,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.line,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);
