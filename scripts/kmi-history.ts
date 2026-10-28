@@ -94,7 +94,8 @@ async function main() {
   const result: Record<string, unknown> = { built: new Date().toISOString().slice(0, 10), events, now };
   for (const k of ['kmiall', 'kmi30'] as const) {
     const hist = membershipHistory(now[k], events[k], known);
-    result[k] = { from: events[k].map((e) => e.date).sort()[0] ?? null, spans: Object.fromEntries(spansOf(hist)) };
+    // the first change actually used: before it, the oldest list read is carried back
+    result[k] = { from: hist[1]?.from ?? null, spans: Object.fromEntries(spansOf(hist)) };
   }
   writeFileSync(out, JSON.stringify(result));
   console.log(`read ${read} notices (${scanned} of them scanned); KMI All Share from ${(result.kmiall as { from: string }).from}, KMI-30 from ${(result.kmi30 as { from: string }).from}`);

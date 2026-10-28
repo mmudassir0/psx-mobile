@@ -96,17 +96,30 @@ export function parseIndexNotice(text: string, noticeDay: string): IndexEvent | 
   return { date, in: [...new Set(ins)], out: [...new Set(outs)], ...(full ? { full: [...new Set(full)] } : {}), stated };
 }
 
+/**
+ * Older notices attach the whole recomposed list under a heading the reader takes for "incoming".
+ * When nothing went out and the "incoming" list is the size the notice says the index has, it is the whole list.
+ */
+export function asFull(e: IndexEvent): IndexEvent {
+  const total = e.stated?.total;
+  if (e.full || e.out.length || total == null || total < 40) return e;
+  if (Math.abs(e.in.length - total) > Math.max(4, total * 0.06)) return e;
+  if (e.stated?.added != null && Math.abs(e.in.length - e.stated.added) <= Math.max(4, e.stated.added * 0.15)) return e;
+  return { ...e, in: [], full: e.in };
+}
+
 /** Who was in the index from each date on, newest last: [from, members]. `now` is today's list. */
 export function membershipHistory(now: string[], events: IndexEvent[], known?: Set<string>): { from: string; members: string[] }[] {
   // words a column read can pick up ("FINAL", "ENDED") are dropped when the list of real symbols is known
   const keep = (l: string[]) => (known ? l.filter((s) => known.has(s)) : l);
-  const ev = [...events].map((e) => ({ ...e, in: keep(e.in), out: keep(e.out), ...(e.full ? { full: keep(e.full) } : {}) })).sort((a, b) => (a.date < b.date ? 1 : -1));
+  // counts are checked on the lists as read (companies delisted since are real, just not listed today); members are filtered after
+  const ev = [...events].map(asFull).sort((a, b) => (a.date < b.date ? 1 : -1));
   const out: { from: string; members: string[] }[] = [];
   let after = new Set(now);
   for (const e0 of ev) {
     const ok = trustworthy(e0, after.size);
     if (!ok.inOut && !ok.full) continue;
-    const e = { ...e0, in: ok.inOut ? e0.in : [], out: ok.inOut ? e0.out : [] };
+    const e = { ...e0, in: ok.inOut ? keep(e0.in) : [], out: ok.inOut ? keep(e0.out) : [], ...(e0.full ? { full: keep(e0.full) } : {}) };
     const set = ok.full ? new Set(e.full) : after;
     out.push({ from: e.date, members: [...set].sort() });
     const before = new Set(set);

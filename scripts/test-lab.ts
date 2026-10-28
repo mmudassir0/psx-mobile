@@ -18,7 +18,7 @@ import { worstFalls } from '../src/lab/stress';
 import { runMix } from '../src/lab/mix';
 import { isLabQuestion, labResultText } from '../src/lab/aiLab';
 import { breadthOf, inUniverse } from '../src/lab/engine';
-import { membershipHistory, parseIndexNotice, spansOf } from '../src/lab/kmiText';
+import { asFull, membershipHistory, parseIndexNotice, spansOf } from '../src/lab/kmiText';
 import { divCalendar } from '../src/lab/divCalendar';
 
 let failed = 0;
@@ -190,7 +190,7 @@ check('notice: closed on', parseDivNotice('Cash Dividend Rs. 2 per share. The Sh
 check('notice: closed for the period', parseDivNotice('Rs. 2 per share. Share transfer books shall be closed for the period from 15-03-2026 to 22-03-2026').closeFrom === '2026-03-15');
 check('notice: book closure line', parseDivNotice('Cash Dividend Rs 4 per share\nBook Closure: 07-04-2026 to 14-04-2026').closeFrom === '2026-04-07');
 check('notice: closed period is not a book closure', parseDivNotice('Rs 4 per share. The closed period from 1 March 2026 until the results').closeFrom === null);
-check('notice: face value hint',parseDivNotice('Final Cash Dividend @ Rs.15/- per share i.e. 150% for the').pctToo === 150);
+check('notice: face value hint', parseDivNotice('Final Cash Dividend @ Rs.15/- per share i.e. 150% for the').pctToo === 150);
 check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && firstDate('w.e.f 05-11-2018') === '2018-11-05');
 
 {
@@ -326,6 +326,10 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   );
   const sp = spansOf(h);
   check('membership walks back', h[0].members.join() === 'A,D,E' && sp.get('C')![0][0] === '2022-07-15' && sp.get('D')![0][1] === '2022-07-15');
+  const whole = Array.from({ length: 100 }, (_, i) => 'S' + i);
+  check('attached whole list read as incoming', asFull({ date: '2022-01-03', in: whole, out: [], stated: { total: 100, added: null, removed: 13 } }).full?.length === 100);
+  check('a real incoming list stays', !asFull({ date: '2022-07-15', in: whole.slice(0, 30), out: [], stated: { total: 252, added: 30, removed: 25 } }).full);
+  check('junk words dropped with the symbol list', membershipHistory(['A', 'B'], [{ date: '2023-01-01', in: [], out: [], full: ['A', 'FINAL', 'B'] }], new Set(['A', 'B']))[1].members.join() === 'A,B');
   const withSpans = buildLab({
     built: '2020-12-31',
     index: { KSE100: index, KMI30: index },
