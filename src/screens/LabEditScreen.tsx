@@ -289,6 +289,13 @@ export default function LabEditScreen() {
             <T v="caption" style={{ lineHeight: 17 }}>
               Money from an early sale waits in cash until the next check.
             </T>
+            <T v="caption">Sit in cash when the market is weak (fewer stocks than this above their 200-day average)</T>
+            <Chips
+              label="Weak market"
+              options={[0, 0.3, 0.4, 0.5].map((v) => ({ key: v, label: v ? `Under ${Math.round(v * 100)}%` : 'Off' }))}
+              value={s.pauseBelow ?? 0}
+              onChange={(v) => put({ pauseBelow: v || undefined })}
+            />
           </Panel>
         </Section>
 
@@ -313,6 +320,12 @@ export default function LabEditScreen() {
                 Count trading costs (0.2% each way)
               </T>
               <Switch value={s.costs} onValueChange={(costs) => put({ costs })} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
+            </View>
+            <View style={styles.line}>
+              <T v="body" style={{ flex: 1, fontSize: 14 }}>
+                Cash waiting earns money-market profit (about what such funds paid each year)
+              </T>
+              <Switch value={!!s.cashEarns} onValueChange={(v) => put({ cashEarns: v || undefined })} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
             </View>
             <T v="caption">Tax on dividends and gains</T>
             <Segmented

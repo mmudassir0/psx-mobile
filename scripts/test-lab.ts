@@ -15,6 +15,9 @@ import { labReportHtml } from '../src/lab/report';
 import { recentExits } from '../src/lab/follow';
 import { readCode, strategyCode } from '../src/lab/share';
 import { worstFalls } from '../src/lab/stress';
+import { runMix } from '../src/lab/mix';
+import { isLabQuestion, labResultText } from '../src/lab/aiLab';
+import { breadthOf } from '../src/lab/engine';
 
 let failed = 0;
 function check(name: string, ok: boolean, extra?: unknown) {
@@ -250,6 +253,39 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   const profit = r.bySymbol.reduce((a, x) => a + x.pnl, 0);
   check('stocks behind the result add up', Math.abs(profit - (r.stats.final - r.stats.put)) < 2, { profit, made: r.stats.final - r.stats.put });
   check('worst falls run', Array.isArray(worstFalls(lab, r)));
+}
+
+{
+  const a = S({ rank: 'mom12', hold: 1, every: 1 });
+  const b = S({ universe: 'kse100', rank: 'price', desc: false, hold: 1, every: 12 });
+  const mx = runMix(
+    lab,
+    [
+      { strategy: a, share: 1 },
+      { strategy: b, share: 1 },
+    ],
+    100000,
+    0,
+  )!;
+  const ra = runBacktest(lab, { ...a, lump: 50000, fromDay: lab.days[mx.start] });
+  check(
+    'mix: value is the sum of the pots',
+    Math.abs(mx.value[mx.value.length - 1] - (mx.parts[0].result.value[mx.value.length - 1] + mx.parts[1].result.value[mx.value.length - 1])) < 1 && Math.abs(mx.parts[0].result.stats.final - ra.stats.final) < 1,
+  );
+  check('mix: growth between the parts', mx.cagr <= Math.max(...mx.parts.map((p) => p.result.stats.cagr)) + 1e-9 && mx.cagr >= Math.min(...mx.parts.map((p) => p.result.stats.cagr)) - 1e-9);
+  const br = breadthOf(lab);
+  check(
+    'breadth between 0 and 1',
+    Array.from(br)
+      .filter((x) => !Number.isNaN(x))
+      .every((x) => x >= 0 && x <= 1),
+  );
+  const p = runBacktest(lab, S({ rank: 'mom12', hold: 2, every: 1, pauseBelow: 0.99 }));
+  check('pause: weak market sits in cash', p.stats.pauses >= 1 && p.trades.every((t) => (t.side === 'buy' ? true : t.why === 'pause' || t.why === 'rebalance' || t.why === 'stop')));
+  const cashOnly = runBacktest(lab, S({ filters: [{ m: 'price', op: '>', v: 1e9 }], cashEarns: true }));
+  check('cash earns', cashOnly.stats.final > 100000 * 1.1 && cashOnly.stats.cashProfit > 0);
+  check('lab questions spotted', isLabQuestion('How did buying banks after a 20% fall do since 2019?') && isLabQuestion('backtest dividend stocks') && !isLabQuestion('What is the P/E of FFC?'));
+  check('lab result text', labResultText(lab, a, runBacktest(lab, a)).includes('a year against'));
 }
 
 if (failed) {

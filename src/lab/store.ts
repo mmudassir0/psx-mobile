@@ -73,6 +73,17 @@ async function readSaved(): Promise<LabFile | null> {
   }
 }
 
+/** The lab if it's on the phone already (never downloads). */
+export async function peekLab(): Promise<Lab | null> {
+  if (lab) return lab;
+  const saved = await readSaved();
+  if (saved && !lab) {
+    lab = decodeLab(saved);
+    set({ lab, built: saved.built });
+  }
+  return lab;
+}
+
 /** Loads the saved copy, then downloads a newer one if it's more than a day old (or `force`). */
 export function loadLab(force = false): Promise<Lab | null> {
   if (loading) return loading;

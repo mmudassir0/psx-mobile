@@ -207,10 +207,14 @@ export default function LabResultScreen() {
                   v={res.stats.winRate != null ? `${Math.round(res.stats.winRate * 100)}%` : '–'}
                   sub={res.stats.avgHeld != null ? `held ${Math.round(res.stats.avgHeld / 21)} months on average` : undefined}
                 />
-                <Fig k="Dividends received" v={rs(res.stats.dividends)} sub="after tax" />
+                <Fig k="Dividends received" v={rs(res.stats.dividends)} sub={res.stats.cashProfit > 0 ? `and ${rs(res.stats.cashProfit)} profit on cash` : 'after tax'} />
                 <Fig k="Costs and tax" v={rs(res.stats.costs + res.stats.tax)} sub={`${rs(res.stats.costs)} costs`} />
                 <Fig k="Trades" v={fmtNum(res.trades.length, 0)} sub={`${res.stats.rebalances} checks`} />
-                <Fig k="Time in shares" v={`${Math.round(res.stats.invested * 100)}%`} sub="the rest waited in cash" />
+                <Fig
+                  k="Time in shares"
+                  v={`${Math.round(res.stats.invested * 100)}%`}
+                  sub={res.stats.pauses ? `in cash ${res.stats.pauses} time${res.stats.pauses > 1 ? 's' : ''} for a weak market` : 'the rest waited in cash'}
+                />
               </Panel>
             </Section>
 

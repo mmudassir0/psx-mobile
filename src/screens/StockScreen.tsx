@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { StockLabCard } from '../ui/StockLabCard';
 import { bookView } from '../analysis/book';
 import { pinStockWidget } from '../widget/update';
 import { MyLines } from '../ui/MyLines';
@@ -694,6 +695,7 @@ export default function StockScreen() {
         ) : null}
 
         <PeBandCard company={company} daily={daily} />
+        <StockLabCard symbol={symbol} />
 
         <Pressable accessibilityRole="button" onPress={() => nav.navigate('StockCard', { symbol })} style={{ paddingHorizontal: space.gutter }}>
           <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🖼️ Share as a picture</T>

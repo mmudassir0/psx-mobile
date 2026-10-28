@@ -10,6 +10,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { runBacktest, type Result, type Strategy } from '../lab/engine';
 import { TEMPLATES } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
+import { MixSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
 import { Chip, Empty, IconButton, Loading, Section, T } from '../ui/kit';
 
@@ -58,6 +59,7 @@ export default function LabCompareScreen() {
     };
   }, [runs, lab]);
 
+  const mixList = useMemo(() => (runs ?? []).map((x) => x.s), [runs]);
   const toggle = (id: string) => setIds((x) => (x.includes(id) ? x.filter((y) => y !== id) : x.length >= 3 ? [...x.slice(1), id] : [...x, id]));
   const rows: { k: string; f: (r: Result) => string; c?: (r: Result) => string }[] = [
     { k: 'A year', f: (r) => pc(r.stats.cagr), c: (r) => changeColor(r.stats.cagr) },
@@ -130,6 +132,7 @@ export default function LabCompareScreen() {
             <T v="caption" style={{ lineHeight: 17 }}>
               Each one over its own start date, after costs and tax. Tap a name above to add or take it off. Information, not advice.
             </T>
+            {runs.length > 1 ? <MixSection lab={lab} strategies={mixList} /> : null}
           </>
         )}
       </ScrollView>

@@ -48,6 +48,8 @@ export function strategyCode(s: Strategy): string {
     bench: s.bench,
     ...(s.sectors ? { sectors: s.sectors } : {}),
     ...(s.topSectors ? { topSectors: s.topSectors } : {}),
+    ...(s.pauseBelow ? { pauseBelow: s.pauseBelow } : {}),
+    ...(s.cashEarns ? { cashEarns: true } : {}),
   };
   return PREFIX + b64(utf8(JSON.stringify(keep)));
 }

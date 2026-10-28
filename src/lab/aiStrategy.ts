@@ -24,6 +24,7 @@ Fields:
 - perSector: most stocks from one sector, 0 for no limit
 - stop: sell when this far under the best price since buying, as a fraction (0.2 = 20%), 0 for none
 - exit200: true to sell when the price drops under its 200-day average
+- pauseBelow: to sit in cash in weak markets, the share of stocks above their 200-day average below which to hold no shares (e.g. 0.4); leave out otherwise
 - topSectors: for sector rotation, how many sectors to pick first (best average of the rank metric), then the best stocks in them; leave out otherwise
 - from: start year (2018 or later), lump: rupees to start, monthly: rupees a month (keep the current values unless asked)
 - note: one short sentence on anything you had to assume or couldn't do

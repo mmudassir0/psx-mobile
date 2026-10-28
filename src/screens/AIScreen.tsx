@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../store/user';
 import { VoiceButton } from '../ui/VoiceButton';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -8,6 +9,11 @@ import { fmtCompact, fmtPct } from '../format';
 import { useMarket } from '../store/market';
 import { usePicksFeed } from '../picks/feed';
 import { chatContext } from '../ai/chat';
+import { isLabQuestion, labResultText } from '../lab/aiLab';
+import { labPrompt, readLabReply } from '../lab/aiStrategy';
+import { loadLab, rememberHunted } from '../lab/store';
+import { runBacktest } from '../lab/engine';
+import { BASE } from '../lab/templates';
 import { PORTFOLIO_QUESTIONS, portfolioContext } from '../ai/portfolioContext';
 import { useHoldings } from '../portfolio/holdings';
 import { useReviews } from '../portfolio/useReviews';
@@ -23,12 +29,7 @@ import { shareToApp } from '../ai/share';
 import { Md } from '../ui/Md';
 import { Card, Icon, T } from '../ui/kit';
 
-const SUGGESTIONS = [
-  'How is the market doing today?',
-  'Compare LUCK and DGKC',
-  'Shariah banks with the best dividend yield',
-  'Which cement stock looks cheapest?',
-];
+const SUGGESTIONS = ['How is the market doing today?', 'Compare LUCK and DGKC', 'Shariah banks with the best dividend yield', 'Which cement stock looks cheapest?'];
 
 interface Turn {
   q: string;
@@ -39,10 +40,13 @@ interface Turn {
   prompt?: ChatMessage[];
   /** asked about my portfolio (follow-ups keep it) */
   mine?: boolean;
+  /** a backtest the lab ran for this question, to open */
+  lab?: string;
 }
 
 /** Market snapshot plus "Ask Sahm": questions answered by the online AI from live PSX data. */
 export default function AIScreen() {
+  const nav = useNavigation();
   const { stocks, indices, bySymbol } = useMarket();
   const { holdings } = useHoldings();
   const { watchlist: voiceWatch } = useUser();
@@ -58,7 +62,10 @@ export default function AIScreen() {
       if (list.length < 2) return;
       const tr = trackReturns(list);
       const kse = await cached<SeriesPoint[]>('eod:KSE100', 30 * 60_000, () => fetchSeries('eod', 'KSE100'), { persist: true }).catch(() => [] as SeriesPoint[]);
-      const ix = indexReturns(kse, tr.map((t) => t.day));
+      const ix = indexReturns(
+        kse,
+        tr.map((t) => t.day),
+      );
       setLast30({ you: tr[tr.length - 1].ret, kse: ix[ix.length - 1] });
     })().catch(() => {});
   }, []);
@@ -102,9 +109,34 @@ export default function AIScreen() {
     setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     try {
       const base = await chatContext(q, stocks, indices, market);
+      // a backtest question: the AI turns it into rules, the lab runs them, and the answer comes from the result
+      let labText: string | null = null;
+      if (isLabQuestion(q)) {
+        try {
+          patch(idx, { note: 'Building a backtest in the lab…' });
+          const lab = await loadLab();
+          if (lab) {
+            const start = { ...BASE, id: `ai-${Date.now().toString(36)}`, name: 'From the AI chat' };
+            const rr = await ai.run(
+              () => labPrompt(q, start),
+              () => {},
+              700,
+            );
+            const got = readLabReply(await rr.gen.done, start);
+            if (got) {
+              const res = runBacktest(lab, got.strategy);
+              rememberHunted([got.strategy]);
+              labText = labResultText(lab, got.strategy, res) + (got.note ? `\nAssumed: ${got.note}` : '');
+              patch(idx, { lab: got.strategy.id });
+            }
+          }
+        } catch {
+          // answer without the lab
+        }
+      }
       const mineText = mine && rows.length ? portfolioContext(rows, { tracked30: last30.you, index30: last30.kse }) : null;
-      const text = mineText ? `${mineText}\n\n${base.text}` : base.text;
-      const compact = mineText ? `${mineText}\n\n${base.compact}` : base.compact;
+      const text = [labText, mineText, base.text].filter(Boolean).join('\n\n');
+      const compact = [labText, mineText, base.compact].filter(Boolean).join('\n\n');
       const symbols = base.symbols;
       patch(idx, { status: 'writing', note: symbols.length ? `Read live data for ${symbols.join(', ')}` : undefined });
       const build = (tier: 'small' | 'large'): ChatMessage[] => {
@@ -153,13 +185,9 @@ export default function AIScreen() {
                   Today at a glance
                 </T>
                 <T v="body" style={{ color: colors.text2 }}>
-                  {kse
-                    ? `KSE-100 is ${kse.changePct != null && kse.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kse.changePct ?? 0), false)}`
-                    : 'Index data is loading'}
+                  {kse ? `KSE-100 is ${kse.changePct != null && kse.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kse.changePct ?? 0), false)}` : 'Index data is loading'}
                   {kmi ? `, KMI-30 ${kmi.changePct != null && kmi.changePct >= 0 ? 'up' : 'down'} ${fmtPct(Math.abs(kmi.changePct ?? 0), false)}.` : '.'}{' '}
-                  {snap.traded
-                    ? `${snap.up} of ${snap.traded} traded stocks rose, ${snap.down} fell. ${fmtCompact(snap.volume)} shares changed hands.`
-                    : ''}
+                  {snap.traded ? `${snap.up} of ${snap.traded} traded stocks rose, ${snap.down} fell. ${fmtCompact(snap.volume)} shares changed hands.` : ''}
                 </T>
                 {snap.traded ? (
                   <View style={{ gap: 6 }}>
@@ -175,8 +203,8 @@ export default function AIScreen() {
                 ) : null}
                 {snap.best ? (
                   <T v="caption" style={{ lineHeight: 18 }}>
-                    Biggest liquid gainer: {snap.best.symbol} {fmtPct(snap.best.changePct)}. Most traded: {snap.busiest?.symbol} (
-                    {fmtCompact(snap.busiest?.volume)} shares). Shariah stocks: {snap.shUp} of {snap.shariah} up.
+                    Biggest liquid gainer: {snap.best.symbol} {fmtPct(snap.best.changePct)}. Most traded: {snap.busiest?.symbol} ({fmtCompact(snap.busiest?.volume)} shares). Shariah stocks: {snap.shUp} of {snap.shariah}{' '}
+                    up.
                   </T>
                 ) : null}
               </Card>
@@ -210,13 +238,7 @@ export default function AIScreen() {
                   Ask Sahm
                 </T>
                 {SUGGESTIONS.map((sug) => (
-                  <Pressable
-                    key={sug}
-                    accessibilityRole="button"
-                    disabled={!ready}
-                    onPress={() => ask(sug)}
-                    style={({ pressed }) => [styles.suggestion, (!ready || pressed) && { opacity: 0.55 }]}
-                  >
+                  <Pressable key={sug} accessibilityRole="button" disabled={!ready} onPress={() => ask(sug)} style={({ pressed }) => [styles.suggestion, (!ready || pressed) && { opacity: 0.55 }]}>
                     <T v="body" style={{ fontSize: 14.5, flex: 1 }}>
                       {sug}
                     </T>
@@ -245,6 +267,11 @@ export default function AIScreen() {
                     <T v="caption" style={{ color: t.status === 'error' ? colors.downText : colors.faint }}>
                       {t.status === 'error' ? `Stopped: ${t.note}` : t.note}
                     </T>
+                  ) : null}
+                  {t.lab && t.status === 'done' ? (
+                    <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabResult', { id: t.lab! })} hitSlop={8}>
+                      <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🧪 Open this test in the lab ›</T>
+                    </Pressable>
                   ) : null}
                   {t.prompt && (t.status === 'done' || t.status === 'error') ? (
                     <Pressable accessibilityRole="button" onPress={() => shareToApp(t.prompt!, t.q)} hitSlop={8}>
@@ -292,13 +319,7 @@ export default function AIScreen() {
               <View style={{ width: 12, height: 12, borderRadius: 2, backgroundColor: colors.onGold }} />
             </Pressable>
           ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Send"
-              disabled={!ready || !input.trim()}
-              onPress={() => ask(input)}
-              style={[styles.send, (!ready || !input.trim()) && { opacity: 0.4 }]}
-            >
+            <Pressable accessibilityRole="button" accessibilityLabel="Send" disabled={!ready || !input.trim()} onPress={() => ask(input)} style={[styles.send, (!ready || !input.trim()) && { opacity: 0.4 }]}>
               <Icon name="chevron" size={20} color={colors.onGold} />
             </Pressable>
           )}

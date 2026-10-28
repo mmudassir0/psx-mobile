@@ -54,6 +54,10 @@ export interface Strategy {
   only?: string[];
   /** only stocks from these sectors (PSX's sector names) */
   sectors?: string[];
+  /** cash waiting between trades earns about what a money-market fund paid that year */
+  cashEarns?: boolean;
+  /** sit in cash while fewer than this share of liquid stocks are above their 200-day average (0.5 = half; 0 or none: never) */
+  pauseBelow?: number;
   /** sector rotation: first pick this many sectors with the best average of the ranking, then the best stocks in them */
   topSectors?: number;
 }
@@ -71,7 +75,9 @@ export const METRICS: Record<Metric, { label: string; unit: string; hint: string
   price: { label: 'Share price', unit: 'Rs', hint: 'The share price' },
 };
 
-export const COST_RATE = 0.002; // commission, CDC, SECP and spread, each way
+export const COST_RATE = 0.002;
+/** Roughly what a Pakistani money-market fund paid each year, after its fees (approximate, from the policy rate). */
+export const CASH_RATES: Record<string, number> = { '2016': 0.055, '2017': 0.055, '2018': 0.07, '2019': 0.11, '2020': 0.08, '2021': 0.07, '2022': 0.13, '2023': 0.2, '2024': 0.17, '2025': 0.11, '2026': 0.105 }; // commission, CDC, SECP and spread, each way
 const DIV_TAX = { filer: 0.15, nonfiler: 0.3, none: 0 };
 const CGT = { filer: 0.15, nonfiler: 0.3, none: 0 };
 const Y = 252;
@@ -83,7 +89,7 @@ export interface Trade {
   shares: number;
   price: number;
   /** why it was sold */
-  why?: 'rebalance' | 'stop' | 'trend' | 'end';
+  why?: 'rebalance' | 'stop' | 'trend' | 'end' | 'pause';
   /** for sales: gain against the average cost, as a fraction */
   gain?: number;
   /** for sales: days held */
@@ -140,6 +146,10 @@ export interface Result {
     /** average share of the portfolio in shares (not cash) */
     invested: number;
     rebalances: number;
+    /** times it went to cash for a weak market */
+    pauses: number;
+    /** profit on cash waiting (when cash earns) */
+    cashProfit: number;
   };
   /** what the strategy chose at its last rebalance, best first */
   lastPicks: string[];
@@ -342,6 +352,31 @@ export function benchDividends(lab: Lab): Record<'KSE100' | 'KMI30', Float64Arra
   return c;
 }
 
+/** Share of liquid stocks (Rs 3M a day) above their 200-day average, each day: the market's breadth. */
+const breadthCache = new WeakMap<Lab, Float64Array>();
+export function breadthOf(lab: Lab): Float64Array {
+  let b = breadthCache.get(lab);
+  if (b) return b;
+  const n = lab.days.length;
+  const up = new Float64Array(n);
+  const all = new Float64Array(n);
+  for (const s of lab.stocks) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      const c = s.close[i];
+      sum += c > 0 ? c : 0;
+      if (i >= 200) sum -= s.close[i - 200] > 0 ? s.close[i - 200] : 0;
+      const mi = lab.month[i] - 1;
+      if (i < 200 || !(c > 0) || !(s.close[i - 199] > 0) || mi < 0 || s.value[mi] < 3e6) continue;
+      all[i]++;
+      if (c > sum / 200) up[i]++;
+    }
+  }
+  b = Float64Array.from(all, (a, i) => (a >= 3 ? up[i] / a : NaN));
+  breadthCache.set(lab, b);
+  return b;
+}
+
 const prepCache = new WeakMap<Lab, Prep[]>();
 const prepsOf = (lab: Lab) => {
   let p = prepCache.get(lab);
@@ -383,6 +418,9 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
   let lastPicks: string[] = [];
   const monthlyFlows: number[] = [];
   let pendingSell = new Map<number, Trade['why']>();
+  let paused = false;
+  let cashProfit = 0;
+  let pauses = 0;
   let g = 1,
     bg = 1;
   let investedShare = 0;
@@ -455,6 +493,13 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
       monthlyFlows[mk] -= flow;
       if (idx[i] > 0) units += flow / idx[i];
     }
+    // cash earning money-market profit, day by day
+    if (st.cashEarns && cash > 0 && t > 0) {
+      const days = (Date.parse(lab.days[i]) - Date.parse(lab.days[i - 1])) / 864e5;
+      const earned = cash * (CASH_RATES[lab.days[i].slice(0, 4)] ?? 0.1) * (days / 365);
+      cash += earned;
+      cashProfit += earned;
+    }
     // dividends paid to holders on the ex-date
     for (const p of pos.values()) {
       const d = preps[p.k].divAt.get(i);
@@ -471,7 +516,15 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
     pendingSell = new Map();
     // rebalance on the first day of the month, every few months, from yesterday's closes
     const monthsIn = lab.month[i] - startMonth;
-    if (newMonth && monthsIn % st.every === 0) {
+    const weak = !!st.pauseBelow && newMonth && breadthOf(lab)[i - 1] < st.pauseBelow;
+    if (weak) {
+      // a weak market: out of everything until a month-start where it isn't
+      for (const k of [...pos.keys()]) sell(k, i, 'pause');
+      if (!paused) pauses++;
+      paused = true;
+      lastPicks = [];
+    } else if (newMonth && (monthsIn % st.every === 0 || paused)) {
+      paused = false;
       rebalances++;
       const picks = choose(lab, preps, st, i - 1);
       lastPicks = picks.map((x) => x.symbol);
@@ -496,7 +549,7 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
         const now = p ? p.shares * px : 0;
         if (now < x.target * (p ? 0.8 : 1)) buy(x.k, i, Math.min(cash, x.target - now));
       }
-    } else if (flow > 0 && pos.size) {
+    } else if (flow > 0 && pos.size && !paused) {
       // new money between rebalances goes to the current holdings, evenly
       const share = cash / pos.size;
       for (const k of [...pos.keys()]) buy(k, i, Math.min(cash, share));
@@ -631,6 +684,8 @@ export function runBacktest(lab: Lab, st: Strategy): Result {
       tax: taxPaid,
       invested: len ? investedShare / len : 0,
       rebalances,
+      pauses,
+      cashProfit,
     },
     lastPicks,
     bySymbol: [...money]

@@ -2,11 +2,26 @@
 import { useEffect, useState } from 'react';
 import { remind, cancelReminder, ensureReady, notifyNow } from '../notify';
 import { makePref } from '../prefs';
+import { snapshots, trackReturns } from '../portfolio/track';
 import type { TodoItem } from '../portfolio/summary';
 import { runBacktest } from './engine';
 import { checkDue, followPlan, nextCheck, recentExits } from './follow';
 
 const labAlertedPref = makePref<string[]>('ui.labAlerted', []);
+/** the last month a monthly review was sent for */
+const labMonthlyPref = makePref<string>('ui.labMonthly', '');
+
+/** growth over a month (YYYY-MM) of a series starting at `start` in the lab's days; null if the month isn't covered */
+function monthGrowth(days: string[], start: number, g: Float64Array, ym: string): number | null {
+  let a = -1,
+    b = -1;
+  for (let i = start; i < days.length; i++) {
+    if (days[i] < ym) a = i;
+    else if (days[i].startsWith(ym)) b = i;
+  }
+  if (a < start || b < 0) return null;
+  return g[b - start] / g[a - start] - 1;
+}
 import { findStrategy, labFollowPref, labStrategiesPref, loadLab } from './store';
 
 export function useLabFollow(owned: string[], enabled: boolean): TodoItem[] {
@@ -29,6 +44,13 @@ export function useLabFollow(owned: string[], enabled: boolean): TodoItem[] {
       const next = nextCheck(lab, st, today);
       if (await ensureReady(false))
         remind('lab-check', new Date(Date.parse(`${next}T09:30:00+05:00`)), `${st.name}: check day`, 'See what your lab strategy would hold now, and what to buy or sell to match it.', 'sahm://lab');
+      {
+        const y = Number(today.slice(0, 4)),
+          m = Number(today.slice(5, 7));
+        const first = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01`;
+        if (await ensureReady(false))
+          remind('lab-month', new Date(Date.parse(`${first}T09:15:00+05:00`)), `Monthly review: ${st.name}`, 'Last month for your lab strategy, the index and your portfolio. Open Sahm to see it.', 'sahm://home');
+      }
       const r = runBacktest(lab, st);
       if (!alive) return;
       // early sales in the last week (stop or trend): a todo, and one notification each
@@ -48,6 +70,27 @@ export function useLabFollow(owned: string[], enabled: boolean): TodoItem[] {
           fresh.map((x) => `${x.symbol} ${x.why === 'stop' ? 'hit its stop' : 'is under its 200-day average'} (${x.day})`).join('\n'),
           'sahm://lab',
         ).catch(() => {});
+      }
+      // the monthly review: last month for the strategy, the index and your portfolio, once at the start of a month
+      const lastMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 2, 15)).toISOString().slice(0, 7);
+      const lastDay = lab.days[lab.days.length - 1];
+      if (lastDay.slice(0, 7) > lastMonth && Number(today.slice(8, 10)) <= 7) {
+        const sg = monthGrowth(lab.days, r.start, r.growth, lastMonth);
+        const bg = monthGrowth(lab.days, r.start, r.benchGrowth, lastMonth);
+        if (sg != null && bg != null) {
+          const snaps = trackReturns((await snapshots()).filter((x) => x.value > 0));
+          const a = [...snaps].reverse().find((p) => p.day < lastMonth);
+          const b = [...snaps].reverse().find((p) => p.day.startsWith(lastMonth));
+          const mineG = a && b ? (1 + b.ret) / (1 + a.ret) - 1 : null;
+          const p1 = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;
+          const month = new Date(`${lastMonth}-15T00:00:00Z`).toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' });
+          const body = `${st.name} ${p1(sg)}, index ${p1(bg)}${mineG != null ? `, your portfolio ${p1(mineG)}` : ''}.`;
+          out.push({ key: `lab-month-${lastMonth}`, text: `${month} in review: ${body}`, tone: sg >= bg ? 'up' : 'plain', route: 'Lab' });
+          if ((await labMonthlyPref.get()) !== lastMonth) {
+            await labMonthlyPref.set(lastMonth);
+            notifyNow(`${month}: your lab strategy`, body, 'sahm://lab').catch(() => {});
+          }
+        }
       }
       if (!checkDue(lab, st, today)) return setItems(out);
       const p = followPlan(r.lastPicks, owned);

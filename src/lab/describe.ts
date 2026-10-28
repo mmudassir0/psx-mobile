@@ -56,6 +56,7 @@ export function describe(s: Strategy): string {
   if (s.stop > 0) sells.push(`${Math.round(s.stop * 100)}% under its best price`);
   if (s.exit200) sells.push('under its 200-day average');
   if (sells.length) parts.push(`Sold early when ${sells.join(' or ')}.`);
+  if (s.pauseBelow) parts.push(`All in cash while fewer than ${Math.round(s.pauseBelow * 100)}% of stocks are above their 200-day average.`);
   return parts.join(' ');
 }
 
@@ -94,6 +95,8 @@ export function toStrategy(x: unknown, id?: string): Strategy | null {
     bench: pick(o.bench, ['KSE100', 'KMI30'] as const, 'KSE100'),
     ...(Array.isArray(o.only) && o.only.every((x) => typeof x === 'string') ? { only: (o.only as string[]).slice(0, 80) } : {}),
     ...(Array.isArray(o.sectors) && o.sectors.length && o.sectors.every((x) => typeof x === 'string') ? { sectors: (o.sectors as string[]).slice(0, 40) } : {}),
+    ...(o.cashEarns === true ? { cashEarns: true } : {}),
+    ...(typeof o.pauseBelow === 'number' && o.pauseBelow > 0 && o.pauseBelow < 1 ? { pauseBelow: Math.round(o.pauseBelow * 100) / 100 } : {}),
     ...(typeof o.topSectors === 'number' && o.topSectors >= 1 ? { topSectors: Math.min(10, Math.round(o.topSectors)) } : {}),
   };
 }

@@ -10,6 +10,8 @@ import { runBacktest, type Result, type Strategy } from '../lab/engine';
 import { rollOne, rollStarts, summariseRolling, type RollRow } from '../lab/rolling';
 import { labReportHtml } from '../lab/report';
 import { worstFalls } from '../lab/stress';
+import { runMix } from '../lab/mix';
+import { LabChart } from './LabChart';
 import { strategyCode } from '../lab/share';
 import { describe } from '../lab/describe';
 import { snapshots, trackReturns } from '../portfolio/track';
@@ -305,5 +307,72 @@ export function ShareCodeButton({ st }: { st: Strategy }) {
         Share.share({ message: `My Sahm backtest strategy "${st.name}": ${describe(st)}\n\nOpen Sahm → Backtesting lab → Open a code, and paste:\n${code}` }).catch(() => {});
       }}
     />
+  );
+}
+
+/** Put the compared strategies together, each with a share of the money. */
+export function MixSection({ lab, strategies }: { lab: Lab; strategies: Strategy[] }) {
+  const [parts, setParts] = useState<number[]>(strategies.map(() => 1));
+  useEffect(() => setParts(strategies.map(() => 1)), [strategies]);
+  const mix = useMemo(
+    () =>
+      strategies.length > 1
+        ? runMix(
+            lab,
+            strategies.map((s, k) => ({ strategy: s, share: parts[k] ?? 1 })),
+            100000,
+            10000,
+          )
+        : null,
+    [lab, strategies, parts],
+  );
+  if (!mix) return null;
+  const total = parts.reduce((a, b) => a + b, 0) || 1;
+  const days = lab.days.slice(mix.start, mix.start + mix.growth.length);
+  const best = mix.parts.reduce((a, p) => (p.result.stats.maxDrop > a ? p.result.stats.maxDrop : a), -1);
+  return (
+    <Section title="Put them together">
+      <Panel style={{ paddingVertical: 12, gap: 10 }}>
+        {strategies.map((s, k) => (
+          <View key={s.id} style={{ gap: 4 }}>
+            <T style={{ fontFamily: fonts.semibold, fontSize: 13.5 }} numberOfLines={1}>
+              {s.name}: {Math.round(((parts[k] ?? 0) / total) * 100)}% of the money
+            </T>
+            <Segmented
+              options={[
+                { key: '0', label: 'None' },
+                { key: '1', label: '1 part' },
+                { key: '2', label: '2 parts' },
+                { key: '3', label: '3 parts' },
+              ]}
+              value={String(parts[k] ?? 1) as '0' | '1' | '2' | '3'}
+              onChange={(v) => setParts((p) => p.map((x, j) => (j === k ? Number(v) : x)))}
+            />
+          </View>
+        ))}
+        <LabChart
+          days={days}
+          log
+          fmt={(v) => v.toFixed(0)}
+          series={[
+            { name: 'The mix', values: Float64Array.from(mix.growth, (v) => v * 100), color: colors.gold, width: 2.2 },
+            ...mix.parts.map((p, k) => ({
+              name: p.name,
+              values: Float64Array.from(p.result.growth.subarray(0, mix.growth.length), (v) => v * 100),
+              color: [colors.shariah, colors.up, colors.downText][k % 3],
+              width: 1.2,
+            })),
+            { name: 'Index', values: Float64Array.from(mix.benchGrowth, (v) => v * 100), color: colors.muted, width: 1.2, dash: '4 3' },
+          ]}
+        />
+        <T style={{ fontFamily: fonts.bold, fontSize: 15, lineHeight: 21 }}>
+          {pc(mix.cagr)} a year, worst fall {pc(mix.maxDrop, 0)} (index {pc(mix.benchCagr)}).
+        </T>
+        <T v="caption" style={{ lineHeight: 17 }}>
+          From {days[0]}, Rs 100,000 to start and Rs 10,000 a month split by the parts above, each part run on its own (money never moves between them).{' '}
+          {mix.maxDrop > best + 0.02 ? 'The mix fell less at its worst than any one of them alone: that is what spreading buys you.' : 'Here the mix didn’t fall less than the steadiest one alone.'}
+        </T>
+      </Panel>
+    </Section>
   );
 }
