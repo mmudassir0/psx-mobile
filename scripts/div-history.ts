@@ -253,6 +253,8 @@ async function main() {
           const t1 = Date.now();
           const text = await readPdf(n.pdf, tmp);
           const d = parseDivNotice(text);
+          if (process.env.DUMP && d.dps == null && d.pct == null && !d.nil)
+            console.log(`    ---- ${n.day} ${n.pdf}\n${text.split('\n').filter((l) => /dividend|per share|closed|book/i.test(l)).slice(0, 12).map((l) => '      | ' + l.trim().slice(0, 160)).join('\n')}`);
           if (process.env.ONLY)
             console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} bc ${d.closeFrom ?? '-'}`);
           return { n, d };

@@ -51,6 +51,7 @@ jobs:
           SHARDS: '12'
           ONLY: ${{ inputs.only }}
           VALIDATE: ${{ inputs.validate && '1' || '' }}
+          DUMP: ${{ inputs.validate && '1' || '' }}
         run: npx tsx scripts/div-history.ts /tmp/state /tmp/picks/cache 2>&1 | tee /tmp/state/log-${{ matrix.shard }}.txt
       - uses: actions/upload-artifact@v4
         if: always()
