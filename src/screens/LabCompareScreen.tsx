@@ -1,5 +1,6 @@
 /** Up to three strategies side by side: growth of Rs 100, falls and the key numbers. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { runCached } from '../lab/cache';
 import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -7,7 +8,7 @@ import type { RootParams } from '../nav/types';
 import { changeColor, colors, fonts, space, themed } from '../theme';
 import { findStrategy, holdingsStrategy, labStrategiesPref, useLab } from '../lab/store';
 import { useHoldings } from '../portfolio/holdings';
-import { runBacktest, type Result, type Strategy } from '../lab/engine';
+import type { Result, Strategy } from '../lab/engine';
 import { TEMPLATES } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
 import { MixSection } from '../ui/LabExtras';
@@ -34,7 +35,7 @@ export default function LabCompareScreen() {
       const out: { s: Strategy; r: Result }[] = [];
       for (const id of ids) {
         const s = findStrategy(id, mine);
-        if (s) out.push({ s, r: runBacktest(lab, s) });
+        if (s) out.push({ s, r: runCached(lab, s) });
       }
       setRuns(out);
     });

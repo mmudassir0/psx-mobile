@@ -1,5 +1,6 @@
 /** One strategy replayed: the money over time against the index, falls, each year, trades, and what it holds now. */
 import React, { useEffect, useMemo, useState } from 'react';
+import { runCached } from '../lab/cache';
 import { InteractionManager, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -8,9 +9,9 @@ import { changeColor, colors, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtNum } from '../format';
 import { findStrategy, labFollowPref, labStrategiesPref, setDraft, useLab } from '../lab/store';
 import { ensureReady } from '../notify';
-import { runBacktest, type Result, type Strategy } from '../lab/engine';
+import type { Result, Strategy } from '../lab/engine';
 import { describe } from '../lab/describe';
-import { robustness, type Variant } from '../lab/robust';
+import { runVariant, variantsOf, type Variant } from '../lab/robust';
 import { newId } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
 import { RuleWhatIf, ContributorsSection, RealSection, ReportButton, RollingSection, ShareCodeButton, StressSection } from '../ui/LabExtras';
@@ -49,12 +50,26 @@ export default function LabResultScreen() {
     if (!lab || !st) return;
     setRes(null);
     setVariants(null);
+    let cancelled = false;
     const task = InteractionManager.runAfterInteractions(() => {
-      const r = runBacktest(lab, st);
+      const r = runCached(lab, st);
       setRes(r);
-      setTimeout(() => setVariants(robustness(lab, st, r)), 50);
+      // the changed versions one at a time, with a pause between, so scrolling stays smooth
+      (async () => {
+        const out: Variant[] = [{ label: 'As you set it', cagr: r.stats.cagr, bench: r.stats.benchCagr }];
+        for (const [label, v] of variantsOf(lab, st)) {
+          await new Promise((ok) => setTimeout(ok, 60));
+          if (cancelled) return;
+          const x = runVariant(lab, label, v, runCached);
+          if (x) out.push(x);
+        }
+        if (!cancelled) setVariants(out);
+      })();
     });
-    return () => task.cancel();
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lab, st && JSON.stringify(st)]);
 

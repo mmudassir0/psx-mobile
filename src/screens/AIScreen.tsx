@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { runCached } from '../lab/cache';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../store/user';
 import { VoiceButton } from '../ui/VoiceButton';
@@ -12,7 +13,6 @@ import { chatContext } from '../ai/chat';
 import { isLabQuestion, labResultText } from '../lab/aiLab';
 import { labPrompt, readLabReply } from '../lab/aiStrategy';
 import { labAskedPref, loadLab, rememberHunted } from '../lab/store';
-import { runBacktest } from '../lab/engine';
 import { BASE } from '../lab/templates';
 import { PORTFOLIO_QUESTIONS, portfolioContext } from '../ai/portfolioContext';
 import { useHoldings } from '../portfolio/holdings';
@@ -124,7 +124,7 @@ export default function AIScreen() {
             );
             const got = readLabReply(await rr.gen.done, start);
             if (got) {
-              const res = runBacktest(lab, got.strategy);
+              const res = runCached(lab, got.strategy);
               rememberHunted([got.strategy]);
               const asked = await labAskedPref.get();
               await labAskedPref.set([{ q, at: new Date().toISOString().slice(0, 10), strategy: { ...got.strategy, name: q.length > 40 ? `${q.slice(0, 38)}…` : q } }, ...asked].slice(0, 20));

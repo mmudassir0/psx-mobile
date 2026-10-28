@@ -1,6 +1,6 @@
 /** Backtesting lab: test an investing rule on ten years of PSX prices before using real money. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { InteractionManager, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, space, themed } from '../theme';
@@ -8,7 +8,12 @@ import { fmtDay } from '../format';
 import { findStrategy, holdingsStrategy, labAskedPref, labFollowPref, labStrategiesPref, rememberHunted, setDraft, useLab } from '../lab/store';
 import { readCode } from '../lab/share';
 import { useHoldings } from '../portfolio/holdings';
-import { runBacktest, type Strategy } from '../lab/engine';
+import type { Strategy } from '../lab/engine';
+import { runCached, strategyKey } from '../lab/cache';
+import { makePref } from '../prefs';
+
+/** the figures shown on this list, saved so the lab opens with them (cleared when new data comes) */
+const labQuickPref = makePref<{ built: string; rows: Record<string, [number, number]> }>('ui.labQuick', { built: '', rows: {} });
 import { TEMPLATES } from '../lab/templates';
 import { describe } from '../lab/describe';
 import { Panel } from '../ui/bits';
@@ -66,22 +71,38 @@ export default function LabScreen() {
   useEffect(() => {
     if (!lab) return;
     let alive = true;
-    const task = InteractionManager.runAfterInteractions(() => {
+    (async () => {
+      // figures saved from last time for the same data show at once; only new or changed strategies are worked out,
+      // one at a time with a pause between, so the screen stays responsive
+      const saved = await labQuickPref.get();
+      const keep = saved.built === lab.built ? saved.rows : {};
       const out: Record<string, { cagr: number; bench: number }> = {};
       for (const s of all) {
+        const k = strategyKey(s);
+        if (keep[k]) out[s.id] = { cagr: keep[k][0], bench: keep[k][1] };
+      }
+      if (alive) setQuick({ ...out });
+      const rows: Record<string, [number, number]> = { ...keep };
+      for (const s of all) {
         if (!alive) return;
+        const k = strategyKey(s);
+        if (keep[k]) continue;
+        await new Promise((r) => setTimeout(r, 30));
         try {
-          const r = runBacktest(lab, s);
+          const r = runCached(lab, s);
           out[s.id] = { cagr: r.stats.cagr, bench: r.stats.benchCagr };
+          rows[k] = [r.stats.cagr, r.stats.benchCagr];
+          if (alive) setQuick({ ...out });
         } catch {
           // shown without a figure
         }
       }
-      if (alive) setQuick(out);
-    });
+      // keep the saved figures to the strategies that still exist
+      const live = new Set(all.map(strategyKey));
+      await labQuickPref.set({ built: lab.built, rows: Object.fromEntries(Object.entries(rows).filter(([k]) => live.has(k))) });
+    })().catch(() => {});
     return () => {
       alive = false;
-      task.cancel();
     };
   }, [lab, all]);
 

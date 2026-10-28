@@ -10,6 +10,7 @@ import { runBacktest, type Result, type Strategy } from '../lab/engine';
 import { rollOne, rollStarts, summariseRolling, type RollRow } from '../lab/rolling';
 import { labReportHtml } from '../lab/report';
 import { worstFalls } from '../lab/stress';
+import { runCached } from '../lab/cache';
 import { runMix } from '../lab/mix';
 import { LabChart } from './LabChart';
 import { strategyCode } from '../lab/share';
@@ -388,7 +389,7 @@ export function RuleWhatIf({ lab, st }: { lab: Lab; st: Strategy }) {
       ['Cash in weak markets', { ...base, pauseBelow: 0.4 }],
     ];
     return v.map(([label, s]) => {
-      const r = runBacktest(lab, s);
+      const r = runCached(lab, s);
       return { label, cagr: r.stats.cagr, drop: r.stats.maxDrop };
     });
   }, [lab, st]);

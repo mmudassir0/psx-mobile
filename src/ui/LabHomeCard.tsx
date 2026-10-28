@@ -1,10 +1,10 @@
 /** Home: the lab strategy you follow, this month and since you started following, against your portfolio and the index. */
 import React, { useEffect, useState } from 'react';
+import { runCached } from '../lab/cache';
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, themed } from '../theme';
 import { findStrategy, labFollowPref, labStrategiesPref, loadLab } from '../lab/store';
-import { runBacktest } from '../lab/engine';
 import { snapshots, trackReturns } from '../portfolio/track';
 import { T } from './kit';
 
@@ -36,7 +36,7 @@ export function LabHomeCard({ padStyle }: { padStyle?: StyleProp<ViewStyle> }) {
       const st = findStrategy(follow.id, mine);
       const lab = st ? await loadLab().catch(() => null) : null;
       if (!lab || !st || !alive) return;
-      const r = runBacktest(lab, st);
+      const r = runCached(lab, st);
       const last = lab.days[lab.days.length - 1];
       const monthStart = `${last.slice(0, 7)}-01`;
       const snaps = trackReturns((await snapshots()).filter((x) => x.value > 0));

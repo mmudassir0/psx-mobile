@@ -13,6 +13,7 @@ import { logProblem } from '../log';
 import { decodeLab, isLabFile, type Lab, type LabFile } from './data';
 import type { Strategy } from './engine';
 import { BASE, TEMPLATES } from './templates';
+import { onSlowRun } from './cache';
 
 export const labStrategiesPref = makePref<Strategy[]>('user.labStrategies', []);
 /** backtests built from questions in the AI chat, newest first */
@@ -48,6 +49,8 @@ export function findStrategy(id: string, mine: Strategy[]): Strategy | null {
   if (hunted.has(id)) return hunted.get(id)!;
   return mine.find((s) => s.id === id) ?? TEMPLATES.find((t) => t.strategy.id === id)?.strategy ?? null;
 }
+
+onSlowRun((ms, st) => logProblem('lab', new Error(`A backtest took ${(ms / 1000).toFixed(1)}s (${st.universe}, hold ${st.hold}, every ${st.every} months)`)));
 
 const FILE = Platform.OS === 'web' ? null : `${FileSystem.documentDirectory}lab.json`;
 let lab: Lab | null = null;

@@ -1,10 +1,10 @@
 /** Home's reminder for a followed lab strategy: on check days, what it holds now and which you don't own. */
 import { useEffect, useState } from 'react';
+import { runCached } from './cache';
 import { remind, cancelReminder, ensureReady, notifyNow } from '../notify';
 import { makePref } from '../prefs';
 import { snapshots, trackReturns } from '../portfolio/track';
 import type { TodoItem } from '../portfolio/summary';
-import { runBacktest } from './engine';
 import { checkDue, followPlan, nextCheck, recentExits } from './follow';
 
 const labAlertedPref = makePref<string[]>('ui.labAlerted', []);
@@ -51,7 +51,7 @@ export function useLabFollow(owned: string[], enabled: boolean): TodoItem[] {
         if (await ensureReady(false))
           remind('lab-month', new Date(Date.parse(`${first}T09:15:00+05:00`)), `Monthly review: ${st.name}`, 'Last month for your lab strategy, the index and your portfolio. Open Sahm to see it.', 'sahm://home');
       }
-      const r = runBacktest(lab, st);
+      const r = runCached(lab, st);
       if (!alive) return;
       // early sales in the last week (stop or trend): a todo, and one notification each
       const exits = recentExits(lab, r.trades, 5, r.pending);
