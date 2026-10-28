@@ -1,11 +1,10 @@
 /** A tax-year statement: shares sold with gains and capital gains tax, cash dividends with tax withheld; shared as a PDF. */
+import { sharePdf } from '../ui/pdf';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Explain } from '../ui/Explain';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtDay, fmtNum } from '../format';
 import { useHoldings } from '../portfolio/holdings';
@@ -62,11 +61,7 @@ export default function TaxStatementScreen() {
     setMsg(null);
     try {
       const html = statementHtml(st, { name, status, made: fmtDay(Date.now()) });
-      if (Platform.OS === 'web') await Print.printAsync({ html });
-      else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Sahm tax year ${st.year}`, UTI: 'com.adobe.pdf' });
-      }
+      await sharePdf(html, `Tax year ${st.year}`);
     } catch (e) {
       logProblem('tax statement PDF', e);
       setMsg((e as Error).message || "Couldn't make the PDF");
@@ -138,7 +133,11 @@ export default function TaxStatementScreen() {
               </T>
             )}
           </Panel>
-          {st.sales.length ? <T v="caption">Gains {rs(st.gains)} · losses {rs(st.losses)}, set off against the gains before tax.</T> : null}
+          {st.sales.length ? (
+            <T v="caption">
+              Gains {rs(st.gains)} · losses {rs(st.losses)}, set off against the gains before tax.
+            </T>
+          ) : null}
         </Section>
 
         <Section title={`Cash dividends (${st.dividends.length})`}>
@@ -173,8 +172,8 @@ export default function TaxStatementScreen() {
         </Section>
         <T v="caption" style={{ lineHeight: 18 }}>
           {st.assumed.length ? `* Shares at book closure aren't known for ${st.assumed.join(', ')} (no trades or daily snapshot from then), so today's holding is used. ` : ''}
-          Sales are the ones recorded in Sahm; dividends cover the stocks you hold now. Capital gains tax is an estimate: NCCPL works out and
-          collects the real figure, and your broker's and NCCPL's annual statements are the official record for your return.
+          Sales are the ones recorded in Sahm; dividends cover the stocks you hold now. Capital gains tax is an estimate: NCCPL works out and collects the real figure, and your broker's and NCCPL's annual statements are
+          the official record for your return.
         </T>
       </ScrollView>
     </SafeAreaView>

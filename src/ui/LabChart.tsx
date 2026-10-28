@@ -1,5 +1,5 @@
 /** A line chart for the lab: two or three series over the years, drag to read any day. */
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { colors, fonts } from '../theme';
@@ -35,6 +35,7 @@ export function LabChart({
 }) {
   const [w, setW] = useState(320);
   const [at, setAt] = useState<number | null>(null);
+  const drag = useRef<{ x: number; y: number; sideways: boolean } | null>(null);
   const n = days.length;
   const step = Math.max(1, Math.ceil(n / MAX_PTS));
   const idx = useMemo(() => {
@@ -114,12 +115,20 @@ export function LabChart({
       </View>
       <View
         onLayout={(e: LayoutChangeEvent) => setW(Math.max(200, e.nativeEvent.layout.width))}
+        // a tap or a sideways drag reads the chart; an up-or-down swipe is handed back to the page so it still scrolls
         onStartShouldSetResponder={() => true}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={(e) => onTouch(e.nativeEvent.locationX)}
-        onResponderMove={(e) => onTouch(e.nativeEvent.locationX)}
+        onResponderGrant={(e) => {
+          drag.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, sideways: false };
+          onTouch(e.nativeEvent.locationX);
+        }}
+        onResponderMove={(e) => {
+          const d = drag.current;
+          if (d && !d.sideways && Math.abs(e.nativeEvent.pageX - d.x) > 8 && Math.abs(e.nativeEvent.pageX - d.x) > Math.abs(e.nativeEvent.pageY - d.y)) d.sideways = true;
+          onTouch(e.nativeEvent.locationX);
+        }}
         onResponderRelease={() => setAt(null)}
-        onResponderTerminationRequest={() => false}
+        onResponderTerminate={() => setAt(null)}
+        onResponderTerminationRequest={() => !drag.current?.sideways}
         accessibilityLabel={`Chart of ${series.map((s) => s.name).join(' and ')}`}
       >
         <Svg width={w} height={H}>

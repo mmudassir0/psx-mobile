@@ -317,7 +317,7 @@ export default function HomeScreen() {
       case 'tools':
         return (
           <View style={styles.pad}>
-            <ToolsGrid />
+            <ToolsGrid short />
           </View>
         );
     }
@@ -472,7 +472,7 @@ export default function HomeScreen() {
           </>
         ) : layout !== 'menu' ? (
           <View style={styles.pad}>
-            <ToolsGrid />
+            <ToolsGrid short />
           </View>
         ) : null}
 

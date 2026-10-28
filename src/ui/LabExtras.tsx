@@ -1,9 +1,8 @@
 /** Extra sections on a lab result: every start date, against your real portfolio, and the PDF report. */
+import { sharePdf } from './pdf';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutChangeEvent, Platform, Share, View } from 'react-native';
+import { LayoutChangeEvent, Share, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { changeColor, colors, fonts } from '../theme';
 import type { Lab } from '../lab/data';
 import { runBacktest, type Result, type Strategy } from '../lab/engine';
@@ -178,12 +177,7 @@ export function ReportButton({ lab, st, res }: { lab: Lab; st: Strategy; res: Re
     setMsg(null);
     try {
       const html = labReportHtml(lab, st, res, new Date().toISOString().slice(0, 10));
-      if (Platform.OS === 'web') {
-        await Print.printAsync({ html });
-      } else {
-        const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `${st.name}: lab report`, UTI: 'com.adobe.pdf' });
-      }
+      await sharePdf(html, `${st.name} lab report`, { width: 595, height: 842 });
     } catch (e) {
       logProblem('lab report', e);
       setMsg((e as Error).message);

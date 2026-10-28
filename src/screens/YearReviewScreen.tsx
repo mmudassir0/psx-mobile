@@ -1,10 +1,9 @@
 /** The tax year on one page: return against the index, best and worst holdings, income, tax and your decisions; shared as a PDF. */
+import { sharePdf } from '../ui/pdf';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtDay, fmtNum } from '../format';
 import { useHoldings } from '../portfolio/holdings';
@@ -99,11 +98,7 @@ export default function YearReviewScreen() {
     setMsg(null);
     try {
       const html = reviewHtml(r, { name, bench: BENCH_LABEL[bench], made: fmtDay(Date.now()) });
-      if (Platform.OS === 'web') await Print.printAsync({ html });
-      else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Sahm year in review ${r.year}`, UTI: 'com.adobe.pdf' });
-      }
+      await sharePdf(html, `Year in review ${r.year}`);
     } catch (e) {
       logProblem('year review PDF', e);
       setMsg((e as Error).message || "Couldn't make the PDF");
