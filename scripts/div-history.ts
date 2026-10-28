@@ -268,6 +268,8 @@ async function main() {
       const fvs = read.filter((x) => x.d?.dps && x.d.pctToo).map((x) => Math.round((x.d!.dps! / x.d!.pctToo!) * 100 * 100) / 100);
       const fv = [10, 5, 2, 1, 100].find((f) => fvs.filter((v) => Math.abs(v - f) < 0.01).length > fvs.length / 2) ?? 10;
       const raw = rawCloses(await retry(() => fetchRaw('/historical', { month: '0', year: '0', symbol: sym })));
+      // without prices the yields can't be worked out: leave the company for the next run rather than save it empty
+      if (raw.size < 100) throw new Error('no price history from PSX');
       const days = [...raw.keys()].sort();
       const found: { day: string; dps: number; bc: string | null }[] = [];
       for (const x of read) {
