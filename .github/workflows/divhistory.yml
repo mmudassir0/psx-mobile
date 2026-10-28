@@ -76,12 +76,18 @@ jobs:
           cd /tmp/out && git init -q && git checkout -q -b probe
           git config user.name "probe" && git config user.email "probe@users.noreply.github.com"
           git add . && git commit -qm "Dividend test" && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe
+      - name: Index history (Shariah and KMI-30 lists over the years)
+        if: inputs.only == ''
+        run: |
+          sudo apt-get install -y -qq --no-install-recommends poppler-utils >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends poppler-utils >/dev/null)
+          npx tsx scripts/kmi-history.ts /tmp/kmi.json
       - name: Merge
         if: inputs.only == ''
         run: |
           mkdir -p /tmp/state
           if [ "${{ inputs.restart }}" != "true" ] && git fetch -q origin divhistory 2>/dev/null; then git archive origin/divhistory | tar -x -C /tmp/state; fi
           npx tsx scripts/div-merge.ts /tmp/state /tmp/shards
+          [ -s /tmp/kmi.json ] && cp /tmp/kmi.json /tmp/state/kmi.json || true
           cat /tmp/shards/*/log-*.txt > /tmp/state/log.txt 2>/dev/null || true
       - name: Save
         if: inputs.only == ''
