@@ -97,8 +97,10 @@ export function parseIndexNotice(text: string, noticeDay: string): IndexEvent | 
 }
 
 /** Who was in the index from each date on, newest last: [from, members]. `now` is today's list. */
-export function membershipHistory(now: string[], events: IndexEvent[]): { from: string; members: string[] }[] {
-  const ev = [...events].sort((a, b) => (a.date < b.date ? 1 : -1));
+export function membershipHistory(now: string[], events: IndexEvent[], known?: Set<string>): { from: string; members: string[] }[] {
+  // words a column read can pick up ("FINAL", "ENDED") are dropped when the list of real symbols is known
+  const keep = (l: string[]) => (known ? l.filter((s) => known.has(s)) : l);
+  const ev = [...events].map((e) => ({ ...e, in: keep(e.in), out: keep(e.out), ...(e.full ? { full: keep(e.full) } : {}) })).sort((a, b) => (a.date < b.date ? 1 : -1));
   const out: { from: string; members: string[] }[] = [];
   let after = new Set(now);
   for (const e0 of ev) {

@@ -266,7 +266,9 @@ async function main() {
                 .join('\n')}`,
             );
           if (process.env.ONLY)
-            console.log(`    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} ${d.kind ?? ''} bc ${d.closeFrom ?? '-'}`);
+            console.log(
+              `    ${n.day} ${n.title.slice(0, 60)} | ${Math.round((Date.now() - t1) / 1000)}s ${text.length}ch -> ${d.nil ? 'NIL' : (d.dps ?? (d.pct != null ? d.pct + '%' : '?'))} ${d.kind ?? ''} bc ${d.closeFrom ?? '-'}`,
+            );
           return { n, d };
         } catch {
           return { n, d: null as DivNotice | null };

@@ -5,8 +5,8 @@
  *   tsx scripts/kmi-history.ts <out file>
  */
 import { execFileSync } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
-import { fetchIndexConstituents, fetchRaw } from '../src/psx/api';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { fetchIndexConstituents, fetchRaw, fetchSymbols } from '../src/psx/api';
 import { membershipHistory, parseIndexNotice, spansOf, type IndexEvent } from '../src/lab/kmiText';
 
 const out = process.argv[2] ?? '/tmp/out/kmi.json';
@@ -20,21 +20,28 @@ const day = (s: string) => {
 async function main() {
   mkdirSync('/tmp/kmi', { recursive: true });
   const notices = new Map<string, { day: string; title: string }>();
-  for (const query of ['recomposition', 're-composition', 'KMI']) {
-    const h = await fetchRaw('/announcements', { type: 'E', symbol: '', query, count: '100', offset: '0', date_from: '2016-01-01', date_to: '2030-12-31', page: 'annc' });
-    for (const m of h.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
-      const cells = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) =>
-        c[1]
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim(),
-      );
-      const link = m[1].match(/href="(\/download\/attachment\/[^"]+\.pdf)"/)?.[1];
-      const d = day(cells[0] ?? '');
-      if (link && d) notices.set(link, { day: d, title: cells[2] ?? '' });
+  // every page: the first 100 only reached back to 2020
+  for (const query of ['recomposition', 're-composition', 'KMI'])
+    for (let offset = 0; offset < 3000; offset += 100) {
+      const h = await fetchRaw('/announcements', { type: 'E', symbol: '', query, count: '100', offset: String(offset), date_from: '2016-01-01', date_to: '2030-12-31', page: 'annc' });
+      let rowsSeen = 0;
+      for (const m of h.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
+        rowsSeen++;
+        const cells = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((c) =>
+          c[1]
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        );
+        const link = m[1].match(/href="(\/download\/attachment\/[^"]+\.pdf)"/)?.[1];
+        const d = day(cells[0] ?? '');
+        if (link && d) notices.set(link, { day: d, title: cells[2] ?? '' });
+      }
+      await sleep(500);
+      const total = Number(h.match(/of ([\d,]+) entries/)?.[1]?.replace(/,/g, '') ?? 0);
+      if (rowsSeen < 50 || offset + 100 >= total) break;
     }
-    await sleep(500);
-  }
+  console.log(`${notices.size} index notices listed`);
   const events: Record<'kmiall' | 'kmi30', IndexEvent[]> = { kmiall: [], kmi30: [] };
   let read = 0,
     scanned = 0;
@@ -44,10 +51,23 @@ async function main() {
     try {
       const res = await fetch(`https://dps.psx.com.pk${link}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Sahm lab data)' }, signal: AbortSignal.timeout(60_000) });
       writeFileSync('/tmp/kmi/n.pdf', Buffer.from(await res.arrayBuffer()));
-      const text = execFileSync('pdftotext', ['-layout', '/tmp/kmi/n.pdf', '-'], { encoding: 'utf8', maxBuffer: 2e7 });
+      let text = execFileSync('pdftotext', ['-layout', '/tmp/kmi/n.pdf', '-'], { encoding: 'utf8', maxBuffer: 2e7 });
       if (text.replace(/\s/g, '').length < 200) {
+        // scanned: OCR the first pages, keeping the columns (the counts the notice states still have to agree before it's used)
         scanned++;
-        continue;
+        text = '';
+        try {
+          execFileSync('pdftoppm', ['-r', '200', '-gray', '-png', '-f', '1', '-l', '4', '/tmp/kmi/n.pdf', '/tmp/kmi/p'], { timeout: 120_000 });
+          for (const f of readdirSync('/tmp/kmi')
+            .filter((x) => /^p-\d+\.png$/.test(x))
+            .sort()) {
+            text += execFileSync('tesseract', [`/tmp/kmi/${f}`, '-', '--psm', '6'], { encoding: 'utf8', maxBuffer: 2e7, timeout: 120_000 }) + '\n';
+            rmSync(`/tmp/kmi/${f}`, { force: true });
+          }
+        } catch {
+          // no OCR here
+        }
+        if (text.replace(/\s/g, '').length < 200) continue;
       }
       const e = parseIndexNotice(text, n.day);
       if (e) {
@@ -64,13 +84,20 @@ async function main() {
     kmiall: (await fetchIndexConstituents('KMIALLSHR')).map((c) => c.symbol),
     kmi30: (await fetchIndexConstituents('KMI30')).map((c) => c.symbol),
   };
+  // real symbols: today's listings, plus anything that was in either index today
+  let known: Set<string> | undefined;
+  try {
+    known = new Set([...(await fetchSymbols()).map((x) => x.symbol), ...now.kmiall, ...now.kmi30]);
+  } catch {
+    known = undefined;
+  }
   const result: Record<string, unknown> = { built: new Date().toISOString().slice(0, 10), events, now };
   for (const k of ['kmiall', 'kmi30'] as const) {
-    const hist = membershipHistory(now[k], events[k]);
+    const hist = membershipHistory(now[k], events[k], known);
     result[k] = { from: events[k].map((e) => e.date).sort()[0] ?? null, spans: Object.fromEntries(spansOf(hist)) };
   }
   writeFileSync(out, JSON.stringify(result));
-  console.log(`read ${read} notices (${scanned} scanned ones skipped); KMI All Share from ${(result.kmiall as { from: string }).from}, KMI-30 from ${(result.kmi30 as { from: string }).from}`);
+  console.log(`read ${read} notices (${scanned} of them scanned); KMI All Share from ${(result.kmiall as { from: string }).from}, KMI-30 from ${(result.kmi30 as { from: string }).from}`);
 }
 main().catch((e) => {
   console.log('kmi history failed:', (e as Error).message);
