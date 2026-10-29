@@ -164,7 +164,7 @@ export default function AIScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={styles.mark}>
@@ -313,6 +313,8 @@ export default function AIScreen() {
             placeholderTextColor={colors.faint}
             editable={ready && !busy}
             onSubmitEditing={() => ask(input)}
+            // keep the latest answer in view just above the box while typing
+            onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 300)}
             returnKeyType="send"
             style={styles.input}
           />

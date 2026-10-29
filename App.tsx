@@ -96,6 +96,8 @@ function Tabs() {
         ...(shown.includes(route.name) ? {} : { tabBarButton: () => null, tabBarItemStyle: { display: 'none' as const } }),
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.faint,
+        // the tab bar steps aside for the keyboard, so a text box sits right on top of it
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: colors.nav,
           borderTopColor: colors.navLine,

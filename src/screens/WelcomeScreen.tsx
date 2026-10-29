@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <View style={styles.inner}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Logo />
@@ -39,8 +39,7 @@ export default function WelcomeScreen() {
               Pakistan's stock market, in your pocket.
             </T>
             <T v="body" style={{ color: colors.muted, fontSize: 15, lineHeight: 23 }}>
-              Live PSX prices, charts and company data, plus a paper account with PKR 1,000,000 of practice money to
-              trade with.
+              Live PSX prices, charts and company data, plus a paper account with PKR 1,000,000 of practice money to trade with.
             </T>
           </View>
           <View style={{ gap: 12, marginTop: 36 }}>
@@ -67,18 +66,20 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  inner: { flex: 1, padding: 24, paddingTop: 32 },
-  input: {
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 16,
-    color: colors.text,
-    fontFamily: fonts.medium,
-    fontSize: 16,
-  },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    inner: { flex: 1, padding: 24, paddingTop: 32 },
+    input: {
+      height: 56,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 16,
+      color: colors.text,
+      fontFamily: fonts.medium,
+      fontSize: 16,
+    },
+  }),
+);

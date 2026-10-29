@@ -17,19 +17,7 @@ function tick(price: number) {
   return 0.01;
 }
 
-function Stepper({
-  label,
-  value,
-  onChange,
-  onStep,
-  keyboard,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onStep: (dir: 1 | -1) => void;
-  keyboard: 'decimal-pad' | 'number-pad';
-}) {
+function Stepper({ label, value, onChange, onStep, keyboard }: { label: string; value: string; onChange: (v: string) => void; onStep: (dir: 1 | -1) => void; keyboard: 'decimal-pad' | 'number-pad' }) {
   return (
     <View style={{ flex: 1, gap: 8 }}>
       <T v="label">{label}</T>
@@ -37,14 +25,7 @@ function Stepper({
         <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label}`} onPress={() => onStep(-1)} style={styles.stepBtn}>
           <T style={{ fontSize: 22, color: colors.text }}>−</T>
         </Pressable>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          keyboardType={keyboard}
-          style={styles.stepInput}
-          accessibilityLabel={label}
-          selectTextOnFocus
-        />
+        <TextInput value={value} onChangeText={onChange} keyboardType={keyboard} style={styles.stepInput} accessibilityLabel={label} selectTextOnFocus />
         <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label}`} onPress={() => onStep(1)} style={styles.stepBtn}>
           <T style={{ fontSize: 22, color: colors.text }}>+</T>
         </Pressable>
@@ -71,7 +52,7 @@ export default function OrderScreen() {
 
   const qty = Math.floor(Number(qtyText.replace(/[^0-9]/g, '')) || 0);
   const limit = Number(priceText.replace(/[^0-9.]/g, '')) || 0;
-  const execPrice = type === 'market' ? last ?? 0 : limit;
+  const execPrice = type === 'market' ? (last ?? 0) : limit;
   const value = execPrice * qty;
   const fee = value * FEE_RATE;
   const bp = buyingPower(account);
@@ -111,9 +92,7 @@ export default function OrderScreen() {
         <View style={{ flex: 1, padding: 24, justifyContent: 'center', gap: 16 }}>
           <Badge label={filled ? 'Filled' : placed.status === 'open' ? 'Waiting for price' : placed.status} tone={filled ? 'up' : 'gold'} />
           <T v="h1" style={{ textAlign: 'center' }}>
-            {filled
-              ? `${placed.side === 'buy' ? 'Bought' : 'Sold'} ${fmtNum(placed.qty, 0)} ${symbol}`
-              : `${placed.type === 'limit' ? 'Limit' : 'Stop'} order placed`}
+            {filled ? `${placed.side === 'buy' ? 'Bought' : 'Sold'} ${fmtNum(placed.qty, 0)} ${symbol}` : `${placed.type === 'limit' ? 'Limit' : 'Stop'} order placed`}
           </T>
           <T v="body" style={{ textAlign: 'center', color: colors.muted }}>
             {filled
@@ -140,7 +119,7 @@ export default function OrderScreen() {
         </T>
         <View style={{ width: 44 }} />
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Card style={styles.between}>
             <View style={{ gap: 2, flex: 1 }}>
@@ -192,20 +171,13 @@ export default function OrderScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            {type !== 'market' ? (
-              <Stepper label={type === 'limit' ? 'Limit price' : 'Stop price'} value={priceText} onChange={setPriceText} onStep={stepPrice} keyboard="decimal-pad" />
-            ) : null}
+            {type !== 'market' ? <Stepper label={type === 'limit' ? 'Limit price' : 'Stop price'} value={priceText} onChange={setPriceText} onStep={stepPrice} keyboard="decimal-pad" /> : null}
             <Stepper label="Shares" value={qtyText} onChange={setQtyText} onStep={stepQty} keyboard="number-pad" />
           </View>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {[0.25, 0.5, 1].map((f) => (
-              <Pressable
-                key={f}
-                accessibilityRole="button"
-                onPress={() => setQtyText(String(Math.max(1, Math.floor(maxQty * f))))}
-                style={styles.quick}
-              >
+              <Pressable key={f} accessibilityRole="button" onPress={() => setQtyText(String(Math.max(1, Math.floor(maxQty * f))))} style={styles.quick}>
                 <T v="label">{f === 1 ? 'Max' : `${f * 100}%`}</T>
               </Pressable>
             ))}
@@ -244,42 +216,39 @@ export default function OrderScreen() {
           ) : null}
         </ScrollView>
         <View style={styles.footer}>
-          <Button
-            label={`Place paper ${side} order`}
-            tone={side === 'buy' ? 'up' : 'down'}
-            disabled={!!problem || last == null}
-            onPress={submit}
-          />
+          <Button label={`Place paper ${side} order`} tone={side === 'buy' ? 'up' : 'down'} disabled={!!problem || last == null} onPress={submit} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 4 },
-  content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 24 },
-  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 54,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  stepBtn: { width: 46, height: 52, alignItems: 'center', justifyContent: 'center' },
-  stepInput: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.monoBold, fontSize: 16, paddingVertical: 0 },
-  quick: {
-    flex: 1,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footer: { paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 4 },
+    content: { paddingHorizontal: 20, paddingTop: 8, gap: 18, paddingBottom: 24 },
+    between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 54,
+      borderRadius: 14,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.line,
+    },
+    stepBtn: { width: 46, height: 52, alignItems: 'center', justifyContent: 'center' },
+    stepInput: { flex: 1, textAlign: 'center', color: colors.text, fontFamily: fonts.monoBold, fontSize: 16, paddingVertical: 0 },
+    quick: {
+      flex: 1,
+      height: 40,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.line,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    footer: { paddingHorizontal: 20, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.navLine, backgroundColor: colors.nav },
+  }),
+);

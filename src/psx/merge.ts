@@ -1,7 +1,11 @@
 import type { BoardQuote, ScreenerRow, Stock, SymbolInfo } from './types';
+import { sanePct } from './parse';
 
 function titleCase(s: string): string {
-  return s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase()).replace(/\bAnd\b/g, '&');
+  return s
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase())
+    .replace(/\bAnd\b/g, '&');
 }
 
 export function mergeStocks(symbols: SymbolInfo[], screener: ScreenerRow[], board: BoardQuote[]): Stock[] {
@@ -16,8 +20,9 @@ export function mergeStocks(symbols: SymbolInfo[], screener: ScreenerRow[], boar
     const s = scr.get(symbol);
     const b = live.get(symbol);
     let price = b?.price ?? s?.price ?? null;
-    let change = b?.change ?? null;
-    let changePct = b?.changePct ?? s?.changePct ?? null;
+    let change = sanePct(b?.changePct ?? s?.changePct ?? null) == null ? null : (b?.change ?? null);
+    // checked here too: prices saved on the phone before the check existed still carry impossible moves
+    let changePct = sanePct(b?.changePct ?? s?.changePct ?? null);
     let ldcp = b?.ldcp ?? null;
     if (change == null && price != null && changePct != null && changePct > -100) {
       ldcp = Math.round((price / (1 + changePct / 100)) * 100) / 100;
