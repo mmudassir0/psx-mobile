@@ -18,7 +18,8 @@ import { T } from './kit';
 import { StyleSheet } from 'react-native';
 
 type Range = '1W' | '1M' | '1Y' | 'All';
-const DAYS: Record<Range, number> = { '1W': 7, '1M': 31, '1Y': 366, All: 1e9 };
+/** days back for each range; All has no start */
+const DAYS: Record<Range, number | null> = { '1W': 7, '1M': 31, '1Y': 366, All: null };
 /** an icon that says what the item is about */
 function todoGlyph(t: TodoItem): string {
   if (t.route === 'Lab') return 'flask';
@@ -69,7 +70,8 @@ export function HomeHero({
   const chart = useMemo(() => {
     const pts = trackReturns(snaps.filter((s) => s.value > 0));
     if (pts.length < 3 || w < 100) return null;
-    const cut = new Date(Date.now() - DAYS[range] * 864e5).toISOString().slice(0, 10);
+    const back = DAYS[range];
+    const cut = back == null ? '' : new Date(Date.now() - back * 864e5).toISOString().slice(0, 10);
     const sel = pts.filter((p) => p.day >= cut);
     if (sel.length < 3) return null;
     const g = sel.map((p) => 1 + p.ret);
