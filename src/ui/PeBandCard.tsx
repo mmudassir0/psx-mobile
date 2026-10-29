@@ -46,8 +46,7 @@ export function PeBandCard({ company, daily }: { company: CompanyInfo | null; da
           <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: tone, flex: 1 }}>{verdict}</T>
         </View>
         <T v="caption" style={{ lineHeight: 17 }}>
-          Its P/E has been higher than today {pct}% of the time since {fmtDay(b.from)}. Usual range {b.q1.toFixed(1)}–{b.q3.toFixed(1)}× (middle
-          half), median {b.median.toFixed(1)}×.
+          Its P/E has been higher than today {pct}% of the time since {fmtDay(b.from)}. Usual range {b.q1.toFixed(1)}–{b.q3.toFixed(1)}× (middle half), median {b.median.toFixed(1)}×.
         </T>
         <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
           <Rect x={0} y={y(b.q3)} width={W} height={Math.max(1, y(b.q1) - y(b.q3))} fill={colors.goldSoft} />
@@ -56,8 +55,7 @@ export function PeBandCard({ company, daily }: { company: CompanyInfo | null; da
           <Circle cx={x(b.points.length - 1)} cy={y(b.now)} r={4} fill={tone} />
         </Svg>
         <T v="caption" style={{ lineHeight: 17 }}>
-          P/E here is market value ÷ the last full year's profit, so it can differ from PSX's P/E on recent quarters. A low P/E against its own past
-          can mean a bargain or a business that's getting worse: check why.
+          P/E here is market value ÷ the last full year's profit, so it can differ from PSX's P/E on recent quarters. A low P/E against its own past can mean a bargain or a business that's getting worse: check why.
         </T>
       </Panel>
     </Section>

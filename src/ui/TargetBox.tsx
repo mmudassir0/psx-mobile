@@ -50,8 +50,7 @@ export function TargetBox({ symbol, price, avgCost, fairMid }: { symbol: string;
           <Sugg label="−20% from now" onPress={() => setRethink(String(r2(price * 0.8)))} />
         </View>
         <T v="caption" style={{ lineHeight: 17 }}>
-          The target is where you'd take some profit or at least look again; below the rethink price, ask whether your reason for owning it
-          still holds. Both become evening price alerts.
+          The target is where you'd take some profit or at least look again; below the rethink price, ask whether your reason for owning it still holds. Both become evening price alerts.
         </T>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <View style={{ flex: 1 }}>
@@ -95,8 +94,12 @@ export function TargetBox({ symbol, price, avgCost, fairMid }: { symbol: string;
         </View>
       ) : null}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T v="caption" style={{ color: st === 'broken' ? colors.downText : colors.faint }}>{t.rethink != null ? `Rethink ${fmtPrice(t.rethink)}` : 'No rethink price'}</T>
-        <T v="caption" style={{ color: st === 'reached' ? colors.up : colors.faint }}>{t.target != null ? `Target ${fmtPrice(t.target)}` : 'No target'}</T>
+        <T v="caption" style={{ color: st === 'broken' ? colors.downText : colors.faint }}>
+          {t.rethink != null ? `Rethink ${fmtPrice(t.rethink)}` : 'No rethink price'}
+        </T>
+        <T v="caption" style={{ color: st === 'reached' ? colors.up : colors.faint }}>
+          {t.target != null ? `Target ${fmtPrice(t.target)}` : 'No target'}
+        </T>
       </View>
       <T v="caption" style={{ color: st === 'reached' ? colors.up : st === 'broken' ? colors.downText : colors.text2 }}>
         {st === 'reached'
@@ -105,7 +108,11 @@ export function TargetBox({ symbol, price, avgCost, fairMid }: { symbol: string;
             ? 'Below your rethink price: check whether your reason for owning it still holds.'
             : [toTarget != null ? `${(toTarget * 100).toFixed(1)}% to target` : null, aboveRethink != null ? `${(aboveRethink * 100).toFixed(1)}% above rethink` : null].filter(Boolean).join(' · ')}
       </T>
-      {saved ? <T v="caption" style={{ color: colors.gold }}>Added to Price alerts: copy the list into the WATCH_ALERTS secret to get them in the evening.</T> : null}
+      {saved ? (
+        <T v="caption" style={{ color: colors.gold }}>
+          Added to Price alerts: copy the list into the WATCH_ALERTS secret to get them in the evening.
+        </T>
+      ) : null}
     </Pressable>
   );
 }
@@ -132,7 +139,19 @@ function Sugg({ label, onPress }: { label: string; onPress: () => void }) {
 const styles = themed(() =>
   StyleSheet.create({
     box: { gap: 8, padding: 12, borderRadius: 12, backgroundColor: colors.surface2 },
-    input: { width: 110, height: 38, borderRadius: 9, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontSize: 14.5, color: colors.text, fontFamily: fonts.monoMedium, textAlign: 'right' },
+    input: {
+      width: 110,
+      height: 38,
+      borderRadius: 9,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 10,
+      fontSize: 14.5,
+      color: colors.text,
+      fontFamily: fonts.monoMedium,
+      textAlign: 'right',
+    },
     sugg: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     chip: { paddingHorizontal: 10, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: colors.ground },
     marker: { position: 'absolute', width: 4, height: 14, marginLeft: -2, borderRadius: 2 },

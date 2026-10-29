@@ -7,8 +7,18 @@ import { T } from './kit';
 function inline(text: string, base: object) {
   const parts = text.split(/(\*\*[^*]+\*\*|_[^_]+_)/g).filter(Boolean);
   return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) return <T key={i} style={[base, { fontFamily: fonts.bold, color: colors.text }]}>{part.slice(2, -2)}</T>;
-    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) return <T key={i} style={[base, { fontStyle: 'italic', color: colors.faint }]}>{part.slice(1, -1)}</T>;
+    if (part.startsWith('**') && part.endsWith('**'))
+      return (
+        <T key={i} style={[base, { fontFamily: fonts.bold, color: colors.text }]}>
+          {part.slice(2, -2)}
+        </T>
+      );
+    if (part.startsWith('_') && part.endsWith('_') && part.length > 2)
+      return (
+        <T key={i} style={[base, { fontStyle: 'italic', color: colors.faint }]}>
+          {part.slice(1, -1)}
+        </T>
+      );
     return part;
   });
 }

@@ -40,8 +40,8 @@ export function CostsCard() {
         onChange={(k) => costsPref.set({ ...c, salesTax: Number(k) })}
       />
       <T v="caption" style={{ lineHeight: 18 }}>
-        A Rs 100,000 trade costs about Rs {ex.total.toFixed(0)} ({(ex.pct * 100).toFixed(2)}%) each way, so a share bought at Rs 100 has to
-        reach Rs {breakEven(1000, 100, c).toFixed(2)} to break even. PSX's minimum is 0.15%; your broker's rate is in its schedule of charges.
+        A Rs 100,000 trade costs about Rs {ex.total.toFixed(0)} ({(ex.pct * 100).toFixed(2)}%) each way, so a share bought at Rs 100 has to reach Rs {breakEven(1000, 100, c).toFixed(2)} to break even. PSX's minimum is
+        0.15%; your broker's rate is in its schedule of charges.
       </T>
     </View>
   );
@@ -50,6 +50,18 @@ export function CostsCard() {
 const styles = themed(() =>
   StyleSheet.create({
     card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 10 },
-    input: { width: 80, height: 40, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontSize: 15, color: colors.text, fontFamily: fonts.monoMedium, textAlign: 'right' },
+    input: {
+      width: 80,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 10,
+      fontSize: 15,
+      color: colors.text,
+      fontFamily: fonts.monoMedium,
+      textAlign: 'right',
+    },
   }),
 );

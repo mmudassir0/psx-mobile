@@ -51,7 +51,11 @@ export function StockRow({
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <T style={styles.symbol}>{stock.symbol}</T>
-          {watched ? <T style={styles.star} accessibilityLabel="On your watchlist">★</T> : null}
+          {watched ? (
+            <T style={styles.star} accessibilityLabel="On your watchlist">
+              ★
+            </T>
+          ) : null}
           {stock.shariah ? <View style={styles.dot} accessibilityLabel="Shariah compliant" /> : null}
         </View>
         <T v="caption" numberOfLines={1} style={highlight && sub ? { color: colors.gold, fontFamily: fonts.semibold } : undefined}>
@@ -72,12 +76,14 @@ export function volumeLabel(s: Stock) {
   return s.volume != null ? `${fmtCompact(s.volume)} shares traded` : s.name;
 }
 
-const styles = themed(() => StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingVertical: 8 },
-  border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 12, fontFamily: fonts.heavy, color: colors.text2 },
-  symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
-  star: { fontSize: 13, color: colors.gold, marginLeft: -2 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.shariah },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingVertical: 8 },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    avatarText: { fontSize: 12, fontFamily: fonts.heavy, color: colors.text2 },
+    symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
+    star: { fontSize: 13, color: colors.gold, marginLeft: -2 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.shariah },
+  }),
+);

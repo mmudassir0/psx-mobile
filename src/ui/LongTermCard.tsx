@@ -30,10 +30,8 @@ export function LongTermCard() {
       <Panel style={{ paddingVertical: 12, gap: 6, backgroundColor: colors.goldSoft }}>
         <T style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.gold }}>Experiment, not advice</T>
         <T v="caption" style={{ lineHeight: 18, color: colors.text2 }}>
-          Companies whose profit grew last year, cheaper than their sector on P/E, with the price above its 200-day average; the 10
-          cheapest, chosen once a month and meant to be held 6–12 months. In testing it beat the average stock in 16 of 17 monthly
-          lists up to September 2025, then lost in all 6 since the market turned. It runs here so you can see whether it recovers
-          before trusting it.
+          Companies whose profit grew last year, cheaper than their sector on P/E, with the price above its 200-day average; the 10 cheapest, chosen once a month and meant to be held 6–12 months. In testing it beat the
+          average stock in 16 of 17 monthly lists up to September 2025, then lost in all 6 since the market turned. It runs here so you can see whether it recovers before trusting it.
         </T>
       </Panel>
       <Panel style={{ paddingVertical: 4 }}>

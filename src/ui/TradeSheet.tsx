@@ -136,7 +136,19 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
 const styles = themed(() =>
   StyleSheet.create({
     choice: { paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line },
-    input: { minWidth: 0, flexBasis: 0, height: 44, borderRadius: 10, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text },
+    input: {
+      minWidth: 0,
+      flexBasis: 0,
+      height: 44,
+      borderRadius: 10,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      paddingHorizontal: 10,
+      fontFamily: fonts.mono,
+      fontSize: 15,
+      color: colors.text,
+    },
   }),
 );
 

@@ -52,19 +52,7 @@ export function RangeBar({
 }
 
 /** One label / value line in a list of figures. */
-export function KV({
-  label,
-  value,
-  sub,
-  color,
-  last,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-  last?: boolean;
-}) {
+export function KV({ label, value, sub, color, last }: { label: string; value: string; sub?: string; color?: string; last?: boolean }) {
   return (
     <View style={[styles.kv, !last && styles.kvBorder]}>
       <View style={{ flex: 1, gap: 1 }}>
@@ -98,27 +86,13 @@ export function ActionChip({ action, wide }: { action: Action; wide?: boolean })
 }
 
 /** Horizontally scrolling tab strip with an underline on the active tab. */
-export function TabStrip<K extends string>({
-  tabs,
-  value,
-  onChange,
-}: {
-  tabs: { key: K; label: string }[];
-  value: K;
-  onChange: (k: K) => void;
-}) {
+export function TabStrip<K extends string>({ tabs, value, onChange }: { tabs: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
   // Up to five tabs share the width evenly; more scroll sideways.
   const fit = tabs.length <= 5;
   const items = tabs.map((t) => {
     const on = t.key === value;
     return (
-      <Pressable
-        key={t.key}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: on }}
-        onPress={() => onChange(t.key)}
-        style={[styles.tab, fit && { flex: 1, paddingHorizontal: 4 }]}
-      >
+      <Pressable key={t.key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(t.key)} style={[styles.tab, fit && { flex: 1, paddingHorizontal: 4 }]}>
         <T style={{ fontFamily: on ? fonts.bold : fonts.semibold, fontSize: 14, color: on ? colors.text : colors.faint }} numberOfLines={1}>
           {t.label}
         </T>
@@ -133,13 +107,7 @@ export function TabStrip<K extends string>({
         {tabs.map((t) => {
           const on = t.key === value;
           return (
-            <Pressable
-              key={t.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              onPress={() => onChange(t.key)}
-              style={styles.tab}
-            >
+            <Pressable key={t.key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(t.key)} style={styles.tab}>
               <T style={{ fontFamily: on ? fonts.bold : fonts.semibold, fontSize: 14, color: on ? colors.text : colors.faint }}>{t.label}</T>
               <View style={[styles.underline, on && { backgroundColor: colors.gold }]} />
             </Pressable>

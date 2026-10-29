@@ -13,7 +13,21 @@ const RATES = [0.1, 0.15, 0.2];
 const num = (s: string) => Number(s.replace(/[^\d.]/g, '')) || 0;
 const IDEAS = ['House', 'Hajj', "Children's education", 'Car', 'Retirement', 'Wedding'];
 
-function GoalForm({ initial, tracked, otherShares, onSave, onCancel, onDelete }: { initial: NamedGoal | null; tracked: number | null; otherShares: number; onSave: (g: NamedGoal) => void; onCancel?: () => void; onDelete?: () => void }) {
+function GoalForm({
+  initial,
+  tracked,
+  otherShares,
+  onSave,
+  onCancel,
+  onDelete,
+}: {
+  initial: NamedGoal | null;
+  tracked: number | null;
+  otherShares: number;
+  onSave: (g: NamedGoal) => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
+}) {
   const y = new Date().getUTCFullYear();
   const [name, setName] = useState(initial?.name ?? '');
   const [target, setTarget] = useState(initial ? String(initial.target) : '');
@@ -116,17 +130,10 @@ export function GoalCard({ value, tracked }: { value: number; tracked: number | 
       <Panel style={{ paddingVertical: 14, gap: 10 }}>
         {!goals.length ? (
           <T v="caption" style={{ lineHeight: 18 }}>
-            Set a goal, such as a house in 2032 or Hajj in 2028, to see the monthly amount it needs and whether you're on course. You can
-            add several.
+            Set a goal, such as a house in 2032 or Hajj in 2028, to see the monthly amount it needs and whether you're on course. You can add several.
           </T>
         ) : null}
-        <GoalForm
-          initial={null}
-          tracked={tracked}
-          otherShares={totalShare}
-          onSave={(g) => (save([...goals, g]), setEditing(null))}
-          onCancel={goals.length ? () => setEditing(null) : undefined}
-        />
+        <GoalForm initial={null} tracked={tracked} otherShares={totalShare} onSave={(g) => (save([...goals, g]), setEditing(null))} onCancel={goals.length ? () => setEditing(null) : undefined} />
       </Panel>
     );
 
@@ -169,7 +176,9 @@ export function GoalCard({ value, tracked }: { value: number; tracked: number | 
                       : s.need > 0
                         ? `At ${Math.round(g.rate * 100)}% a year it needs about Rs ${fmtNum(s.need, 0)} a month.`
                         : `At ${Math.round(g.rate * 100)}% a year, what's set aside gets there without adding more.`}
-                    {s.months > 0 && s.reach != null ? ` Your Rs ${fmtNum(g.monthly, 0)} a month would reach about Rs ${fmtNum(s.reach, 0)}: ${s.onTrack ? 'on course.' : `short by about Rs ${fmtNum(g.target - s.reach, 0)}.`}` : ''}
+                    {s.months > 0 && s.reach != null
+                      ? ` Your Rs ${fmtNum(g.monthly, 0)} a month would reach about Rs ${fmtNum(s.reach, 0)}: ${s.onTrack ? 'on course.' : `short by about Rs ${fmtNum(g.target - s.reach, 0)}.`}`
+                      : ''}
                   </T>
                   <T v="caption" style={{ lineHeight: 17 }}>
                     In today's money that's about Rs {fmtNum(s.realTarget, 0)} if prices rise 8% a year.
@@ -208,7 +217,19 @@ export function GoalCard({ value, tracked }: { value: number; tracked: number | 
 const styles = themed(() =>
   StyleSheet.create({
     formRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    input: { width: 140, height: 42, borderRadius: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.ground, paddingHorizontal: 10, fontFamily: fonts.mono, fontSize: 15, color: colors.text, textAlign: 'right' },
+    input: {
+      width: 140,
+      height: 42,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.line,
+      backgroundColor: colors.ground,
+      paddingHorizontal: 10,
+      fontFamily: fonts.mono,
+      fontSize: 15,
+      color: colors.text,
+      textAlign: 'right',
+    },
     chip: { paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: colors.surface2, justifyContent: 'center' },
     chipOn: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.gold },
     track: { height: 8, borderRadius: 4, backgroundColor: colors.surface2, overflow: 'hidden' },

@@ -40,7 +40,9 @@ export function NoteCard({ symbol, now, owned }: { symbol: string; now: NoteFigu
   if (editing)
     return (
       <Panel style={{ paddingVertical: 14, gap: 10 }}>
-        <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Why {owned ? 'you own' : "you're watching"} {symbol}</T>
+        <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>
+          Why {owned ? 'you own' : "you're watching"} {symbol}
+        </T>
         <TextInput
           value={text}
           onChangeText={setText}
@@ -149,7 +151,18 @@ export function NoteCard({ symbol, now, owned }: { symbol: string; now: NoteFigu
 
 const styles = themed(() =>
   StyleSheet.create({
-    input: { minHeight: 90, borderRadius: 12, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, padding: 12, fontSize: 14.5, color: colors.text, fontFamily: fonts.regular, textAlignVertical: 'top' },
+    input: {
+      minHeight: 90,
+      borderRadius: 12,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 12,
+      fontSize: 14.5,
+      color: colors.text,
+      fontFamily: fonts.regular,
+      textAlignVertical: 'top',
+    },
     chip: { paddingHorizontal: 12, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2 },
     chipOn: { backgroundColor: colors.gold },
     empty: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.line },

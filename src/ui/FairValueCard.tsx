@@ -89,9 +89,8 @@ export function FairValueCard({ f, price }: { f: FairValue; price: number }) {
         </View>
       ) : null}
       <T v="caption" style={{ lineHeight: 18 }}>
-        Required return {pc(RISK_FREE + EQUITY_PREMIUM)}: the 10-year government bond yield ({pc(RISK_FREE)}, {RATES_AS_OF}) plus{' '}
-        {pc(EQUITY_PREMIUM)} for equity risk; long-run growth {pc(LONG_GROWTH)}. Undervalued or overvalued means more than 15% from
-        the midpoint. An estimate, not a price target.
+        Required return {pc(RISK_FREE + EQUITY_PREMIUM)}: the 10-year government bond yield ({pc(RISK_FREE)}, {RATES_AS_OF}) plus {pc(EQUITY_PREMIUM)} for equity risk; long-run growth {pc(LONG_GROWTH)}. Undervalued or
+        overvalued means more than 15% from the midpoint. An estimate, not a price target.
       </T>
     </Panel>
   );

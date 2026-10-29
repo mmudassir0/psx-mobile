@@ -114,7 +114,7 @@ export function Chart({
   }, [candles, n, plotW, height, volumeHeight, mode, prevClose, unit]);
 
   const last = candles[n - 1];
-  const ref = unit === 'intraday' && prevClose != null ? prevClose : candles[0]?.o ?? candles[0]?.c;
+  const ref = unit === 'intraday' && prevClose != null ? prevClose : (candles[0]?.o ?? candles[0]?.c);
   const lineColor = last && ref != null && last.c < ref ? colors.down : colors.up;
   const bodyW = geo ? Math.max(1, Math.min(14, geo.slot * 0.64)) : 1;
 
@@ -188,19 +188,9 @@ export function Chart({
             </SvgText>
           </G>
         ))}
-        {prevClose != null && unit === 'intraday' ? (
-          <Line x1={0} x2={plotW} y1={geo.y(prevClose)} y2={geo.y(prevClose)} stroke={colors.faint} strokeDasharray="2 4" strokeWidth={1} />
-        ) : null}
+        {prevClose != null && unit === 'intraday' ? <Line x1={0} x2={plotW} y1={geo.y(prevClose)} y2={geo.y(prevClose)} stroke={colors.faint} strokeDasharray="2 4" strokeWidth={1} /> : null}
         {candles.map((c, i) => (
-          <Rect
-            key={`v${c.t}`}
-            x={geo.x(i) - bodyW / 2}
-            y={geo.vy(c.v)}
-            width={bodyW}
-            height={Math.max(0, height + volumeHeight - geo.vy(c.v))}
-            fill={c.c >= c.o ? colors.up : colors.down}
-            opacity={0.28}
-          />
+          <Rect key={`v${c.t}`} x={geo.x(i) - bodyW / 2} y={geo.vy(c.v)} width={bodyW} height={Math.max(0, height + volumeHeight - geo.vy(c.v))} fill={c.c >= c.o ? colors.up : colors.down} opacity={0.28} />
         ))}
         {mode === 'line' ? (
           <>
@@ -259,10 +249,7 @@ export function Chart({
         accessibilityLabel={last ? `Price chart, last ${fmtNum(last.c)}. Drag to read values.` : 'Price chart'}
       >
         {base}
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.vline, { height: height + volumeHeight, opacity: lineOpacity, transform: [{ translateX: lineX }] }]}
-        />
+        <Animated.View pointerEvents="none" style={[styles.vline, { height: height + volumeHeight, opacity: lineOpacity, transform: [{ translateX: lineX }] }]} />
         {geo && ac && active != null ? (
           <Svg width={width} height={total} pointerEvents="none" style={StyleSheet.absoluteFill}>
             <Rect x={geo.x(active) - geo.slot / 2} y={0} width={geo.slot} height={height + volumeHeight} fill={colors.text} opacity={0.05} />
@@ -278,7 +265,9 @@ export function Chart({
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
-  vline: { position: 'absolute', left: 0, top: 0, width: 1, backgroundColor: colors.muted },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
+    vline: { position: 'absolute', left: 0, top: 0, width: 1, backgroundColor: colors.muted },
+  }),
+);

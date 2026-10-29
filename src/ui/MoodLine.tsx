@@ -23,8 +23,7 @@ export function MoodLine() {
       <T style={{ fontSize: 14, flex: 1 }} numberOfLines={1}>
         {kse ? (
           <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>
-            KSE-100 {fmtNum(kse.current)}{' '}
-            <T style={{ fontSize: 14, color: (kse.changePct ?? 0) >= 0 ? colors.up : colors.downText }}>{fmtPct(kse.changePct)}</T>
+            KSE-100 {fmtNum(kse.current)} <T style={{ fontSize: 14, color: (kse.changePct ?? 0) >= 0 ? colors.up : colors.downText }}>{fmtPct(kse.changePct)}</T>
           </T>
         ) : null}
         {mood ? (

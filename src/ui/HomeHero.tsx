@@ -87,12 +87,16 @@ export function HomeHero({
   return (
     <View style={styles.wrap}>
       <Rise delay={40}>
-        <Press accessibilityRole="button" accessibilityLabel={`Your portfolio, ${fmtNum(total, 0)} rupees. Open Portfolio`} onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })} scaleTo={0.99} style={{ gap: 12 }}>
+        <Press
+          accessibilityRole="button"
+          accessibilityLabel={`Your portfolio, ${fmtNum(total, 0)} rupees. Open Portfolio`}
+          onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })}
+          scaleTo={0.99}
+          style={{ gap: 12 }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             {marketOpen ? <PulseDot color={colors.up} /> : <View style={[styles.dot, { backgroundColor: colors.faint }]} />}
-            <T style={styles.kicker}>
-              Your portfolio · {status}
-            </T>
+            <T style={styles.kicker}>Your portfolio · {status}</T>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
             <T style={styles.currency}>PKR</T>

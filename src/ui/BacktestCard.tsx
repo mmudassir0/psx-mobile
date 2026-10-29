@@ -50,8 +50,7 @@ export function BacktestCard({ symbol, bt, analysis }: { symbol: string; bt: Bac
   return (
     <Panel style={{ paddingVertical: 16, gap: 12 }}>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Sahm's technical score replayed on every trading day since {since}, using only the prices known that day. What
-        happened over the next 10 trading days (● is today's reading):
+        Sahm's technical score replayed on every trading day since {since}, using only the prices known that day. What happened over the next 10 trading days (● is today's reading):
       </T>
       <View>
         <View style={[styles.row, styles.border]}>
@@ -80,8 +79,7 @@ export function BacktestCard({ symbol, bt, analysis }: { symbol: string; bt: Bac
       {rules.length ? (
         <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 12 }}>
           <T v="caption" style={{ lineHeight: 18 }}>
-            Each rule on {symbol}: average 10-day move when it said bullish minus when it said bearish. Positive means the rule
-            has pointed the right way here.
+            Each rule on {symbol}: average 10-day move when it said bullish minus when it said bearish. Positive means the rule has pointed the right way here.
           </T>
           {rules.map((r) => (
             <View key={r.name} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

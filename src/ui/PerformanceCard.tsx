@@ -79,7 +79,8 @@ function Legend({ mine, index, mineLabel, indexLabel }: { mine: number | null; i
         </View>
         <View style={{ gap: 2 }}>
           <T v="caption">
-            <T style={{ color: colors.faint, fontSize: 13 }}>━ </T>{indexLabel}
+            <T style={{ color: colors.faint, fontSize: 13 }}>━ </T>
+            {indexLabel}
           </T>
           <T v="mono" style={{ fontSize: 18 }}>
             {pc(index)}
@@ -208,7 +209,7 @@ export function PerformanceCard({ rows, candles, loading }: { rows: Row[]; candl
       )}
       <T v="caption" style={{ lineHeight: 18 }}>
         {v === 'actual'
-          ? 'Money you add or take out isn\'t counted as gain or loss: buys, sales and bonus shares are worked out from how your holdings change between days. Cash dividends count, before tax, as they do in the KSE-100. The KMI-30 is the fairer yardstick if you only buy Shariah-compliant shares. Each day is linked to the next, the way funds report returns.'
+          ? "Money you add or take out isn't counted as gain or loss: buys, sales and bonus shares are worked out from how your holdings change between days. Cash dividends count, before tax, as they do in the KSE-100. The KMI-30 is the fairer yardstick if you only buy Shariah-compliant shares. Each day is linked to the next, the way funds report returns."
           : 'If you had owned the shares you hold now for the whole period, dividends included. Not your actual return (you may have bought later), but a fair check of the stocks you chose against simply owning the index.'}
       </T>
     </Panel>

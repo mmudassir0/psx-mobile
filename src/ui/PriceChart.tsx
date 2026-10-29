@@ -101,9 +101,7 @@ export function PriceChart({
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         {...responder.panHandlers}
         accessible
-        accessibilityLabel={
-          points.length > 1 ? `Price chart from ${fmtPrice(first)} to ${fmtPrice(last)}` : 'Price chart, no data'
-        }
+        accessibilityLabel={points.length > 1 ? `Price chart from ${fmtPrice(first)} to ${fmtPrice(last)}` : 'Price chart, no data'}
       >
         {geo ? (
           <Svg width={width} height={height}>
@@ -113,28 +111,13 @@ export function PriceChart({
                 <Stop offset="1" stopColor={stroke} stopOpacity={0} />
               </LinearGradient>
             </Defs>
-            {baseline != null && (
-              <Line
-                x1={0}
-                x2={width}
-                y1={geo.y(baseline)}
-                y2={geo.y(baseline)}
-                stroke={colors.faint}
-                strokeDasharray="3 5"
-                strokeWidth={1}
-              />
-            )}
+            {baseline != null && <Line x1={0} x2={width} y1={geo.y(baseline)} y2={geo.y(baseline)} stroke={colors.faint} strokeDasharray="3 5" strokeWidth={1} />}
             <Path d={geo.area} fill="url(#fill)" />
             <Path d={geo.d} stroke={stroke} strokeWidth={2} fill="none" strokeLinejoin="round" />
             {ap && active != null && (
               <>
                 <Line x1={geo.x(active)} x2={geo.x(active)} y1={0} y2={height} stroke={colors.muted} strokeWidth={1} />
-                <Path
-                  d={`M${geo.x(active) - 4} ${geo.y(ap.v)}a4 4 0 1 0 8 0a4 4 0 1 0 -8 0`}
-                  fill={stroke}
-                  stroke={colors.ground}
-                  strokeWidth={2}
-                />
+                <Path d={`M${geo.x(active) - 4} ${geo.y(ap.v)}a4 4 0 1 0 8 0a4 4 0 1 0 -8 0`} fill={stroke} stroke={colors.ground} strokeWidth={2} />
               </>
             )}
           </Svg>
@@ -163,9 +146,7 @@ export function Sparkline({ values, width = 64, height = 26 }: { values: number[
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const d = values
-    .map((v, i) => `${i === 0 ? 'M' : 'L'}${((i / (values.length - 1)) * width).toFixed(1)} ${(2 + ((max - v) / span) * (height - 4)).toFixed(1)}`)
-    .join('');
+  const d = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${((i / (values.length - 1)) * width).toFixed(1)} ${(2 + ((max - v) / span) * (height - 4)).toFixed(1)}`).join('');
   const color = values[values.length - 1] >= values[0] ? colors.up : colors.down;
   return (
     <Svg width={width} height={height}>

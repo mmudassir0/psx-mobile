@@ -105,7 +105,16 @@ export function Sunburst({
                 <G key={st.s.symbol} onPress={() => onStock(st.s.symbol)}>
                   <Path d={arcPath(cx, cy, r1, R, st.a0, st.a1)} fill={color(v)} stroke={colors.ground} strokeWidth={span * R > 3 ? 0.8 : 0.3} />
                   {lab ? (
-                    <SvgText x={lab.x} y={lab.y} fill={colors.text} fontSize={Math.min(12, Math.max(8.5, span * R * 0.55))} fontFamily={fonts.bold} textAnchor="middle" alignmentBaseline="middle" transform={`rotate(${lab.deg} ${lab.x} ${lab.y})`}>
+                    <SvgText
+                      x={lab.x}
+                      y={lab.y}
+                      fill={colors.text}
+                      fontSize={Math.min(12, Math.max(8.5, span * R * 0.55))}
+                      fontFamily={fonts.bold}
+                      textAnchor="middle"
+                      alignmentBaseline="middle"
+                      transform={`rotate(${lab.deg} ${lab.x} ${lab.y})`}
+                    >
                       {st.s.symbol}
                     </SvgText>
                   ) : null}

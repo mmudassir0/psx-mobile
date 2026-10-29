@@ -38,8 +38,8 @@ export function ToolsGrid({ title = 'All tools', short = false }: { title?: stri
                   style={({ pressed }) => [styles.tile, tileW ? { width: tileW } : null, pressed && { opacity: 0.7 }]}
                 >
                   <View style={styles.glyph}>
-                  <ToolIcon name={toolGlyph(f.key, f.group)} size={21} />
-                </View>
+                    <ToolIcon name={toolGlyph(f.key, f.group)} size={21} />
+                  </View>
                   <T style={{ fontFamily: fonts.semibold, fontSize: tileW && tileW < 100 ? 11.5 : 12.5, textAlign: 'center' }} numberOfLines={2}>
                     {f.label}
                   </T>

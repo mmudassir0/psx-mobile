@@ -65,11 +65,7 @@ export function MyLines({ symbol, daily }: { symbol: string; daily: Candle[] | n
             {last ? ` · price ${last >= l.price ? 'above' : 'below'} by ${Math.abs((last / l.price - 1) * 100).toFixed(1)}%` : ''}
           </T>
           {last && !rules.some((r) => r.symbol === symbol && r.level === l.price) ? (
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => watchRulesPref.set([...rules, { symbol, dir: last > l.price ? '<' : '>', level: l.price }])}
-            >
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => watchRulesPref.set([...rules, { symbol, dir: last > l.price ? '<' : '>', level: l.price }])}>
               <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
                 + evening alert
               </T>
@@ -95,7 +91,8 @@ export function MyLines({ symbol, daily }: { symbol: string; daily: Candle[] | n
         );
       })}
       <T v="caption" style={{ lineHeight: 17 }}>
-        A close below a rising line under the lows, or above a falling line over the highs, is often read as the trend changing. Sahm notifies you when a stock closes across one of your lines (checked when you open it); "+ evening alert" also adds a level to the price alerts sent from GitHub. Lines are a way of looking, not a forecast.
+        A close below a rising line under the lows, or above a falling line over the highs, is often read as the trend changing. Sahm notifies you when a stock closes across one of your lines (checked when you open it);
+        "+ evening alert" also adds a level to the price alerts sent from GitHub. Lines are a way of looking, not a forecast.
       </T>
     </View>
   );

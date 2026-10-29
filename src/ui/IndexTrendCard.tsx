@@ -13,8 +13,7 @@ import { ModelCard } from './ModelCard';
 import { Panel } from './bits';
 import { Button, T } from './kit';
 
-const tone = (r: Regime): [string, string] =>
-  r === 'Uptrend' ? [colors.up, colors.upSoft] : r === 'Downtrend' ? [colors.downText, colors.downSoft] : [colors.text, colors.surface2];
+const tone = (r: Regime): [string, string] => (r === 'Uptrend' ? [colors.up, colors.upSoft] : r === 'Downtrend' ? [colors.downText, colors.downSoft] : [colors.text, colors.surface2]);
 const f0 = (v: number | null) => (v == null ? '—' : Math.round(v).toLocaleString('en-US'));
 const pc = (v: number | null) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
 
@@ -92,8 +91,7 @@ export function IndexTrendCard({ t }: { t: IndexTrend }) {
         </T>
       </View>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Uptrend: above the 50-day average, which is above a rising 200-day. Downtrend: the opposite. Anything else is sideways. A
-        change needs 5 days in a row to count.
+        Uptrend: above the 50-day average, which is above a rising 200-day. Downtrend: the opposite. Anything else is sideways. A change needs 5 days in a row to count.
       </T>
     </Panel>
   );
@@ -141,7 +139,7 @@ export function MarketAi({ id, context }: { id: string; context: string }) {
       handle.current = null;
     }
   };
-  const shown = running ? text : saved?.text ?? text;
+  const shown = running ? text : (saved?.text ?? text);
   return (
     <>
       {!ai.available ? <ModelCard /> : null}
@@ -154,7 +152,11 @@ export function MarketAi({ id, context }: { id: string; context: string }) {
           </T>
         )}
         {running && !text ? <T v="caption">Reading the market…</T> : null}
-        {error ? <T v="caption" style={{ color: colors.downText }}>Stopped: {error}</T> : null}
+        {error ? (
+          <T v="caption" style={{ color: colors.downText }}>
+            Stopped: {error}
+          </T>
+        ) : null}
         {saved && !running ? (
           <T v="caption">
             Written {fmtDateTime(saved.at)} by {saved.model}

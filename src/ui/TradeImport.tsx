@@ -60,9 +60,8 @@ export function TradeImport() {
   return (
     <Panel style={{ paddingVertical: 14, gap: 10 }}>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Screenshots of your broker's trade or order history (with dates) give Sahm your past buys and sells: profit on each sale, this
-        tax year's gains, and when the shares you hold were bought, which sets the right capital gains rate. Your holdings above aren't
-        changed.
+        Screenshots of your broker's trade or order history (with dates) give Sahm your past buys and sells: profit on each sale, this tax year's gains, and when the shares you hold were bought, which sets the right
+        capital gains rate. Your holdings above aren't changed.
       </T>
       <Button label={busy ? 'Reading…' : 'Read trade history screenshots'} tone="ghost" disabled={busy} onPress={pick} />
       {status ? (
@@ -88,9 +87,8 @@ export function TradeImport() {
           ) : null}
           {mismatches.length ? (
             <T v="caption" style={{ color: colors.gold, lineHeight: 18 }}>
-              Doesn't add up to what you hold, so buy dates are left as they are:{' '}
-              {mismatches.map((h) => `${h.symbol} (history ${replay.positions.get(h.symbol)!.shares}, you hold ${held.get(h.symbol)})`).join(', ')}. Older
-              trades are probably missing; add more screenshots going further back.
+              Doesn't add up to what you hold, so buy dates are left as they are: {mismatches.map((h) => `${h.symbol} (history ${replay.positions.get(h.symbol)!.shares}, you hold ${held.get(h.symbol)})`).join(', ')}.
+              Older trades are probably missing; add more screenshots going further back.
             </T>
           ) : null}
           {read.rejected.length ? <T v="caption">Skipped: {read.rejected.slice(0, 5).join('; ')}</T> : null}

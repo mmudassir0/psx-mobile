@@ -5,8 +5,7 @@ import { fmtDay, fmtPrice } from '../format';
 import type { Analysis, Stance } from '../analysis/signals';
 import { Section, T } from './kit';
 
-const stanceColor = (s: Stance): string =>
-  s === 'Strong bullish' || s === 'Bullish' ? colors.up : s === 'Neutral' ? colors.muted : colors.downText;
+const stanceColor = (s: Stance): string => (s === 'Strong bullish' || s === 'Bullish' ? colors.up : s === 'Neutral' ? colors.muted : colors.downText);
 
 const VOTE_GLYPH = { '1': '▲', '0': '•', '-1': '▼' } as const;
 const voteColor = (v: number) => (v > 0 ? colors.up : v < 0 ? colors.downText : colors.faint);
@@ -107,17 +106,18 @@ export function SignalsCard({ analysis, loading }: { analysis: Analysis | null; 
       </View>
       <T v="caption" style={{ lineHeight: 18 }}>
         From daily closes to {fmtDay(a.asOf)}
-        {a.bars < 200 ? '; under 200 days of history, so long-term trend checks are skipped' : ''}. Technical signals are
-        probabilities, not advice.
+        {a.bars < 200 ? '; under 200 days of history, so long-term trend checks are skipped' : ''}. Technical signals are probabilities, not advice.
       </T>
     </Section>
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 12 },
-  track: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
-  zone: { height: 8 },
-  marker: { position: 'absolute', top: -4, width: 4, height: 16, borderRadius: 2, marginLeft: -2 },
-  levels: { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 12, marginTop: 4 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 12 },
+    track: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
+    zone: { height: 8 },
+    marker: { position: 'absolute', top: -4, width: 4, height: 16, borderRadius: 2, marginLeft: -2 },
+    levels: { flexDirection: 'row', gap: 12, borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: 12, marginTop: 4 },
+  }),
+);

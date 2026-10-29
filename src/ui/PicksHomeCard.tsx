@@ -28,8 +28,8 @@ export function PicksHomeCard() {
           <T v="caption" style={{ lineHeight: 18 }}>
             {feed.breadth != null ? `Only ${Math.round(feed.breadth * 100)}% of liquid stocks are above their 200-day average (${when} close). ` : ''}
             Short-term setups mostly lose in markets like this
-            {w.bought ? `: of the last ${w.bought} that reached their buy zone, ${w.won} made money (average ${w.avgRet != null ? `${(w.avgRet * 100).toFixed(1)}%` : '–'})` : ''}. Sahm
-            will show picks again when at least half of stocks are back above their 200-day average.
+            {w.bought ? `: of the last ${w.bought} that reached their buy zone, ${w.won} made money (average ${w.avgRet != null ? `${(w.avgRet * 100).toFixed(1)}%` : '–'})` : ''}. Sahm will show picks again when at least
+            half of stocks are back above their 200-day average.
           </T>
         </Panel>
       </Section>

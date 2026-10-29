@@ -12,8 +12,7 @@ const when = (t: number) => {
   const d = new Date(t + 5 * 3600_000);
   return `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 };
-const label = (r: RunInfo) =>
-  r.status !== 'completed' ? (r.status === 'queued' ? 'Waiting to start' : 'Running…') : r.conclusion === 'success' ? 'Done' : r.conclusion === 'cancelled' ? 'Cancelled' : 'Failed';
+const label = (r: RunInfo) => (r.status !== 'completed' ? (r.status === 'queued' ? 'Waiting to start' : 'Running…') : r.conclusion === 'success' ? 'Done' : r.conclusion === 'cancelled' ? 'Cancelled' : 'Failed');
 const who = (r: RunInfo) => (r.event === 'workflow_dispatch' ? 'started by you or the timer' : "GitHub's own schedule");
 
 function inSession(now = Date.now()) {
@@ -32,25 +31,28 @@ export function UpdatesCard() {
   const [msg, setMsg] = useState<string | null>(null);
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const refresh = useCallback(async (t = token) => {
-    if (!t) return;
-    try {
-      const r = await recentRuns(t);
-      setRuns(r);
-      const live = r[0] && r[0].status !== 'completed';
-      if (!live && poll.current) {
-        clearInterval(poll.current);
-        poll.current = null;
-        if (r[0]?.conclusion === 'success') {
-          // pull the fresh picks straight away; other cards refresh within the hour or on pull-down
-          await cached('picks:feeds', 0, fetchFeeds, { persist: true, force: true }).catch(() => {});
-          setMsg('Finished. Pull down on Home to see the new figures.');
+  const refresh = useCallback(
+    async (t = token) => {
+      if (!t) return;
+      try {
+        const r = await recentRuns(t);
+        setRuns(r);
+        const live = r[0] && r[0].status !== 'completed';
+        if (!live && poll.current) {
+          clearInterval(poll.current);
+          poll.current = null;
+          if (r[0]?.conclusion === 'success') {
+            // pull the fresh picks straight away; other cards refresh within the hour or on pull-down
+            await cached('picks:feeds', 0, fetchFeeds, { persist: true, force: true }).catch(() => {});
+            setMsg('Finished. Pull down on Home to see the new figures.');
+          }
         }
+      } catch (e) {
+        setMsg((e as Error).message);
       }
-    } catch (e) {
-      setMsg((e as Error).message);
-    }
-  }, [token]);
+    },
+    [token],
+  );
 
   useEffect(() => {
     githubToken().then((t) => {
@@ -82,15 +84,13 @@ export function UpdatesCard() {
   return (
     <Panel style={{ paddingVertical: 14, gap: 10 }}>
       <T v="body" style={{ fontSize: 14, lineHeight: 20, color: colors.text2 }}>
-        The update runs on its own every weekday at 8:20 am (before the market opens) and 5:20 pm (after the close, with your
-        holdings alert). GitHub's own schedule is a backup and often runs late.
+        The update runs on its own every weekday at 8:20 am (before the market opens) and 5:20 pm (after the close, with your holdings alert). GitHub's own schedule is a backup and often runs late.
       </T>
       {!token ? (
         <View style={{ gap: 8 }}>
           <T v="caption" style={{ lineHeight: 18 }}>
-            To start it yourself, add a GitHub token: on GitHub open Settings → Developer settings → Fine-grained tokens → Generate. Choose
-            only the {REPO} repository, and under Repository permissions set "Actions" to "Read and write". Nothing else. Paste it here; it
-            stays in this phone's secure storage.
+            To start it yourself, add a GitHub token: on GitHub open Settings → Developer settings → Fine-grained tokens → Generate. Choose only the {REPO} repository, and under Repository permissions set "Actions" to
+            "Read and write". Nothing else. Paste it here; it stays in this phone's secure storage.
           </T>
           <Pressable accessibilityRole="link" onPress={() => Linking.openURL('https://github.com/settings/personal-access-tokens/new').catch(() => {})}>
             <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>Open GitHub token page ›</T>

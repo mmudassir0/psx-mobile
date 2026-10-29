@@ -25,7 +25,13 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
       .catch((e) => setErr((e as Error).message));
   }, []);
   const res = useMemo(
-    () => (index?.length ? stressTest(rows.map((r) => ({ symbol: r.symbol, value: r.value, candles: candles[r.symbol] ?? null })), index) : null),
+    () =>
+      index?.length
+        ? stressTest(
+            rows.map((r) => ({ symbol: r.symbol, value: r.value, candles: candles[r.symbol] ?? null })),
+            index,
+          )
+        : null,
     [index, rows, candles],
   );
   if (err) return <T v="caption">Couldn't load KSE-100 history: {err}</T>;
@@ -47,13 +53,23 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
         <T v="caption">If KSE-100 falls 10%</T>
         <T style={{ fontFamily: fonts.heavy, fontSize: 22, color: colors.downText }}>{b != null ? `your portfolio typically falls ${(b * 10).toFixed(1)}%` : '—'}</T>
         <T v="caption" style={{ lineHeight: 18 }}>
-          From how each holding moved with the index over the last two years{res.coverage < 0.99 ? ` (${Math.round(res.coverage * 100)}% of your money has enough history)` : ''}. Above 10% means your
-          holdings swing more than the market.
+          From how each holding moved with the index over the last two years{res.coverage < 0.99 ? ` (${Math.round(res.coverage * 100)}% of your money has enough history)` : ''}. Above 10% means your holdings swing more
+          than the market.
         </T>
         {sens.length ? (
           <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
-            Swings most: {sens.slice(0, 3).map((x) => `${x.symbol} ${(x.beta as number).toFixed(1)}×`).join(', ')}. Steadiest:{' '}
-            {sens.slice(-3).reverse().map((x) => `${x.symbol} ${(x.beta as number).toFixed(1)}×`).join(', ')}.
+            Swings most:{' '}
+            {sens
+              .slice(0, 3)
+              .map((x) => `${x.symbol} ${(x.beta as number).toFixed(1)}×`)
+              .join(', ')}
+            . Steadiest:{' '}
+            {sens
+              .slice(-3)
+              .reverse()
+              .map((x) => `${x.symbol} ${(x.beta as number).toFixed(1)}×`)
+              .join(', ')}
+            .
           </T>
         ) : null}
       </Panel>
@@ -71,7 +87,12 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
           about −{rs(shock.loss)} ({pc(shock.pct)})
         </T>
         <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
-          Most of it from {shock.rows.slice(0, 3).map((x) => `${x.symbol} −${rs(x.loss)}`).join(', ')}.
+          Most of it from{' '}
+          {shock.rows
+            .slice(0, 3)
+            .map((x) => `${x.symbol} −${rs(x.loss)}`)
+            .join(', ')}
+          .
         </T>
         {hurt.length && hurt[0].avgLoss < 0 ? (
           <T v="body" style={{ fontSize: 13.5, lineHeight: 19 }}>
@@ -130,8 +151,8 @@ export function StressCard({ rows, candles }: { rows: { symbol: string; value: n
         </Panel>
       ))}
       <T v="caption" style={{ lineHeight: 18 }}>
-        Each fall runs from the index's peak to its lowest close. Your holdings are measured over the same dates, as if you had held today's
-        portfolio then. Past falls show how these stocks have reacted to shocks; the next one can be different.
+        Each fall runs from the index's peak to its lowest close. Your holdings are measured over the same dates, as if you had held today's portfolio then. Past falls show how these stocks have reacted to shocks; the
+        next one can be different.
       </T>
     </View>
   );

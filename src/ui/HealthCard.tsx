@@ -37,9 +37,7 @@ export function HealthCard({ rows }: { rows: Row[] }) {
     <Panel style={{ paddingVertical: 4 }}>
       <View style={[styles.row, { alignItems: 'center' }, items.length ? styles.border : null]}>
         <View style={{ flex: 1, gap: 2 }}>
-          <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>
-            Health {score}/100
-          </T>
+          <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Health {score}/100</T>
           <T v="caption" style={{ lineHeight: 17 }}>
             Like owning {spread.toFixed(1)} stocks equally{line ? ` · ${line}` : ''}
           </T>

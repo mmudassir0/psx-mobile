@@ -97,7 +97,13 @@ export function Button({
       accessibilityState={{ disabled: !!disabled }}
       onPress={disabled || loading ? undefined : onPress}
       scaleTo={disabled ? 1 : 0.97}
-      style={[styles.button, small && { height: 44, borderRadius: 12 }, { backgroundColor: bg, opacity: disabled ? 0.45 : 1 }, tone === 'ghost' && { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }, style]}
+      style={[
+        styles.button,
+        small && { height: 44, borderRadius: 12 },
+        { backgroundColor: bg, opacity: disabled ? 0.45 : 1 },
+        tone === 'ghost' && { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
+        style,
+      ]}
     >
       {loading ? (
         <ActivityIndicator color={fg} />

@@ -15,17 +15,7 @@ import { useTodayItems } from './TodayList';
 import { eventsFor } from './EventsCard';
 import { T } from './kit';
 
-export function StoryDeck({
-  rows,
-  todo,
-  totals,
-  hasReal,
-}: {
-  rows: Row[];
-  todo: TodoItem[];
-  totals: { total: number; today: number; todayPct: number; pnl: number; pnlPct: number; invested: number };
-  hasReal: boolean;
-}) {
+export function StoryDeck({ rows, todo, totals, hasReal }: { rows: Row[]; todo: TodoItem[]; totals: { total: number; today: number; todayPct: number; pnl: number; pnlPct: number; invested: number }; hasReal: boolean }) {
   const nav = useNavigation();
   const { width } = useWindowDimensions();
   const w = width - space.gutter * 2;
@@ -86,29 +76,34 @@ export function StoryDeck({
         </T>
       )}
     </View>,
-    !on('news') ? null : <View key="news" style={{ gap: 12 }}>
-      <T v="label">{mine.length ? 'In the news: your stocks' : 'In the news'}</T>
-      {headlines.length ? (
-        headlines.map((n) => (
-          <Pressable key={n.url} accessibilityRole="link" onPress={() => Linking.openURL(n.url).catch(() => {})} style={{ gap: 2 }}>
-            <T style={{ fontFamily: fonts.semibold, fontSize: 15, lineHeight: 21 }}>{n.title}</T>
-            <T v="caption">
-              {n.source} · {ago(n.t)}
-            </T>
-          </Pressable>
-        ))
-      ) : (
-        <T v="body">No headlines yet.</T>
-      )}
-      <Pressable accessibilityRole="button" onPress={() => nav.navigate('News')}>
-        <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>All news ›</T>
-      </Pressable>
-    </View>,
+    !on('news') ? null : (
+      <View key="news" style={{ gap: 12 }}>
+        <T v="label">{mine.length ? 'In the news: your stocks' : 'In the news'}</T>
+        {headlines.length ? (
+          headlines.map((n) => (
+            <Pressable key={n.url} accessibilityRole="link" onPress={() => Linking.openURL(n.url).catch(() => {})} style={{ gap: 2 }}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 15, lineHeight: 21 }}>{n.title}</T>
+              <T v="caption">
+                {n.source} · {ago(n.t)}
+              </T>
+            </Pressable>
+          ))
+        ) : (
+          <T v="body">No headlines yet.</T>
+        )}
+        <Pressable accessibilityRole="button" onPress={() => nav.navigate('News')}>
+          <T style={{ fontFamily: fonts.semibold, color: colors.gold }}>All news ›</T>
+        </Pressable>
+      </View>
+    ),
     <View key="market" style={{ gap: 14 }}>
       <T v="label">The market</T>
       {kse ? (
         <T v="monoLg" style={{ fontSize: 26 }}>
-          KSE-100 {fmtNum(kse.current)} <T v="monoLg" style={{ fontSize: 20, color: changeColor(kse.changePct) }}>{fmtPct(kse.changePct)}</T>
+          KSE-100 {fmtNum(kse.current)}{' '}
+          <T v="monoLg" style={{ fontSize: 20, color: changeColor(kse.changePct) }}>
+            {fmtPct(kse.changePct)}
+          </T>
         </T>
       ) : null}
       {mood ? (
@@ -137,13 +132,7 @@ export function StoryDeck({
   const cards = all.filter(Boolean) as React.ReactNode[];
   return (
     <View style={{ gap: 10 }}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-        scrollEventThrottle={64}
-      >
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onScroll={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))} scrollEventThrottle={64}>
         {cards.map((c, i) => (
           // each page is the full screen width, with the card inset by the usual margin
           <View key={i} style={{ width, paddingHorizontal: space.gutter }}>

@@ -23,7 +23,6 @@ const ROW_H = 17;
 const BOX_ROWS = 4;
 const BOX_H = BOX_ROWS * ROW_H + 12;
 
-
 // ---------------------------------------------------------------------------
 // Worklet helpers (run on the UI thread, so no Intl / regex-heavy code)
 // ---------------------------------------------------------------------------
@@ -743,7 +742,7 @@ export function SkiaChart({
 
   const gesture = Gesture.Race(crosshair, Gesture.Simultaneous(pan, pinch));
 
-  const active = activeIdx != null ? candles[activeIdx] ?? null : null;
+  const active = activeIdx != null ? (candles[activeIdx] ?? null) : null;
 
   return (
     <View>
@@ -764,43 +763,43 @@ export function SkiaChart({
               <Line p1={prevP1} p2={prevP2} color={colors.faint} strokeWidth={1} style="stroke" opacity={0.7} />
               {band ? <Rect rect={bandRect} color={band.color} opacity={0.18} /> : null}
               <Group clip={plotClip}>
-              <Path path={volUp} color={colors.up} opacity={0.28} />
-              <Path path={volDn} color={colors.down} opacity={0.28} />
-              {mode === 'line' ? (
-                <Group>
-                  <Path path={area} opacity={upOpacity}>
-                    <LinearGradient start={gradStart} end={gradEnd} colors={[colors.upFill0, colors.fillEnd]} />
-                  </Path>
-                  <Path path={area} opacity={dnOpacity}>
-                    <LinearGradient start={gradStart} end={gradEnd} colors={[colors.downFill0, colors.fillEnd]} />
-                  </Path>
-                  <Path path={linePath} style="stroke" strokeWidth={2} color={trendColor} strokeJoin="round" />
-                </Group>
-              ) : (
-                <Group>
-                  <Path path={upWick} style="stroke" strokeWidth={1} color={colors.up} />
-                  <Path path={dnWick} style="stroke" strokeWidth={1} color={colors.down} />
-                  <Path path={upBody} color={colors.up} />
-                  <Path path={dnBody} color={colors.down} />
-                </Group>
-              )}
-              {lns.map((l, k) => (
-                <Path key={k} path={maP[k]} style="stroke" strokeWidth={l.thin ? 1 : 1.4} color={l.color} strokeJoin="round" opacity={l.thin ? 0.8 : 1} />
-              ))}
-              {markers?.length ? (
-                <Group>
-                  <Path path={mkUp} color={colors.up} />
-                  <Path path={mkDn} color={colors.down} />
-                </Group>
-              ) : null}
-              {lvls.map((l, k) => (
-                <Group key={k}>
-                  <Line p1={levelP1[k]} p2={levelP2[k]} color={l.color} strokeWidth={1} style="stroke" opacity={0.85}>
-                    <DashPathEffect intervals={[5, 4]} />
-                  </Line>
-                  {font ? <Text x={4} y={levelTextY[k]} text={l.label} font={font} color={l.color} /> : null}
-                </Group>
-              ))}
+                <Path path={volUp} color={colors.up} opacity={0.28} />
+                <Path path={volDn} color={colors.down} opacity={0.28} />
+                {mode === 'line' ? (
+                  <Group>
+                    <Path path={area} opacity={upOpacity}>
+                      <LinearGradient start={gradStart} end={gradEnd} colors={[colors.upFill0, colors.fillEnd]} />
+                    </Path>
+                    <Path path={area} opacity={dnOpacity}>
+                      <LinearGradient start={gradStart} end={gradEnd} colors={[colors.downFill0, colors.fillEnd]} />
+                    </Path>
+                    <Path path={linePath} style="stroke" strokeWidth={2} color={trendColor} strokeJoin="round" />
+                  </Group>
+                ) : (
+                  <Group>
+                    <Path path={upWick} style="stroke" strokeWidth={1} color={colors.up} />
+                    <Path path={dnWick} style="stroke" strokeWidth={1} color={colors.down} />
+                    <Path path={upBody} color={colors.up} />
+                    <Path path={dnBody} color={colors.down} />
+                  </Group>
+                )}
+                {lns.map((l, k) => (
+                  <Path key={k} path={maP[k]} style="stroke" strokeWidth={l.thin ? 1 : 1.4} color={l.color} strokeJoin="round" opacity={l.thin ? 0.8 : 1} />
+                ))}
+                {markers?.length ? (
+                  <Group>
+                    <Path path={mkUp} color={colors.up} />
+                    <Path path={mkDn} color={colors.down} />
+                  </Group>
+                ) : null}
+                {lvls.map((l, k) => (
+                  <Group key={k}>
+                    <Line p1={levelP1[k]} p2={levelP2[k]} color={l.color} strokeWidth={1} style="stroke" opacity={0.85}>
+                      <DashPathEffect intervals={[5, 4]} />
+                    </Line>
+                    {font ? <Text x={4} y={levelTextY[k]} text={l.label} font={font} color={l.color} /> : null}
+                  </Group>
+                ))}
               </Group>
               {/* indicator panels */}
               {paneList.length ? (
@@ -838,9 +837,7 @@ export function SkiaChart({
                 </Group>
               ) : null}
               {/* price axis */}
-              {font
-                ? tickT.map((t, k) => <Text key={k} x={tagTextX} y={tickY[k]} text={t} font={font} color={colors.faint} />)
-                : null}
+              {font ? tickT.map((t, k) => <Text key={k} x={tagTextX} y={tickY[k]} text={t} font={font} color={colors.faint} />) : null}
               {/* latest price */}
               <Line p1={lastP1} p2={lastP2} color={trendColor} strokeWidth={1} style="stroke" opacity={0.6} />
               <RoundedRect x={tagX} y={lastTagY} width={AXIS_W - 4} height={20} r={5} color={trendColor} />
@@ -885,9 +882,11 @@ export function SkiaChart({
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
-  hint: { fontSize: 11.5, color: colors.faint, textAlign: 'center', marginTop: 6, marginRight: AXIS_W / 2 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    header: { minHeight: 24, justifyContent: 'center', marginBottom: 12 },
+    hint: { fontSize: 11.5, color: colors.faint, textAlign: 'center', marginTop: 6, marginRight: AXIS_W / 2 },
+  }),
+);
 
 export type { SkPath };

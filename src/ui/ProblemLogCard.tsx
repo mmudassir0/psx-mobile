@@ -49,8 +49,7 @@ export function ProblemLogCard() {
         </View>
       ))}
       <T v="caption" style={{ lineHeight: 18 }}>
-        Crashes, failed downloads and AI errors, kept on this phone. If something goes wrong, tap Send and paste it to Claude. It has no
-        share amounts, costs or keys.
+        Crashes, failed downloads and AI errors, kept on this phone. If something goes wrong, tap Send and paste it to Claude. It has no share amounts, costs or keys.
       </T>
       {list.length ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>

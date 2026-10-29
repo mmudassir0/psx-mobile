@@ -121,14 +121,12 @@ export function MoodCard() {
               ))}
               <T v="caption" style={{ lineHeight: 18 }}>
                 Average change in the six months after each day with that mood, since {fmtDay(dayT(f.since ?? f.history[0][0]))}.
-                {f.outcomes.every((o) => o.avg > 0) ? ' The market mostly rose over this time, so every mood was followed by gains on average.' : ''} A
-                pattern from the past, not a forecast.
+                {f.outcomes.every((o) => o.avg > 0) ? ' The market mostly rose over this time, so every mood was followed by gains on average.' : ''} A pattern from the past, not a forecast.
               </T>
             </View>
           ) : null}
           <T v="caption" style={{ lineHeight: 18 }}>
-            Each reading is ranked against the PSX's own last three years (50 = a typical day), and the score is their average.
-            Updated after each close.
+            Each reading is ranked against the PSX's own last three years (50 = a typical day), and the score is their average. Updated after each close.
           </T>
         </View>
       ) : null}

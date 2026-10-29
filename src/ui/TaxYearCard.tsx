@@ -57,12 +57,8 @@ export function TaxYearCard({ rows }: { rows: Row[] }) {
         </View>
       ) : null}
       <T v="caption" style={{ lineHeight: 18 }}>
-        {s.sales === 0
-          ? 'Record sales with "Bought or sold" on a holding, and Sahm adds up the year here. '
-          : ''}
-        A loss on shares sold in the same tax year reduces the tax on your share gains. Selling only for tax still means you no longer
-        own the shares, so it's worth it only for holdings you'd sell anyway. NCCPL works out the actual tax through your broker; this
-        uses the rate for shares bought from July 2024.
+        {s.sales === 0 ? 'Record sales with "Bought or sold" on a holding, and Sahm adds up the year here. ' : ''}A loss on shares sold in the same tax year reduces the tax on your share gains. Selling only for tax still
+        means you no longer own the shares, so it's worth it only for holdings you'd sell anyway. NCCPL works out the actual tax through your broker; this uses the rate for shares bought from July 2024.
       </T>
       <Pressable accessibilityRole="button" onPress={() => nav.navigate('TaxStatement')} hitSlop={6}>
         <T style={{ fontFamily: fonts.semibold, color: colors.gold, fontSize: 13.5 }}>Full statement for your tax return (PDF) ›</T>

@@ -1,5 +1,5 @@
 /** Your real portfolio: value, profit, and Sahm's review of each holding. */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { bonusAfter, canUndo } from '../../portfolio/bonusAuto';
 import { undoBonus } from '../../portfolio/useAutoBonus';
 import { rightsChoice } from '../../portfolio/rights';
@@ -7,7 +7,7 @@ import { useFlags } from '../../flags';
 import { Skeleton } from '../../ui/Skeleton';
 import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { changeColor, colors, fonts, themed } from '../../theme';
+import { changeColor, colors, fonts, seriesColor, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
 import { currentRights, dividendTaxRate, payerKind, recentBonus, rightsMaths, upcomingPayout, type Dividends } from '../../analysis/dividends';
 import { applyBonus, applyTrade, setHoldings } from '../../portfolio/holdings';
@@ -28,6 +28,9 @@ import { resultsLine } from '../../analysis/results';
 import { TradeSheet } from '../../ui/TradeSheet';
 import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Section, Segmented, T } from '../../ui/kit';
+import { Press, Rise, useCountUp } from '../../ui/motion';
+import { AllocationRing, ringSlices } from '../../ui/AllocationRing';
+import { ToolIcon } from '../../ui/ToolIcon';
 import { SectorMix } from '../../ui/SectorMix';
 import { PerformanceCard } from '../../ui/PerformanceCard';
 import { ZakatCard } from '../../ui/ZakatCard';
@@ -181,7 +184,7 @@ function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }
   );
 }
 
-function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onOpen: () => void; taxRate: number; applied: string[]; holdingsAll: Row['holding'][] }) {
+function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: Row; onOpen: () => void; taxRate: number; applied: string[]; holdingsAll: Row['holding'][]; color: string }) {
   const flags = useFlags();
   const nav = useNavigation();
   const [open, setOpen] = useState(false);
@@ -192,80 +195,86 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onO
   const pnl = rv?.pnl ?? r.value - r.holding.shares * r.holding.avgCost;
   const pnlPct = rv?.pnlPct ?? 0;
   return (
-    <Panel style={{ paddingVertical: 14, gap: 10 }}>
-      <Pressable accessibilityRole="button" onPress={onOpen} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <T style={{ fontFamily: fonts.heavy, fontSize: 17 }}>{r.holding.symbol}</T>
-          <T v="caption">
-            {fmtNum(r.holding.shares, 0)} × {fmtPrice(r.price)} · {(r.weight * 100).toFixed(1)}% of portfolio
+    <Panel style={{ paddingVertical: 2, gap: 0 }}>
+      <Press
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityHint="Shows its review and actions"
+        onPress={() => setOpen((o) => !o)}
+        scaleTo={0.985}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+      >
+        <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: color }} />
+        <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <T style={{ fontFamily: fonts.heavy, fontSize: 16 }}>{r.holding.symbol}</T>
+            {rv ? (
+              <View style={[styles.tag, { backgroundColor: bg }]}>
+                <T style={[styles.tagText, { color: fg }]}>
+                  {rv.action}
+                  {rv.watch ? ' · watch' : ''}
+                </T>
+              </View>
+            ) : null}
+          </View>
+          <T v="caption" style={{ fontFamily: fonts.mono }} numberOfLines={1}>
+            {fmtNum(r.holding.shares, 0)} × {fmtPrice(r.price)}
           </T>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+        <View style={{ alignItems: 'flex-end', gap: 3 }}>
           <T v="mono" style={{ fontSize: 15 }}>
             {fmtNum(r.value, 0)}
           </T>
-          <T v="mono" style={{ fontSize: 13, color: changeColor(pnl) }}>
+          <T v="mono" style={{ fontSize: 12.5, color: changeColor(pnl) }}>
             {fmtSigned(pnl, 0)} ({pct(pnlPct)})
           </T>
         </View>
-      </Pressable>
-      <TargetBox symbol={r.holding.symbol} price={r.price} avgCost={r.holding.avgCost} fairMid={rv?.upside != null ? r.price * (1 + rv.upside) : null} />
-      <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
-        <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })}>
-          <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-            Plan a sale ›
-          </T>
-        </Pressable>
-        {r.price > 0 && r.price < r.holding.avgCost ? (
-          <Pressable accessibilityRole="button" hitSlop={4} onPress={() => nav.navigate('AverageDown', { symbol: r.holding.symbol })}>
-            <T v="caption" style={{ color: colors.gold, fontFamily: fonts.semibold }}>
-              Average down ›
-            </T>
-          </Pressable>
-        ) : null}
-      </View>
-      {rv ? (
-        <>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={[styles.chip, { backgroundColor: bg }]}>
-              <T style={{ fontFamily: fonts.bold, fontSize: 13.5, color: fg }}>
-                {rv.action}
-                {rv.watch ? ', watch' : ''}
-              </T>
-            </View>
-            <T v="caption" style={{ flex: 1 }} numberOfLines={open ? undefined : 2}>
+      </Press>
+      {open ? (
+        <Rise style={{ gap: 10, paddingBottom: 14, paddingLeft: 16 }}>
+          {rv ? (
+            <T v="body" style={{ fontSize: 13.5, lineHeight: 19, color: colors.text2 }}>
               {rv.headline}
             </T>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Button small tone="ghost" label="Plan a sale" style={{ flex: 1 }} onPress={() => nav.navigate('SellPlan', { symbol: r.holding.symbol })} />
+            {r.price > 0 && r.price < r.holding.avgCost ? <Button small tone="ghost" label="Average down" style={{ flex: 1 }} onPress={() => nav.navigate('AverageDown', { symbol: r.holding.symbol })} /> : null}
+            <Button small tone="ghost" label="Open" style={{ flex: 1 }} onPress={onOpen} />
           </View>
-          {!open ? <Pills r={r} taxRate={taxRate} onPress={() => setOpen(true)} /> : null}
+          <TargetBox symbol={r.holding.symbol} price={r.price} avgCost={r.holding.avgCost} fairMid={rv?.upside != null ? r.price * (1 + rv.upside) : null} />
+          {rv ? <Pills r={r} taxRate={taxRate} onPress={onOpen} /> : null}
+          {(() => {
+            const up = upcomingPayout(r.dividends);
+            if (!up) return null;
+            const net = up.dps * r.holding.shares * (1 - taxRate);
+            return (
+              <View style={styles.payout}>
+                <T
+                  v="body"
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 18,
+                    color: colors.text2,
+                  }}
+                >
+                  Next payout: {up.dps > 0 ? `about Rs ${fmtNum(net, 0)} after tax on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
+                  {up.dps > 0 && up.bonusPct > 0 ? ' plus ' : ''}
+                  {up.bonusPct > 0
+                    ? Math.floor((r.holding.shares * up.bonusPct) / 100) >= 1
+                      ? `${up.bonusPct}% bonus shares (about ${fmtNum(Math.floor((r.holding.shares * up.bonusPct) / 100), 0)})`
+                      : `${up.bonusPct}% bonus shares (under one share on your holding, so paid in cash)`
+                    : ''}
+                  . Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
+                </T>
+              </View>
+            );
+          })()}
+        </Rise>
+      ) : null}
+      {rv ? (
+        <>
           {flags('rights') ? <RightsBox r={r} holdingsAll={holdingsAll} /> : null}
-          {open &&
-            (() => {
-              const up = upcomingPayout(r.dividends);
-              if (!up) return null;
-              const net = up.dps * r.holding.shares * (1 - taxRate);
-              return (
-                <View style={styles.payout}>
-                  <T
-                    v="body"
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 18,
-                      color: colors.text2,
-                    }}
-                  >
-                    Next payout: {up.dps > 0 ? `about Rs ${fmtNum(net, 0)} after tax on your ${fmtNum(r.holding.shares, 0)} shares` : ''}
-                    {up.dps > 0 && up.bonusPct > 0 ? ' plus ' : ''}
-                    {up.bonusPct > 0
-                      ? Math.floor((r.holding.shares * up.bonusPct) / 100) >= 1
-                        ? `${up.bonusPct}% bonus shares (about ${fmtNum(Math.floor((r.holding.shares * up.bonusPct) / 100), 0)})`
-                        : `${up.bonusPct}% bonus shares (under one share on your holding, so paid in cash)`
-                      : ''}
-                    . Book closure {fmtDay(up.bookClosure)}; buy by {fmtDay(up.lastBuyDay)} to qualify.
-                  </T>
-                </View>
-              );
-            })()}
           {bonusLog
             .filter((e) => e.symbol === r.holding.symbol && Date.now() - e.at < 45 * 864e5)
             .slice(-1)
@@ -397,35 +406,14 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll }: { r: Row; onO
               {flags('tax') ? <SaleTaxLine r={r} /> : null}
             </View>
           ) : null}
-          <View style={{ flexDirection: 'row', gap: 22 }}>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen((v) => !v)}>
-              <T
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 13.5,
-                  color: colors.gold,
-                }}
-              >
-                {open ? 'Hide reasons' : 'Why?'}
-              </T>
+          {open ? (
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setTrading((v) => !v)} style={{ paddingLeft: 16, paddingBottom: 12 }}>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Bought or sold some?</T>
             </Pressable>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setTrading((v) => !v)}>
-              <T
-                style={{
-                  fontFamily: fonts.semibold,
-                  fontSize: 13.5,
-                  color: colors.gold,
-                }}
-              >
-                Bought or sold
-              </T>
-            </Pressable>
-          </View>
+          ) : null}
           {trading ? <TradeSheet symbol={r.holding.symbol} price={r.price} onDone={() => setTrading(false)} /> : null}
         </>
-      ) : (
-        <T v="caption">Checking…</T>
-      )}
+      ) : null}
     </Panel>
   );
 }
@@ -459,6 +447,8 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
         });
   }, [loading, rows]);
   useTrackSnapshot(rows, loading);
+  const scroller = useRef<ScrollView>(null);
+  const shownTotal = useCountUp(total > 0 ? total : null);
   const stressRows = useMemo(() => rows.map((r) => ({ symbol: r.holding.symbol, value: r.value })), [rows]);
 
   const sorted = useMemo(
@@ -485,6 +475,11 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
     );
 
   const invested = holdings.reduce((a, h) => a + h.shares * h.avgCost, 0);
+  const slices = ringSlices(rows.map((r) => ({ label: r.holding.symbol, value: r.value })));
+  const colorOf = (sym: string) => {
+    const k = slices.findIndex((x) => x.label === sym);
+    return seriesColor(k >= 0 ? k : 5);
+  };
   const pnl = total - invested;
   const income = rows.reduce((a, r) => a + (r.dividends?.ttm ?? 0) * r.holding.shares, 0);
   const rateOf = (r: Row) => dividendTaxRate(taxStatus, payerKind(r.stock?.sector ?? (r.fund ? 'ETF' : null)));
@@ -499,179 +494,227 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   const due = rows.filter((r) => !r.results?.latest?.fresh && r.results?.meetingNotice).map((r) => r.holding.symbol);
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Panel style={{ paddingVertical: 16, gap: 10 }}>
-        <T v="caption">Market value</T>
-        <T v="monoXl">{fmtPkr(total)}</T>
-        <T v="mono" style={{ color: changeColor(pnl) }}>
-          {fmtSigned(pnl, 0)} ({pct(invested ? total / invested - 1 : 0)}) on {fmtNum(invested, 0)} invested
-        </T>
-        <CashBox shares={total} />
-        {!loading && income > 0 ? (
+    <View style={{ flex: 1 }}>
+      <ScrollView ref={scroller} contentContainerStyle={[styles.content, view === 'holdings' && { paddingBottom: 100 }]}>
+        <Rise style={{ gap: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <AllocationRing slices={slices}>
+              <T v="caption" style={{ fontSize: 11 }}>
+                {holdings.length} stocks
+              </T>
+              <T v="mono" style={{ fontSize: 14.5, color: changeColor(pnl) }}>
+                {pct(invested ? total / invested - 1 : 0)}
+              </T>
+            </AllocationRing>
+            <View style={{ flex: 1, gap: 5, minWidth: 0 }}>
+              <T v="caption">Market value</T>
+              <T v="monoLg" style={{ fontSize: 26, letterSpacing: -1 }} numberOfLines={1} adjustsFontSizeToFit>
+                {fmtNum(shownTotal ?? total, 0)}
+              </T>
+              <T v="caption" style={{ lineHeight: 18 }}>
+                <T v="mono" style={{ fontSize: 12.5, color: changeColor(pnl) }}>
+                  {fmtSigned(pnl, 0)}
+                </T>{' '}
+                on {fmtNum(invested, 0)} put in
+              </T>
+              {!loading && income > 0 ? (
+                <T v="caption" style={{ lineHeight: 18 }}>
+                  Dividends ≈{' '}
+                  <T v="mono" style={{ fontSize: 12.5 }}>
+                    {fmtNum(netIncome, 0)}
+                  </T>{' '}
+                  a year after tax
+                </T>
+              ) : null}
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, rowGap: 6, columnGap: 14 }}>
+            {slices.map((x, i) => (
+              <View key={x.label} style={styles.legend}>
+                <View style={[styles.swatch, { backgroundColor: seriesColor(i) }]} />
+                <T v="caption" style={{ color: colors.text2 }}>
+                  {x.label} {Math.round((x.value / (total || 1)) * 100)}%
+                </T>
+              </View>
+            ))}
+          </View>
+          <CashBox shares={total} />
+          {!loading ? (
+            <T v="body" style={{ fontSize: 14, color: colors.text2 }}>
+              {counts.map(([a, n]) => `${n} ${a.toLowerCase()}`).join(' · ')}
+              {watching ? ` (${watching} to watch)` : ''}
+              {'  '}
+              <T accessibilityRole="link" onPress={() => nav.navigate('SellSignals')} style={{ color: colors.gold, fontSize: 14, fontFamily: fonts.semibold }}>
+                Warning signs ›
+              </T>
+            </T>
+          ) : (
+            <T v="caption">Checking each holding…</T>
+          )}
+        </Rise>
+        {breadth != null && breadth < 0.5 ? (
           <T v="caption" style={{ lineHeight: 18 }}>
-            Dividends: about Rs {fmtNum(netIncome, 0)} a year after tax as a {taxStatus === 'filer' ? 'filer' : 'non-filer'} ({((netIncome / total) * 100).toFixed(1)}% yield), Rs {fmtNum(income, 0)} before tax, at the
-            last 12 months' rate
+            Only {Math.round(breadth * 100)}% of liquid PSX stocks are above their 200-day average, so most chart warnings below reflect the whole market falling, not these companies.
           </T>
         ) : null}
-        {!loading ? (
-          <T v="body" style={{ fontSize: 14, color: colors.text2 }}>
-            {counts.map(([a, n]) => `${n} ${a.toLowerCase()}`).join(' · ')}
-            {watching ? ` (${watching} to watch)` : ''}
-            {'  '}
-            <T accessibilityRole="link" onPress={() => nav.navigate('SellSignals')} style={{ color: colors.gold, fontSize: 14, fontFamily: fonts.semibold }}>
-              Warning signs ›
-            </T>
-          </T>
-        ) : (
-          <T v="caption">Checking each holding…</T>
-        )}
-      </Panel>
-      {breadth != null && breadth < 0.5 ? (
-        <T v="caption" style={{ lineHeight: 18 }}>
-          Only {Math.round(breadth * 100)}% of liquid PSX stocks are above their 200-day average, so most chart warnings below reflect the whole market falling, not these companies.
-        </T>
-      ) : null}
 
-      <Segmented
-        options={[
-          { key: 'holdings', label: 'Holdings' },
-          { key: 'invest', label: 'Invest cash' },
-          { key: 'risk', label: 'Returns' },
-        ]}
-        value={view}
-        onChange={setView}
-      />
+        <Segmented
+          options={[
+            { key: 'holdings', label: 'Holdings' },
+            { key: 'invest', label: 'Invest cash' },
+            { key: 'risk', label: 'Returns' },
+          ]}
+          value={view}
+          onChange={setView}
+        />
 
-      {view === 'holdings' ? (
-        <>
-          {newTrade ? <TradeSheet onDone={() => setNewTrade(false)} /> : <Button label="Record a trade" tone="ghost" onPress={() => setNewTrade(true)} />}
+        {view === 'holdings' ? (
+          <>
+            {newTrade ? <TradeSheet onDone={() => setNewTrade(false)} /> : null}
 
-          {!loading && (reported.length || due.length) ? (
-            <Panel style={{ paddingVertical: 12, gap: 4 }}>
-              <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Results season</T>
-              {reported.length ? <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T> : null}
-              {due.length ? <T v="caption">Results due soon (board meeting called): {due.join(', ')}.</T> : null}
-            </Panel>
-          ) : null}
+            {!loading && (reported.length || due.length) ? (
+              <Panel style={{ paddingVertical: 12, gap: 4 }}>
+                <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>Results season</T>
+                {reported.length ? <T v="caption">Reported this week: {reported.join(', ')}. Their decisions below already use the new numbers.</T> : null}
+                {due.length ? <T v="caption">Results due soon (board meeting called): {due.join(', ')}.</T> : null}
+              </Panel>
+            ) : null}
 
-          {!loading && upcoming.length ? (
-            <Section title="Upcoming payouts" action={on('dividends') ? 'All companies' : undefined} onAction={() => nav.navigate('Dividends')}>
-              <Panel style={{ paddingVertical: 6 }}>
-                {upcoming.map(({ r, up }, i) => (
-                  <View key={r.holding.symbol} style={[styles.upRow, i < upcoming.length - 1 && styles.upBorder]}>
-                    <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
-                      <T style={{ fontFamily: fonts.heavy, fontSize: 15 }}>{r.holding.symbol}</T>
-                      <T v="caption">
-                        Book closure {fmtDay(up.bookClosure)} · buy by {fmtDay(up.lastBuyDay)}
-                      </T>
-                    </View>
-                    <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                      {up.dps > 0 ? (
-                        <T v="mono" style={{ fontSize: 14.5 }}>
-                          Rs {fmtNum(up.dps * r.holding.shares * (1 - rateOf(r)), 0)}
+            {!loading && upcoming.length ? (
+              <Section title="Upcoming payouts" action={on('dividends') ? 'All companies' : undefined} onAction={() => nav.navigate('Dividends')}>
+                <Panel style={{ paddingVertical: 6 }}>
+                  {upcoming.map(({ r, up }, i) => (
+                    <View key={r.holding.symbol} style={[styles.upRow, i < upcoming.length - 1 && styles.upBorder]}>
+                      <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                        <T style={{ fontFamily: fonts.heavy, fontSize: 15 }}>{r.holding.symbol}</T>
+                        <T v="caption">
+                          Book closure {fmtDay(up.bookClosure)} · buy by {fmtDay(up.lastBuyDay)}
                         </T>
-                      ) : null}
-                      <T v="caption">
-                        {up.dps > 0 ? `Rs ${up.dps.toFixed(2)}/share, after tax` : ''}
-                        {up.dps > 0 && up.bonusPct > 0 ? ' + ' : ''}
-                        {up.bonusPct > 0 ? `${up.bonusPct}% bonus` : ''}
-                      </T>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                        {up.dps > 0 ? (
+                          <T v="mono" style={{ fontSize: 14.5 }}>
+                            Rs {fmtNum(up.dps * r.holding.shares * (1 - rateOf(r)), 0)}
+                          </T>
+                        ) : null}
+                        <T v="caption">
+                          {up.dps > 0 ? `Rs ${up.dps.toFixed(2)}/share, after tax` : ''}
+                          {up.dps > 0 && up.bonusPct > 0 ? ' + ' : ''}
+                          {up.bonusPct > 0 ? `${up.bonusPct}% bonus` : ''}
+                        </T>
+                      </View>
                     </View>
+                  ))}
+                </Panel>
+                <T v="caption" style={{ lineHeight: 18 }}>
+                  "Buy by" counts two working days back from book closure, as PSX settles a day after the trade, skipping weekends and PSX holidays. Moon-dependent holidays can move, so check the ex-date in your broker
+                  app if it's close.
+                </T>
+              </Section>
+            ) : null}
+
+            <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
+              {sorted.map((r, i) => (
+                <Rise key={r.holding.symbol} delay={Math.min(i, 8) * 50}>
+                  <HoldingCard r={r} color={colorOf(r.holding.symbol)} taxRate={rateOf(r)} applied={applied} holdingsAll={holdings} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
+                </Rise>
+              ))}
+            </Section>
+          </>
+        ) : null}
+
+        {view === 'invest' ? (
+          <>
+            {on('summary') ? (
+              <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
+                <GoalCard value={total + cash.amount} tracked={null} />
+              </Section>
+            ) : null}
+            <Section title="Where should new money go?">{loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}</Section>
+          </>
+        ) : null}
+
+        {view === 'risk' ? (
+          <>
+            {on('health') ? (
+              <>
+                <Section title="Health check">{loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}</Section>
+                <Section title="How you're doing">
+                  <PerformanceCard rows={rows} candles={candles} loading={loading} />
+                </Section>
+              </>
+            ) : null}
+            <SectorMix
+              items={rows.map((r) => ({
+                sector: r.stock?.sector ?? 'Other',
+                value: r.value,
+                shariah: !!r.stock?.shariah,
+              }))}
+            />
+
+            <Section title="By sector">
+              <Panel style={{ paddingVertical: 10 }}>
+                {sectors.map(([name, w]) => (
+                  <View key={name} style={styles.sector}>
+                    <T v="body" style={{ flex: 1, fontSize: 14 }} numberOfLines={1}>
+                      {shortSector(name)}
+                    </T>
+                    <T
+                      v="mono"
+                      style={{
+                        fontSize: 14,
+                        color: w > 0.35 ? colors.downText : colors.text,
+                      }}
+                    >
+                      {(w * 100).toFixed(1)}%
+                    </T>
                   </View>
                 ))}
               </Panel>
-              <T v="caption" style={{ lineHeight: 18 }}>
-                "Buy by" counts two working days back from book closure, as PSX settles a day after the trade, skipping weekends and PSX holidays. Moon-dependent holidays can move, so check the ex-date in your broker app
-                if it's close.
-              </T>
             </Section>
-          ) : null}
 
-          <Section title="Holdings" action="Edit all" onAction={() => nav.navigate('EditHoldings')}>
-            {sorted.map((r) => (
-              <HoldingCard key={r.holding.symbol} r={r} taxRate={rateOf(r)} applied={applied} holdingsAll={holdings} onOpen={() => nav.navigate('Stock', { symbol: r.holding.symbol })} />
-            ))}
-          </Section>
-        </>
-      ) : null}
-
-      {view === 'invest' ? (
-        <>
-          {on('summary') ? (
-            <Section title="Your goals" action="Monthly summary" onAction={() => nav.navigate('Summary')}>
-              <GoalCard value={total + cash.amount} tracked={null} />
-            </Section>
-          ) : null}
-          <Section title="Where should new money go?">{loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}</Section>
-        </>
-      ) : null}
-
-      {view === 'risk' ? (
-        <>
-          {on('health') ? (
-            <>
-              <Section title="Health check">{loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}</Section>
-              <Section title="How you're doing">
-                <PerformanceCard rows={rows} candles={candles} loading={loading} />
+            {on('tax') ? (
+              <Section title="Tax on sales this year">
+                <TaxYearCard rows={rows} />
               </Section>
-            </>
-          ) : null}
-          <SectorMix
-            items={rows.map((r) => ({
-              sector: r.stock?.sector ?? 'Other',
-              value: r.value,
-              shariah: !!r.stock?.shariah,
-            }))}
-          />
+            ) : null}
 
-          <Section title="By sector">
-            <Panel style={{ paddingVertical: 10 }}>
-              {sectors.map(([name, w]) => (
-                <View key={name} style={styles.sector}>
-                  <T v="body" style={{ flex: 1, fontSize: 14 }} numberOfLines={1}>
-                    {shortSector(name)}
-                  </T>
-                  <T
-                    v="mono"
-                    style={{
-                      fontSize: 14,
-                      color: w > 0.35 ? colors.downText : colors.text,
-                    }}
-                  >
-                    {(w * 100).toFixed(1)}%
-                  </T>
-                </View>
-              ))}
-            </Panel>
-          </Section>
+            {on('zakat') ? <Section title="Zakat on your shares">{loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}</Section> : null}
 
-          {on('tax') ? (
-            <Section title="Tax on sales this year">
-              <TaxYearCard rows={rows} />
-            </Section>
-          ) : null}
-
-          {on('zakat') ? <Section title="Zakat on your shares">{loading ? <T v="caption">Waiting for every holding's figures…</T> : <ZakatCard rows={rows} />}</Section> : null}
-
-          {on('health') ? <Section title="Stress test">{loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}</Section> : null}
-        </>
-      ) : null}
-      <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>
-        <T
-          style={{
-            fontFamily: fonts.semibold,
-            fontSize: 14,
-            color: colors.gold,
-          }}
-        >
-          How have these decisions done? ›
+            {on('health') ? <Section title="Stress test">{loading ? <T v="caption">Waiting for every holding's price history…</T> : <StressCard rows={stressRows} candles={candles} />}</Section> : null}
+          </>
+        ) : null}
+        <Pressable accessibilityRole="link" onPress={() => nav.navigate('Record')} hitSlop={8}>
+          <T
+            style={{
+              fontFamily: fonts.semibold,
+              fontSize: 14,
+              color: colors.gold,
+            }}
+          >
+            How have these decisions done? ›
+          </T>
+        </Pressable>
+        <T v="caption" style={{ lineHeight: 18 }}>
+          Review means the business has weakened (losses or falling earnings). Trim means one holding is over 20% of your money, or it is far above fair value with a broken chart. Add more needs a price below fair value,
+          an uptrend, and under 10% of your portfolio. A weak chart alone only says watch. A second opinion from fixed rules, not advice.
         </T>
-      </Pressable>
-      <T v="caption" style={{ lineHeight: 18 }}>
-        Review means the business has weakened (losses or falling earnings). Trim means one holding is over 20% of your money, or it is far above fair value with a broken chart. Add more needs a price below fair value,
-        an uptrend, and under 10% of your portfolio. A weak chart alone only says watch. A second opinion from fixed rules, not advice.
-      </T>
-    </ScrollView>
+      </ScrollView>
+      {view === 'holdings' && !newTrade ? (
+        <Press
+          accessibilityRole="button"
+          accessibilityLabel="Record a trade"
+          onPress={() => {
+            setNewTrade(true);
+            scroller.current?.scrollTo({ y: 0, animated: true });
+          }}
+          style={styles.fab}
+        >
+          <ToolIcon name="plus" size={20} color={colors.onGold} />
+          <T style={{ fontFamily: fonts.heavy, fontSize: 14.5, color: colors.onGold }}>Record a trade</T>
+        </Press>
+      ) : null}
+    </View>
   );
 }
 
@@ -711,5 +754,27 @@ const styles = themed(() =>
       justifyContent: 'center',
     },
     sector: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
+    tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+    tagText: { fontFamily: fonts.heavy, fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase' },
+    legend: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    swatch: { width: 8, height: 8, borderRadius: 2 },
+    fab: {
+      position: 'absolute',
+      right: 20,
+      bottom: 20,
+      height: 52,
+      paddingLeft: 16,
+      paddingRight: 20,
+      borderRadius: 26,
+      backgroundColor: colors.gold,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
   }),
 );

@@ -72,9 +72,8 @@ export function ZakatCard({ rows }: { rows: Row[] }) {
         {open ? 'Hide each holding' : 'Show each holding'}
       </T>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Work it out on your own zakat date, with that day's prices. Due only if your total wealth is above nisab, after debts; dividends
-        may already have had zakat deducted unless you filed a CZ-50 declaration. Scholars differ on details, so check with one you
-        trust.
+        Work it out on your own zakat date, with that day's prices. Due only if your total wealth is above nisab, after debts; dividends may already have had zakat deducted unless you filed a CZ-50 declaration. Scholars
+        differ on details, so check with one you trust.
       </T>
     </Panel>
   );

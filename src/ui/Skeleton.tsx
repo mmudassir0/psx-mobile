@@ -7,10 +7,7 @@ function usePulse() {
   const v = useRef(new Animated.Value(0.45)).current;
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(v, { toValue: 0.45, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
-      ]),
+      Animated.sequence([Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }), Animated.timing(v, { toValue: 0.45, duration: 700, useNativeDriver: Platform.OS !== 'web' })]),
     );
     loop.start();
     return () => loop.stop();

@@ -39,10 +39,14 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
       const indexWeek = idx && idx.length > 6 ? idx[idx.length - 1].v / idx[idx.length - 6].v - 1 : null;
       const facts = weeklyFacts(rows, candles, { mood: mood?.now.score ?? null, indexWeek, breadth, news });
       let text = '';
-      const run = await ai.run(() => briefMessages(facts), (t) => {
-        text += t;
-        setWriting(text);
-      }, 450);
+      const run = await ai.run(
+        () => briefMessages(facts),
+        (t) => {
+          text += t;
+          setWriting(text);
+        },
+        450,
+      );
       await run.gen.done;
       if (text.trim()) await briefPref.set({ week, text: text.trim(), engine: run.engine(), at: Date.now() });
     } catch (e) {
@@ -77,9 +81,7 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
             </T>
           ) : (
             <Pressable accessibilityRole="button" onPress={write} hitSlop={8} disabled={busy || !ready}>
-              <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: ready ? colors.gold : colors.muted }}>
-                {busy ? 'Writing…' : weekOver() ? "Write this week's brief" : 'Write a brief of the week so far'}
-              </T>
+              <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: ready ? colors.gold : colors.muted }}>{busy ? 'Writing…' : weekOver() ? "Write this week's brief" : 'Write a brief of the week so far'}</T>
             </Pressable>
           )}
           {err ? (
@@ -87,11 +89,7 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
               {err}
             </T>
           ) : null}
-          {current && !writing ? (
-            <T v="caption">
-              Written by {current.engine} from your holdings' figures; it can still get things wrong, so check anything important.
-            </T>
-          ) : null}
+          {current && !writing ? <T v="caption">Written by {current.engine} from your holdings' figures; it can still get things wrong, so check anything important.</T> : null}
         </Panel>
       </Section>
     </View>

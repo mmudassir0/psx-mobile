@@ -65,8 +65,8 @@ export function BackupCard() {
   return (
     <View style={styles.card}>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Your holdings, watchlist, practice account and Sahm's track record are kept only on this phone. Save a backup somewhere safe (a
-        note, or an email to yourself) so a new phone or a reinstall doesn't lose them. API keys are not included.
+        Your holdings, watchlist, practice account and Sahm's track record are kept only on this phone. Save a backup somewhere safe (a note, or an email to yourself) so a new phone or a reinstall doesn't lose them. API
+        keys are not included.
       </T>
       <Button label="Export backup" tone="ghost" onPress={doExport} />
       {Platform.OS !== 'web' ? (
@@ -117,21 +117,12 @@ export function BackupCard() {
       ) : null}
       {pasting ? (
         <View style={{ gap: 10 }}>
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Paste the backup text here"
-            placeholderTextColor={colors.faint}
-            multiline
-            autoCorrect={false}
-            autoCapitalize="none"
-            style={styles.input}
-          />
+          <TextInput value={text} onChangeText={setText} placeholder="Paste the backup text here" placeholderTextColor={colors.faint} multiline autoCorrect={false} autoCapitalize="none" style={styles.input} />
           {parsed ? (
             parsed.ok ? (
               <T v="caption" style={{ lineHeight: 18 }}>
-                Backup from {parsed.restore.exportedAt ? fmtDay(Date.parse(parsed.restore.exportedAt)) : 'an unknown date'}: {parsed.restore.counts.holdings} holdings,{' '}
-                {parsed.restore.counts.watchlist} watchlist stocks, {parsed.restore.counts.journal} track-record entries
+                Backup from {parsed.restore.exportedAt ? fmtDay(Date.parse(parsed.restore.exportedAt)) : 'an unknown date'}: {parsed.restore.counts.holdings} holdings, {parsed.restore.counts.watchlist} watchlist stocks,{' '}
+                {parsed.restore.counts.journal} track-record entries
                 {parsed.restore.counts.practice ? ', the practice account' : ''}. Restoring replaces what's on this phone now.
                 {parsed.restore.skipped.length ? ` Left out (damaged): ${parsed.restore.skipped.join(', ')}.` : ''}
               </T>
@@ -208,8 +199,11 @@ function AutoBackupBox({ onRestore }: { onRestore: (r: Restore) => Promise<void>
       {auto.dir ? (
         <>
           <T v="caption" style={{ lineHeight: 18 }}>
-            Every week into <T v="caption" style={{ fontFamily: fonts.bold }}>{folderName(auto.dir)}</T>, keeping the last 4. Last one{' '}
-            {auto.lastAt ? fmtDay(auto.lastAt) : 'not yet'}
+            Every week into{' '}
+            <T v="caption" style={{ fontFamily: fonts.bold }}>
+              {folderName(auto.dir)}
+            </T>
+            , keeping the last 4. Last one {auto.lastAt ? fmtDay(auto.lastAt) : 'not yet'}
             {auto.lastAt ? (nextIn ? `, next in ${nextIn} day${nextIn > 1 ? 's' : ''} (when you open Sahm)` : ', next when you open Sahm') : ''}.
           </T>
           {auto.error ? (
@@ -241,8 +235,8 @@ function AutoBackupBox({ onRestore }: { onRestore: (r: Restore) => Promise<void>
       ) : (
         <>
           <T v="caption" style={{ lineHeight: 18 }}>
-            Pick a folder once (a new folder inside Download is a good choice) and Sahm saves a backup there every week. Files in that folder stay
-            when the app is removed, so a new phone or a reinstall can restore from them.
+            Pick a folder once (a new folder inside Download is a good choice) and Sahm saves a backup there every week. Files in that folder stay when the app is removed, so a new phone or a reinstall can restore from
+            them.
           </T>
           <Button label="Choose a folder" disabled={busy} onPress={turnOn} />
         </>
@@ -256,6 +250,18 @@ function AutoBackupBox({ onRestore }: { onRestore: (r: Restore) => Promise<void>
 const styles = themed(() =>
   StyleSheet.create({
     card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 12 },
-    input: { minHeight: 120, maxHeight: 220, borderRadius: 12, backgroundColor: colors.ground, borderWidth: 1, borderColor: colors.line, padding: 12, fontFamily: fonts.mono, fontSize: 12, color: colors.text, textAlignVertical: 'top' },
+    input: {
+      minHeight: 120,
+      maxHeight: 220,
+      borderRadius: 12,
+      backgroundColor: colors.ground,
+      borderWidth: 1,
+      borderColor: colors.line,
+      padding: 12,
+      fontFamily: fonts.mono,
+      fontSize: 12,
+      color: colors.text,
+      textAlignVertical: 'top',
+    },
   }),
 );

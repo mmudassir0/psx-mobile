@@ -25,10 +25,7 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
       .catch((e) => setErr((e as Error).message));
   }, [company.symbol]);
   const d = useMemo(
-    () =>
-      payouts
-        ? dividends(payouts, { price, divYield, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd), latestFiscalYear: company.financialsAnnual?.periods[0] ?? null })
-        : null,
+    () => (payouts ? dividends(payouts, { price, divYield, fiscalEndMonth: fiscalEndMonth(company.fiscalYearEnd), latestFiscalYear: company.financialsAnnual?.periods[0] ?? null }) : null),
     [payouts, price, divYield, company],
   );
   if (err) return <T v="caption">Couldn't load dividends: {err}</T>;
@@ -68,14 +65,22 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
           </View>
         ) : null;
       })()}
-      {d.cut ? <T v="body" style={{ color: colors.downText, fontSize: 14 }}>▼ {d.cut}</T> : null}
-      {d.lower ? <T v="body" style={{ color: colors.gold, fontSize: 14 }}>▼ {d.lower}</T> : null}
+      {d.cut ? (
+        <T v="body" style={{ color: colors.downText, fontSize: 14 }}>
+          ▼ {d.cut}
+        </T>
+      ) : null}
+      {d.lower ? (
+        <T v="body" style={{ color: colors.gold, fontSize: 14 }}>
+          ▼ {d.lower}
+        </T>
+      ) : null}
       <View>
         {d.list.slice(0, 8).map((p, i) => (
           <View key={p.announced + ':' + i} style={[styles.row, styles.border]}>
             <View style={{ flex: 1 }}>
               <T v="body" style={{ fontSize: 14, fontFamily: fonts.semibold }}>
-                {p.periodType ? KIND[p.periodType] ?? p.periodType : 'Payout'}
+                {p.periodType ? (KIND[p.periodType] ?? p.periodType) : 'Payout'}
                 {p.period ? ` · ${p.period.slice(0, 7)}` : ''}
               </T>
               <T v="caption">
@@ -92,8 +97,8 @@ export function DividendsCard({ company, price, divYield }: { company: CompanyIn
         ))}
       </View>
       <T v="caption" style={{ lineHeight: 18 }}>
-        PSX announces dividends as a % of face value; Sahm takes face value as Rs {d.faceValue}, the value that matches PSX's published yield.
-        To receive a dividend, buy at least two working days before book closure starts (PSX settles a day after the trade). Tax status is set in Settings.
+        PSX announces dividends as a % of face value; Sahm takes face value as Rs {d.faceValue}, the value that matches PSX's published yield. To receive a dividend, buy at least two working days before book closure
+        starts (PSX settles a day after the trade). Tax status is set in Settings.
       </T>
     </Panel>
   );

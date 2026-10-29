@@ -52,43 +52,41 @@ export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; p
           </View>
         );
       })}
-      {symbol && kind === 'stock' && alertsOn ? (
-        (() => {
-          const m = rows.find((x) => x.days === 21)?.r;
-          if (!m) return null;
-          const lo = Math.round((anchor / (1 + m.pct)) * 100) / 100;
-          const hi = Math.round(anchor * (1 + m.pct) * 100) / 100;
-          const has = rules.some((r) => r.symbol === symbol);
-          return (
-            <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={async () => {
-                  const rest = rules.filter((r) => r.symbol !== symbol);
-                  await watchRulesPref.set([...rest, { symbol, dir: '<', level: lo }, { symbol, dir: '>', level: hi }]);
-                  nav.navigate('Alerts', { symbol });
-                }}
-              >
-                <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>
-                  🔔 {has ? 'Reset alerts to this month\'s range' : `Alert me if it leaves this month's range`}
-                </T>
-              </Pressable>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => nav.navigate('Alerts', { symbol })}>
-                <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Other alert ›</T>
-              </Pressable>
-            </View>
-          );
-        })()
-      ) : null}
+      {symbol && kind === 'stock' && alertsOn
+        ? (() => {
+            const m = rows.find((x) => x.days === 21)?.r;
+            if (!m) return null;
+            const lo = Math.round((anchor / (1 + m.pct)) * 100) / 100;
+            const hi = Math.round(anchor * (1 + m.pct) * 100) / 100;
+            const has = rules.some((r) => r.symbol === symbol);
+            return (
+              <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={async () => {
+                    const rest = rules.filter((r) => r.symbol !== symbol);
+                    await watchRulesPref.set([...rest, { symbol, dir: '<', level: lo }, { symbol, dir: '>', level: hi }]);
+                    nav.navigate('Alerts', { symbol });
+                  }}
+                >
+                  <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🔔 {has ? "Reset alerts to this month's range" : `Alert me if it leaves this month's range`}</T>
+                </Pressable>
+                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => nav.navigate('Alerts', { symbol })}>
+                  <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Other alert ›</T>
+                </Pressable>
+              </View>
+            );
+          })()
+        : null}
       {mpc ? (
         <T v="caption" style={{ lineHeight: 18, color: colors.gold, fontFamily: fonts.semibold }}>
           State Bank rate decision on {new Date(Date.parse(mpc + 'T12:00:00Z')).toUTCString().slice(0, 11).replace(',', '')}: moves around it have been about a fifth bigger than usual.
         </T>
       ) : null}
       <T v="caption" style={{ lineHeight: 18 }}>
-        8 times in 10 the price should end up inside these ranges; 1 in 10 below, 1 in 10 above. They come from how much the price has
-        been swinging lately, not from which way it will go. Tested on PSX prices from 2017: in 2022–26 the ranges held the actual price
+        8 times in 10 the price should end up inside these ranges; 1 in 10 below, 1 in 10 above. They come from how much the price has been swinging lately, not from which way it will go. Tested on PSX prices from 2017:
+        in 2022–26 the ranges held the actual price
         {kind === 'index' ? ' 76–84%' : ' 83–84%'} of the time.
       </T>
     </Panel>

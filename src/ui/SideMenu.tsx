@@ -15,12 +15,7 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
   const features = visibleFeatures(useFlags());
   return (
     <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Menu"
-        onPress={() => setOpen(true)}
-        style={({ pressed }) => [styles.fab, { bottom: Math.max(insets.bottom, 12) + 8 }, pressed && { opacity: 0.85 }]}
-      >
+      <Pressable accessibilityRole="button" accessibilityLabel="Menu" onPress={() => setOpen(true)} style={({ pressed }) => [styles.fab, { bottom: Math.max(insets.bottom, 12) + 8 }, pressed && { opacity: 0.85 }]}>
         <T style={{ fontSize: 22, color: colors.onGold, fontFamily: fonts.heavy }}>☰</T>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -38,22 +33,24 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
                   <T v="caption" style={{ fontFamily: fonts.bold, paddingHorizontal: 10, paddingBottom: 4 }}>
                     {g}
                   </T>
-                  {features.filter((f) => f.group === g).map((f) => (
-                    <Pressable
-                      key={f.key}
-                      accessibilityRole="button"
-                      onPress={() => {
-                        setOpen(false);
-                        f.go(navigation as never);
-                      }}
-                      style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
-                    >
-                      <View style={{ width: 28 }}>
-                        <ToolIcon name={toolGlyph(f.key, f.group)} size={20} />
-                      </View>
-                      <T style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{f.label}</T>
-                    </Pressable>
-                  ))}
+                  {features
+                    .filter((f) => f.group === g)
+                    .map((f) => (
+                      <Pressable
+                        key={f.key}
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setOpen(false);
+                          f.go(navigation as never);
+                        }}
+                        style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
+                      >
+                        <View style={{ width: 28 }}>
+                          <ToolIcon name={toolGlyph(f.key, f.group)} size={20} />
+                        </View>
+                        <T style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{f.label}</T>
+                      </Pressable>
+                    ))}
                 </View>
               ))}
             </ScrollView>
@@ -67,7 +64,21 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
 
 const styles = themed(() =>
   StyleSheet.create({
-    fab: { position: 'absolute', right: 18, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
+    fab: {
+      position: 'absolute',
+      right: 18,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+    },
     backdrop: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' },
     panel: { width: '82%', maxWidth: 360, backgroundColor: colors.ground, borderRightWidth: 1, borderRightColor: colors.line },
     item: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 10 },

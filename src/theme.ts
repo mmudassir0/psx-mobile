@@ -42,6 +42,13 @@ const dark = {
   avatar3: '#2E2B3A',
   avatar4: '#352A2D',
   avatar5: '#223234',
+  /** series colours for allocation rings and multi-line charts, told apart by lightness as well as hue */
+  series0: '#D9B762',
+  series1: '#8FB3E8',
+  series2: '#C98BE0',
+  series3: '#E59A6A',
+  series4: '#7FC8C0',
+  series5: '#85867F',
 };
 
 export type Palette = { [K in keyof typeof dark]: string };
@@ -78,6 +85,12 @@ const light: Palette = {
   avatar3: '#E5E0F2',
   avatar4: '#F2DEE1',
   avatar5: '#D8EBEA',
+  series0: '#1F4E79',
+  series1: '#B8892A',
+  series2: '#3C7DBF',
+  series3: '#C46A2E',
+  series4: '#2E8F88',
+  series5: '#8C8F96',
 };
 
 export type ThemeName = 'dark' | 'light';
@@ -133,6 +146,8 @@ export const fonts = {
 export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
 export const space = { gutter: 20, section: 28 } as const;
+
+export const seriesColor = (i: number): string => [colors.series0, colors.series1, colors.series2, colors.series3, colors.series4, colors.series5][Math.min(i, 5)];
 
 export function changeColor(v: number | null | undefined): string {
   if (v == null || v === 0) return colors.muted;

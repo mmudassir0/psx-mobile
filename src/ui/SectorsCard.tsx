@@ -56,8 +56,8 @@ export function SectorsCard({ sectors }: { sectors: SectorStat[] }) {
         ))}
       </Panel>
       <T v="caption" style={{ lineHeight: 18 }}>
-        Average move of each sector's stocks that trade at least Rs 5M a day. A sector rising on heavy volume with most of its stocks
-        in uptrends usually means buyers know something; check its stocks' announcements for the reason.
+        Average move of each sector's stocks that trade at least Rs 5M a day. A sector rising on heavy volume with most of its stocks in uptrends usually means buyers know something; check its stocks' announcements for
+        the reason.
       </T>
     </View>
   );
