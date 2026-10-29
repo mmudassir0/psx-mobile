@@ -37,6 +37,14 @@ function radialLabel(cx: number, cy: number, r: number, a: number) {
   return { x, y, deg };
 }
 
+/** Text placed along the ring (across the radius), for wide slices; flipped on the lower half so it reads upright. */
+function tangentLabel(cx: number, cy: number, r: number, a: number) {
+  const [x, y] = pt(cx, cy, r, a);
+  let deg = (a * 180) / Math.PI;
+  if (a > Math.PI / 2 && a < (3 * Math.PI) / 2) deg += 180;
+  return { x, y, deg };
+}
+
 export function Sunburst({
   stocks,
   group,
@@ -69,7 +77,8 @@ export function Sunburst({
   const cy = size / 2;
   const R = size / 2 - 2;
   const r0 = R * 0.3;
-  const r1 = R * 0.62;
+  // zoomed into one sector, its ring is just a thin band: the stocks get the room for names and moves
+  const r1 = zoom ? r0 + 12 : R * 0.62;
   const weighted = (ss: Stock[]) => {
     const t = ss.reduce((a, s) => a + cap(s), 0);
     return t ? ss.reduce((a, s) => a + (move(s) ?? 0) * cap(s), 0) / t : null;
@@ -90,7 +99,7 @@ export function Sunburst({
     a += span;
   }
   const centerMove = zoom || center.move == null ? weighted(list) : center.move;
-  const fmt = (v: number | null) => (v == null ? '' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`);
+  const fmt = (v: number | null) => (v == null ? '' : Math.abs(v) < 0.05 ? '0.0%' : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}%`);
 
   return (
     <View style={{ alignItems: 'center', gap: 6 }}>
@@ -101,22 +110,24 @@ export function Sunburst({
               const v = move(st.s);
               const span = st.a1 - st.a0;
               const lab = span * (R - 6) > 13 && R - r1 > 30 ? radialLabel(cx, cy, (r1 + R) / 2, (st.a0 + st.a1) / 2) : null;
+              // the slice's width across its middle: room for a second line (the move) from about 26px
+              const across = span * ((r1 + R) / 2);
+              const fs = Math.min(12, Math.max(8.5, across * 0.55));
+              const two = across >= 26 && v != null;
               return (
                 <G key={st.s.symbol} onPress={() => onStock(st.s.symbol)}>
                   <Path d={arcPath(cx, cy, r1, R, st.a0, st.a1)} fill={color(v)} stroke={colors.ground} strokeWidth={span * R > 3 ? 0.8 : 0.3} />
                   {lab ? (
-                    <SvgText
-                      x={lab.x}
-                      y={lab.y}
-                      fill={colors.text}
-                      fontSize={Math.min(12, Math.max(8.5, span * R * 0.55))}
-                      fontFamily={fonts.bold}
-                      textAnchor="middle"
-                      alignmentBaseline="middle"
-                      transform={`rotate(${lab.deg} ${lab.x} ${lab.y})`}
-                    >
-                      {st.s.symbol}
-                    </SvgText>
+                    <G transform={`rotate(${lab.deg} ${lab.x} ${lab.y})`}>
+                      <SvgText x={lab.x} y={two ? lab.y - fs * 0.6 : lab.y} fill={colors.text} fontSize={fs} fontFamily={fonts.bold} textAnchor="middle" alignmentBaseline="middle">
+                        {st.s.symbol}
+                      </SvgText>
+                      {two ? (
+                        <SvgText x={lab.x} y={lab.y + fs * 0.65} fill={colors.text} fontSize={fs * 0.9} fontFamily={fonts.monoMedium} textAnchor="middle" alignmentBaseline="middle" opacity={0.85}>
+                          {fmt(v)}
+                        </SvgText>
+                      ) : null}
+                    </G>
                   ) : null}
                 </G>
               );
@@ -126,9 +137,13 @@ export function Sunburst({
             const span = sec.a1 - sec.a0;
             const mid = (sec.a0 + sec.a1) / 2;
             // a sector name fits along its arc only when the slice is wide enough
-            const lab = span * ((r0 + r1) / 2) > 34 ? radialLabel(cx, cy, (r0 + r1) / 2, mid) : null;
-            // the name runs along the radius, so it must fit the ring's depth (about 6px a letter at 11pt)
-            const fit = Math.max(4, Math.floor((r1 - r0 - 8) / 6.2));
+            const rm = (r0 + r1) / 2;
+            const arcLen = span * rm;
+            // a wide slice writes its name along the ring (lots of room), a narrow one across it (the ring's depth)
+            const along = arcLen > r1 - r0 + 10;
+            const lab = zoom || arcLen <= 34 ? null : along ? tangentLabel(cx, cy, rm, mid) : radialLabel(cx, cy, rm, mid);
+            const room = along ? arcLen * 0.8 : r1 - r0 - 8;
+            const fit = Math.max(4, Math.floor(room / 6.2));
             const name = sec.g.length > fit ? sec.g.slice(0, fit - 1).trimEnd() + '…' : sec.g;
             return (
               <G key={sec.g} onPress={() => setZoom(zoom ? null : sec.g)}>

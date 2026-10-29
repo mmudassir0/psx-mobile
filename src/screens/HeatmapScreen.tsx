@@ -21,7 +21,7 @@ import { MarketStatus } from './HomeScreen';
 type Scope = 'kse100' | 'kmi30' | 'all' | 'mine';
 type Period = 'today' | 'year';
 
-const HEADER = 15;
+const HEADER = 16;
 /** How far a move has to go for the strongest colour. */
 const FULL: Record<Period, number> = { today: 4, year: 60 };
 
@@ -119,8 +119,8 @@ export default function HeatmapScreen() {
           <View style={{ flex: 1 }}>
             <Segmented
               options={[
-                { key: 'tiles', label: '▦ Tiles' },
-                { key: 'rings', label: '◎ Rings' },
+                { key: 'tiles', label: 'Tiles' },
+                { key: 'rings', label: 'Rings' },
               ]}
               value={style}
               onChange={(k) => stylePref.set(k)}
@@ -141,10 +141,7 @@ export default function HeatmapScreen() {
                 size={w}
                 center={{
                   label: scope === 'kse100' ? 'KSE-100' : scope === 'kmi30' ? 'KMI-30' : scope === 'mine' ? 'Yours' : 'Top 150',
-                  move:
-                    period === 'today' && (scope === 'kse100' || scope === 'kmi30')
-                      ? (indices.find((i) => i.code === (scope === 'kse100' ? 'KSE100' : 'KMI30'))?.changePct ?? null)
-                      : null,
+                  move: period === 'today' && (scope === 'kse100' || scope === 'kmi30') ? (indices.find((i) => i.code === (scope === 'kse100' ? 'KSE100' : 'KMI30'))?.changePct ?? null) : null,
                 }}
                 onStock={(symbol) => nav.navigate('Stock', { symbol })}
               />
@@ -153,10 +150,7 @@ export default function HeatmapScreen() {
             )}
           </View>
         ) : (
-          <View
-            onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))}
-            style={{ height: h || 400, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.ground }}
-          >
+          <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))} style={{ height: h || 400, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.ground }}>
             {!list.length ? (
               <T v="caption" style={{ padding: 16 }}>
                 {scope === 'mine' ? 'Add holdings or watchlist stocks to see them here.' : 'Waiting for prices…'}
@@ -189,15 +183,15 @@ export default function HeatmapScreen() {
                       >
                         {big ? (
                           <>
-                            <T numberOfLines={1} style={{ fontFamily: fonts.bold, fontSize: Math.min(15, Math.max(9.5, t.w / 6)), color: ink }}>
+                            <T numberOfLines={1} style={{ fontFamily: fonts.bold, fontSize: Math.min(15, Math.max(9.5, t.w / 6)), lineHeight: Math.round(Math.min(15, Math.max(9.5, t.w / 6)) * 1.25), color: ink }}>
                               {t.item.symbol}
                             </T>
-                            {t.h > 38 ? (
+                            {t.h > 34 ? (
                               <T
                                 numberOfLines={1}
-                                style={{ fontFamily: fonts.semibold, fontSize: Math.min(12.5, Math.max(9, t.w / 8)), color: ink, opacity: 0.85 }}
+                                style={{ fontFamily: fonts.monoMedium, fontSize: Math.min(12.5, Math.max(9, t.w / 8)), lineHeight: Math.round(Math.min(12.5, Math.max(9, t.w / 8)) * 1.25), color: ink, opacity: 0.9 }}
                               >
-                                {v == null ? '–' : `${v >= 0 ? '+' : ''}${v.toFixed(period === 'today' ? 1 : 0)}%`}
+                                {v == null ? '–' : Math.abs(v) < (period === 'today' ? 0.05 : 0.5) ? '0%' : `${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(period === 'today' ? 1 : 0)}%`}
                               </T>
                             ) : null}
                           </>
@@ -216,17 +210,22 @@ export default function HeatmapScreen() {
                       width: g.rect.w - 2,
                       height: HEADER,
                       flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
                       paddingHorizontal: 3,
                       backgroundColor: colors.ground,
                     }}
                   >
-                    <T numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 10, color: colors.text2 }}>
+                    {/* the line height matches the strip, so the name isn't cut in half */}
+                    <T numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bold, fontSize: 10, lineHeight: 13, letterSpacing: 0.3, color: colors.text2 }}>
                       {g.group.toUpperCase()}
                     </T>
-                    <T style={{ fontFamily: fonts.bold, fontSize: 10, color: sectorMove(g) >= 0 ? colors.up : colors.downText }}>
-                      {sectorMove(g) >= 0 ? '+' : ''}
-                      {sectorMove(g).toFixed(1)}%
-                    </T>
+                    {g.rect.w >= 84 ? (
+                      <T style={{ fontFamily: fonts.monoBold, fontSize: 10, lineHeight: 13, color: sectorMove(g) >= 0 ? colors.up : colors.downText }}>
+                        {sectorMove(g) >= 0 ? '+' : ''}
+                        {sectorMove(g).toFixed(1)}%
+                      </T>
+                    ) : null}
                   </View>
                 ) : null}
               </React.Fragment>
