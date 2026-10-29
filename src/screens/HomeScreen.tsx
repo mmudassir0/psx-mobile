@@ -61,6 +61,8 @@ import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
+/** Home cards that always draw something (the rest can come back empty) */
+const ALWAYS_SHOWN = new Set<HomeCardKey>(['indices', 'watchlist', 'movers', 'tools']);
 /** watchlist rows on Home before "Show all" */
 const WATCH_ROWS = 6;
 /** things to look at, in the portfolio card, before "more" */
@@ -427,11 +429,18 @@ export default function HomeScreen() {
 
         {isTabs ? (
           <>
-            {homeCards.map((k, i) => (
-              <Rise key={k} delay={240 + i * 60}>
-                {card(k)}
-              </Rise>
-            ))}
+            {homeCards.map((k, i) => {
+              const node = card(k);
+              if (node == null) return null;
+              // cards that can hide themselves aren't wrapped: an empty wrapper would still take up a gap
+              return ALWAYS_SHOWN.has(k) ? (
+                <Rise key={k} delay={240 + i * 60}>
+                  {node}
+                </Rise>
+              ) : (
+                <React.Fragment key={k}>{node}</React.Fragment>
+              );
+            })}
             <View style={[styles.pad, { gap: 10 }]}>
               <Pressable accessibilityRole="button" onPress={() => setArranging((x) => !x)} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
                 <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{arranging ? 'Done arranging' : 'Arrange Home: hide or move cards'}</T>

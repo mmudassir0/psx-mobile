@@ -27,7 +27,9 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
   const [err, setErr] = useState<string | null>(null);
   const tried = useRef(false);
   const week = weekOf();
-  const current = brief?.week === week ? brief : null;
+  // a note saved by 0.65's streaming bug repeats its own opening over and over: treat it as not written
+  const garbled = (t: string) => t.length > 80 && t.split(t.slice(0, 14)).length > 4;
+  const current = brief?.week === week && !garbled(brief.text) ? brief : null;
 
   const write = async () => {
     if (busy) return;
@@ -41,13 +43,15 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
       let text = '';
       const run = await ai.run(
         () => briefMessages(facts),
+        // each update is the whole text so far, not the newest piece
         (t) => {
-          text += t;
-          setWriting(text);
+          text = t;
+          setWriting(t);
         },
         450,
       );
-      await run.gen.done;
+      const done = await run.gen.done;
+      if (typeof done === 'string' && done.trim()) text = done;
       if (text.trim()) await briefPref.set({ week, text: text.trim(), engine: run.engine(), at: Date.now() });
     } catch (e) {
       setErr((e as Error).message);
@@ -85,8 +89,8 @@ export function WeeklyBriefCard({ rows, candles, breadth, ready }: { rows: Row[]
             </Pressable>
           )}
           {err ? (
-            <T v="caption" style={{ color: colors.downText }}>
-              {err}
+            <T v="caption" style={{ color: current ? colors.faint : colors.downText }}>
+              {/no internet|connection|too slow|timed? ?out/i.test(err) ? `Couldn't reach the AI just now${current ? '; the note above is from earlier' : ''}. Try Write again when you're back online.` : err}
             </T>
           ) : null}
           {current && !writing ? <T v="caption">Written by {current.engine} from your holdings' figures; it can still get things wrong, so check anything important.</T> : null}

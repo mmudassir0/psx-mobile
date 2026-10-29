@@ -32,7 +32,6 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 const DAY = 86_400_000;
 
-
 function lastSession(ticks: SeriesPoint[]) {
   if (!ticks.length) return ticks;
   const dayOf = (t: number) => Math.floor((t + 5 * 3600_000) / DAY);
@@ -67,21 +66,9 @@ function eodBars(eod: SeriesPoint[], weekly: boolean): Candle[] {
 }
 
 function Row({ c, tab, onPress, last }: { c: Constituent; tab: Tab; onPress: () => void; last: boolean }) {
-  const sub =
-    tab === 'active'
-      ? `${fmtCompact(c.volume)} shares traded`
-      : tab === 'movers'
-        ? `${fmtSigned(c.points)} index points`
-        : tab === 'all'
-          ? `${fmtNum(c.weight, 2)}% of index`
-          : c.name;
+  const sub = tab === 'active' ? `${fmtCompact(c.volume)} shares traded` : tab === 'movers' ? `${fmtSigned(c.points)} index points` : tab === 'all' ? `${fmtNum(c.weight, 2)}% of index` : c.name;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${c.symbol}, ${c.name}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, !last && styles.border, pressed && { opacity: 0.6 }]}
-    >
+    <Pressable accessibilityRole="button" accessibilityLabel={`${c.symbol}, ${c.name}`} onPress={onPress} style={({ pressed }) => [styles.row, !last && styles.border, pressed && { opacity: 0.6 }]}>
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <T style={styles.symbol}>{c.symbol}</T>
         <T v="caption" numberOfLines={1} style={tab === 'movers' ? { color: changeColor(c.points) } : undefined}>
@@ -112,21 +99,29 @@ export default function IndexScreen() {
   const [cons, setCons] = useState<Constituent[] | null>(null);
   const [consErr, setConsErr] = useState<string | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
+  const [ticksErr, setTicksErr] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
     async (force = false) => {
       const ttl = 60_000;
       await Promise.all([
-        cached(`cons:${code}`, ttl, () => fetchIndexConstituents(code), { force })
+        // kept on the phone too, so a slow connection shows the last copy rather than nothing
+        cached(`cons:${code}`, ttl, () => fetchIndexConstituents(code), { force, persist: true })
           .then((d) => {
             setCons(d);
             setConsErr(null);
           })
           .catch((e) => setConsErr((e as Error).message)),
-        cached(`int:${code}`, ttl, () => fetchSeries('int', code), { force })
-          .then(setTicks)
-          .catch(() => setTicks([])),
+        cached(`int:${code}`, ttl, () => fetchSeries('int', code), { force, persist: true })
+          .then((d) => {
+            setTicks(d);
+            setTicksErr(false);
+          })
+          .catch(() => {
+            setTicks((t) => t ?? []);
+            setTicksErr(true);
+          }),
         cached(`eod:${code}`, 30 * 60_000, () => fetchSeries('eod', code), { force, persist: true })
           .then(setEod)
           .catch(() => setEod([])),
@@ -138,6 +133,13 @@ export default function IndexScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  // something didn't arrive: try again quietly every 20 seconds while the screen is open
+  const missing = ticksErr || (consErr != null && cons == null);
+  useEffect(() => {
+    if (!missing) return;
+    const t = setInterval(() => load(true), 20_000);
+    return () => clearInterval(t);
+  }, [missing, load]);
   // Follow the live market refresh while trading is on.
   useEffect(() => {
     if (marketOpen && updatedAt) load();
@@ -242,7 +244,11 @@ export default function IndexScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
       >
         <View style={[styles.pad, { gap: 6 }]}>
-          {INDEX_ABOUT[code] ? <T v="caption" style={{ fontSize: 13.5 }}>{INDEX_ABOUT[code]}</T> : null}
+          {INDEX_ABOUT[code] ? (
+            <T v="caption" style={{ fontSize: 13.5 }}>
+              {INDEX_ABOUT[code]}
+            </T>
+          ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <T v="monoXl" style={{ fontSize: 36 }}>
               {fmtNum(quote?.current)}
@@ -256,7 +262,14 @@ export default function IndexScreen() {
             <Skeleton kind="chart" height={352} />
           ) : bars.length < 2 ? (
             <View style={{ height: 352, justifyContent: 'center', alignItems: 'center' }}>
-              <T v="caption">No chart data for this range yet.</T>
+              {range === '1D' && ticksErr ? (
+                <Pressable accessibilityRole="button" onPress={() => load(true)} style={{ alignItems: 'center', gap: 6 }}>
+                  <T v="caption">Couldn't reach PSX for today's chart.</T>
+                  <T style={{ color: colors.gold, fontFamily: fonts.semibold, fontSize: 14 }}>Try again</T>
+                </Pressable>
+              ) : (
+                <T v="caption">No chart data for this range yet.</T>
+              )}
             </View>
           ) : (
             <SkiaChart candles={bars} visible={visible} mode={chartMode} unit={unit} prevClose={range === '1D' ? prevClose : null} header={header} onScrubChange={setScrubbing} />
@@ -266,22 +279,12 @@ export default function IndexScreen() {
         <View style={[styles.pad, { flexDirection: 'row', gap: 8, alignItems: 'center' }]}>
           <View style={styles.ranges} accessibilityRole="tablist">
             {RANGES.map((r) => (
-              <Pressable
-                key={r}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: r === range }}
-                onPress={() => setRange(r)}
-                style={[styles.range, r === range && styles.rangeOn]}
-              >
+              <Pressable key={r} accessibilityRole="tab" accessibilityState={{ selected: r === range }} onPress={() => setRange(r)} style={[styles.range, r === range && styles.rangeOn]}>
                 <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: r === range ? colors.text : colors.faint }}>{r}</T>
               </Pressable>
             ))}
           </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setMode((m) => (m === 'line' ? 'candle' : 'line'))}
-            style={styles.modeBtn}
-          >
+          <Pressable accessibilityRole="button" onPress={() => setMode((m) => (m === 'line' ? 'candle' : 'line'))} style={styles.modeBtn}>
             <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>{mode === 'line' ? 'Candles' : 'Line'}</T>
           </Pressable>
         </View>
@@ -296,9 +299,13 @@ export default function IndexScreen() {
           <Stat label="Day high" value={fmtNum(quote?.high)} />
           <Stat label="Day low" value={fmtNum(quote?.low)} />
           <Stat label="Prev. close" value={fmtNum(prevClose)} />
-          <Stat label="Stocks" value={stats ? String(stats.count) : '—'} />
-          <Stat label="Volume" value={stats ? fmtCompact(stats.volume) : '—'} />
-          <Stat label="Market cap" value={stats ? fmtCompact(stats.mcap) : '—'} />
+          {stats ? (
+            <>
+              <Stat label="Stocks" value={String(stats.count)} />
+              <Stat label="Volume" value={fmtCompact(stats.volume)} />
+              <Stat label="Market cap" value={fmtCompact(stats.mcap)} />
+            </>
+          ) : null}
         </View>
 
         {daily.length > 60 ? (
@@ -370,9 +377,7 @@ export default function IndexScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            {tab === 'movers' ? (
-              <T v="caption">Index points each stock added or took away today. They add up to the index's change.</T>
-            ) : null}
+            {tab === 'movers' ? <T v="caption">Index points each stock added or took away today. They add up to the index's change.</T> : null}
             {cons == null && !consErr ? (
               <Skeleton kind="rows" n={6} label="Loading index stocks" />
             ) : consErr ? (
@@ -388,9 +393,7 @@ export default function IndexScreen() {
             )}
             {list.length > 10 ? (
               <Pressable accessibilityRole="button" onPress={() => setShowAll((v) => !v)} style={styles.more}>
-                <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>
-                  {showAll ? 'Show fewer' : `Show all ${list.length}`}
-                </T>
+                <T style={{ fontFamily: fonts.semibold, fontSize: 14, color: colors.gold }}>{showAll ? 'Show fewer' : `Show all ${list.length}`}</T>
               </Pressable>
             ) : null}
           </Section>
@@ -411,21 +414,23 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  content: { paddingTop: 4, paddingBottom: 40, gap: 22 },
-  pad: { paddingHorizontal: space.gutter },
-  ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
-  range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  rangeOn: { backgroundColor: colors.line },
-  modeBtn: { height: 40, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
-  breadth: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
-  chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  chipOn: { backgroundColor: colors.gold },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 8 },
-  border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-  symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
-  more: { paddingVertical: 12, alignItems: 'center' },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
+    content: { paddingTop: 4, paddingBottom: 40, gap: 22 },
+    pad: { paddingHorizontal: space.gutter },
+    ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
+    range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+    rangeOn: { backgroundColor: colors.line },
+    modeBtn: { height: 40, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+    statGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
+    breadth: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', gap: 2 },
+    chip: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+    chipOn: { backgroundColor: colors.gold },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 8 },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    symbol: { fontFamily: fonts.heavy, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
+    more: { paddingVertical: 12, alignItems: 'center' },
+  }),
+);

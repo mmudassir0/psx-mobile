@@ -7,6 +7,7 @@ import { colors } from '../theme';
 const G: Record<string, string[]> = {
   chev: ['M9 6l6 6-6 6'],
   plus: ['M12 5v14', 'M5 12h14'],
+  close: ['M6 6l12 12', 'M18 6L6 18'],
   home: ['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'],
   briefcase: ['M4 8h16v11H4z', 'M9 8V5h6v3', 'M4 13h16'],
   target: ['c 12 12 8.5', 'c 12 12 4.5', 'c 12 12 0.8'],

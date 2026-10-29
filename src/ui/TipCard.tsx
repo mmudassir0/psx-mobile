@@ -7,6 +7,7 @@ import { makePref } from '../prefs';
 import { tipFor } from '../learn/tips';
 import { Panel } from './bits';
 import { T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 export const tipHiddenPref = makePref<string>('ui.tipHidden', '');
 
@@ -17,18 +18,21 @@ export function TipCard() {
   if (hidden === day) return null;
   const t = tipFor(day);
   return (
-    <Panel style={{ paddingVertical: 12, gap: 6, borderLeftWidth: 3, borderLeftColor: colors.gold }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <T style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.gold, flex: 1 }}>💡 Tip of the day</T>
-        <Pressable accessibilityRole="button" accessibilityLabel="Hide until tomorrow" hitSlop={10} onPress={() => tipHiddenPref.set(day)}>
-          <T style={{ fontSize: 13, color: colors.faint }}>✕</T>
+    <Panel style={{ paddingVertical: 14, gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center' }}>
+          <ToolIcon name="bulb" size={17} color={colors.gold} />
+        </View>
+        <T style={{ fontFamily: fonts.bold, fontSize: 11.5, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.muted, flex: 1 }}>Tip of the day</T>
+        <Pressable accessibilityRole="button" accessibilityLabel="Hide until tomorrow" hitSlop={12} onPress={() => tipHiddenPref.set(day)}>
+          <ToolIcon name="close" size={16} color={colors.faint} />
         </Pressable>
       </View>
-      <T v="body" style={{ fontSize: 14, lineHeight: 20 }}>
+      <T v="body" style={{ fontSize: 15, lineHeight: 21 }}>
         {t.text}
       </T>
-      <Pressable accessibilityRole="link" onPress={() => nav.navigate('Learn', { lesson: t.lessonIndex })}>
-        <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>Read the lesson ›</T>
+      <Pressable accessibilityRole="link" onPress={() => nav.navigate('Learn', { lesson: t.lessonIndex })} hitSlop={6}>
+        <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Read the lesson ›</T>
       </Pressable>
     </Panel>
   );

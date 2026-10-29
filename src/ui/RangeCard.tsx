@@ -25,7 +25,7 @@ export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; p
   const anchor = price ?? closes[closes.length - 1];
   const rows = H.map((h) => ({ ...h, r: priceRange(closes, h.days, kind) })).filter((x) => x.r);
   if (!enabled || !rows.length || !(anchor > 0)) return null;
-  const fmt = kind === 'index' ? (v: number) => fmtNum(Math.round(v)) : fmtPrice;
+  const fmt = kind === 'index' ? (v: number) => fmtNum(Math.round(v), 0) : fmtPrice;
   const mpc = nextRateDecision(Date.now(), 3);
   return (
     <Panel style={{ paddingVertical: 14, gap: 10 }}>
@@ -33,22 +33,22 @@ export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; p
         const lo = anchor / (1 + r!.pct);
         const hi = anchor * (1 + r!.pct);
         return (
-          <View key={days} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
+          <View key={days} style={{ gap: 3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
               <T v="body" style={{ fontSize: 14 }}>
                 {label}
               </T>
               <T v="caption">±{(r!.pct * 100).toFixed(1)}%</T>
             </View>
-            <T v="mono" style={{ fontSize: 14.5 }}>
-              <T v="mono" style={{ fontSize: 14.5, color: colors.downText }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <T v="mono" style={{ fontSize: 15, color: colors.downText }}>
                 {fmt(lo)}
               </T>
-              {'  –  '}
-              <T v="mono" style={{ fontSize: 14.5, color: colors.up }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.line }} />
+              <T v="mono" style={{ fontSize: 15, color: colors.up }}>
                 {fmt(hi)}
               </T>
-            </T>
+            </View>
           </View>
         );
       })}
@@ -70,7 +70,7 @@ export function RangeCard({ closes, price, kind, symbol }: { closes: number[]; p
                     nav.navigate('Alerts', { symbol });
                   }}
                 >
-                  <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🔔 {has ? "Reset alerts to this month's range" : `Alert me if it leaves this month's range`}</T>
+                  <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>{has ? "Reset alerts to this month's range" : `Alert me if it leaves this month's range`}</T>
                 </Pressable>
                 <Pressable accessibilityRole="button" hitSlop={8} onPress={() => nav.navigate('Alerts', { symbol })}>
                   <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>Other alert ›</T>
