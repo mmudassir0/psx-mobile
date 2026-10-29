@@ -25,7 +25,7 @@ const time = (t: number) => {
 
 export function StockWidget({ data, width = 250 }: { data: StockWidgetData | null; width?: number }) {
   const up = (data?.changePct ?? 0) >= 0;
-  const color = up ? '#22C38E' : '#FF8590';
+  const color = up ? '#4CC48A' : '#F08A79';
   const w = Math.max(120, Math.min(400, width - 28));
   const svg =
     data && data.closes.length > 2
@@ -36,19 +36,19 @@ export function StockWidget({ data, width = 250 }: { data: StockWidgetData | nul
       clickAction="OPEN_URI"
       clickActionData={{ uri: data ? `sahm://stock/${data.symbol}` : 'sahm://market' }}
       accessibilityLabel={data ? `Sahm ${data.symbol}` : 'Sahm stock'}
-      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: '#161E29', borderRadius: 20, padding: 14, flexDirection: 'column', justifyContent: 'space-between' }}
+      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: '#16181B', borderRadius: 20, padding: 14, flexDirection: 'column', justifyContent: 'space-between' }}
     >
       {!data ? (
         <TextWidget text="Open a stock in Sahm and tap “Show on widget”" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={3} />
       ) : (
         <>
           <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent' }}>
-            <TextWidget text={data.symbol} style={{ fontSize: 15, fontWeight: 'bold', color: '#EDF1F5' }} />
-            <TextWidget text={time(data.at)} style={{ fontSize: 11, color: '#7B8797' }} />
+            <TextWidget text={data.symbol} style={{ fontSize: 15, fontWeight: 'bold', color: '#F2F0EA' }} />
+            <TextWidget text={time(data.at)} style={{ fontSize: 11, color: '#8C8D86' }} />
           </FlexWidget>
-          <TextWidget text={data.name} style={{ fontSize: 11.5, color: '#97A3B2' }} maxLines={1} />
+          <TextWidget text={data.name} style={{ fontSize: 11.5, color: '#A3A39C' }} maxLines={1} />
           <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', justifyContent: 'space-between' }}>
-            <TextWidget text={data.price != null ? `Rs ${data.price.toFixed(2)}` : '–'} style={{ fontSize: 22, fontWeight: 'bold', color: '#EDF1F5' }} />
+            <TextWidget text={data.price != null ? `Rs ${data.price.toFixed(2)}` : '–'} style={{ fontSize: 22, fontWeight: 'bold', color: '#F2F0EA' }} />
             <TextWidget text={data.changePct != null ? `${up ? '+' : '−'}${Math.abs(data.changePct).toFixed(2)}%` : ''} style={{ fontSize: 15, color }} />
           </FlexWidget>
           {svg ? <SvgWidget svg={svg} style={{ width: w, height: 44 }} /> : null}

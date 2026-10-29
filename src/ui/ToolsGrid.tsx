@@ -6,6 +6,7 @@ import { colors, fonts, themed } from '../theme';
 import { GROUPS, visibleFeatures } from '../nav/features';
 import { useFlags } from '../flags';
 import { T } from './kit';
+import { ToolIcon, toolGlyph } from './ToolIcon';
 
 /** `short`: only the first group until "Show all tools" is tapped (Home, where the full grid is several screens long) */
 export function ToolsGrid({ title = 'All tools', short = false }: { title?: string; short?: boolean }) {
@@ -36,7 +37,9 @@ export function ToolsGrid({ title = 'All tools', short = false }: { title?: stri
                   onPress={() => f.go(nav)}
                   style={({ pressed }) => [styles.tile, tileW ? { width: tileW } : null, pressed && { opacity: 0.7 }]}
                 >
-                  <T style={{ fontSize: 22 }}>{f.emoji}</T>
+                  <View style={styles.glyph}>
+                  <ToolIcon name={toolGlyph(f.key, f.group)} size={21} />
+                </View>
                   <T style={{ fontFamily: fonts.semibold, fontSize: tileW && tileW < 100 ? 11.5 : 12.5, textAlign: 'center' }} numberOfLines={2}>
                     {f.label}
                   </T>
@@ -59,6 +62,7 @@ const GAP = 8;
 const styles = themed(() =>
   StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+    glyph: { width: 38, height: 38, borderRadius: 12, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
     more: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.surface },
     tile: {
       width: '31.5%',

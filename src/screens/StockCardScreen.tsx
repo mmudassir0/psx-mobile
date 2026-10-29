@@ -20,7 +20,7 @@ import { Button, IconButton, Segmented, T } from '../ui/kit';
 type Span = '1M' | '3M' | '1Y';
 const BARS: Record<Span, number> = { '1M': 22, '3M': 63, '1Y': 248 };
 // the card is drawn in its own fixed colours, so it looks the same in light and dark mode
-const C = { bg: '#121A24', text: '#EDF1F5', dim: '#97A3B2', faint: '#5F6B7A', up: '#22C38E', down: '#FF8590', gold: '#E8B04B', line: '#22303F' };
+const C = { bg: '#121417', text: '#F2F0EA', dim: '#A3A39C', faint: '#6E6F69', up: '#4CC48A', down: '#F08A79', gold: '#D9B762', line: '#24272B' };
 
 export default function StockCardScreen() {
   const nav = useNavigation();

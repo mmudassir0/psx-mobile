@@ -6,7 +6,7 @@ import { colors, fonts, themed } from '../theme';
 import { shortSector } from '../sectors';
 import { Card, T } from './kit';
 
-const PALETTE = ['#E8B04B', '#6EA8FE', '#3DC6C0', '#B69CFF', '#F59E72', '#7B8797'];
+const PALETTE = ['#D9B762', '#8FB3E8', '#7FC8C0', '#C98BE0', '#E59A6A', '#8C8D86'];
 
 export function Donut({ parts, size = 120 }: { parts: { pct: number; color: string }[]; size?: number }) {
   const r = 44;

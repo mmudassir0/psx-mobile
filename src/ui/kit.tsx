@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text as RNText, Te
 import Svg, { Circle, Path } from 'react-native-svg';
 import { changeColor, changeSoft, colors, fonts, tabular, themed } from '../theme';
 import { arrowPct } from '../format';
+import { Press } from './motion';
 
 type Variant = 'body' | 'caption' | 'label' | 'title' | 'h1' | 'display' | 'mono' | 'monoLg' | 'monoXl';
 
@@ -14,8 +15,8 @@ const variants: Record<Variant, TextStyle> = themed(() => ({
   h1: { fontFamily: fonts.heavy, fontSize: 28, letterSpacing: -0.6, color: colors.text },
   display: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text },
   mono: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text, ...tabular },
-  monoLg: { fontFamily: fonts.monoBold, fontSize: 20, letterSpacing: -0.3, color: colors.text, ...tabular },
-  monoXl: { fontFamily: fonts.heavy, fontSize: 34, letterSpacing: -1, color: colors.text, ...tabular },
+  monoLg: { fontFamily: fonts.monoMedium, fontSize: 20, letterSpacing: -0.5, color: colors.text, ...tabular },
+  monoXl: { fontFamily: fonts.monoMedium, fontSize: 34, letterSpacing: -1.5, color: colors.text, ...tabular },
 }));
 
 /** Large system font sizes are honoured up to this much, so text still fits its boxes. */
@@ -91,17 +92,12 @@ export function Button({
   const bg = tone === 'gold' ? colors.gold : tone === 'up' ? colors.up : tone === 'down' ? colors.down : 'transparent';
   const fg = tone === 'ghost' ? colors.text : colors.onGold;
   return (
-    <Pressable
+    <Press
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       onPress={disabled || loading ? undefined : onPress}
-      style={({ pressed }) => [
-        styles.button,
-        small && { height: 44, borderRadius: 12 },
-        { backgroundColor: bg, opacity: disabled ? 0.45 : pressed ? 0.85 : 1 },
-        tone === 'ghost' && { borderWidth: 1, borderColor: colors.line },
-        style,
-      ]}
+      scaleTo={disabled ? 1 : 0.97}
+      style={[styles.button, small && { height: 44, borderRadius: 12 }, { backgroundColor: bg, opacity: disabled ? 0.45 : 1 }, tone === 'ghost' && { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }, style]}
     >
       {loading ? (
         <ActivityIndicator color={fg} />
@@ -110,7 +106,7 @@ export function Button({
           {label}
         </RNText>
       )}
-    </Pressable>
+    </Press>
   );
 }
 

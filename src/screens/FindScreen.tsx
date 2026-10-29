@@ -11,6 +11,7 @@ import { StockRow } from '../ui/StockRow';
 import { Panel } from '../ui/bits';
 import { IconButton, T } from '../ui/kit';
 import { ToolsGrid } from '../ui/ToolsGrid';
+import { ToolIcon, toolGlyph } from '../ui/ToolIcon';
 
 export default function FindScreen() {
   const nav = useNavigation<NavigationProp<ParamListBase>>();
@@ -46,7 +47,9 @@ export default function FindScreen() {
           <Panel style={{ paddingVertical: 4 }}>
             {features.map((f, i) => (
               <Pressable key={f.key} accessibilityRole="button" onPress={() => f.go(nav)} style={[styles.row, i < features.length - 1 && styles.border]}>
-                <T style={{ fontSize: 20, width: 30 }}>{f.emoji}</T>
+                <View style={{ width: 30 }}>
+                  <ToolIcon name={toolGlyph(f.key, f.group)} size={21} />
+                </View>
                 <T style={{ fontFamily: fonts.semibold, fontSize: 15, flex: 1 }}>{f.label}</T>
                 <T style={{ color: colors.faint }}>›</T>
               </Pressable>

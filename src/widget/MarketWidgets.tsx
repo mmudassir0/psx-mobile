@@ -32,11 +32,11 @@ export const MARKET_WIDGET = 'Market';
 export const WATCH_KEY = 'widget.watch';
 export const MARKET_KEY = 'widget.market';
 
-const BG = '#161E29' as const;
-const UP = '#22C38E' as const;
-const DOWN = '#FF8590' as const;
-const MUTED = '#7B8797' as const;
-const TEXT = '#EDF1F5' as const;
+const BG = '#16181B' as const;
+const UP = '#4CC48A' as const;
+const DOWN = '#F08A79' as const;
+const MUTED = '#8C8D86' as const;
+const TEXT = '#F2F0EA' as const;
 const time = (t: number) => {
   const d = new Date(t + 5 * 3600_000);
   return `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
@@ -49,7 +49,7 @@ function Shell({ title, at, children, label }: { title: string; at: number | nul
   return (
     <FlexWidget clickAction="OPEN_APP" accessibilityLabel={label} style={{ height: 'match_parent', width: 'match_parent', backgroundColor: BG, borderRadius: 20, padding: 14, flexDirection: 'column' }}>
       <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent', marginBottom: 6 }}>
-        <TextWidget text={title} style={{ fontSize: 12, color: '#97A3B2' }} />
+        <TextWidget text={title} style={{ fontSize: 12, color: '#A3A39C' }} />
         <TextWidget text={at ? time(at) : ''} style={{ fontSize: 11, color: MUTED }} />
       </FlexWidget>
       {children}

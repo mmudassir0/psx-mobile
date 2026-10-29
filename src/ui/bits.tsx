@@ -179,6 +179,6 @@ const styles = themed(() =>
     strip: { backgroundColor: colors.ground, borderBottomWidth: 1, borderBottomColor: colors.hairline },
     tab: { paddingHorizontal: 10, paddingTop: 12, alignItems: 'center' },
     underline: { height: 3, borderRadius: 2, alignSelf: 'stretch', marginTop: 10, backgroundColor: 'transparent' },
-    panel: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.hairline },
+    panel: { backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.hairline },
   }),
 );

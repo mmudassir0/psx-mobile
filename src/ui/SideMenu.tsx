@@ -7,6 +7,7 @@ import { colors, fonts, themed } from '../theme';
 import { GROUPS, visibleFeatures } from '../nav/features';
 import { useFlags } from '../flags';
 import { T } from './kit';
+import { ToolIcon, toolGlyph } from './ToolIcon';
 
 export function MenuButton({ navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -47,7 +48,9 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
                       }}
                       style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
                     >
-                      <T style={{ fontSize: 18, width: 28 }}>{f.emoji}</T>
+                      <View style={{ width: 28 }}>
+                        <ToolIcon name={toolGlyph(f.key, f.group)} size={20} />
+                      </View>
                       <T style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{f.label}</T>
                     </Pressable>
                   ))}

@@ -45,6 +45,8 @@ import { layoutPref } from '../nav/layout';
 import { useFlags } from '../flags';
 import { ToolsGrid } from '../ui/ToolsGrid';
 import { HomeCardsCard } from '../ui/HomeCardsCard';
+import { HomeHero } from '../ui/HomeHero';
+import { Rise } from '../ui/motion';
 import { TodayList } from '../ui/TodayList';
 import { MoodLine } from '../ui/MoodLine';
 import { StoryDeck } from '../ui/StoryDeck';
@@ -63,6 +65,11 @@ const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 const WATCH_ROWS = 6;
 /** things to look at, in the portfolio card, before "more" */
 const TODO_ROWS = 3;
+
+/** "Thursday, 29 October" in Pakistan time */
+function todayLine() {
+  return new Date(Date.now() + 5 * 3600_000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+}
 
 function greeting() {
   const h = Math.floor(pkNow().minutes / 60);
@@ -102,7 +109,7 @@ export function MarketStatus() {
 
 export default function HomeScreen() {
   const nav = useNavigation();
-  const { ready, indices, stocks, bySymbol, refresh, refreshing } = useMarket();
+  const { ready, indices, stocks, bySymbol, refresh, refreshing, error: marketError } = useMarket();
   const { name, watchlist, account } = useUser();
   const [movers, setMovers] = useState<'gainers' | 'losers' | 'active'>('gainers');
   const [allWatched, setAllWatched] = useState(false);
@@ -329,82 +336,42 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}
       >
-        <View style={[styles.header, styles.pad]}>
-          <View style={{ gap: 2, flex: 1 }}>
-            <T v="caption" style={{ fontSize: 14 }}>
-              {greeting()}
+        <Rise style={[styles.header, styles.pad]}>
+          <View style={{ gap: 3, flex: 1 }}>
+            <T v="caption" style={{ fontSize: 13 }}>
+              {todayLine()}
             </T>
-            <T v="h1" numberOfLines={1}>
-              {name || 'Investor'}
+            <T style={{ fontFamily: fonts.bold, fontSize: 21, letterSpacing: -0.3 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {greeting()}
+              {name ? `, ${name}` : ''}
             </T>
           </View>
+          <IconButton name="search" label="Search stocks and tools" onPress={() => nav.navigate('Find')} />
           <IconButton name="settings" label="Settings" onPress={() => nav.navigate('Settings')} />
-        </View>
+        </Rise>
 
-        <Pressable accessibilityRole="search" accessibilityLabel="Search stocks and tools" onPress={() => nav.navigate('Find')} style={({ pressed }) => [styles.search, pressed && { opacity: 0.8 }]}>
-          <Icon name="search" size={18} color={colors.muted} />
-          <T style={{ color: colors.faint, fontSize: 15 }}>Search stocks or tools…</T>
-        </Pressable>
-
-        <View style={[styles.pad, { gap: 10 }]}>
-          <MarketStatus />
-          {isTabs ? <MarketLine /> : null}
-        </View>
+        {!hasReal || stories || marketError ? (
+          <View style={[styles.pad, { gap: 10 }]}>
+            <MarketStatus />
+            {isTabs && !hasReal ? <MarketLine /> : null}
+          </View>
+        ) : null}
 
         <UpdateBanner />
 
         {stories ? <StoryDeck rows={rows} todo={todo} totals={real} hasReal={hasReal} /> : null}
 
         {stories ? null : hasReal ? (
-          <Pressable accessibilityRole="button" onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })} style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <T v="label">My portfolio</T>
-              <T v="caption">{holdings.length} holdings ›</T>
-            </View>
-            <T v="monoXl">{fmtPkr(real.total)}</T>
-            <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
-              <View style={{ gap: 2 }}>
-                <T v="caption">Today</T>
-                <T v="mono" style={{ color: changeColor(real.today) }}>
-                  {fmtSigned(real.today, 0)} ({fmtPct(real.todayPct * 100)})
-                </T>
-              </View>
-              <View style={{ gap: 2 }}>
-                <T v="caption">Total P&L</T>
-                <T v="mono" style={{ color: changeColor(real.pnl) }}>
-                  {fmtSigned(real.pnl, 0)} ({fmtPct(real.pnlPct * 100)})
-                </T>
-              </View>
-              <View style={{ gap: 2 }}>
-                <T v="caption">Invested</T>
-                <T v="mono">{fmtNum(real.invested, 0)}</T>
-              </View>
-            </View>
-            {todo.length ? (
-              <View style={styles.todo}>
-                {todo.slice(0, TODO_ROWS).map((t) => (
-                  <Pressable
-                    key={t.key}
-                    accessibilityRole="button"
-                    hitSlop={4}
-                    onPress={() => (t.route ? nav.navigate(t.route) : t.symbol ? open(t.symbol) : nav.navigate('Tabs', { screen: 'Portfolio' }))}
-                    style={styles.todoRow}
-                  >
-                    <View style={[styles.todoDot, { backgroundColor: t.tone === 'down' ? colors.down : t.tone === 'gold' ? colors.gold : t.tone === 'up' ? colors.up : colors.faint }]} />
-                    <T v="body" style={{ flex: 1, fontSize: 13.5 }} numberOfLines={1}>
-                      {t.text}
-                    </T>
-                    <T v="caption">›</T>
-                  </Pressable>
-                ))}
-                {todo.length > TODO_ROWS ? <T v="caption">and {todo.length - TODO_ROWS} more in Portfolio ›</T> : null}
-              </View>
-            ) : reviewing ? (
-              <T v="caption">Checking your holdings…</T>
-            ) : (
-              <T v="caption">Nothing needs your attention today.</T>
-            )}
-          </Pressable>
+          <HomeHero
+            total={real.total}
+            today={real.today}
+            todayPct={real.todayPct}
+            pnlPct={real.pnlPct}
+            holdings={holdings.length}
+            todo={todo}
+            reviewing={reviewing}
+            onTodo={(t) => (t.route ? nav.navigate(t.route) : t.symbol ? open(t.symbol) : nav.navigate('Tabs', { screen: 'Portfolio' }))}
+          />
         ) : !on('practice') ? null : (
           <Pressable accessibilityRole="button" onPress={() => nav.navigate('Tabs', { screen: 'Portfolio' })} style={({ pressed }) => [styles.hero, pressed && { opacity: 0.85 }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -460,8 +427,10 @@ export default function HomeScreen() {
 
         {isTabs ? (
           <>
-            {homeCards.map((k) => (
-              <React.Fragment key={k}>{card(k)}</React.Fragment>
+            {homeCards.map((k, i) => (
+              <Rise key={k} delay={240 + i * 60}>
+                {card(k)}
+              </Rise>
             ))}
             <View style={[styles.pad, { gap: 10 }]}>
               <Pressable accessibilityRole="button" onPress={() => setArranging((x) => !x)} hitSlop={6} style={{ alignSelf: 'flex-start' }}>

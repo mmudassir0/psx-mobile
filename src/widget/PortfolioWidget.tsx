@@ -36,28 +36,28 @@ export function PortfolioWidget({ data }: { data: WidgetData | null }) {
     <FlexWidget
       clickAction="OPEN_APP"
       accessibilityLabel="Sahm portfolio"
-      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: '#161E29', borderRadius: 20, padding: 14, flexDirection: 'column', justifyContent: 'space-between' }}
+      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: '#16181B', borderRadius: 20, padding: 14, flexDirection: 'column', justifyContent: 'space-between' }}
     >
       <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent' }}>
-        <TextWidget text="Sahm · My portfolio" style={{ fontSize: 12, color: '#97A3B2' }} />
+        <TextWidget text="Sahm · My portfolio" style={{ fontSize: 12, color: '#A3A39C' }} />
         <TextWidget
           text={data?.mood != null ? `Mood ${data.mood} ${data.moodLabel ?? ''}` : data ? time(data.at) : ''}
-          style={{ fontSize: 11.5, color: data?.mood == null ? '#7B8797' : data.mood < 45 ? '#FF8590' : data.mood <= 55 ? '#E8B04B' : '#22C38E' }}
+          style={{ fontSize: 11.5, color: data?.mood == null ? '#8C8D86' : data.mood < 45 ? '#F08A79' : data.mood <= 55 ? '#D9B762' : '#4CC48A' }}
         />
       </FlexWidget>
       {data ? (
         <FlexWidget style={{ flexDirection: 'column' }}>
-          <TextWidget text={data.hidden ? `Today ${pct(data.todayPct)}` : `Rs ${fmt(data.value)}`} style={{ fontSize: 24, fontWeight: 'bold', color: data.hidden ? (up ? '#22C38E' : '#FF8590') : '#EDF1F5' }} />
+          <TextWidget text={data.hidden ? `Today ${pct(data.todayPct)}` : `Rs ${fmt(data.value)}`} style={{ fontSize: 24, fontWeight: 'bold', color: data.hidden ? (up ? '#4CC48A' : '#F08A79') : '#F2F0EA' }} />
           <TextWidget
             text={data.hidden ? `All ${pct(data.pnlPct)} · amounts hidden (app lock on)` : `Today ${signed(data.today)} (${pct(data.todayPct)}) · All ${pct(data.pnlPct)}`}
-            style={{ fontSize: 12.5, color: data.hidden ? '#97A3B2' : up ? '#22C38E' : '#FF8590' }}
+            style={{ fontSize: 12.5, color: data.hidden ? '#A3A39C' : up ? '#4CC48A' : '#F08A79' }}
           />
         </FlexWidget>
       ) : (
         <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
       )}
       {data?.nextDividend ? <TextWidget text={`💸 ${data.nextDividend}`} style={{ fontSize: 12, color: '#C3CCD6' }} maxLines={1} /> : null}
-      <TextWidget text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '} style={{ fontSize: 12, color: data?.due ? '#E8B04B' : '#7B8797' }} maxLines={1} />
+      <TextWidget text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '} style={{ fontSize: 12, color: data?.due ? '#D9B762' : '#8C8D86' }} maxLines={1} />
     </FlexWidget>
   );
 }

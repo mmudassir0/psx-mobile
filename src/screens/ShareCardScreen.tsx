@@ -25,7 +25,7 @@ const pct = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
 
 // the card keeps its own fixed colours, so it looks the same in light and dark mode
-const C = { bg: '#0E141C', panel: '#161E29', text: '#EDF1F5', dim: '#97A3B2', gold: '#E8B04B', up: '#22C38E', down: '#FF8590', line: '#283444' };
+const C = { bg: '#0D0E10', panel: '#16181B', text: '#F2F0EA', dim: '#A3A39C', gold: '#D9B762', up: '#4CC48A', down: '#F08A79', line: '#2A2D33' };
 
 export default function ShareCardScreen() {
   const nav = useNavigation();
