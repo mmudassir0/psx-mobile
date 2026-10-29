@@ -25,8 +25,11 @@ for (const f of files) {
     for (const [sym, v] of Object.entries(s.symbols ?? {})) {
       const nv = v as { done?: boolean; v?: number };
       if (!nv.done) continue;
-      // new, or read again with a better reader: both are progress for the next run
-      if (!st.symbols[sym]?.done || (st.symbols[sym].v ?? 1) < (nv.v ?? 1)) added++;
+      // every shard carries the whole file it started from: only a newer reading may replace what's here,
+      // or one shard's old copy of a company would undo another shard's new reading of it
+      const cur = st.symbols[sym] as { done?: boolean; v?: number } | undefined;
+      if (cur?.done && (cur.v ?? 1) >= (nv.v ?? 1)) continue;
+      if (!cur?.done || (cur.v ?? 1) < (nv.v ?? 1)) added++;
       st.symbols[sym] = v;
     }
     for (const k of ['shariah', 'kmi30', 'kse100']) if (Array.isArray(s[k]) && s[k].length) st[k] = s[k];
