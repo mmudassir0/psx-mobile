@@ -140,7 +140,7 @@ export function Flash({ value, style, children }: { value: number | null | undef
 }
 
 /** Grows a bar from zero to its size once (along x unless `vertical`). */
-export function GrowBar({ delay = 0, vertical, style }: { delay?: number; vertical?: boolean; style: StyleProp<ViewStyle> }) {
+export function GrowBar({ delay = 0, vertical, fromTop, style }: { delay?: number; vertical?: boolean; fromTop?: boolean; style: StyleProp<ViewStyle> }) {
   const reduce = useReducedMotion();
   const p = useSharedValue(reduce ? 1 : 0);
   useEffect(() => {
@@ -151,7 +151,7 @@ export function GrowBar({ delay = 0, vertical, style }: { delay?: number; vertic
     return () => clearTimeout(t);
   }, [delay, reduce, p]);
   const a = useAnimatedStyle(() => ({ transform: vertical ? [{ scaleY: p.value }] : [{ scaleX: p.value }] }));
-  return <Animated.View style={[style, a, { transformOrigin: vertical ? 'bottom' : 'left' }]} />;
+  return <Animated.View style={[style, a, { transformOrigin: vertical ? (fromTop ? 'top' : 'bottom') : 'left' }]} />;
 }
 
 /** A small dot that sends out a soft ring now and then (market open, live). */

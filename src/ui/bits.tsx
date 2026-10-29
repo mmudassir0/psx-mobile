@@ -96,7 +96,7 @@ export function TabStrip<K extends string>({ tabs, value, onChange }: { tabs: { 
         <T style={{ fontFamily: on ? fonts.bold : fonts.semibold, fontSize: 14, color: on ? colors.text : colors.faint }} numberOfLines={1}>
           {t.label}
         </T>
-        <View style={[styles.underline, on && { backgroundColor: colors.gold }]} />
+        <View style={[styles.underline, on && { backgroundColor: colors.text }]} />
       </Pressable>
     );
   });
@@ -109,7 +109,7 @@ export function TabStrip<K extends string>({ tabs, value, onChange }: { tabs: { 
           return (
             <Pressable key={t.key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => onChange(t.key)} style={styles.tab}>
               <T style={{ fontFamily: on ? fonts.bold : fonts.semibold, fontSize: 14, color: on ? colors.text : colors.faint }}>{t.label}</T>
-              <View style={[styles.underline, on && { backgroundColor: colors.gold }]} />
+              <View style={[styles.underline, on && { backgroundColor: colors.text }]} />
             </Pressable>
           );
         })}
@@ -146,7 +146,7 @@ const styles = themed(() =>
     chip: { paddingHorizontal: 10, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     strip: { backgroundColor: colors.ground, borderBottomWidth: 1, borderBottomColor: colors.hairline },
     tab: { paddingHorizontal: 10, paddingTop: 12, alignItems: 'center' },
-    underline: { height: 3, borderRadius: 2, alignSelf: 'stretch', marginTop: 10, backgroundColor: 'transparent' },
+    underline: { height: 2, borderRadius: 1, alignSelf: 'stretch', marginTop: 10, backgroundColor: 'transparent' },
     panel: { backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 4, borderWidth: 1, borderColor: colors.hairline },
   }),
 );

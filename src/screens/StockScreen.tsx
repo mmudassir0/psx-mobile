@@ -17,6 +17,7 @@ import { colors, changeColor, fonts, space, themed } from '../theme';
 import { fmtCompact, fmtDateTime, fmtDay, fmtNum, fmtPct, fmtPrice, fmtSigned } from '../format';
 import { technicals } from '../analysis/technicals';
 import { ActionChip, KV, Panel, RangeBar, TabStrip } from '../ui/bits';
+import { Flash, Rise } from '../ui/motion';
 import { RangeCard } from '../ui/RangeCard';
 import { TechnicalsTab } from './stock/TechnicalsTab';
 import { FundamentalsTab } from './stock/FundamentalsTab';
@@ -50,7 +51,6 @@ import { valueStock } from '../analysis/valuation';
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
 const DAY = 86_400_000;
-
 
 /** The latest session's ticks only (the intraday feed can include earlier days). */
 function lastSession(ticks: SeriesPoint[]): SeriesPoint[] {
@@ -173,7 +173,9 @@ export default function StockScreen() {
   const [kse, setKse] = useState<SeriesPoint[] | null>(null);
   const [kmi, setKmi] = useState<SeriesPoint[] | null>(null);
   useEffect(() => {
-    cached<SeriesPoint[]>(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true }).then(setKse).catch(() => {});
+    cached<SeriesPoint[]>(`eod:${BENCHMARK}`, 30 * 60_000, () => fetchSeries('eod', BENCHMARK), { persist: true })
+      .then(setKse)
+      .catch(() => {});
   }, []);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyErr, setCompanyErr] = useState<string | null>(null);
@@ -243,9 +245,7 @@ export default function StockScreen() {
   const pack = useMemo<StockPack>(() => {
     const balance = balanceSheetFor(symbol);
     const ratios = computeRatios(balance, company, stock);
-    const peers = stock
-      ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
-      : [];
+    const peers = stock ? stocks.filter((x) => x.sector === stock.sector && x.symbol !== symbol).sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)) : [];
     return {
       stock,
       company,
@@ -269,13 +269,12 @@ export default function StockScreen() {
     series.c.forEach((b, i) => m.set(b.t, i));
     return m;
   }, [series]);
-  const align = useCallback((vals: (number | null)[]) => bars.map((b) => (byT?.has(b.t) ? vals[byT.get(b.t)!] ?? null : null)), [bars, byT]);
+  const align = useCallback((vals: (number | null)[]) => bars.map((b) => (byT?.has(b.t) ? (vals[byT.get(b.t)!] ?? null) : null)), [bars, byT]);
   const maLines = useMemo((): ChartLine[] | undefined => {
     if (!dailyRange) return undefined;
     if (!series) return myLines?.trends.length ? myLines.trends.map((t) => ({ values: trendValues(bars, t), color: t.kind === 'lows' ? colors.up : colors.downText })) : undefined;
     const out: ChartLine[] = [];
-    if (extras.includes('ma'))
-      out.push({ values: align(series.e20), color: colors.muted, thin: true }, { values: align(series.e50), color: colors.gold }, { values: align(series.e200), color: colors.shariah });
+    if (extras.includes('ma')) out.push({ values: align(series.e20), color: colors.muted, thin: true }, { values: align(series.e50), color: colors.gold }, { values: align(series.e200), color: colors.shariah });
     if (extras.includes('bb')) out.push({ values: align(series.bbUpper), color: colors.text2, thin: true }, { values: align(series.bbLower), color: colors.text2, thin: true });
     for (const t of myLines?.trends ?? []) out.unshift({ values: trendValues(bars, t), color: t.kind === 'lows' ? colors.up : colors.downText });
     return out.length ? out.slice(0, 5) : undefined;
@@ -325,7 +324,10 @@ export default function StockScreen() {
     if (!series || !dailyRange || !extras.includes('cross')) return undefined;
     const out: ChartMarker[] = [];
     for (let i = 1; i < series.c.length; i++) {
-      const a0 = series.e50[i - 1], b0 = series.e200[i - 1], a1 = series.e50[i], b1 = series.e200[i];
+      const a0 = series.e50[i - 1],
+        b0 = series.e200[i - 1],
+        a1 = series.e50[i],
+        b1 = series.e200[i];
       if (a0 == null || b0 == null || a1 == null || b1 == null) continue;
       if (a0 <= b0 && a1 > b1) out.push({ t: series.c[i].t, kind: 'up' });
       else if (a0 >= b0 && a1 < b1) out.push({ t: series.c[i].t, kind: 'down' });
@@ -345,14 +347,18 @@ export default function StockScreen() {
   if (dailyRange) {
     if (extras.includes('ma')) legend.push({ text: '━ 20d', color: colors.muted }, { text: '━ 50d', color: colors.gold }, { text: '━ 200d', color: colors.shariah });
     if (extras.includes('bb')) legend.push({ text: '━ Bollinger', color: colors.text2 });
-    if (extras.includes('cross')) legend.push({ text: lastCross ? `▲▼ crosses (last ${lastCross.kind === 'up' ? 'golden' : 'death'} ${fmtDay(lastCross.t).replace(/ \d{4}$/, '')})` : '▲▼ crosses (none)', color: colors.text2 });
+    if (extras.includes('cross'))
+      legend.push({ text: lastCross ? `▲▼ crosses (last ${lastCross.kind === 'up' ? 'golden' : 'death'} ${fmtDay(lastCross.t).replace(/ \d{4}$/, '')})` : '▲▼ crosses (none)', color: colors.text2 });
     if (extras.includes('fair')) legend.push({ text: pack.fair ? '▒ fair value (rough)' : 'no fair value', color: colors.up });
     if (extras.includes('pick') && pick) legend.push({ text: `pick of ${fmtDay(Date.parse(pick.day + 'T12:00:00Z')).replace(/ \d{4}$/, '')}`, color: colors.gold });
   }
 
   // --- this stock against the market over the range ---
   useEffect(() => {
-    if (stock?.shariah && !kmi) cached<SeriesPoint[]>('eod:KMI30', 30 * 60_000, () => fetchSeries('eod', 'KMI30'), { persist: true }).then(setKmi).catch(() => {});
+    if (stock?.shariah && !kmi)
+      cached<SeriesPoint[]>('eod:KMI30', 30 * 60_000, () => fetchSeries('eod', 'KMI30'), { persist: true })
+        .then(setKmi)
+        .catch(() => {});
   }, [stock?.shariah, kmi]);
   const relBars: Partial<Record<Range, number>> = { '1W': 5, '1M': 22, '3M': 63, '1Y': 248 };
   const rel = useMemo(() => {
@@ -397,7 +403,13 @@ export default function StockScreen() {
       out.push({ label: `Chart: ${st}`, fg: up ? colors.up : down ? colors.downText : colors.text2, bg: up ? colors.upSoft : down ? colors.downSoft : colors.surface2, tab: 'technicals' });
     }
     const f = pack.fair;
-    if (f?.label) out.push({ label: f.label, fg: f.label === 'Undervalued' ? colors.up : f.label === 'Overvalued' ? colors.downText : colors.text2, bg: f.label === 'Undervalued' ? colors.upSoft : f.label === 'Overvalued' ? colors.downSoft : colors.surface2, tab: 'fundamentals' });
+    if (f?.label)
+      out.push({
+        label: f.label,
+        fg: f.label === 'Undervalued' ? colors.up : f.label === 'Overvalued' ? colors.downText : colors.text2,
+        bg: f.label === 'Undervalued' ? colors.upSoft : f.label === 'Overvalued' ? colors.downSoft : colors.surface2,
+        tab: 'fundamentals',
+      });
     if (held) out.push({ label: `You hold ${fmtNum(held.shares, 0)}`, fg: colors.gold, bg: colors.goldSoft, tab: 'overview' });
     return out;
   }, [analysis, pack.fair, held]);
@@ -462,19 +474,26 @@ export default function StockScreen() {
               <T v="caption">{chartErr ?? (range === '1D' ? 'Try 1W or 1M.' : '')}</T>
             </View>
           ) : (
-            <SkiaChart candles={bars} visible={visible} mode={mode} unit={unit} prevClose={range === '1D' ? ldcp : null} header={chartHeader} onScrubChange={setScrubbing} lines={maLines} levels={levelList} band={fairBand} markers={crosses} panes={panesOn} />
+            <SkiaChart
+              candles={bars}
+              visible={visible}
+              mode={mode}
+              unit={unit}
+              prevClose={range === '1D' ? ldcp : null}
+              header={chartHeader}
+              onScrubChange={setScrubbing}
+              lines={maLines}
+              levels={levelList}
+              band={fairBand}
+              markers={crosses}
+              panes={panesOn}
+            />
           )}
         </View>
         <View style={styles.rangeRow}>
           <View style={styles.ranges} accessibilityRole="tablist">
             {RANGES.map((r) => (
-              <Pressable
-                key={r}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: r === range }}
-                onPress={() => setRange(r)}
-                style={[styles.range, r === range && styles.rangeOn]}
-              >
+              <Pressable key={r} accessibilityRole="tab" accessibilityState={{ selected: r === range }} onPress={() => setRange(r)} style={[styles.range, r === range && styles.rangeOn]}>
                 <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: r === range ? colors.text : colors.faint }}>{r}</T>
               </Pressable>
             ))}
@@ -491,14 +510,7 @@ export default function StockScreen() {
         {dailyRange ? (
           <View style={{ gap: 8 }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.extras}>
-              {(
-                [
-                  ['ma', 'Averages'],
-                  ['levels', 'Key levels'],
-                  ['fair', 'Fair value'],
-                  ...(pick ? ([['pick', 'Pick levels']] as const) : []),
-                ] as [Extra, string][]
-              ).map(([k, label]) => {
+              {([['ma', 'Averages'], ['levels', 'Key levels'], ['fair', 'Fair value'], ...(pick ? ([['pick', 'Pick levels']] as const) : [])] as [Extra, string][]).map(([k, label]) => {
                 const on = extras.includes(k);
                 return (
                   <Pressable key={k} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => toggleExtra(k)} style={[styles.extra, on && styles.extraOn]}>
@@ -506,7 +518,12 @@ export default function StockScreen() {
                   </Pressable>
                 );
               })}
-              <Pressable accessibilityRole="button" accessibilityState={{ expanded: linesOpen }} onPress={() => setLinesOpen((v) => !v)} style={[styles.extra, (linesOpen || !!myLines?.levels.length || !!myLines?.trends.length) && styles.extraOn]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: linesOpen }}
+                onPress={() => setLinesOpen((v) => !v)}
+                style={[styles.extra, (linesOpen || !!myLines?.levels.length || !!myLines?.trends.length) && styles.extraOn]}
+              >
                 <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>✏️ My lines</T>
               </Pressable>
               {(() => {
@@ -748,8 +765,18 @@ export default function StockScreen() {
         </View>
       </View>
     );
-  else if (tab === 'ai' && aiOn) content = <View style={pad}><AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} /></View>;
-  else if (tab === 'technicals') content = <View style={pad}><TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} /></View>;
+  else if (tab === 'ai' && aiOn)
+    content = (
+      <View style={pad}>
+        <AiTab symbol={symbol} pack={pack} ready={company != null && daily != null} />
+      </View>
+    );
+  else if (tab === 'technicals')
+    content = (
+      <View style={pad}>
+        <TechnicalsTab symbol={symbol} analysis={analysis} tech={tech} backtest={bt} loading={daily == null} />
+      </View>
+    );
   else if (tab === 'fundamentals')
     content = (
       <View style={[pad, { gap: 26 }]}>
@@ -759,7 +786,13 @@ export default function StockScreen() {
         </Section>
       </View>
     );
-  else content = <View style={pad}><StockPress symbol={symbol} /><NewsTab items={news} loading={!company && !companyErr} /></View>;
+  else
+    content = (
+      <View style={pad}>
+        <StockPress symbol={symbol} />
+        <NewsTab items={news} loading={!company && !companyErr} />
+      </View>
+    );
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -775,13 +808,7 @@ export default function StockScreen() {
             </T>
           ) : null}
         </View>
-        <IconButton
-          name={watched ? 'starFilled' : 'star'}
-          label={watched ? 'Remove from watchlist' : 'Add to watchlist'}
-          color={watched ? colors.gold : colors.text}
-          filled={false}
-          onPress={() => toggleWatch(symbol)}
-        />
+        <IconButton name={watched ? 'starFilled' : 'star'} label={watched ? 'Remove from watchlist' : 'Add to watchlist'} color={watched ? colors.gold : colors.text} filled={false} onPress={() => toggleWatch(symbol)} />
       </View>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -797,9 +824,11 @@ export default function StockScreen() {
             {stock?.shariah ? <Badge label={stock.indexes.includes('KMI30') ? 'Shariah, KMI-30' : 'Shariah'} /> : null}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <T v="monoXl" style={{ fontSize: 38 }}>
-              {fmtPrice(price)}
-            </T>
+            <Flash value={price}>
+              <T v="monoXl" style={{ fontSize: 38 }}>
+                {fmtPrice(price)}
+              </T>
+            </Flash>
             <Change pct={changePct} pill />
           </View>
           {view.length ? (
@@ -814,10 +843,11 @@ export default function StockScreen() {
           {tab !== 'overview' ? subline : null}
         </View>
         <TabStrip tabs={(aiOn ? TABS : TABS.filter((t) => t.key !== 'ai')).map((t) => ({ ...t, label: t.label }))} value={aiOn || tab !== 'ai' ? tab : 'overview'} onChange={setTab} />
-        <View style={{ paddingTop: 18 }}>{content}</View>
+        <Rise key={tab} style={{ paddingTop: 18 }}>
+          {content}
+        </Rise>
         <T v="caption" style={{ paddingHorizontal: space.gutter, paddingTop: 24 }}>
-          Data from the PSX data portal{company?.asOf ? `, ${company.asOf.replace(/^As of /, 'as of ')}` : ''}. Market
-          information, not investment advice.
+          Data from the PSX data portal{company?.asOf ? `, ${company.asOf.replace(/^As of /, 'as of ')}` : ''}. Market information, not investment advice.
         </T>
       </ScrollView>
       <View style={styles.actions}>
@@ -846,35 +876,37 @@ function CandleGlyph() {
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ground },
-  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  content: { paddingTop: 4, paddingBottom: 28 },
-  ohlc: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: space.gutter },
-  extras: { gap: 8, paddingHorizontal: space.gutter },
-  extra: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
-  extraOn: { backgroundColor: colors.surface2, borderColor: colors.line },
-  moreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: space.gutter },
-  viewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
-  viewPill: { paddingHorizontal: 10, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
-  range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  rangeOn: { backgroundColor: colors.line },
-  modeBtn: { width: 44, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  position: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
-  stat: { width: '33.33%', gap: 3 },
-  news: { gap: 3, paddingVertical: 12 },
-  border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: space.gutter,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.navLine,
-    backgroundColor: colors.nav,
-  },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.ground },
+    topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
+    content: { paddingTop: 4, paddingBottom: 28 },
+    ohlc: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+    rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: space.gutter },
+    extras: { gap: 8, paddingHorizontal: space.gutter },
+    extra: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
+    extraOn: { backgroundColor: colors.surface2, borderColor: colors.line },
+    moreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: space.gutter },
+    viewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+    viewPill: { paddingHorizontal: 10, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    ranges: { flex: 1, flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 },
+    range: { flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+    rangeOn: { backgroundColor: colors.line },
+    modeBtn: { width: 44, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+    position: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: 16, padding: 16 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
+    stat: { width: '33.33%', gap: 3 },
+    news: { gap: 3, paddingVertical: 12 },
+    border: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+    actions: {
+      flexDirection: 'row',
+      gap: 10,
+      paddingHorizontal: space.gutter,
+      paddingTop: 12,
+      paddingBottom: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.navLine,
+      backgroundColor: colors.nav,
+    },
+  }),
+);
