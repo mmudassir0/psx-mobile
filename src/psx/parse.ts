@@ -4,19 +4,7 @@
  * so they can be unit-tested in Node (see scripts/test-parsers.ts).
  */
 import { decodeEntities, num, readRows, stripTags } from './html';
-import type {
-  Announcement,
-  FinTable,
-  Person,
-  BoardQuote,
-  Candle,
-  CompanyInfo,
-  Constituent,
-  IndexQuote,
-  ScreenerRow,
-  SeriesPoint,
-  SymbolInfo,
-} from './types';
+import type { Announcement, FinTable, Person, BoardQuote, Candle, CompanyInfo, Constituent, IndexQuote, ScreenerRow, SeriesPoint, SymbolInfo } from './types';
 
 /** Prefer the exact `data-order` value PSX puts on numeric cells. */
 function cellNum(cell: { text: string; attrs: Record<string, string> } | undefined): number | null {
@@ -63,10 +51,19 @@ export function parseIndices(html: string): IndexQuote[] {
       low: cellNum(c[2]),
       current: cellNum(c[3]),
       change: cellNum(c[4]),
-      changePct: cellNum(c[5]),
+      changePct: sanePct(cellNum(c[5])),
     });
   }
   return out;
+}
+
+/**
+ * A day's % change that can't be real: PSX limits a day's move to about 10% (or Rs 1 for cheap shares), so
+ * anything from 100% up comes from a near-zero previous close (a letter of rights, a fresh listing). Shown as
+ * unknown rather than topping every gainers list.
+ */
+export function sanePct(v: number | null | undefined): number | null {
+  return v == null || !Number.isFinite(v) || Math.abs(v) >= 100 ? null : v;
 }
 
 // /trading-board/REG/main —
@@ -85,10 +82,12 @@ export function parseTradingBoard(html: string): BoardQuote[] {
     const ldcp = cellNum(c[6]);
     const change = cellNum(c[7]);
     const price = ldcp != null && change != null ? round(ldcp + change) : ldcp;
-    const changePct = ldcp && change != null ? round((change / ldcp) * 100) : null;
+    const changePct = ldcp && change != null ? sanePct(round((change / ldcp) * 100)) : null;
     out.push({
       symbol,
-      name: decodeEntities(c[1].attrs['data-search'] || c[1].text).replace(/\s+/g, ' ').trim(),
+      name: decodeEntities(c[1].attrs['data-search'] || c[1].text)
+        .replace(/\s+/g, ' ')
+        .trim(),
       bidVol: cellNum(c[2]),
       bid: cellNum(c[3]),
       askVol: cellNum(c[4]),
@@ -123,7 +122,7 @@ export function parseScreener(html: string): ScreenerRow[] {
       shariah: indexes.includes('KMIALLSHR') || indexes.includes('KMI30'),
       marketCap: cellNum(c[3]),
       price: cellNum(c[4]),
-      changePct: cellNum(c[5]),
+      changePct: sanePct(cellNum(c[5])),
       change1y: cellNum(c[6]),
       pe: cellNum(c[7]),
       divYield: cellNum(c[8]),
@@ -498,7 +497,7 @@ export function parseIndexConstituents(html: string): Constituent[] {
       ldcp: cellNum(c[2]),
       price: cellNum(c[3]),
       change: cellNum(c[4]),
-      changePct: cellNum(c[5]),
+      changePct: sanePct(cellNum(c[5])),
       weight: num(c[6].text),
       points: cellNum(c[7]),
       volume: cellNum(c[8]),

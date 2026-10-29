@@ -146,7 +146,7 @@ export default function MarketScreen() {
   const list = useMemo(() => {
     const l = listFor(current);
     if (mode !== 'watch' || watchSort === 'mine') return l;
-    const v = (s: (typeof l)[number]) => (watchSort === 'change' ? s.changePct ?? -999 : watchSort === 'yield' ? s.divYield ?? -1 : s.pe != null && s.pe > 0 ? -s.pe : -9999);
+    const v = (s: (typeof l)[number]) => (watchSort === 'change' ? (s.changePct ?? -999) : watchSort === 'yield' ? (s.divYield ?? -1) : s.pe != null && s.pe > 0 ? -s.pe : -9999);
     return [...l].sort((a, b) => v(b) - v(a));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stocks, mode, shariahOnly, sector, filters, sort, watchlist, group, groups, watchSort]);
@@ -313,10 +313,10 @@ export default function MarketScreen() {
                       justifyContent: 'space-between',
                     }}
                   >
-                    <Metric label="Advancing" value={String(breadth.up)} color={colors.up} />
-                    <Metric label="Declining" value={String(breadth.down)} color={colors.downText} />
-                    <Metric label="Unchanged" value={String(breadth.flat)} />
-                    <Metric label="Volume" value={fmtCompact(breadth.volume)} />
+                    <Metric label="Up" value={String(breadth.up)} color={colors.up} />
+                    <Metric label="Down" value={String(breadth.down)} color={colors.downText} />
+                    <Metric label="Flat" value={String(breadth.flat)} />
+                    <Metric label="Volume" value={fmtCompact(breadth.volume)} end />
                   </View>
                 </View>
               </Section>
@@ -689,7 +689,13 @@ export default function MarketScreen() {
                         stock={s}
                         highlight={fresh.has(s.symbol) || (mode === 'all' && (filters.length > 0 || sort !== 'cap'))}
                         sub={
-                          [fresh.has(s.symbol) ? 'New here' : null, mode === 'watch' && notes[s.symbol]?.why ? `📝 ${notes[s.symbol].why.slice(0, 60)}${notes[s.symbol].why.length > 60 ? '…' : ''}` : null, mode === 'watch' && watchSort === 'yield' && s.divYield != null ? `yield ${s.divYield.toFixed(1)}%` : null, mode === 'watch' && watchSort === 'pe' && s.pe ? `P/E ${s.pe.toFixed(1)}` : null, mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null]
+                          [
+                            fresh.has(s.symbol) ? 'New here' : null,
+                            mode === 'watch' && notes[s.symbol]?.why ? `📝 ${notes[s.symbol].why.slice(0, 60)}${notes[s.symbol].why.length > 60 ? '…' : ''}` : null,
+                            mode === 'watch' && watchSort === 'yield' && s.divYield != null ? `yield ${s.divYield.toFixed(1)}%` : null,
+                            mode === 'watch' && watchSort === 'pe' && s.pe ? `P/E ${s.pe.toFixed(1)}` : null,
+                            mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null,
+                          ]
                             .filter(Boolean)
                             .join(' · ') || undefined
                         }
@@ -732,9 +738,9 @@ export default function MarketScreen() {
   );
 }
 
-function Metric({ label, value, color }: { label: string; value: string; color?: string }) {
+function Metric({ label, value, color, end }: { label: string; value: string; color?: string; end?: boolean }) {
   return (
-    <View style={{ gap: 2 }}>
+    <View style={{ gap: 2, flex: end ? 1.4 : 1, alignItems: end ? 'flex-end' : 'flex-start' }}>
       <T v="caption">{label}</T>
       <T v="mono" style={{ fontSize: 15, color: color ?? colors.text }}>
         {value}
@@ -817,7 +823,7 @@ const styles = themed(() =>
     },
     chipOn: { backgroundColor: colors.gold },
     more: { paddingVertical: 12, alignItems: 'center' },
-  cmpBtn: { paddingHorizontal: 16, height: 36, borderRadius: 18, backgroundColor: colors.gold, justifyContent: 'center' },
+    cmpBtn: { paddingHorizontal: 16, height: 36, borderRadius: 18, backgroundColor: colors.gold, justifyContent: 'center' },
     badge: {
       backgroundColor: colors.gold,
       borderRadius: 8,

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../store/user';
 import type { Stock } from '../psx/types';
-import { colors, fonts, themed } from '../theme';
+import { changeColor, colors, fonts, themed } from '../theme';
 import { fmtCompact, fmtPrice } from '../format';
 import { Change, T } from './kit';
 
@@ -35,7 +35,7 @@ export function StockRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${stock.symbol}, ${stock.name}, ${fmtPrice(stock.price)}`}
+      accessibilityLabel={`${stock.symbol}, ${stock.name}, ${fmtPrice(stock.price)}${stock.changePct != null ? `, ${stock.changePct >= 0 ? 'up' : 'down'} ${Math.abs(stock.changePct).toFixed(2)}%` : ''}`}
       accessibilityHint={watched ? 'Long-press to remove from watchlist' : 'Long-press to add to watchlist'}
       onPress={onPress}
       onLongPress={() => {
@@ -66,7 +66,15 @@ export function StockRow({
         <T v="mono" style={{ fontSize: 15.5 }}>
           {fmtPrice(stock.price)}
         </T>
-        <Change pct={stock.changePct} pill />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {stock.change != null && stock.changePct != null && stock.change !== 0 ? (
+            <T v="mono" style={{ fontSize: 12.5, color: changeColor(stock.change) }}>
+              {stock.change > 0 ? '+' : '−'}
+              {fmtPrice(Math.abs(stock.change))}
+            </T>
+          ) : null}
+          <Change pct={stock.changePct} pill />
+        </View>
       </View>
     </Pressable>
   );

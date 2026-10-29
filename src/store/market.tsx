@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import { fetchBoard, fetchIndices, fetchScreener, fetchSymbols } from '../psx/api';
 import type { BoardQuote, IndexQuote, ScreenerRow, Stock, SymbolInfo } from '../psx/types';
-import { haveFinalPrices, isMarketOpen, lastSessionEnd } from '../market-hours';
+import { haveFinalPrices, isMarketOpen, isTrading, lastSessionEnd } from '../market-hours';
 import { loadCached, saveCached } from '../storage';
 import { logProblem } from '../log';
 
@@ -36,7 +36,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const [symbols, setSymbols] = useState<SymbolInfo[]>([]);
   const [screener, setScreener] = useState<ScreenerRow[]>([]);
   const [board, setBoard] = useState<BoardQuote[]>([]);
-  const [marketOpen, setMarketOpen] = useState(isMarketOpen());
+  const [marketOpen, setMarketOpen] = useState(isTrading());
   const screenerAt = useRef(0);
   const symbolsAt = useRef(0);
   const busy = useRef(false);
@@ -50,7 +50,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     busy.current = true;
     lastAt.current = Date.now();
     setRefreshing(true);
-    setMarketOpen(isMarketOpen());
+    setMarketOpen(isTrading());
     try {
       const [idx, brd] = await Promise.all([fetchIndices(), fetchBoard()]);
       setIndices(idx);
@@ -140,7 +140,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       else if (active && !failed.current && pricesAt.current != null && !haveFinalPrices(pricesAt.current) && !isMarketOpen() && Date.now() >= lastSessionEnd()) {
         if (Date.now() - lastAt.current > 5 * 60_000) refresh();
         else setMarketOpen(false);
-      } else setMarketOpen(isMarketOpen());
+      } else setMarketOpen(isTrading());
     }, LIVE_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
@@ -148,7 +148,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       // a quick look at the phone doesn't need another download
       const age = Date.now() - lastAt.current;
       if (isMarketOpen() ? age > 20_000 : !haveFinalPrices(pricesAt.current) && age > 60_000) refresh();
-      else setMarketOpen(isMarketOpen());
+      else setMarketOpen(isTrading());
     });
     return () => {
       clearInterval(id);

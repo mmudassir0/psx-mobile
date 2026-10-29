@@ -1,4 +1,4 @@
-import { isMarketOpen } from '../src/market-hours';
+import { isMarketOpen, isTrading } from '../src/market-hours';
 import { relativeReturn } from '../src/analysis/market';
 import { passes, roeOf, debtOf, screen, screenLine } from '../src/analysis/screener';
 import { indexTrend, rawRegime, regimes, trendTriggers } from '../src/analysis/market';
@@ -68,6 +68,9 @@ check('portfolio beta is value-weighted over holdings with data', Math.abs(st.be
 
 // Friday 12:00-14:30 break (Pakistan time = UTC+5)
 check('market hours: Friday prayer break is closed, sessions either side open', !isMarketOpen(Date.UTC(2026, 9, 16, 8)) && isMarketOpen(Date.UTC(2026, 9, 16, 6)) && isMarketOpen(Date.UTC(2026, 9, 16, 10)) && isMarketOpen(Date.UTC(2026, 9, 15, 8)));
+// Thursday 29 Oct 2026: 15:29 is trading, 15:44 is closed (though prices are still fetched until 15:45)
+check('trading: Thursday closes at 15:30', isTrading(Date.UTC(2026, 9, 29, 10, 29)) && !isTrading(Date.UTC(2026, 9, 29, 10, 44)) && isMarketOpen(Date.UTC(2026, 9, 29, 10, 44)));
+check('trading: Friday sessions', isTrading(Date.UTC(2026, 9, 30, 6)) && !isTrading(Date.UTC(2026, 9, 30, 8)) && isTrading(Date.UTC(2026, 9, 30, 11)) && !isTrading(Date.UTC(2026, 9, 30, 11, 31)));
 
 if (failed) {
   console.log(`\n${failed} market check(s) failed`);

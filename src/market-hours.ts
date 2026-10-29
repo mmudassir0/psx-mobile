@@ -9,6 +9,18 @@ export function pkNow(now = Date.now()): { day: number; minutes: number } {
   return { day: d.getUTCDay(), minutes: d.getUTCHours() * 60 + d.getUTCMinutes() };
 }
 
+/**
+ * Whether PSX is actually trading: what the app *says* (Mon–Thu 09:30–15:30, Fri 09:15–12:00 and
+ * 14:30–16:30). Fetching runs a little wider (isMarketOpen) to catch the opening and closing prices.
+ */
+export function isTrading(now = Date.now()): boolean {
+  const { day, minutes } = pkNow(now);
+  if (day === 0 || day === 6) return false;
+  if (day === 5) return (minutes >= 9 * 60 + 15 && minutes < 12 * 60) || (minutes >= 14 * 60 + 30 && minutes < 16 * 60 + 30);
+  return minutes >= 9 * 60 + 30 && minutes < 15 * 60 + 30;
+}
+
+/** The window in which Sahm keeps fetching prices: the session plus a quarter of an hour either side. */
 export function isMarketOpen(now = Date.now()): boolean {
   const { day, minutes } = pkNow(now);
   if (day === 0 || day === 6) return false;

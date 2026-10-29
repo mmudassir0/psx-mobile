@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
   adjustCandles, groupCandles, parseHistorical, parseIndexConstituents, ticksToCandles,
-  extractToken, parseCompany, parseIndices, parseScreener, parseSymbols, parseTimeseries, parseTradingBoard,
+  extractToken, parseCompany, parseIndices, parseScreener, parseSymbols, parseTimeseries, parseTradingBoard, sanePct,
 } from '../src/psx/parse';
 
 const f = (n: string) => readFileSync(join(__dirname, 'fixtures', n), 'utf8');
@@ -89,5 +89,9 @@ check('ABL row', !!abl && abl.price === 172.75 && abl.points === 6.0437 && abl.w
 const pts = cons.reduce((s, x) => s + (x.points ?? 0), 0);
 check('points sum ~ index change (-352.63)', Math.abs(pts - -352.63) < 3, pts.toFixed(2));
 
+// a day's change of 100% or more is a near-zero previous close (letters of rights), shown as unknown
+check('impossible day change dropped', sanePct(10000) === null && sanePct(-150) === null && sanePct(19.89) === 19.89 && sanePct(null) === null);
+
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall parser checks passed');
+
