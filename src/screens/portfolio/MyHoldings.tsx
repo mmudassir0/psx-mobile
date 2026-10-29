@@ -207,13 +207,15 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: R
         <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: color }} />
         <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <T style={{ fontFamily: fonts.heavy, fontSize: 16 }}>{r.holding.symbol}</T>
+            <T style={{ fontFamily: fonts.heavy, fontSize: 16, flexShrink: 0 }} numberOfLines={1}>
+              {r.holding.symbol}
+            </T>
             {rv ? (
-              <View style={[styles.tag, { backgroundColor: bg }]}>
-                <T style={[styles.tagText, { color: fg }]}>
+              <View style={[styles.tag, { backgroundColor: bg }]} accessibilityLabel={`${rv.action}${rv.watch ? ', watch' : ''}`}>
+                <T style={[styles.tagText, { color: fg }]} numberOfLines={1}>
                   {rv.action}
-                  {rv.watch ? ' · watch' : ''}
                 </T>
+                {rv.watch ? <ToolIcon name="eye" size={13} color={fg} /> : null}
               </View>
             ) : null}
           </View>
@@ -542,7 +544,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
           {!loading ? (
             <T v="body" style={{ fontSize: 14, color: colors.text2 }}>
               {counts.map(([a, n]) => `${n} ${a.toLowerCase()}`).join(' · ')}
-              {watching ? ` (${watching} to watch)` : ''}
+              {watching ? ` (${watching} to watch, the eye on their tag)` : ''}
               {'  '}
               <T accessibilityRole="link" onPress={() => nav.navigate('SellSignals')} style={{ color: colors.gold, fontSize: 14, fontFamily: fonts.semibold }}>
                 Warning signs ›
@@ -754,7 +756,7 @@ const styles = themed(() =>
       justifyContent: 'center',
     },
     sector: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
-    tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+    tag: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, flexShrink: 1 },
     tagText: { fontFamily: fonts.heavy, fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase' },
     legend: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatch: { width: 8, height: 8, borderRadius: 2 },
