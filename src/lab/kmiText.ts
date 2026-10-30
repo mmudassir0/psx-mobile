@@ -29,7 +29,12 @@ export function trustworthy(e: IndexEvent, size: number): { inOut: boolean; full
 const SYM = /^[A-Z][A-Z0-9]{1,9}$/;
 const NOT = new Set(['LTD', 'LIMITED', 'PSX', 'KMI', 'KSE', 'NOTICE', 'THE', 'AND', 'SR', 'NO', 'TOTAL', 'PAKISTAN']);
 const symOf = (seg: string): string | null => {
-  const toks = seg.trim().split(/\s+/);
+  // table rules an OCR'd scan leaves around words ("| 4 [PSMC |") aren't part of them
+  const toks = seg
+    .trim()
+    .split(/\s+/)
+    .map((t) => t.replace(/^[|[\]_(){}]+|[|[\]_(){}.,;:]+$/g, ''))
+    .filter(Boolean);
   let k = 0;
   if (/^\d+\.?$/.test(toks[0] ?? '')) k = 1;
   const t = (toks[k] ?? '').replace(/[^A-Z0-9]/g, '');
@@ -145,4 +150,74 @@ export function spansOf(history: { from: string; members: string[] }[]): Map<str
     }
   });
   return out;
+}
+
+/**
+ * Tesseract's TSV (words with their positions) back into lines with the words at their columns, like
+ * pdftotext -layout gives for a text PDF, so a scanned two-column table splits the same way.
+ */
+export function tsvToLayout(tsv: string, cols = 180): string {
+  const rows = tsv
+    .split('\n')
+    .slice(1)
+    .map((l) => l.split('\t'))
+    .filter((c) => c.length >= 12 && c[0] === '5' && c[11].trim());
+  if (!rows.length) return '';
+  const right = Math.max(...rows.map((c) => Number(c[6]) + Number(c[8])));
+  const charW = right / cols;
+  const lines = new Map<string, { left: number; text: string }[]>();
+  for (const c of rows) {
+    const key = `${c[1]}-${c[2]}-${c[3]}-${c[4]}`;
+    if (!lines.has(key)) lines.set(key, []);
+    lines.get(key)!.push({ left: Number(c[6]), text: c[11].trim() });
+  }
+  const tops = new Map<string, number>();
+  for (const c of rows) {
+    const key = `${c[1]}-${c[2]}-${c[3]}-${c[4]}`;
+    tops.set(key, Math.min(tops.get(key) ?? Infinity, Number(c[7])));
+  }
+  return [...lines.entries()]
+    .sort((a, b) => tops.get(a[0])! - tops.get(b[0])!)
+    .map(([, words]) => {
+      let out = '';
+      for (const w of words.sort((a, b) => a.left - b.left)) {
+        const col = Math.round(w.left / charW);
+        out += (out.length < col ? ' '.repeat(col - out.length) : out ? ' ' : '') + w.text;
+      }
+      return out;
+    })
+    .join('\n');
+}
+
+const dist1 = (a: string, b: string): boolean => {
+  // at most one letter changed, added or dropped
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      i++;
+      j++;
+      continue;
+    }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else {
+      i++;
+      j++;
+    }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+};
+
+/** OCR slips in symbols ("PSMC" read as "PSNC"): a word one letter away from exactly one real symbol becomes that symbol. */
+export function fixSymbols(list: string[], known: Set<string>): string[] {
+  const all = [...known];
+  return list.map((s) => {
+    if (known.has(s) || s.length < 4) return s;
+    const near = all.filter((k) => k.length >= 4 && dist1(s, k));
+    return near.length === 1 ? near[0] : s;
+  });
 }

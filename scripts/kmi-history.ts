@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { fetchIndexConstituents, fetchRaw, fetchSymbols } from '../src/psx/api';
-import { membershipHistory, parseIndexNotice, spansOf, type IndexEvent } from '../src/lab/kmiText';
+import { fixSymbols, membershipHistory, parseIndexNotice, spansOf, tsvToLayout, type IndexEvent } from '../src/lab/kmiText';
 
 const out = process.argv[2] ?? '/tmp/out/kmi.json';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -42,6 +42,8 @@ async function main() {
       if (rowsSeen < 50 || offset + 100 >= total) break;
     }
   console.log(`${notices.size} index notices listed`);
+  // today's listings, to put OCR slips in symbols right
+  const listed = new Set(await fetchSymbols().then((x) => x.map((y) => y.symbol)).catch(() => [] as string[]));
   const events: Record<'kmiall' | 'kmi30', IndexEvent[]> = { kmiall: [], kmi30: [] };
   let read = 0,
     scanned = 0;
@@ -57,11 +59,13 @@ async function main() {
         scanned++;
         text = '';
         try {
-          execFileSync('pdftoppm', ['-r', '200', '-gray', '-png', '-f', '1', '-l', '4', '/tmp/kmi/n.pdf', '/tmp/kmi/p'], { timeout: 120_000 });
+          // 300 dpi, and words placed back at their columns (TSV positions), so the incoming and outgoing columns stay apart
+          execFileSync('pdftoppm', ['-r', '300', '-gray', '-png', '-f', '1', '-l', '6', '/tmp/kmi/n.pdf', '/tmp/kmi/p'], { timeout: 180_000 });
           for (const f of readdirSync('/tmp/kmi')
             .filter((x) => /^p-\d+\.png$/.test(x))
             .sort()) {
-            text += execFileSync('tesseract', [`/tmp/kmi/${f}`, '-', '--psm', '6'], { encoding: 'utf8', maxBuffer: 2e7, timeout: 120_000 }) + '\n';
+            const tsv = execFileSync('tesseract', [`/tmp/kmi/${f}`, '-', '--psm', '6', 'tsv'], { encoding: 'utf8', maxBuffer: 5e7, timeout: 180_000 });
+            text += tsvToLayout(tsv) + '\n';
             rmSync(`/tmp/kmi/${f}`, { force: true });
           }
         } catch {
@@ -74,7 +78,8 @@ async function main() {
         mkdirSync(process.env.DUMP_DIR, { recursive: true });
         writeFileSync(`${process.env.DUMP_DIR}/${which}-${n.day}.txt`, `${n.title}\n\n${text}`);
       }
-      const e = parseIndexNotice(text, n.day);
+      const e0 = parseIndexNotice(text, n.day);
+      const e = e0 && listed.size ? { ...e0, in: [...new Set(fixSymbols(e0.in, listed))], out: [...new Set(fixSymbols(e0.out, listed))], ...(e0.full ? { full: [...new Set(fixSymbols(e0.full, listed))] } : {}) } : e0;
       if (e) {
         events[which].push(e);
         read++;

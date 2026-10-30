@@ -1,3 +1,4 @@
+import { fixSymbols, tsvToLayout } from '../src/lab/kmiText';
 /** Checks for the backtesting lab: data encoding, the engine's arithmetic, no peeking ahead, and the dividend notice reader. */
 import { buildLab, type Bar } from '../src/lab/build';
 import { decodeLab, type Lab } from '../src/lab/data';
@@ -362,6 +363,17 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   check('shariah of the time', !inUniverse(up, 'shariah', 100) && inUniverse(up, 'shariah', 700) && inUniverse(up, 'shariah'));
   const cal = divCalendar(lab, 2016);
   check('dividend calendar', cal.length === 12 && cal.flat().every((x) => x.years <= x.of));
+}
+
+{
+  const tsv = ['level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext',
+    '5\t1\t1\t1\t1\t1\t0\t10\t100\t20\t90\tIncoming',
+    '5\t1\t1\t1\t1\t2\t900\t10\t100\t20\t90\tOutgoing',
+    '5\t1\t1\t1\t2\t1\t0\t40\t60\t20\t90\tPSMC',
+    '5\t1\t1\t1\t2\t2\t900\t40\t60\t20\t90\tBYCO'].join('\n');
+  const l = tsvToLayout(tsv, 100).split('\n');
+  check('OCR layout: words back at their columns', l.length === 2 && l[0].indexOf('Outgoing') >= 85 && l[1].indexOf('BYCO') === l[0].indexOf('Outgoing'), l);
+  check('OCR symbols: one letter off a single real symbol', fixSymbols(['PSNC', 'LUCK', 'ZZZZQ', 'AB'], new Set(['PSMC', 'LUCK', 'SNGP'])).join() === 'PSMC,LUCK,ZZZZQ,AB');
 }
 
 if (failed) {
