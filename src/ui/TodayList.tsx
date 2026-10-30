@@ -14,7 +14,7 @@ import type { Row } from '../portfolio/useReviews';
 import { watchRulesPref } from '../portfolio/prefs';
 import { describeRule, priceLine } from '../analysis/watch';
 import { useMarket } from '../store/market';
-import { eventsFor } from './EventsCard';
+import { eventsFor, useWatchRows } from './EventsCard';
 import { useNews, ago } from './NewsList';
 import { Panel } from './bits';
 import { Section, T } from './kit';
@@ -46,6 +46,7 @@ export function useTodayItems(rows: Row[], todo: TodoItem[], max = 7): Item[] {
   const { bySymbol } = useMarket();
   const on = useFlags();
   const held = new Set(rows.map((r) => r.holding.symbol));
+  const watchRows = useWatchRows(rows);
   const toPortfolio = () => nav.navigate('Tabs', { screen: 'Portfolio', params: { view: 'holdings' } });
   const out: Item[] = todo.map((t) => ({
     key: `todo-${t.key}`,
@@ -54,14 +55,14 @@ export function useTodayItems(rows: Row[], todo: TodoItem[], max = 7): Item[] {
     text: t.text,
     onPress: () => (t.route ? nav.navigate(t.route) : t.symbol ? nav.navigate('Stock', { symbol: t.symbol }) : toPortfolio()),
   }));
-  for (const e of on('comingUp') ? eventsFor(rows, Date.now(), 7) : []) {
+  for (const e of on('comingUp') ? eventsFor([...rows, ...watchRows], Date.now(), 7) : []) {
     // payouts already in the to-dos aren't repeated
     if (e.kind === 'exdate' && out.some((o) => e.symbol && o.text.startsWith(e.symbol + ':'))) continue;
     out.push({
       key: `ev-${e.kind}${e.symbol ?? ''}${e.day}`,
       glyph: EVENT_GLYPH[e.kind] ?? 'calendar',
       text: e.title,
-      sub: e.kind === 'results' ? 'Any day now' : dayName(e.day),
+      sub: `${e.kind === 'results' ? 'Any day now' : dayName(e.day)}${e.watch ? ' · watchlist' : ''}`,
       onPress: () => (e.symbol ? nav.navigate('Stock', { symbol: e.symbol }) : nav.navigate('Tabs', { screen: 'Market' })),
     });
   }

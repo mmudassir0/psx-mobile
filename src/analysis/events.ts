@@ -18,6 +18,8 @@ export interface MarketEvent {
   symbol?: string;
   title: string;
   detail: string;
+  /** a stock on your watchlist, not one you hold */
+  watch?: boolean;
 }
 
 const pkDay = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);

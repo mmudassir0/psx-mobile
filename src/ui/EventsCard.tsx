@@ -1,12 +1,18 @@
 /** "Coming up": the next two weeks' days when bigger moves are likely, for the market and your holdings. */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFlag } from '../flags';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fonts, space, themed } from '../theme';
 import { fmtNum } from '../format';
 import { holidayEvents, rateEvents, type MarketEvent } from '../analysis/events';
-import { currentRights, exDate, upcomingPayout } from '../analysis/dividends';
+import { currentRights, dividends, exDate, upcomingPayout } from '../analysis/dividends';
+import { useUser } from '../store/user';
+import { cached, COMPANY_TTL } from '../psx/cache';
+import { fetchCompany, fetchPayouts } from '../psx/api';
+import { fiscalEndMonth } from '../analysis/fairValue';
+import { resultsStatus } from '../analysis/results';
+import { eachLimit } from '../limit';
 import type { Row } from '../portfolio/useReviews';
 import { Panel } from './bits';
 import { Section, T } from './kit';
@@ -22,12 +28,53 @@ const label = (d: string, today: string) => {
   return `${name} ${t.getUTCDate()} ${MON[t.getUTCMonth()]}`;
 };
 
+/**
+ * Your watchlist as rows with no shares (dividends and results only), so its ex-dates and results
+ * show in Coming up and Today too. Up to 15 stocks you don't hold, read from the shared cache.
+ */
+export function useWatchRows(held: Row[]): Row[] {
+  const { watchlist } = useUser();
+  const heldSet = useMemo(() => new Set(held.map((r) => r.holding.symbol)), [held]);
+  const want = useMemo(() => watchlist.filter((s) => !heldSet.has(s)).slice(0, 15), [watchlist, heldSet]);
+  const [rows, setRows] = useState<Row[]>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const out: Row[] = [];
+      await eachLimit(want, 2, async (symbol) => {
+        const [company, payouts] = await Promise.all([
+          cached(`company:${symbol}`, COMPANY_TTL, () => fetchCompany(symbol), { persist: true }).catch(() => null),
+          cached(`payouts:${symbol}`, 6 * 3600_000, () => fetchPayouts(symbol), { persist: true }).catch(() => null),
+        ]);
+        const price = company?.close ?? 0;
+        out.push({
+          holding: { symbol, shares: 0, avgCost: 0 },
+          price,
+          value: 0,
+          weight: 0,
+          review: null,
+          fund: false,
+          dividends: payouts ? dividends(payouts, { price, divYield: null, fiscalEndMonth: fiscalEndMonth(company?.fiscalYearEnd), latestFiscalYear: company?.financialsAnnual?.periods[0] ?? null }) : null,
+          results: company ? resultsStatus(company) : null,
+        });
+      }, () => alive);
+      if (alive) setRows(out);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [want.join()]);
+  return rows;
+}
+
 export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent[] {
   const out: MarketEvent[] = [...rateEvents(now, days), ...holidayEvents(now, days)];
   const to = pkDay(now + days * 864e5);
   const today = pkDay(now);
   for (const r of rows) {
     const sym = r.holding.symbol;
+    // a watchlist stock comes in as a row with no shares
+    const watch = !(r.holding.shares > 0);
     const up = upcomingPayout(r.dividends, now);
     if (up) {
       const ex = pkDay(exDate(up.bookClosure));
@@ -38,11 +85,14 @@ export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent
           kind: 'exdate',
           symbol: sym,
           title: `${sym} goes ex-${up.dps > 0 ? 'dividend' : 'bonus'}`,
-          detail: `The price usually drops by ${drop} at the open. Not a loss: you keep the payout${up.dps > 0 ? `, about Rs ${fmtNum(up.dps * r.holding.shares, 0)} before tax on your shares` : ''}.`,
+          detail: watch
+            ? `To get the ${up.dps > 0 ? `Rs ${up.dps.toFixed(2)} a share dividend` : 'bonus shares'}, the shares must be bought by the trading day before. From this day the price usually drops by ${drop} at the open.`
+            : `The price usually drops by ${drop} at the open. Not a loss: you keep the payout${up.dps > 0 ? `, about Rs ${fmtNum(up.dps * r.holding.shares, 0)} before tax on your shares` : ''}.`,
+          ...(watch ? { watch } : {}),
         });
       }
     }
-    const ri = currentRights(r.dividends, now);
+    const ri = watch ? null : currentRights(r.dividends, now);
     if (ri && ri.phase === 'before') {
       const d = pkDay(ri.lastBuyDay);
       if (d >= today && d <= to)
@@ -61,6 +111,7 @@ export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent
         symbol: sym,
         title: `${sym} results due soon`,
         detail: `Board meeting called on ${r.results.meetingNotice.date}. Prices often move most on the day results come out.`,
+        ...(watch ? { watch } : {}),
       });
     }
   }
@@ -73,7 +124,8 @@ export function EventsCard({ rows, padded }: { rows: Row[]; padded?: boolean }) 
   const [open, setOpen] = useState<string | null>(null);
   const now = Date.now();
   const today = pkDay(now);
-  const list = useMemo(() => eventsFor(rows, now), [rows, now]);
+  const watchRows = useWatchRows(rows);
+  const list = useMemo(() => eventsFor([...rows, ...watchRows], now), [rows, watchRows, now]);
   if (!list.length || !enabled) return null;
   return (
     <View style={padded ? { paddingHorizontal: space.gutter } : undefined}>
@@ -94,7 +146,10 @@ export function EventsCard({ rows, padded }: { rows: Row[]; padded?: boolean }) 
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{e.title}</T>
-                  <T v="caption">{e.kind === 'results' ? 'Any day now' : label(e.day, today)}</T>
+                  <T v="caption">
+                    {e.kind === 'results' ? 'Any day now' : label(e.day, today)}
+                    {e.watch ? ' · on your watchlist' : ''}
+                  </T>
                   {open === key ? (
                     <>
                       <T v="caption" style={{ lineHeight: 18, color: colors.text2, marginTop: 2 }}>
