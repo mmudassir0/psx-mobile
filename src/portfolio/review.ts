@@ -89,7 +89,8 @@ export function quarterYoY(c: CompanyInfo | null): { change: number; now: string
   const m = label?.match(/(Q\d)\s*(\d{4})/i);
   if (!m) return null;
   const j = q.periods.findIndex((p) => p.toUpperCase() === `${m[1].toUpperCase()} ${Number(m[2]) - 1}`);
-  const now = eps[0], then = j >= 0 ? eps[j] : null;
+  const now = eps[0],
+    then = j >= 0 ? eps[j] : null;
   if (now == null || then == null || then <= 0) return null;
   return { change: now / then - 1, now: label, then: q.periods[j] };
 }
@@ -119,7 +120,10 @@ export function reviewHolding(x: ReviewInput): Review {
       else good.push(`Above its 200-day average (long-term uptrend)`);
       // A death cross in the last 20 days
       for (let i = Math.max(1, n - 19); i <= n; i++) {
-        const a = S.e50[i - 1], b = S.e200[i - 1], c = S.e50[i], d = S.e200[i];
+        const a = S.e50[i - 1],
+          b = S.e200[i - 1],
+          c = S.e50[i],
+          d = S.e200[i];
         if (a != null && b != null && c != null && d != null && a >= b && c < d) {
           technicalBreaks.push('Death cross in the last 20 days: the 50-day average fell below the 200-day');
           break;
@@ -196,13 +200,7 @@ export function reviewHolding(x: ReviewInput): Review {
     headline = heavy
       ? 'Too much of your money is in this one stock; selling part would spread the risk.'
       : `Well above Sahm's fair value range (${rs(f!.low)}–${rs(f!.high)}) and the chart has broken: taking some off is reasonable.`;
-  } else if (
-    !x.fund &&
-    f?.label === 'Undervalued' &&
-    above200 === true &&
-    technicalBreaks.length === 0 &&
-    x.weight < ADD_MAX_WEIGHT
-  ) {
+  } else if (!x.fund && f?.label === 'Undervalued' && above200 === true && technicalBreaks.length === 0 && x.weight < ADD_MAX_WEIGHT) {
     action = 'Add more';
     headline = 'Priced below fair value, business fine, trend up, and a small part of your portfolio.';
   } else {
@@ -230,12 +228,36 @@ export function reviewHolding(x: ReviewInput): Review {
   };
 }
 
+/**
+ * Text pasted or read from screenshots can carry characters that look like nothing or like a space or
+ * digit but aren't: zero-width spaces, direction marks, no-break and thin spaces, full-width or
+ * Arabic-Indic digits. Turned into plain ones before reading.
+ */
+export function cleanHoldingsText(text: string): string {
+  let t = text;
+  try {
+    t = t.normalize('NFKC');
+  } catch {
+    // no Unicode tables: the replacements below still cover the usual cases
+  }
+  return t
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF\u00AD]/g, '')
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
+    .replace(/[\u2028\u2029\u0085]/g, '\n')
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[\uFF10-\uFF19]/g, (d) => String(d.charCodeAt(0) - 0xff10))
+    .replace(/[\u066B\uFF0E]/g, '.')
+    .replace(/[\u066C\uFF0C]/g, ',');
+}
+
 /** "LUCK 200 419.11" per line (commas or tabs also fine); returns holdings and lines it couldn't read. */
 export function parseHoldings(text: string): { holdings: Holding[]; bad: string[] } {
   const holdings: Holding[] = [];
   const bad: string[] = [];
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
+  for (const raw of cleanHoldingsText(text).split(/\r?\n/)) {
+    // a numbered list ("1. LUCK 200 419.11", "- LUCK …") is fine too
+    const line = raw.trim().replace(/^(?:\d+[.)]\s+|[-*•]\s+)/, '');
     if (!line || line.startsWith('#')) continue;
     const m = line.match(/^([A-Za-z][A-Za-z0-9.-]*)[\s,;\t]+([\d,]+(?:\.\d+)?)[\s,;\t]+([\d,]+(?:\.\d+)?)$/);
     if (!m) {

@@ -74,8 +74,8 @@ export default function EditHoldingsScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <T v="caption" style={{ lineHeight: 18 }}>
-          One holding per line: symbol, number of shares, average buy price. For example "LUCK 200 419.11". Or pick screenshots of your
-          broker's portfolio screen and the AI fills them in (the images go to Groq or Gemini to be read). Saved on this phone only.
+          One holding per line: symbol, number of shares, average buy price. For example "LUCK 200 419.11". Or pick screenshots of your broker's portfolio screen and the AI fills them in (the images go to Groq or Gemini
+          to be read). Saved on this phone only.
         </T>
         <Button label={reading ? 'Reading screenshots…' : 'Read from broker screenshots'} tone="ghost" disabled={reading} onPress={fromScreenshots} />
         {readMsg ? (
@@ -103,13 +103,26 @@ export default function EditHoldingsScreen() {
         {bad.length ? (
           <T v="caption" style={{ color: colors.downText }}>
             Can't read: {bad.slice(0, 3).join(' | ')}
-            {bad.length > 3 ? ` and ${bad.length - 3} more` : ''}
+            {bad.length > 3 ? ` and ${bad.length - 3} more` : ''}. Each line needs a symbol, shares and average price, like LUCK 200 419.11.
+            {(() => {
+              // name anything unusual in the line, so a hidden character can be found
+              const odd = [...bad[0]].find((ch) => !/[A-Za-z0-9 .,;\t\-]/.test(ch));
+              return odd ? ` It holds an unusual character (U+${odd.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}).` : '';
+            })()}
           </T>
         ) : null}
-        {unknown.length ? <T v="caption" style={{ color: colors.downText }}>Not found on PSX: {unknown.join(', ')}</T> : null}
-        {dupes.length ? <T v="caption" style={{ color: colors.downText }}>Listed twice: {[...new Set(dupes)].join(', ')}</T> : null}
+        {unknown.length ? (
+          <T v="caption" style={{ color: colors.downText }}>
+            Not found on PSX: {unknown.join(', ')}
+          </T>
+        ) : null}
+        {dupes.length ? (
+          <T v="caption" style={{ color: colors.downText }}>
+            Listed twice: {[...new Set(dupes)].join(', ')}
+          </T>
+        ) : null}
         <Button label="Save holdings" disabled={!!bad.length || !!dupes.length} onPress={save} />
-              <T style={{ fontFamily: fonts.bold, fontSize: 16, marginTop: 8 }}>Past trades</T>
+        <T style={{ fontFamily: fonts.bold, fontSize: 16, marginTop: 8 }}>Past trades</T>
         <TradeImport />
       </ScrollView>
     </SafeAreaView>
