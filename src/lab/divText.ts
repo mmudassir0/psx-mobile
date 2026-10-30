@@ -52,7 +52,8 @@ export function parseDivNotice(raw: string): DivNotice {
     const before = text.slice(Math.max(0, m.index - 40), m.index).toLowerCase();
     if (/unclaimed|unpaid|payable|income|withh|mandate|e-|register|regulation/.test(before)) continue;
     const win = text.slice(m.index, m.index + 240);
-    if ((/nil\b/i.test(win.slice(0, 64)) && !/\d/.test(win.slice(0, 64))) || /\bnil\W{0,3}\s*(?:cash\s+)?$/i.test(before)) {
+    // "NIL", or "at Rs. NIL per share" / "NIL %" even with the year's dates in between
+    if ((/nil\b/i.test(win.slice(0, 64)) && !/\d/.test(win.slice(0, 64))) || /\bnil\W{0,3}\s*(?:cash\s+)?$/i.test(before) || /^[^.]{0,120}?(?:rs\.?|pkr|rupees)\s*nil\b|^[^.]{0,120}?\bnil\s*(?:per\s+share|%)/i.test(win)) {
       nil = true;
       continue;
     }
@@ -72,7 +73,8 @@ export function parseDivNotice(raw: string): DivNotice {
     }
     if (dps == null && pct == null) {
       const pm = win.slice(0, 160).match(/([0-9][0-9,]*(?:\.[0-9]+)?)\s*%/);
-      if (pm && !/bonus|right/i.test(win.slice(0, pm.index!))) pct = num(pm[1]);
+      // not the interim already paid that a final notice repeats ("in addition to ... already paid at Rs 0.50 i.e. 5%")
+      if (pm && !/bonus|right|already paid|in addition/i.test(win.slice(0, pm.index!))) pct = num(pm[1]);
     }
   }
   // final or interim, from the words just before the first dividend mention that carries an amount

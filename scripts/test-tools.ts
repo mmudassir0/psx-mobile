@@ -1,3 +1,4 @@
+import { parsePolicyHistory } from '../src/analysis/macro';
 import { compareSavings } from '../src/analysis/savingsCompare';
 import { screenAlertHits } from '../src/analysis/savedScreens';
 import { NO_CHALLENGE, stepChallenge, streak, resultOf } from '../src/paper/challenge';
@@ -1434,6 +1435,21 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   check('savings: notes months past the latest inflation figure', c.inflationAssumedFrom === '2026-03' && c.tbillAssumedFrom === null);
   const early = compareSavings('2025-06-01', '2025-07-01', 0, macro)!;
   check('savings: before the saved history, the first yield and no dollar', early.tbillAssumedFrom === '2026-01-01' && early.usd === null && early.tbill > 0);
+  const withPolicy = compareSavings('2025-01-01', '2026-01-01', 0, { ...macro, policyHistory: [['2024-12-17', 13], ['2025-06-01', 11]] });
+  // 150 days at 13%, 214 at 11%, then the saved 12% from 1 Jan
+  check('savings: before the saved yields, the policy rate stands in', !!withPolicy && Math.abs(withPolicy.tbill - (150 * 0.13 + 214 * 0.11 + 0.12) / 365) < 1e-9 && withPolicy.policyUntil === '2026-01-01' && withPolicy.tbillAssumedFrom === null, withPolicy);
+}
+
+// SBP rate history
+{
+  const txt = ` Date      Reverse Repo (Ceiling) Rate1       Repo (Floor) Rate2            SBP Policy (Target) Rate3
+26-Feb-91              10.00%
+17-Aug-09              13.00%                        10.00%
+     27-Jun-23                              23.00%                                             21.00%                                       22.00%
+     28-Apr-26                               12.50%                                             10.50%                                       11.50%
+1:\\ Formally known as Rate on SBP 3-Day Repo Facility.`;
+  const h = parsePolicyHistory(txt);
+  check('policy history: target rate since 2015, reverse repo before', JSON.stringify(h) === JSON.stringify([['1991-02-26', 10], ['2009-08-17', 13], ['2023-06-27', 22], ['2026-04-28', 11.5]]), h);
 }
 
 if (failed) {

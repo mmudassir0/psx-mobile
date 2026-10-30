@@ -186,6 +186,13 @@ const cases: [string, string][] = [
 for (const [t, want] of cases) check(`notice: ${want}`, notice(t) === want, { got: notice(t), t: t.slice(0, 50) });
 check('notice: final', parseDivNotice('We are pleased to inform you that the Final Cash Dividend @ Rs.15/- per share').kind === 'final');
 check('notice: interim', parseDivNotice('An Interim cash dividend for the quarter ended September 30, 2024 @ Rs 3.00 per share').kind === 'interim');
+check(
+  'notice: NIL final that mentions the interim already paid',
+  (() => {
+    const d = parseDivNotice('(i) CASH DIVIDEND A final Cash Dividend for the year ended June 30, 2026 at Rs. NIL per share i.e. NIL %. This is in addition to Interim Dividend(s) already paid at Rs. 0.50 per share i.e. 5%. (ii) BONUS SHARES Nil');
+    return d.nil && d.dps == null && d.pct == null;
+  })(),
+);
 check('notice: closed on', parseDivNotice('Cash Dividend Rs. 2 per share. The Share Transfer Books of the Company will be closed on 10 September 2025').closeFrom === '2025-09-10');
 check('notice: closed for the period', parseDivNotice('Rs. 2 per share. Share transfer books shall be closed for the period from 15-03-2026 to 22-03-2026').closeFrom === '2026-03-15');
 check('notice: book closure line', parseDivNotice('Cash Dividend Rs 4 per share\nBook Closure: 07-04-2026 to 14-04-2026').closeFrom === '2026-04-07');

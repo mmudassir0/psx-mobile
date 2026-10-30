@@ -18,7 +18,10 @@ import { computeSeries } from '../src/analysis/signals';
 import { liquidityAt } from '../src/analysis/picks';
 import { breadthOf, choosePicks, ListId, listOf, liveRecord, LISTS, PicksFeed, pkDay, RULES, ScoredPick, scorePick, statsOf, Universe } from '../src/picks/build';
 import { buildMatcher, buildNews, NEWS_FEEDS, parseRss, type NewsFeed, type RawItem } from '../src/analysis/news';
-import { parsePbsInflation, parseSbp, petrolFromNews, type MacroFeed, type MacroNow, type MacroRow } from '../src/analysis/macro';
+import { parsePbsInflation, parsePolicyHistory, parseSbp, petrolFromNews, type MacroFeed, type MacroNow, type MacroRow } from '../src/analysis/macro';
+import { execFileSync } from 'child_process';
+
+const MON3_FULL = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 import { fetchCompany, fetchIndexConstituents, fetchPayouts, fetchScreener, fetchSeries, fetchSymbols } from '../src/psx/api';
 import { longTermList, monthReturn, LT, type LtFeed, type LtMonth } from '../src/analysis/longterm';
 import { cashDividends, dividends } from '../src/analysis/dividends';
@@ -479,7 +482,28 @@ async function main() {
     const row: MacroRow = [day, nowMacro.policy, nowMacro.usd, nowMacro.tbills.m12, nowMacro.cpi, nowMacro.petrol];
     const history = [...(prev?.history ?? []).filter((r) => r[0] !== day), row].slice(-800);
     const feed: MacroFeed = { v: 1, kind: 'macro', generatedAt: new Date(now).toISOString(), now: nowMacro, history };
-    if (nowMacro.policy != null || nowMacro.usd != null) writeFileSync(macroPath, JSON.stringify({ ...feed, inflation: inflation.slice(-36) }));
+    // the SBP's history of rate decisions (a PDF on its archive site), with today's rate added when a newer decision isn't in it yet
+    let policyHistory: [string, number][] = prev?.policyHistory ?? [];
+    try {
+      const r = await fetch('https://archive.sbp.org.pk/ecodata/OVR-Repo-History.pdf', { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(30_000) });
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (r.ok && buf.subarray(0, 4).toString() === '%PDF') {
+        writeFileSync('/tmp/sbp-rates.pdf', buf);
+        const parsed = parsePolicyHistory(execFileSync('pdftotext', ['-layout', '/tmp/sbp-rates.pdf', '-'], { encoding: 'utf8' }));
+        if (parsed.length > 20) policyHistory = parsed;
+      }
+    } catch (e) {
+      console.log(`policy rate history: ${(e as Error).message}`);
+    }
+    const lastDecision = policyHistory[policyHistory.length - 1];
+    if (nowMacro.policy != null && lastDecision && lastDecision[1] !== nowMacro.policy && day > lastDecision[0]) {
+      // a decision newer than the PDF: take its date from the SBP's headline ("w.e.f. October 27, 2026"), else today
+      const w = nowMacro.mpc?.match(/w\.e\.f\.?\s+([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/i);
+      const mi = w ? MON3_FULL.indexOf(w[1].slice(0, 3).toLowerCase()) : -1;
+      const from = w && mi >= 0 ? `${w[3]}-${String(mi + 1).padStart(2, '0')}-${w[2].padStart(2, '0')}` : day;
+      policyHistory = [...policyHistory.filter((x) => x[0] < from), [from, nowMacro.policy]];
+    }
+    if (nowMacro.policy != null || nowMacro.usd != null) writeFileSync(macroPath, JSON.stringify({ ...feed, inflation: inflation.slice(-36), policyHistory }));
     console.log(
       `economy: policy ${nowMacro.policy ?? '–'}, 12m T-bill ${nowMacro.tbills.m12 ?? '–'}, USD ${nowMacro.usd ?? '–'}, CPI ${nowMacro.cpi ?? '–'} (${nowMacro.cpiMonth ?? '–'}), petrol ${nowMacro.petrol ?? '–'}`,
     );

@@ -118,13 +118,21 @@ async function notices(sym: string): Promise<Notice[]> {
   return out;
 }
 
-const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board|book closure|closure of (the )?(share )?transfer|entitlement/i;
+const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board|book closure|closure of (the )?(share )?transfer|entitlement|^\s*board meeting\b/i;
 /** "other than financial results" intimations only give the meeting date; their "results of the board meeting" follow-ups carry interim dividends */
 const PRE_MEETING = /other th[ae]n financial/i;
 const SKIP =
   /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
 
-async function readPdf(id: string, dir: string): Promise<string> {
+/** OCR that came out as noise (a page scanned sideways, or a photo): hardly any of the little words every English page has */
+const LITTLE = new Set(['the', 'of', 'and', 'to', 'in', 'for', 'is', 'on', 'at', 'by', 'with', 'as', 'from', 'this', 'that', 'be', 'are', 'has', 'have', 'per', 'share', 'company', 'year', 'ended', 'profit', 'total']);
+export const garbled = (t: string) => {
+  const toks = t.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  if (toks.length < 40) return false;
+  return toks.filter((x) => LITTLE.has(x)).length / toks.length < 0.04;
+};
+
+async function readPdf(id: string, dir: string, pages = 2): Promise<string> {
   const f = join(dir, `${id}.pdf`);
   const res = await retry(async () => {
     const r = await fetch(`https://dps.psx.com.pk/download/document/${id}.pdf`, { headers: { 'User-Agent': 'Mozilla/5.0 (Sahm lab data)' }, signal: AbortSignal.timeout(60_000) });
@@ -140,12 +148,17 @@ async function readPdf(id: string, dir: string): Promise<string> {
   }
   if (text.replace(/\s/g, '').length < 120) {
     text = '';
-    // scanned: read page 1, and page 2 only if page 1 doesn't settle it
-    for (const pg of [1, 2]) {
+    // scanned: page by page until the dividend and its book closure are found (results often put the
+    // board's letter after the statements, so those get more pages)
+    for (let pg = 1; pg <= pages; pg++) {
       try {
         const out = join(dir, `${id}-p${pg}`);
         await run('pdftoppm', ['-r', '150', '-gray', '-png', '-singlefile', '-f', String(pg), '-l', String(pg), f, out], { timeout: 60_000 });
-        text += (await run('tesseract', [`${out}.png`, '-', '--psm', '6'], { timeout: 60_000, maxBuffer: 8e6, env: { ...process.env, OMP_THREAD_LIMIT: '1' } })).stdout + '\n';
+        const ocr = (psm: string) => run('tesseract', [`${out}.png`, '-', '--psm', psm], { timeout: 60_000, maxBuffer: 8e6, env: { ...process.env, OMP_THREAD_LIMIT: '1' } }).then((r) => r.stdout);
+        let page = await ocr('6');
+        // a page scanned sideways reads as noise: let tesseract find the orientation itself
+        if (garbled(page)) page = await ocr('1').catch(() => page);
+        text += page + '\n';
         rmSync(`${out}.png`, { force: true });
       } catch {
         break;
@@ -261,7 +274,7 @@ async function main() {
       const read = await pool(want, Number(process.env.OCR_POOL ?? 4), async (n) => {
         try {
           const t1 = Date.now();
-          const text = await readPdf(n.pdf, tmp);
+          const text = await readPdf(n.pdf, tmp, /financial results|board meeting/i.test(n.title) ? 5 : 2);
           const d = parseDivNotice(text);
           if (process.env.DUMP_DIR) {
             mkdirSync(process.env.DUMP_DIR, { recursive: true });
