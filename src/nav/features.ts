@@ -25,6 +25,7 @@ const tab = (screen: string, params?: object) => (nav: Nav) => nav.navigate('Tab
 export const FEATURES: Feature[] = [
   { key: 'home', label: 'Home', emoji: '🏠', group: 'My money', words: 'today start', go: tab('Home') },
   { key: 'portfolio', label: 'My holdings', emoji: '💼', group: 'My money', words: 'portfolio shares holdings review trim', go: tab('Portfolio', { view: 'holdings' }) },
+  { key: 'starter', label: 'Start investing', emoji: '🌱', group: 'My money', words: 'new beginner first portfolio where to invest how much cash credit broker start spread', go: tab('Portfolio', { view: 'invest' }) },
   { key: 'plan', label: 'Invest cash & goal', emoji: '🎯', group: 'My money', words: 'plan goal new money monthly target', go: tab('Portfolio', { view: 'invest' }) },
   {
     key: 'insights',

@@ -26,6 +26,7 @@ import { PlanCard } from '../../ui/PlanCard';
 import { CashBox } from '../../ui/CashBox';
 import { resultsLine } from '../../analysis/results';
 import { TradeSheet } from '../../ui/TradeSheet';
+import { StarterPlanCard } from '../../ui/StarterPlanCard';
 import { pkToday, record } from '../../journal/store';
 import { Button, Empty, Section, Segmented, T } from '../../ui/kit';
 import { Press, Rise, useCountUp } from '../../ui/motion';
@@ -519,8 +520,13 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
   if (!holdings.length)
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <Empty title="Add your real holdings" body="Type or paste each holding as: symbol, shares, average price. They are saved on this phone only." />
-        <Button label="Add holdings" onPress={() => nav.navigate('EditHoldings')} />
+        <StarterPlanCard title="New to investing? Start here" />
+        <View style={{ gap: 8 }}>
+          <T v="caption" style={{ lineHeight: 18 }}>
+            Already own shares? Type or paste each holding as symbol, shares and average price. They stay on this phone only.
+          </T>
+          <Button tone="ghost" label="Add holdings I already have" onPress={() => nav.navigate('EditHoldings')} />
+        </View>
       </ScrollView>
     );
 
@@ -681,6 +687,9 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
               </Section>
             ) : null}
             <Section title="Where should new money go?">{loading ? <T v="caption">Waiting for every holding's review…</T> : <PlanCard rows={rows} breadth={breadth} />}</Section>
+            <Section title="Or spread it over new companies">
+              <StarterPlanCard title="A fresh spread" />
+            </Section>
           </>
         ) : null}
 

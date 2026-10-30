@@ -61,6 +61,7 @@ const G: Record<string, string[]> = {
 /** tool key → glyph; anything new falls back to its group's */
 const BY_KEY: Record<string, string> = {
   home: 'home',
+  starter: 'coins',
   portfolio: 'briefcase',
   plan: 'target',
   timeline: 'list',
