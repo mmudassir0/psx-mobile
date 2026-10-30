@@ -256,11 +256,17 @@ async function main() {
       const all = await notices(sym);
       const want = all.filter((n) => WANT.test(n.title) && !SKIP.test(n.title) && !(PRE_MEETING.test(n.title) && !/material information|results of|outcome/i.test(n.title)));
       if (process.env.ONLY) console.log(`  ${sym}: ${all.length} notices listed in ${Math.round((Date.now() - t0) / 1000)}s, ${want.length} to read`);
+      // the test run lists every notice in the window, read or not, to see where a missed dividend was announced
+      if (VALIDATE) for (const n of all.filter((x) => x.day >= FROM)) console.log(`    ${want.includes(n) ? 'READ' : 'skip'} ${n.day} ${n.title.slice(0, 90)}`);
       const read = await pool(want, Number(process.env.OCR_POOL ?? 4), async (n) => {
         try {
           const t1 = Date.now();
           const text = await readPdf(n.pdf, tmp);
           const d = parseDivNotice(text);
+          if (process.env.DUMP_DIR) {
+            mkdirSync(process.env.DUMP_DIR, { recursive: true });
+            writeFileSync(`${process.env.DUMP_DIR}/${sym}-${n.day}-${n.pdf.replace(/\D/g, '')}.txt`, `${n.title}\n\n${text}`);
+          }
           if (process.env.DUMP && d.dps == null && d.pct == null && !d.nil)
             console.log(
               `    ---- ${n.day} ${n.pdf}\n${text

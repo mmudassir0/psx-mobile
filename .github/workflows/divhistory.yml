@@ -54,6 +54,7 @@ jobs:
           ONLY: ${{ inputs.only }}
           VALIDATE: ${{ inputs.validate && '1' || '' }}
           DUMP: ${{ inputs.validate && '1' || '' }}
+          DUMP_DIR: ${{ inputs.validate && format('/tmp/state/texts-{0}', matrix.shard) || '' }}
         run: npx tsx scripts/div-history.ts /tmp/state /tmp/picks/cache 2>&1 | tee /tmp/state/log-${{ matrix.shard }}.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -63,6 +64,7 @@ jobs:
             /tmp/state/divs-${{ matrix.shard }}.json
             /tmp/state/left-${{ matrix.shard }}.txt
             /tmp/state/log-${{ matrix.shard }}.txt
+            /tmp/state/texts-${{ matrix.shard }}
           retention-days: 3
           if-no-files-found: ignore
   merge:
@@ -88,6 +90,7 @@ jobs:
         if: inputs.only != ''
         run: |
           mkdir -p /tmp/out && cat /tmp/shards/*/log-*.txt > /tmp/out/out.txt 2>/dev/null || echo "no logs" > /tmp/out/out.txt
+          mkdir -p /tmp/out/texts && cp /tmp/shards/*/texts-*/*.txt /tmp/out/texts/ 2>/dev/null || true
           cd /tmp/out && git init -q && git checkout -q -b probe
           git config user.name "probe" && git config user.email "probe@users.noreply.github.com"
           git add . && git commit -qm "Dividend test" && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" probe
