@@ -78,3 +78,26 @@ export function daySummary(holdings: { symbol: string; shares: number }[], board
   if (moves.length > 1) parts.push(`Best ${best.symbol} ${sign(best.pct)}${Math.abs(best.pct).toFixed(1)}%, weakest ${worst.symbol} ${sign(worst.pct)}${Math.abs(worst.pct).toFixed(1)}%.`);
   return { title: `Today ${rs} (${sign(pct)}${Math.abs(pct).toFixed(2)}%)`, body: parts.join(' ') };
 }
+
+/**
+ * New PSX notices from the companies you hold, since the last check: results, dividends, material
+ * information and board meetings. `seen` keeps "SYMBOL|date|title" keys; a company seen for the first
+ * time only has its notices remembered, not sent (they're old news).
+ */
+export function newNotices(
+  bySymbol: Record<string, { date: string; title: string; url: string | null; kind: string }[]>,
+  seen: Set<string>,
+  firstTime: Set<string>,
+  since: string,
+): { symbol: string; date: string; title: string; url: string | null; kind: string; key: string }[] {
+  const out: { symbol: string; date: string; title: string; url: string | null; kind: string; key: string }[] = [];
+  for (const [symbol, list] of Object.entries(bySymbol))
+    for (const a of list) {
+      const key = `${symbol}|${a.date}|${a.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (firstTime.has(symbol) || a.date < since || a.kind === 'other' || a.kind === 'insider') continue;
+      out.push({ symbol, ...a, key });
+    }
+  return out.sort((x, y) => y.date.localeCompare(x.date));
+}

@@ -183,6 +183,7 @@ function Root() {
       <Stack.Screen name="Income" getComponent={() => require('./src/screens/IncomeScreen').default} />
       <Stack.Screen name="Compare" getComponent={() => require('./src/screens/CompareScreen').default} />
       <Stack.Screen name="Find" getComponent={() => require('./src/screens/FindScreen').default} />
+      <Stack.Screen name="Inbox" getComponent={() => require('./src/screens/InboxScreen').default} />
     </Stack.Navigator>
   );
 }
@@ -200,6 +201,7 @@ const linking: LinkingOptions<RootParams> = {
       Alerts: 'alerts',
       News: 'news',
       Find: 'find',
+      Inbox: 'inbox',
       Compare: 'compare',
       Income: 'income',
       Rebalance: 'rebalance',

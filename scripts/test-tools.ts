@@ -13,7 +13,7 @@ import { picksVsMine } from '../src/picks/vsMine';
 import { bookView } from '../src/analysis/book';
 import { addPoint, healthScore, spreadOf, trendLine, weekOf } from '../src/portfolio/healthScore';
 import { payMonths } from '../src/portfolio/income';
-import { bigMoveHits, daySummary, intradayHits } from '../src/portfolio/intradayCore';
+import { bigMoveHits, daySummary, intradayHits, newNotices } from '../src/portfolio/intradayCore';
 import { tipFor, TIPS } from '../src/learn/tips';
 import { crossings } from '../src/analysis/chartLines';
 import { tidyTranscript, voicePrompt } from '../src/ai/voice';
@@ -1450,6 +1450,17 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
 1:\\ Formally known as Rate on SBP 3-Day Repo Facility.`;
   const h = parsePolicyHistory(txt);
   check('policy history: target rate since 2015, reverse repo before', JSON.stringify(h) === JSON.stringify([['1991-02-26', 10], ['2009-08-17', 13], ['2023-06-27', 22], ['2026-04-28', 11.5]]), h);
+}
+
+// new notices from holdings
+{
+  const seen = new Set<string>();
+  const list = { LUCK: [{ date: '2026-10-20', title: 'Financial Results', url: null, kind: 'results' }], MEBL: [{ date: '2026-10-29', title: 'Board Meeting', url: null, kind: 'meeting' }] };
+  const first = newNotices(list, seen, new Set(['LUCK', 'MEBL']), '2026-10-01');
+  check('notices: the first look only remembers', first.length === 0 && seen.size === 2);
+  const list2 = { ...list, LUCK: [{ date: '2026-10-30', title: 'Credit of Interim Cash Dividend', url: 'u', kind: 'payout' }, ...list.LUCK, { date: '2026-10-30', title: 'Change in Directorship', url: null, kind: 'other' }] };
+  const second = newNotices(list2, seen, new Set(), '2026-10-25');
+  check('notices: new ones once, routine ones left out', second.length === 1 && second[0].symbol === 'LUCK' && second[0].kind === 'payout' && newNotices(list2, seen, new Set(), '2026-10-25').length === 0, second);
 }
 
 if (failed) {

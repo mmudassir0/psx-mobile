@@ -111,6 +111,7 @@ const BY_KEY: Record<string, string> = {
   taxstatement: 'doc',
   edit: 'pencil',
   alerts: 'bell',
+  inbox: 'bell',
   practice: 'wallet',
   trade: 'swap',
   market: 'line',

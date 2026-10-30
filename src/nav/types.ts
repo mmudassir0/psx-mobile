@@ -25,6 +25,7 @@ export type RootParams = {
   Alerts: { symbol?: string } | undefined;
   News: undefined;
   Find: undefined;
+  Inbox: undefined;
   Compare: { symbols?: string[] } | undefined;
   Income: undefined;
   Rebalance: { cash?: number | string } | undefined;

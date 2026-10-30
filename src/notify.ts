@@ -9,6 +9,7 @@ import { logProblem } from './log';
 import { makePref } from './prefs';
 import { load, save } from './storage';
 import { QUIET_DEFAULT, heldText, hold, holdUntil, type HeldAlert, type QuietSettings } from './quietCore';
+import { addToInbox } from './inbox';
 
 export const quietPref = makePref<QuietSettings>('ui.quiet', QUIET_DEFAULT);
 const HELD_KEY = 'ui.heldAlerts';
@@ -61,6 +62,8 @@ export async function remind(id: string, when: Date, title: string, body: string
  * or for the evening summary (one notification for all of them). Never throws.
  */
 export async function notifyNow(title: string, body: string, url?: string) {
+  // kept in the in-app inbox whatever happens to the notification itself
+  await addToInbox({ t: Date.now(), title, body, ...(url ? { url } : {}) }).catch(() => {});
   if (!supported) return;
   if (!(await ensureReady(false))) return;
   try {

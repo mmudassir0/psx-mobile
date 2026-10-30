@@ -46,7 +46,8 @@ import { useFlags } from '../flags';
 import { ToolsGrid } from '../ui/ToolsGrid';
 import { HomeCardsCard } from '../ui/HomeCardsCard';
 import { HomeHero } from '../ui/HomeHero';
-import { Rise } from '../ui/motion';
+import { Press, Rise } from '../ui/motion';
+import { ToolIcon } from '../ui/ToolIcon';
 import { TodayList } from '../ui/TodayList';
 import { MoodLine } from '../ui/MoodLine';
 import { StoryDeck } from '../ui/StoryDeck';
@@ -60,6 +61,7 @@ import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
 import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
 import { autoIntraday } from '../portfolio/intraday';
+import { useInbox } from '../inbox';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 /** Home cards that always draw something (the rest can come back empty) */
@@ -353,6 +355,7 @@ export default function HomeScreen() {
               {name ? `, ${name}` : ''}
             </T>
           </View>
+          <InboxButton />
           <IconButton name="search" label="Search stocks and tools" onPress={() => nav.navigate('Find')} />
           <IconButton name="settings" label="Settings" onPress={() => nav.navigate('Settings')} />
         </Rise>
@@ -471,6 +474,8 @@ const styles = themed(() =>
     content: { paddingTop: 8, paddingBottom: 36, gap: 22 },
     pad: { paddingHorizontal: space.gutter },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    bell: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+    badge: { position: 'absolute', top: 6, right: 6, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
     index: { backgroundColor: colors.surface, borderRadius: 18, padding: 14, gap: 6, width: 176 },
     hero: {
       marginHorizontal: space.gutter,
@@ -502,3 +507,19 @@ const styles = themed(() =>
     error: { backgroundColor: colors.downSoft, borderRadius: 12, padding: 12 },
   }),
 );
+
+/** The bell in Home's header: the alerts inbox, with how many arrived since you last looked. */
+function InboxButton() {
+  const nav = useNavigation();
+  const { unread } = useInbox();
+  return (
+    <Press accessibilityRole="button" accessibilityLabel={unread ? `Alerts inbox, ${unread} new` : 'Alerts inbox'} onPress={() => nav.navigate('Inbox')} style={styles.bell}>
+      <ToolIcon name="bell" size={20} color={colors.text} />
+      {unread ? (
+        <View style={styles.badge}>
+          <T style={{ fontFamily: fonts.bold, fontSize: 10.5, color: colors.onGold }}>{unread > 9 ? '9+' : unread}</T>
+        </View>
+      ) : null}
+    </Press>
+  );
+}

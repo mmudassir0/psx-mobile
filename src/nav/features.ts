@@ -73,6 +73,7 @@ export const FEATURES: Feature[] = [
   { key: 'shariah', label: 'Shariah corner', group: 'My money', words: 'shariah islamic halal kmi compliant purification charity zakat sadqa', go: (nav) => nav.navigate('Shariah') },
   { key: 'taxstatement', label: 'Tax statement', group: 'My money', words: 'tax return filing statement pdf capital gains dividends withheld fbr', flags: ['tax'], go: (nav) => nav.navigate('TaxStatement') },
   { key: 'edit', label: 'Edit holdings', group: 'My money', words: 'add paste screenshot import trades history ktrade', go: (nav) => nav.navigate('EditHoldings') },
+  { key: 'inbox', label: 'Alerts inbox', group: 'My money', words: 'inbox notifications missed history alerts sent bell', go: (nav) => nav.navigate('Inbox') },
   { key: 'alerts', label: 'Price alerts', group: 'My money', words: 'alert notify price watch', flags: ['alerts'], go: (nav) => nav.navigate('Alerts') },
   { key: 'practice', label: 'Practice account', group: 'My money', words: 'paper practice demo', flags: ['practice'], go: tab('Portfolio', { tab: 'paper' }) },
   { key: 'trade', label: 'Practice trade', group: 'My money', words: 'paper buy sell order', flags: ['practice'], go: tab('Trade') },

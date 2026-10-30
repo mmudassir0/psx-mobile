@@ -16,7 +16,7 @@ import { notifyNow } from '../notify';
 import { priceLine } from '../analysis/watch';
 import { chartLinesPref, watchRulesPref } from './prefs';
 import { targetsPref } from './targets';
-import { bigMoveHits, daySummary, intradayHits, type PriceLine } from './intradayCore';
+import { bigMoveHits, daySummary, intradayHits, newNotices, type PriceLine } from './intradayCore';
 import { getHoldings } from './holdings';
 import type { BoardQuote } from '../psx/types';
 import { logProblem } from '../log';
@@ -32,6 +32,10 @@ export const daySummaryPref = makePref<boolean>('ui.daySummary', true);
 /** after the close: new stocks matching your saved Market screens */
 export const screenAlertsPref = makePref<boolean>('ui.screenAlerts', true);
 const SCREEN_ALERTED_KEY = 'intraday.screenAlerted';
+/** after the close: new PSX notices (results, dividends, material information, board meetings) from companies you hold */
+export const noticeAlertsPref = makePref<boolean>('ui.noticeAlerts', true);
+const NOTICES_SEEN_KEY = 'intraday.noticesSeen';
+const NOTICES_KNOWN_KEY = 'intraday.noticesKnown';
 const EVENING_KEY = 'intraday.evening';
 const LAST_KEY = 'intraday.last';
 const SENT_KEY = 'intraday.sent';
@@ -110,6 +114,7 @@ export async function checkEvening(now = Date.now()): Promise<void> {
     }
   }
   if (await screenAlertsPref.get()) await checkSavedScreens(boardNow).catch((e) => logProblem('evening screen alerts', e));
+  if (await noticeAlertsPref.get()) await checkNotices().catch((e) => logProblem('evening notices', e));
 }
 
 /** Today's closing value of your holdings, saved like the snapshot the app keeps when it's open. */
@@ -132,6 +137,39 @@ async function eveningSnapshot(board: BoardQuote[]): Promise<void> {
     }),
   );
   await recordSnapshot(rows);
+}
+
+/** New notices from the companies you hold: one notification for all of them. */
+async function checkNotices(): Promise<void> {
+  const holdings = (await getHoldings()).slice(0, 25);
+  if (!holdings.length) return;
+  const { fetchCompany } = await import('../psx/api');
+  const { writeEntry, setStorage } = await import('../psx/cache');
+  const { diskStore } = await import('../psx/diskStore');
+  const { kindOf, KIND_LABEL } = await import('../analysis/announcements');
+  const { eachLimit } = await import('../limit');
+  setStorage(diskStore);
+  const bySymbol: Record<string, { date: string; title: string; url: string | null; kind: string }[]> = {};
+  await eachLimit(holdings, 2, async (h) => {
+    const c = await fetchCompany(h.symbol).catch(() => null);
+    if (!c) return;
+    // the app opens on this fresh copy instead of downloading it again
+    await writeEntry(`company:${h.symbol}`, c, true).catch(() => {});
+    bySymbol[h.symbol] = c.announcements.slice(0, 15).map((a) => ({ date: a.date, title: a.title, url: a.url, kind: kindOf(a) }));
+  });
+  const seen = new Set(await load<string[]>(NOTICES_SEEN_KEY, []));
+  const known = new Set(await load<string[]>(NOTICES_KNOWN_KEY, []));
+  const firstTime = new Set(Object.keys(bySymbol).filter((s) => !known.has(s)));
+  const since = new Date(Date.now() + 5 * 3600_000 - 7 * 864e5).toISOString().slice(0, 10);
+  const fresh = newNotices(bySymbol, seen, firstTime, since);
+  await save(NOTICES_SEEN_KEY, [...seen].slice(-3000));
+  await save(NOTICES_KNOWN_KEY, [...new Set([...known, ...Object.keys(bySymbol)])]);
+  if (!fresh.length) return;
+  const label = (k: string) => KIND_LABEL[k as keyof typeof KIND_LABEL] ?? 'Notice';
+  const lines = fresh.slice(0, 8).map((n) => `${n.symbol} · ${label(n.kind)}: ${n.title.slice(0, 80)}`);
+  if (fresh.length > 8) lines.push(`and ${fresh.length - 8} more`);
+  const one = new Set(fresh.map((n) => n.symbol)).size === 1 ? fresh[0].symbol : null;
+  await notifyNow(fresh.length === 1 ? `${fresh[0].symbol}: ${label(fresh[0].kind)}` : `${fresh.length} new notices from your companies`, lines.join('\n'), one ? `sahm://stock/${one}` : 'sahm://announcements');
 }
 
 /** New stocks in your saved Market screens, with the closing prices. */
