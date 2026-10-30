@@ -36,6 +36,23 @@ function check(label: string, ok: boolean, detail?: unknown) {
   await cached('none', 1000, async () => { throw new Error('x'); }, { now }).catch(() => (threw = true));
   check('no copy and no network: the error is reported', threw);
 
+  // after the close, a price download from after the session stays fresh until the next open
+  t = Date.UTC(2026, 9, 16, 13); // Fri 18:00 PKT, after the close
+  let pl = 0;
+  const priced = async () => (++pl, 'p');
+  await cached('eod:TEST', 60_000, priced, { now });
+  t = Date.UTC(2026, 9, 18, 10); // Sun 15:00 PKT
+  await cached('eod:TEST', 60_000, priced, { now });
+  check('weekend: closing prices are not downloaded again', pl === 1);
+  await cached('news:x', 60_000, priced, { now });
+  await cached('news:x', 60_000, priced, { now });
+  t += 120_000;
+  await cached('news:x', 60_000, priced, { now });
+  check('other downloads keep their TTL', pl === 3);
+  t = Date.UTC(2026, 9, 19, 5); // Mon 10:00 PKT, trading
+  await cached('eod:TEST', 60_000, priced, { now });
+  check('next session: prices are downloaded again', pl === 4);
+
   // Months and merging
   const m = monthsBetween(Date.UTC(2025, 10, 28), Date.UTC(2026, 0, 3));
   check('months across a year end', JSON.stringify(m) === JSON.stringify([{ year: 2025, month: 11 }, { year: 2025, month: 12 }, { year: 2026, month: 1 }]), m);

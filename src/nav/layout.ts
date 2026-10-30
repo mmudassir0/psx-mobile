@@ -7,7 +7,7 @@ export const layoutPref = makePref<Layout>('ui.layout', 'tabs');
 export const LAYOUTS: { key: Layout; label: string; desc: string }[] = [
   { key: 'tabs', label: 'Tabs', desc: 'Five tabs at the bottom: Home, Market, Portfolio, Ideas, AI. Closest to before.' },
   { key: 'briefing', label: 'Briefing + tools', desc: "Home is today's short list, with a grid of every tool below. Three tabs." },
-  { key: 'menu', label: 'Side menu', desc: 'Clean screens; everything is in the ☰ menu.' },
+  { key: 'menu', label: 'Side menu', desc: 'Clean screens; everything is in the round menu button.' },
   { key: 'stories', label: 'Swipe stories', desc: 'Home is a deck of cards to swipe through each morning, then the tools. Three tabs.' },
 ];
 

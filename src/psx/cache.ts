@@ -23,6 +23,16 @@ export function memoryStore(): KeyValueStore & { map: Map<string, string> } {
   return { map, get: async (k) => map.get(k) ?? null, set: async (k, v) => void map.set(k, v) };
 }
 
+import { isMarketOpen, lastSessionEnd } from '../market-hours';
+
+/** Downloads whose figures only change while PSX trades: prices, charts, index members, company pages. */
+const PRICED = /^(eod|int|cons|company):/;
+/**
+ * A priced copy fetched after the last session ended, with the market still shut, can't be any newer:
+ * keep using it until the next open however old the TTL says it is (evenings, weekends, holidays).
+ */
+export const settled = (key: string, at: number, now: number) => PRICED.test(key) && !isMarketOpen(now) && at >= lastSessionEnd(now);
+
 let storage: KeyValueStore = memoryStore();
 export function setStorage(s: KeyValueStore) {
   storage = s;
@@ -83,7 +93,7 @@ export async function cached<T>(key: string, ttl: number, load: () => Promise<T>
   const now = opts.now ?? Date.now;
   const persist = !!opts.persist;
   const hit = await readEntry<T>(key, persist);
-  if (!opts.force && hit && now() - hit.at < ttl) return hit.data;
+  if (!opts.force && hit && (now() - hit.at < ttl || settled(key, hit.at, now()))) return hit.data;
   return once(key, async () => {
     try {
       const data = await load();

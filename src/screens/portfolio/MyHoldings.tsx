@@ -59,12 +59,12 @@ function Pills({ r, taxRate, onPress }: { r: Row; taxRate: number; onPress: () =
     const net = up.dps * r.holding.shares * (1 - taxRate);
     const what = [up.dps > 0 ? `Rs ${fmtNum(net, 0)} net` : '', up.bonusPct > 0 ? `${up.bonusPct}% bonus` : ''].filter(Boolean).join(' + ');
     items.push({
-      text: `💸 ${what} · buy by ${fmtDay(up.lastBuyDay)}`,
+      text: `${what} · buy by ${fmtDay(up.lastBuyDay)}`,
       bg: colors.upSoft,
     });
   }
-  if (r.results?.latest?.fresh) items.push({ text: '📊 Results out', bg: colors.surface2 });
-  else if (r.results?.meetingNotice) items.push({ text: '📅 Results due soon', bg: colors.surface2 });
+  if (r.results?.latest?.fresh) items.push({ text: 'Results out', bg: colors.surface2 });
+  else if (r.results?.meetingNotice) items.push({ text: 'Results due soon', bg: colors.surface2 });
   if (!items.length) return null;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

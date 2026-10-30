@@ -10,7 +10,7 @@ import { useMarket } from '../store/market';
 import { addPortfolio, allHoldings, deletePortfolio, portfoliosPref, renamePortfolio, switchPortfolio, valueOf } from '../portfolio/portfolios';
 import type { Holding } from '../portfolio/review';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, Section, T } from '../ui/kit';
+import { Button, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `${v < 0 ? '−' : ''}Rs ${fmtNum(Math.abs(Math.round(v)), 0)}`;
 
@@ -33,13 +33,7 @@ export default function PortfoliosScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Family portfolios
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Family portfolios" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {vals.length > 1 ? (
           <Panel style={{ paddingVertical: 14, gap: 4 }}>

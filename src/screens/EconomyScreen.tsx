@@ -14,7 +14,7 @@ import { MPC_DATES } from '../analysis/events';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mlabel = (ym: string | null) => (ym ? `${MONTH[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}` : '');
@@ -71,13 +71,7 @@ export default function EconomyScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Pakistan economy
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Pakistan economy" />
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={false} onRefresh={reload} tintColor={colors.gold} colors={[colors.gold]} />}>
         {!n ? (
           loading ? (

@@ -15,7 +15,7 @@ import { fetchSeries } from '../psx/api';
 import type { SeriesPoint } from '../psx/types';
 import { sparkPath } from '../widget/spark';
 import { logProblem } from '../log';
-import { Button, IconButton, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 
 type Span = '1M' | '3M' | '1Y';
 const BARS: Record<Span, number> = { '1M': 22, '3M': 63, '1Y': 248 };
@@ -70,13 +70,7 @@ export default function StockCardScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Share {symbol}
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Share {symbol}" />
       <ScrollView contentContainerStyle={styles.content}>
         <Segmented options={(['1M', '3M', '1Y'] as Span[]).map((k) => ({ key: k, label: k }))} value={span} onChange={setSpan} />
         <View ref={card} collapsable={false} style={[styles.card, { backgroundColor: C.bg }]}>

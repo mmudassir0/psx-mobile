@@ -6,6 +6,7 @@ import { fmtDay } from '../format';
 import { deleteNote, dueNotes, inMonths, moved, notesPref, saveNote, type NoteFigures } from '../portfolio/notes';
 import { Panel } from './bits';
 import { Button, T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 const WHEN = [
   { months: 3, label: '3 months' },
@@ -84,7 +85,7 @@ export function NoteCard({ symbol, now, owned }: { symbol: string; now: NoteFigu
   if (!note)
     return (
       <Pressable accessibilityRole="button" onPress={start} style={styles.empty}>
-        <T style={{ fontSize: 18 }}>📝</T>
+        <ToolIcon name="pencil" size={20} color={colors.gold} />
         <View style={{ flex: 1 }}>
           <T style={{ fontFamily: fonts.semibold, fontSize: 14 }}>{owned ? 'Why do you own this?' : 'Add a note'}</T>
           <T v="caption">Write your reason and Sahm reminds you to check it later.</T>
@@ -103,7 +104,7 @@ export function NoteCard({ symbol, now, owned }: { symbol: string; now: NoteFigu
   return (
     <Panel style={[{ paddingVertical: 14, gap: 8 }, due && { borderColor: colors.gold, borderWidth: 1.5 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <T style={{ fontFamily: fonts.bold, fontSize: 14, flex: 1 }}>{due ? '⏰ Time to check your note' : 'Your note'}</T>
+        <T style={{ fontFamily: fonts.bold, fontSize: 14, flex: 1 }}>{due ? 'Time to check your note' : 'Your note'}</T>
         <Pressable onPress={start} hitSlop={8}>
           <T style={{ fontFamily: fonts.semibold, color: colors.gold, fontSize: 13 }}>Edit</T>
         </Pressable>

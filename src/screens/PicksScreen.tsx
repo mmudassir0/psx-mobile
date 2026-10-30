@@ -16,6 +16,7 @@ import { LongTermCard } from '../ui/LongTermCard';
 import { Panel } from '../ui/bits';
 import { StaleNote } from '../ui/StaleNote';
 import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { ToolIcon } from '../ui/ToolIcon';
 
 const day = (d: string) => fmtDay(Date.parse(d + 'T12:00:00Z'));
 const pct = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
@@ -156,7 +157,7 @@ export default function PicksScreen({ asTab }: { asTab?: boolean } = {}) {
       >
         {asTab ? (
           <Pressable accessibilityRole="button" onPress={() => nav.navigate('Lab')} style={styles.lab}>
-            <T style={{ fontSize: 22 }}>🧪</T>
+            <ToolIcon name="flask" size={24} color={colors.gold} />
             <View style={{ flex: 1, gap: 2 }}>
               <T style={{ fontFamily: fonts.bold, fontSize: 15 }}>Backtesting lab</T>
               <T v="caption" style={{ lineHeight: 17 }}>

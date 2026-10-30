@@ -13,7 +13,7 @@ import { TEMPLATES } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
 import { MixSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
-import { Chip, Empty, IconButton, Loading, Section, T } from '../ui/kit';
+import { Chip, Empty, IconButton, Loading, Section, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number, d = 1) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(d)}%`;
 const COLORS = [() => colors.gold, () => colors.shariah, () => colors.up];
@@ -74,13 +74,7 @@ export default function LabCompareScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Compare strategies
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Compare strategies" />
       <ScrollView contentContainerStyle={styles.content}>
         <T v="caption">Pick up to three:</T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

@@ -14,10 +14,11 @@ import type { Announcement } from '../psx/types';
 import { annSeenPref, inbox, KIND_LABEL, type AnnKind } from '../analysis/announcements';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, T } from '../ui/kit';
+import { Empty, IconButton, T, ScreenHeader } from '../ui/kit';
+import { ToolIcon } from '../ui/ToolIcon';
 
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
-const KIND_ICON: Record<AnnKind, string> = { results: '📊', meeting: '🗓️', payout: '💸', material: '⚠️', insider: '👤', other: '📄' };
+const KIND_ICON: Record<AnnKind, string> = { results: 'bars', meeting: 'calendar', payout: 'coins', material: 'warn', insider: 'user', other: 'doc' };
 
 export default function AnnouncementsScreen() {
   const nav = useNavigation();
@@ -58,13 +59,7 @@ export default function AnnouncementsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Announcements
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Announcements" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => (setRefreshing(true), await load(true), setRefreshing(false))} tintColor={colors.gold} colors={[colors.gold]} />}
@@ -95,7 +90,9 @@ export default function AnnouncementsScreen() {
                       onPress={() => (a.url ? Linking.openURL(a.url).catch(() => {}) : nav.navigate('Stock', { symbol: a.symbol }))}
                       style={[styles.row, i < shown.length - 1 && styles.border]}
                     >
-                      <T style={{ fontSize: 16, width: 24 }}>{KIND_ICON[a.kind]}</T>
+                      <View style={{ width: 24 }}>
+                        <ToolIcon name={KIND_ICON[a.kind]} size={18} color={a.kind === 'material' ? colors.down : colors.gold} />
+                      </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <T style={{ fontFamily: fonts.bold, fontSize: 13.5, color: held.has(a.symbol) ? colors.text : colors.text2 }} onPress={() => nav.navigate('Stock', { symbol: a.symbol })}>

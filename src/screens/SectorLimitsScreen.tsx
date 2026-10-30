@@ -10,7 +10,7 @@ import { useMarket } from '../store/market';
 import { shortSector } from '../sectors';
 import { sectorLimitsPref, sectorShares, setLimit } from '../portfolio/sectorLimits';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(Math.round(v), 0)}`;
 
@@ -54,13 +54,7 @@ export default function SectorLimitsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Sector limits
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Sector limits" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to set sector limits." />

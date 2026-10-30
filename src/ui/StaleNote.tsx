@@ -11,7 +11,7 @@ export function StaleNote({ feed }: { feed: { day: string; stale?: boolean } | n
   return (
     <View style={{ backgroundColor: colors.goldSoft, borderRadius: 10, padding: 10 }}>
       <T v="caption" style={{ color: colors.text2, lineHeight: 18 }}>
-        ⚠ {msg}
+        {msg}
       </T>
     </View>
   );

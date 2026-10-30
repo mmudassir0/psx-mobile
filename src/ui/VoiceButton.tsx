@@ -7,6 +7,7 @@ import { aiKeys } from '../store/ai';
 import { transcribe } from '../ai/voice';
 import { logProblem } from '../log';
 import { T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 export function VoiceButton({ symbols, onText, onStatus, disabled }: { symbols: string[]; onText: (t: string) => void; onStatus: (s: string | null) => void; disabled?: boolean }) {
   const rec = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -69,7 +70,7 @@ export function VoiceButton({ symbols, onText, onStatus, disabled }: { symbols: 
       style={[styles.mic, state === 'rec' && { backgroundColor: colors.down }, (disabled || state === 'busy') && { opacity: 0.5 }]}
     >
       <View style={styles.dot}>
-        <T style={{ fontSize: 18 }}>{state === 'busy' ? '…' : '🎙'}</T>
+        {state === 'busy' ? <T style={{ fontSize: 18 }}>…</T> : <ToolIcon name="mic" size={20} color={state === 'rec' ? '#fff' : colors.text} />}
       </View>
     </Pressable>
   );

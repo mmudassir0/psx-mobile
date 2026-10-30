@@ -20,7 +20,7 @@ import { workbook } from '../portfolio/exportData';
 import { toBase64, xlsx } from '../xlsx';
 import { logProblem } from '../log';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, T } from '../ui/kit';
+import { Button, IconButton, T, ScreenHeader } from '../ui/kit';
 
 const SHEETS = ['Holdings: shares, cost, price, value, gain, weight', 'Trades: every buy and sale you recorded', "Dividends: each holding's payouts from PSX", 'Tax year: sales, gains, dividends and tax', 'Daily value: the snapshot Sahm saves each day'];
 
@@ -76,13 +76,7 @@ export default function ExportScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Export to Excel
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Export to Excel" />
       <ScrollView contentContainerStyle={styles.content}>
         <Panel style={{ paddingVertical: 14, gap: 8 }}>
           <T v="body" style={{ fontSize: 14, color: colors.text2 }}>

@@ -15,7 +15,7 @@ import { claim, Entry, H, HORIZONS, scoreEntry, Scored, statsByCall } from '../j
 import { entries } from '../journal/store';
 import { eachLimit } from '../limit';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number | null | undefined) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
 const LABEL: Record<H, string> = { 21: 'After 1 month', 63: 'After 3 months' };
@@ -56,13 +56,7 @@ export default function RecordScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Sahm's track record
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Sahm's track record" />
       <ScrollView contentContainerStyle={styles.content}>
         <T v="caption" style={{ lineHeight: 18 }}>
           Every verdict and holding decision you are shown is saved here with that day's price, then checked against what the price did

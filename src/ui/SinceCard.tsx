@@ -100,7 +100,7 @@ export function SinceCard({ rows, watchlist, bySymbol, ready, hidden }: { rows: 
       {s.news.length ? (
         <Pressable accessibilityRole="button" onPress={() => nav.navigate('Announcements')}>
           <T v="caption" numberOfLines={2} style={{ lineHeight: 17 }}>
-            📰 {s.news.length} new announcement{s.news.length === 1 ? '' : 's'}:{' '}
+            {s.news.length} new announcement{s.news.length === 1 ? '' : 's'}:{' '}
             {s.news
               .slice(0, 2)
               .map((n) => `${n.symbol} ${n.title.slice(0, 40)}`)
@@ -109,7 +109,7 @@ export function SinceCard({ rows, watchlist, bySymbol, ready, hidden }: { rows: 
           </T>
         </Pressable>
       ) : null}
-      {s.bookClosures.length ? <T v="caption">💸 Book closure passed for {s.bookClosures.map((b) => b.symbol).join(', ')}</T> : null}
+      {s.bookClosures.length ? <T v="caption">Book closure passed for {s.bookClosures.map((b) => b.symbol).join(', ')}</T> : null}
     </Panel>
   );
 }

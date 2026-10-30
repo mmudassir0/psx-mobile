@@ -14,7 +14,10 @@ import { fmtPrice } from '../format';
 import { describeRule, priceLine, rulesText, type WatchRule } from '../analysis/watch';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { IntradayCard } from '../ui/IntradayCard';
+import { intradayChosenPref, intradayPref, setIntraday } from '../portfolio/intraday';
+import { ensureReady } from '../notify';
+import { Button, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 
 export default function AlertsScreen() {
@@ -42,17 +45,14 @@ export default function AlertsScreen() {
     await watchRulesPref.set([...rules.filter((r) => !(r.symbol === symU && r.dir === dir && r.level === level && !!r.yield === isYield)), rule]);
     setSym('');
     setPx('');
+    // the first alert: switch background checks on (asks for notifications once)
+    if (!(await intradayChosenPref.get()) && !(await intradayPref.get()) && (await ensureReady())) setIntraday(true).catch(() => {});
   };
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Price alerts
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Price alerts" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <IntradayCard />
         <T v="caption" style={{ lineHeight: 18 }}>
           Get a notification the evening a stock closes past a price or its 200-day average, its dividend yield passes a level (a buy
           zone: "MEBL yield above 9%"), or it falls below Sahm's fair value range. Checked once a day after the close, so it's reliable

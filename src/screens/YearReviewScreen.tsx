@@ -24,7 +24,7 @@ import type { SeriesPoint } from '../psx/types';
 import { logProblem } from '../log';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `${v < 0 ? '−' : ''}Rs ${fmtNum(Math.abs(Math.round(v)), 0)}`;
 const pc = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
@@ -111,13 +111,7 @@ export default function YearReviewScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Year in review
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Year in review" />
       <ScrollView contentContainerStyle={styles.content}>
         <Segmented
           options={[

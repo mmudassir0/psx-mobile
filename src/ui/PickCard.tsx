@@ -7,6 +7,7 @@ import { SETUP_NAMES } from '../analysis/picks';
 import { Pick, pickText, ScoredPick } from '../picks/build';
 import { Panel } from './bits';
 import { T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 export const RESULT_LABEL: Record<ScoredPick['result'], string> = {
   open: 'In play',
@@ -35,7 +36,9 @@ export function liveStatus(p: Pick, price: number | null, bought: boolean): { te
 function Row({ icon, label, value, tone }: { icon: string; label: string; value: string; tone?: string }) {
   return (
     <View style={styles.row}>
-      <T style={{ width: 22 }}>{icon}</T>
+      <View style={{ width: 24 }}>
+        <ToolIcon name={icon} size={icon === 'dot' ? 11 : 16} color={tone ?? colors.gold} />
+      </View>
       <T v="body" style={{ flex: 1, fontSize: 14.5, color: colors.text2 }}>
         {label}
       </T>
@@ -66,10 +69,10 @@ export function PickCard({ p, price, bought, onOpen }: { p: Pick; price: number 
         </View>
       </Pressable>
       <View style={styles.levels}>
-        <Row icon={p.weak ? '⚪' : '🟢'} label={p.weak ? 'Zone (watch only)' : 'Buy zone'} value={`${fmtPrice(L.entryLow)} – ${fmtPrice(L.entryHigh)}`} tone={p.weak ? colors.muted : undefined} />
-        <Row icon="🎯" label="TP1" value={fmtPrice(L.tp1)} tone={colors.up} />
-        <Row icon="🎯" label="TP2" value={fmtPrice(L.tp2)} tone={colors.up} />
-        <Row icon="🛑" label="Stop loss" value={fmtPrice(L.stop)} tone={colors.downText} />
+        <Row icon={p.weak ? 'dot' : 'target'} label={p.weak ? 'Zone (watch only)' : 'Buy zone'} value={`${fmtPrice(L.entryLow)} – ${fmtPrice(L.entryHigh)}`} tone={p.weak ? colors.muted : undefined} />
+        <Row icon="flag" label="TP1" value={fmtPrice(L.tp1)} tone={colors.up} />
+        <Row icon="flag" label="TP2" value={fmtPrice(L.tp2)} tone={colors.up} />
+        <Row icon="shield" label="Stop loss" value={fmtPrice(L.stop)} tone={colors.downText} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <T v="caption" style={{ flex: 1, color: s.tone }}>

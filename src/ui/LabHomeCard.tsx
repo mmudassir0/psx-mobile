@@ -7,6 +7,7 @@ import { changeColor, colors, fonts, themed } from '../theme';
 import { findStrategy, labFollowPref, labStrategiesPref, loadLab } from '../lab/store';
 import { snapshots, trackReturns } from '../portfolio/track';
 import { T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 const pc = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`);
 
@@ -74,7 +75,7 @@ export function LabHomeCard({ padStyle }: { padStyle?: StyleProp<ViewStyle> }) {
     <View style={padStyle}>
       <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabResult', { id: f.id })} style={styles.card}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <T style={{ fontSize: 16 }}>🧪</T>
+          <ToolIcon name="flask" size={18} color={colors.gold} />
           <T style={{ fontFamily: fonts.bold, fontSize: 15, flex: 1 }} numberOfLines={1}>
             {f.name}
           </T>

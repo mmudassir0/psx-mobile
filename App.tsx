@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { installShortcuts } from './src/shortcuts';
 import { useScreenGuard } from './src/screenGuard';
-import { AppState, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -35,11 +35,15 @@ import { installReminderHandlers } from './src/notify';
 import { rescheduleNotes } from './src/portfolio/notes';
 import { schedulePlan } from './src/portfolio/monthlyPlan';
 import { annSeenPref } from './src/analysis/announcements';
+import { plugMeter, type Usage } from './src/dataMeter';
+import { load, save } from './src/storage';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 setStorage(diskStore);
-// Newer balance sheets than the ones bundled with this build, when online.
-loadLiveFundamentals();
+// Newer balance sheets than the ones bundled with this build, when online (after the first screen, so it doesn't compete with prices).
+setTimeout(() => loadLiveFundamentals(), 4_000);
+// how much Sahm downloads (Settings → Data)
+plugMeter({ load: () => load<Usage | null>('ui.dataUsage', null), save: (u) => save('ui.dataUsage', u) });
 // the weekly backup, once the app has settled (it reads everything it saves)
 setTimeout(() => maybeBackup(), 15_000);
 installReminderHandlers();
@@ -249,7 +253,9 @@ export default function App() {
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
   });
-  const ready = fontsLoaded || !!fontError;
+  // On Android the fonts are built into the app (app.json → expo-font), so the first screen needn't wait
+  // for them to load; the web preview still does.
+  const ready = Platform.OS !== 'web' || fontsLoaded || !!fontError;
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});

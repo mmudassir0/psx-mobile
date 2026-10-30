@@ -1,5 +1,6 @@
 /** Downloads from GitHub (the daily files) with a time limit and plain error messages. */
 import { logProblem } from './log';
+import { countDownload } from './dataMeter';
 
 export class NetError extends Error {
   constructor(message: string, readonly status?: number) {
@@ -16,7 +17,9 @@ export async function getJson(url: string, timeoutMs = 20_000): Promise<unknown>
     const res = await fetch(url, { signal: controller.signal });
     if (res.status === 404) throw new NetError('Not published yet', 404);
     if (!res.ok) throw new NetError(`The server answered ${res.status}`, res.status);
-    return await res.json();
+    const text = await res.text();
+    countDownload(text.length);
+    return JSON.parse(text);
   } catch (e) {
     if (e instanceof NetError) {
       if (e.status !== 404) logProblem(`download ${shortName(url)}`, e);

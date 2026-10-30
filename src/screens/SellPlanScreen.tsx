@@ -17,7 +17,7 @@ import { portion, sellPlan, type SaleOutcome } from '../portfolio/sellPlan';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
 import { Explain } from '../ui/Explain';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `${v < 0 ? '−' : ''}Rs ${fmtNum(Math.abs(Math.round(v)), 0)}`;
 
@@ -98,13 +98,7 @@ export default function SellPlanScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Plan a sale
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Plan a sale" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to plan a sale." />

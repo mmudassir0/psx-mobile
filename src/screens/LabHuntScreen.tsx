@@ -10,7 +10,7 @@ import { rememberHunted, useLab } from '../lab/store';
 import { defaultSetup, edge, ideas, summarise, tryIdea, type HuntIdea, type HuntSetup } from '../lab/hunt';
 import type { Universe } from '../lab/engine';
 import { Panel } from '../ui/bits';
-import { Button, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Button, Empty, IconButton, Loading, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 interface Saved {
   setup: HuntSetup;
@@ -120,13 +120,7 @@ export default function LabHuntScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Strategy hunt
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Strategy hunt" />
       <ScrollView contentContainerStyle={styles.content}>
         <Panel style={{ paddingVertical: 14, gap: 6 }}>
           <T style={{ fontFamily: fonts.bold, fontSize: 17 }}>Do past winners keep winning?</T>

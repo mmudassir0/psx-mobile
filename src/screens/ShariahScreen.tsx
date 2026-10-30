@@ -16,7 +16,7 @@ import { dividendsReceived, purificationPref, setRate, shariahSummary, type Stat
 import { ZakatCard } from '../ui/ZakatCard';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(Math.round(v), 0)}`;
 const pkToday = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
@@ -80,13 +80,7 @@ export default function ShariahScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Shariah corner
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Shariah corner" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to see how much of your money is Shariah-compliant and what purification is due." />

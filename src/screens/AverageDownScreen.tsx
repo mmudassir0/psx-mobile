@@ -13,7 +13,7 @@ import { costsPref } from '../portfolio/costs';
 import { averageWithMoney, sharesForAverage, targetSteps, type AveragePlan } from '../portfolio/averageDown';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(Math.round(v), 0)}`;
 
@@ -66,13 +66,7 @@ export default function AverageDownScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Average down
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Average down" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings first." />

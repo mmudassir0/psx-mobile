@@ -8,7 +8,7 @@ import { useLab } from '../lab/store';
 import { GROUP_LABEL, HORIZONS, reviewTest, type Group, type ReviewTest } from '../lab/reviewTest';
 import type { Universe } from '../lab/engine';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Loading, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number, d = 1) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(d)}%`;
 const ORDER: Group[] = ['chart', 'clear', 'uptrend', 'cut'];
@@ -37,13 +37,7 @@ export default function LabReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Sahm's warnings, tested
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Sahm's warnings, tested" />
       <ScrollView contentContainerStyle={styles.content}>
         <T v="body" style={{ fontSize: 14, color: colors.text2, lineHeight: 20 }}>
           Every month since the lab's data starts, each stock is put in a group by the warnings Sahm's holding review gives from prices and dividends. Then: what did it do over the next months, against the average stock

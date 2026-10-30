@@ -7,7 +7,7 @@ import { colors, space, themed } from '../theme';
 import { useHoldings } from '../portfolio/holdings';
 import { NEWS_FEEDS } from '../analysis/news';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 import { Skeleton } from '../ui/Skeleton';
 import { NewsRows, useNews } from '../ui/NewsList';
 
@@ -20,13 +20,7 @@ export default function NewsScreen() {
   const shown = items.filter((n) => (filter === 'mine' ? n.symbols.some((s) => held.has(s)) : filter === 'market' ? n.market : true));
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          News
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="News" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading && items.length > 0} onRefresh={reload} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}

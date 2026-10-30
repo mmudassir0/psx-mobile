@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { useColorScheme } from 'react-native';
 import { applyTheme, ThemeName, ThemePref } from '../theme';
 import { load, save } from '../storage';
+import { setWidgetLook } from '../widget/update';
 
 const KEY = 'sahm:theme';
 /** White is the default look; dark and "follow the phone" are options in Settings. */
@@ -32,8 +33,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     save(KEY, p);
   }, []);
 
+  const name: ThemeName = pref === 'system' ? (system === 'dark' ? 'dark' : 'light') : pref === 'dark' ? 'dark' : 'light';
+  // home screen widgets follow the app's look
+  useEffect(() => {
+    if (pref != null) setWidgetLook(name).catch(() => {});
+  }, [pref, name]);
+
   if (pref == null) return null;
-  const name: ThemeName = pref === 'system' ? (system === 'dark' ? 'dark' : 'light') : pref;
   applyTheme(name);
 
   return (

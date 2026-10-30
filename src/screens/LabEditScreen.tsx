@@ -12,7 +12,7 @@ import { describe, sectorName } from '../lab/describe';
 import { labPrompt, readLabReply } from '../lab/aiStrategy';
 import { useAi } from '../store/ai';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const METRIC_KEYS = Object.keys(METRICS) as Metric[];
 
@@ -128,13 +128,7 @@ export default function LabEditScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          {saved ? 'Change strategy' : 'New strategy'}
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title={saved ? 'Change strategy' : 'New strategy'} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextInput value={s.name} onChangeText={(name) => put({ name })} style={[styles.input, { width: '100%', textAlign: 'left', fontFamily: fonts.bold }]} accessibilityLabel="Strategy name" maxLength={40} />
         <View style={styles.summary}>

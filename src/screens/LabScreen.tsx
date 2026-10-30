@@ -17,7 +17,7 @@ const labQuickPref = makePref<{ built: string; rows: Record<string, number[]> }>
 import { TEMPLATES } from '../lab/templates';
 import { describe } from '../lab/describe';
 import { Panel } from '../ui/bits';
-import { Button, Empty, IconButton, Loading, Section, T } from '../ui/kit';
+import { Button, Empty, IconButton, Loading, Section, T, ScreenHeader } from '../ui/kit';
 import { Press, Rise } from '../ui/motion';
 import { YearBars } from '../ui/YearBars';
 
@@ -164,13 +164,7 @@ export default function LabScreen() {
   }, [lab, followed]);
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Backtesting lab
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Backtesting lab" />
       <ScrollView contentContainerStyle={styles.content}>
         <Rise style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1, gap: 2 }}>

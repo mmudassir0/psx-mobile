@@ -6,9 +6,23 @@ import { haveFinalPrices, isMarketOpen, isTrading, lastSessionEnd } from '../mar
 import { loadCached, saveCached } from '../storage';
 import { logProblem } from '../log';
 
-const LIVE_MS = 30_000;
-const SCREENER_MS = 30 * 60_000;
+import { makePref } from '../prefs';
+
+/** the clock the poller checks on */
+const TICK_MS = 30_000;
+/** live prices: every 30 s just after you open or pull to refresh, then every minute; data saver every 3 minutes */
+const LIVE_FAST_MS = 30_000;
+const LIVE_MS = 60_000;
+const LIVE_SAVER_MS = 180_000;
+/** how long "just opened" lasts */
+const FAST_FOR_MS = 5 * 60_000;
+const SCREENER_MS = 60 * 60_000;
+const SCREENER_SAVER_MS = 3 * 3600_000;
 const SYMBOLS_MS = 24 * 3600_000;
+
+/** Settings → Data saver: fewer, smaller downloads (live prices every 3 minutes, the screener every 3 hours). */
+export const dataSaverPref = makePref<boolean>('ui.dataSaver', false);
+export const liveEvery = (saver: boolean, sinceActive: number) => (saver ? LIVE_SAVER_MS : sinceActive < FAST_FOR_MS ? LIVE_FAST_MS : LIVE_MS);
 
 interface MarketState {
   ready: boolean;
@@ -44,6 +58,11 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const failed = useRef(false);
   /** when the prices on screen were fetched (for deciding whether a download is needed at all) */
   const pricesAt = useRef<number | null>(null);
+  /** when you last opened Sahm or pulled to refresh: prices update fastest just after */
+  const activeAt = useRef(Date.now());
+  const saver = useRef(false);
+  const saverOn = dataSaverPref.use();
+  saver.current = saverOn;
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
@@ -74,7 +93,8 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
               saveCached('psx.symbols', syms);
             })
           : null,
-        now - screenerAt.current > SCREENER_MS
+        // the screener's figures (P/E, yield) move with prices: after a fetch since the close, nothing new until the next session
+        now - screenerAt.current > (saver.current ? SCREENER_SAVER_MS : SCREENER_MS) && !(!isMarketOpen() && screenerAt.current >= lastSessionEnd())
           ? fetchScreener().then((scr) => {
               if (!scr.length) return;
               setScreener(scr);
@@ -133,7 +153,9 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const id = setInterval(() => {
       const active = AppState.currentState === 'active';
-      if (active && isMarketOpen()) refresh();
+      if (active && isMarketOpen()) {
+        if (Date.now() - lastAt.current >= liveEvery(saver.current, Date.now() - activeAt.current) - 2000) refresh();
+      }
       // after a failed download, try again every minute until it works, unless the prices on screen are already final
       else if (active && failed.current && !haveFinalPrices(pricesAt.current) && Date.now() - lastAt.current > 60_000) refresh();
       // the session just ended: one more download for the closing prices
@@ -141,9 +163,10 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
         if (Date.now() - lastAt.current > 5 * 60_000) refresh();
         else setMarketOpen(false);
       } else setMarketOpen(isTrading());
-    }, LIVE_MS);
+    }, TICK_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s !== 'active') return;
+      activeAt.current = Date.now();
       // back in the app: prices move only while the market is open, so after the close
       // a quick look at the phone doesn't need another download
       const age = Date.now() - lastAt.current;
@@ -159,7 +182,15 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const stocks = useMemo(() => mergeStocks(symbols, screener, board), [symbols, screener, board]);
   const bySymbol = useMemo(() => new Map(stocks.map((s) => [s.symbol, s])), [stocks]);
 
-  const value = useMemo(() => ({ ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh }), [ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh]);
+  // pull to refresh from a screen: counts as "just opened", so prices update quickly for a while
+  const userRefresh = useCallback(() => {
+    activeAt.current = Date.now();
+    return refresh();
+  }, [refresh]);
+  const value = useMemo(
+    () => ({ ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, refresh: userRefresh }),
+    [ready, refreshing, error, updatedAt, marketOpen, indices, stocks, bySymbol, userRefresh],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -8,7 +8,7 @@ import { picksVsMine } from '../src/picks/vsMine';
 import { bookView } from '../src/analysis/book';
 import { addPoint, healthScore, spreadOf, trendLine, weekOf } from '../src/portfolio/healthScore';
 import { payMonths } from '../src/portfolio/income';
-import { intradayHits } from '../src/portfolio/intradayCore';
+import { bigMoveHits, daySummary, intradayHits } from '../src/portfolio/intradayCore';
 import { tipFor, TIPS } from '../src/learn/tips';
 import { crossings } from '../src/analysis/chartLines';
 import { tidyTranscript, voicePrompt } from '../src/ai/voice';
@@ -766,6 +766,20 @@ check(
   check('intraday: crossed lines in their direction', h.length === 2 && h[0].text.startsWith('A fell below your alert line') && h[1].text.startsWith('B rose above'));
   check('intraday: once a day', intradayHits(lines, { A: 102 }, { A: 99 }, new Set([h[0].key]), '2026-10-28').length === 0);
   check('intraday: wrong direction or no move', intradayHits(lines, { A: 98 }, { A: 101 }, new Set(), '2026-10-28').length === 0 && intradayHits(lines, {}, { A: 99 }, new Set(), 'd').length === 0);
+
+  const board = [
+    { symbol: 'A', price: 106, ldcp: 100, changePct: 6 },
+    { symbol: 'B', price: 48, ldcp: 50, changePct: -4 },
+    { symbol: 'C', price: 300, ldcp: 100, changePct: 200 },
+    { symbol: 'Z', price: 10, ldcp: 5, changePct: 9 },
+  ];
+  const mv = bigMoveHits(['A', 'B', 'C'], board, 5, new Set(), 'd');
+  check('big moves: only held, over the threshold, not data slips', mv.length === 1 && mv[0].symbol === 'A' && /up 6\.0% today/.test(mv[0].text), mv);
+  check('big moves: once a day', bigMoveHits(['A'], board, 5, new Set([mv[0].key]), 'd').length === 0 && bigMoveHits(['A'], board, 0, new Set(), 'd').length === 0);
+  const ds = daySummary([{ symbol: 'A', shares: 10 }, { symbol: 'B', shares: 20 }, { symbol: 'C', shares: 1 }], board);
+  // A +60, B −40, C counted flat → +20 on 2,100
+  check('day summary: rupees, percent, best and weakest', !!ds && ds.title === 'Today +Rs 20 (+0.95%)' && /Best A \+6\.0%, weakest B −4\.0%/.test(ds.body), ds);
+  check('day summary: nothing priced', daySummary([{ symbol: 'Q', shares: 1 }], board) === null);
 }
 
 // Tip of the day

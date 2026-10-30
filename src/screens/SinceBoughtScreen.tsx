@@ -13,7 +13,7 @@ import { snapshots, type Snap } from '../portfolio/track';
 import { sinceBought, startDay } from '../portfolio/sinceBought';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, T } from '../ui/kit';
+import { Empty, IconButton, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`);
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
@@ -51,13 +51,7 @@ export default function SinceBoughtScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Since you bought
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Since you bought" />
       <ScrollView contentContainerStyle={styles.content}>
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to see how each has done since you bought it." />

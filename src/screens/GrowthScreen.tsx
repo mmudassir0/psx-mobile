@@ -17,7 +17,7 @@ import { dividendTaxRate, payerKind } from '../analysis/dividends';
 import { growthSources, type DividendIn } from '../portfolio/growthSources';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `${v < 0 ? '−' : ''}Rs ${fmtNum(Math.abs(Math.round(v)), 0)}`;
 const pkDay = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
@@ -71,13 +71,7 @@ export default function GrowthScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Where gains came from
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Where gains came from" />
       <ScrollView contentContainerStyle={styles.content}>
         {loaded && !holdings.length && !trades.length ? (
           <Empty title="Nothing yet" body="Add your holdings to see how much of your gain is price and how much is dividends." />

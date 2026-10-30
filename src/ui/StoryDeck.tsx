@@ -14,6 +14,7 @@ import { ago, useNews } from './NewsList';
 import { useTodayItems } from './TodayList';
 import { eventsFor } from './EventsCard';
 import { T } from './kit';
+import { ToolIcon } from './ToolIcon';
 
 export function StoryDeck({ rows, todo, totals, hasReal }: { rows: Row[]; todo: TodoItem[]; totals: { total: number; today: number; todayPct: number; pnl: number; pnlPct: number; invested: number }; hasReal: boolean }) {
   const nav = useNavigation();
@@ -61,7 +62,9 @@ export function StoryDeck({ rows, todo, totals, hasReal }: { rows: Row[]; todo: 
       {items.length ? (
         items.map((it) => (
           <Pressable key={it.key} accessibilityRole="button" onPress={it.onPress} style={{ flexDirection: 'row', gap: 8 }}>
-            <T style={{ fontSize: 15 }}>{it.emoji}</T>
+            <View style={{ width: 20, paddingTop: 2, alignItems: 'center' }}>
+              <ToolIcon name={it.glyph} size={it.glyph === 'dot' ? 11 : 17} color={it.ink ?? colors.gold} />
+            </View>
             <View style={{ flex: 1 }}>
               <T style={{ fontFamily: fonts.semibold, fontSize: 14.5, lineHeight: 20 }} numberOfLines={2}>
                 {it.text}
@@ -121,7 +124,7 @@ export function StoryDeck({ rows, todo, totals, hasReal }: { rows: Row[]; todo: 
       </Pressable>
     </View>,
     <View key="done" style={{ gap: 12, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-      <T style={{ fontSize: 40 }}>✅</T>
+      <ToolIcon name="checkCircle" size={48} color={colors.up} />
       <T style={{ fontFamily: fonts.heavy, fontSize: 20 }}>That's today</T>
       <T v="caption" style={{ textAlign: 'center' }}>
         Every tool is below. Swipe back any time.

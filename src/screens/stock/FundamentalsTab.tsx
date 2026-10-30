@@ -118,7 +118,7 @@ export function FundamentalsTab({ company, stock, err, fair }: { company: Compan
           {checks.map((t) => (
             <View key={t} style={{ backgroundColor: colors.goldSoft, borderRadius: 10, padding: 10 }}>
               <T v="caption" style={{ color: colors.text2, lineHeight: 18 }}>
-                ⚠ {t}
+                {t}
               </T>
             </View>
           ))}

@@ -8,7 +8,7 @@ import { TERMS, pickExample, type TermId } from '../analysis/glossary';
 import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
-import { IconButton, T } from '../ui/kit';
+import { IconButton, T, ScreenHeader } from '../ui/kit';
 
 export default function GlossaryScreen() {
   const nav = useNavigation();
@@ -31,13 +31,7 @@ export default function GlossaryScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Words explained
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Words explained" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextInput value={q} onChangeText={setQ} placeholder="Find a word" placeholderTextColor={colors.faint} style={styles.search} accessibilityLabel="Find a word" />
         <Panel style={{ paddingVertical: 4 }}>

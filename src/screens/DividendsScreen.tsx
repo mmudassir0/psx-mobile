@@ -13,7 +13,7 @@ import { useMarket } from '../store/market';
 import { useHoldings } from '../portfolio/holdings';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pk = (t: number) => new Date(t + 5 * 3600_000);
@@ -53,13 +53,7 @@ export default function DividendsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Dividend calendar
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Dividend calendar" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.gold} colors={[colors.gold]} progressBackgroundColor={colors.surface} />}

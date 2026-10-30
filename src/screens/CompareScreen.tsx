@@ -14,7 +14,7 @@ import { dailyCandles } from '../psx/history';
 import type { Candle } from '../psx/types';
 import { compareRows, rebased, type CompareRow } from '../analysis/compare';
 import { Panel } from '../ui/bits';
-import { IconButton, T } from '../ui/kit';
+import { IconButton, T, ScreenHeader } from '../ui/kit';
 
 const MAX = 3;
 const lineColors = () => [colors.gold, colors.shariah, colors.text2];
@@ -71,13 +71,7 @@ export default function CompareScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Compare stocks
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Compare stocks" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {syms.map((s, i) => (

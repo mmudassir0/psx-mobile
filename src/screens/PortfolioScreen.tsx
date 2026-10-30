@@ -163,7 +163,7 @@ export default function PortfolioScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <T v="h1">Portfolio</T>
           <Pressable accessibilityRole="button" accessibilityLabel="Family portfolios" hitSlop={8} onPress={() => nav.navigate('Portfolios')} style={styles.pf}>
-            <T style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text2 }}>{pfs.list.length > 1 ? `${pfs.list.find((x) => x.id === pfs.active)?.name ?? 'Mine'} ▾` : '👪 Family'}</T>
+            <T style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text2 }}>{pfs.list.length > 1 ? `${pfs.list.find((x) => x.id === pfs.active)?.name ?? 'Mine'} ▾` : 'Family'}</T>
           </Pressable>
         </View>
         {practiceOn ? (

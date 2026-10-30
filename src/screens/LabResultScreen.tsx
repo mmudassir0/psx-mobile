@@ -16,7 +16,7 @@ import { newId } from '../lab/templates';
 import { LabChart } from '../ui/LabChart';
 import { RuleWhatIf, ContributorsSection, RealSection, ReportButton, RollingSection, ShareCodeButton, StressSection } from '../ui/LabExtras';
 import { Panel } from '../ui/bits';
-import { Button, Empty, IconButton, Loading, Section, Segmented, T } from '../ui/kit';
+import { Button, Empty, IconButton, Loading, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number, d = 1) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(d)}%`;
 const rs = (v: number) => `Rs ${fmtNum(Math.round(v), 0)}`;
@@ -102,13 +102,7 @@ export default function LabResultScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }} numberOfLines={1}>
-          {st?.name ?? 'Strategy'}
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title={st?.name ?? 'Strategy'} />
       <ScrollView contentContainerStyle={styles.content}>
         {!st ? (
           <Empty title="This strategy isn't here any more" body="It may have been deleted." />

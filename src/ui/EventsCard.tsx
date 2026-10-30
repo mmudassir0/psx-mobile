@@ -10,6 +10,7 @@ import { currentRights, exDate, upcomingPayout } from '../analysis/dividends';
 import type { Row } from '../portfolio/useReviews';
 import { Panel } from './bits';
 import { Section, T } from './kit';
+import { EVENT_GLYPH, ToolIcon } from './ToolIcon';
 
 const pkDay = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -20,7 +21,6 @@ const label = (d: string, today: string) => {
   const name = d === today ? 'Today' : d === tomorrow ? 'Tomorrow' : WD[t.getUTCDay()];
   return `${name} ${t.getUTCDate()} ${MON[t.getUTCMonth()]}`;
 };
-const ICON: Record<MarketEvent['kind'], string> = { rates: '🏦', results: '📊', exdate: '💸', bookclosure: '📕', rights: '🧾', holiday: '🚫' };
 
 export function eventsFor(rows: Row[], now = Date.now(), days = 14): MarketEvent[] {
   const out: MarketEvent[] = [...rateEvents(now, days), ...holidayEvents(now, days)];
@@ -89,7 +89,9 @@ export function EventsCard({ rows, padded }: { rows: Row[]; padded?: boolean }) 
                 onLongPress={() => e.symbol && nav.navigate('Stock', { symbol: e.symbol })}
                 style={[styles.row, i < Math.min(list.length, 6) - 1 && styles.border]}
               >
-                <T style={{ fontSize: 17, width: 26 }}>{ICON[e.kind]}</T>
+                <View style={{ width: 26 }}>
+                  <ToolIcon name={EVENT_GLYPH[e.kind] ?? 'calendar'} size={19} color={e.kind === 'holiday' ? colors.muted : colors.gold} />
+                </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T style={{ fontFamily: fonts.bold, fontSize: 14 }}>{e.title}</T>
                   <T v="caption">{e.kind === 'results' ? 'Any day now' : label(e.day, today)}</T>

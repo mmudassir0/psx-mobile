@@ -18,7 +18,7 @@ import { cached } from '../psx/cache';
 import { fetchSeries } from '../psx/api';
 import type { SeriesPoint } from '../psx/types';
 import { logProblem } from '../log';
-import { Button, IconButton, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 
 type Period = 'month' | 'tracked' | 'all';
 const pct = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
@@ -87,13 +87,7 @@ export default function ShareCardScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Share card
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Share card" />
       <ScrollView contentContainerStyle={styles.content}>
         <Segmented
           options={[

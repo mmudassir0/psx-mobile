@@ -16,7 +16,7 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel="Menu" onPress={() => setOpen(true)} style={({ pressed }) => [styles.fab, { bottom: Math.max(insets.bottom, 12) + 8 }, pressed && { opacity: 0.85 }]}>
-        <T style={{ fontSize: 22, color: colors.onGold, fontFamily: fonts.heavy }}>☰</T>
+        <ToolIcon name="menu" size={24} color={colors.onGold} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
@@ -24,7 +24,7 @@ export function MenuButton({ navigation }: BottomTabBarProps) {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingBottom: 8 }}>
               <T style={{ fontFamily: fonts.heavy, fontSize: 22 }}>Sahm</T>
               <Pressable accessibilityRole="button" accessibilityLabel="Close menu" hitSlop={10} onPress={() => setOpen(false)}>
-                <T style={{ fontSize: 20, color: colors.muted }}>✕</T>
+                <ToolIcon name="close" size={22} color={colors.muted} />
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}>

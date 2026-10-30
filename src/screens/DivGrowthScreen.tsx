@@ -12,7 +12,7 @@ import { fetchCompany } from '../psx/api';
 import { divGrowth, type DivGrowth } from '../portfolio/divGrowth';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, T } from '../ui/kit';
+import { Empty, IconButton, T, ScreenHeader } from '../ui/kit';
 
 const TONE: Record<DivGrowth['verdict'], () => string> = { growing: () => colors.up, steady: () => colors.text2, cut: () => colors.downText, irregular: () => colors.gold, none: () => colors.faint };
 const LABEL: Record<DivGrowth['verdict'], string> = { growing: 'Growing', steady: 'Steady', cut: 'Cut', irregular: 'Up and down', none: 'No dividend' };
@@ -46,13 +46,7 @@ export default function DivGrowthScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Dividend growth
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Dividend growth" />
       <ScrollView contentContainerStyle={styles.content}>
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to see how their dividends have grown." />

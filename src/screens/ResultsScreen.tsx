@@ -12,7 +12,7 @@ import { useReviews } from '../portfolio/useReviews';
 import { resultsLine } from '../analysis/results';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
 const KIND = { quarter: 'quarter', half: 'half year', year: 'full year' };
@@ -31,13 +31,7 @@ export default function ResultsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Results season
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Results season" />
       <ScrollView contentContainerStyle={styles.content}>
         <Segmented
           options={[

@@ -2,6 +2,8 @@
 import React from 'react';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 import { rowsFor } from './rows';
+import { LOOKS, softOf, stamp, toneOf, WF, type Look } from './look';
+import { Label } from './PortfolioWidget';
 export { rowsFor };
 
 export interface WatchRow {
@@ -32,53 +34,52 @@ export const MARKET_WIDGET = 'Market';
 export const WATCH_KEY = 'widget.watch';
 export const MARKET_KEY = 'widget.market';
 
-const BG = '#16181B' as const;
-const UP = '#4CC48A' as const;
-const DOWN = '#F08A79' as const;
-const MUTED = '#8C8D86' as const;
-const TEXT = '#F2F0EA' as const;
-const time = (t: number) => {
-  const d = new Date(t + 5 * 3600_000);
-  return `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-};
 const pct = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
 const num = (v: number | null, d = 2) => (v == null ? '–' : v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }));
-const tone = (v: number | null) => (v == null || v === 0 ? MUTED : v > 0 ? UP : DOWN);
 
-function Shell({ title, at, children, label }: { title: string; at: number | null; children: React.ReactNode; label: string }) {
+function Shell({ title, at, children, label, L }: { title: string; at: number | null; children: React.ReactNode; label: string; L: Look }) {
   return (
-    <FlexWidget clickAction="OPEN_APP" accessibilityLabel={label} style={{ height: 'match_parent', width: 'match_parent', backgroundColor: BG, borderRadius: 20, padding: 14, flexDirection: 'column' }}>
-      <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent', marginBottom: 6 }}>
-        <TextWidget text={title} style={{ fontSize: 12, color: '#A3A39C' }} />
-        <TextWidget text={at ? time(at) : ''} style={{ fontSize: 11, color: MUTED }} />
+    <FlexWidget clickAction="OPEN_APP" accessibilityLabel={label} style={{ height: 'match_parent', width: 'match_parent', backgroundColor: L.bg, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'column' }}>
+      <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: 'match_parent', marginBottom: 6 }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <FlexWidget style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: L.gold, marginRight: 6 }} />
+          <Label text={title} L={L} />
+        </FlexWidget>
+        <TextWidget text={at ? stamp(at) : ''} style={{ fontSize: 11, color: L.muted, fontFamily: WF.semi }} />
       </FlexWidget>
       {children}
     </FlexWidget>
   );
 }
 
-function Line({ left, mid, right, color }: { left: string; mid: string; right: string; color: `#${string}` }) {
+function Line({ left, mid, change, L, last }: { left: string; mid: string; change: number | null; L: Look; last?: boolean }) {
   return (
-    <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', justifyContent: 'space-between', paddingVertical: 3 }}>
-      <TextWidget text={left} style={{ fontSize: 13.5, fontWeight: 'bold', color: TEXT }} />
-      <FlexWidget style={{ flexDirection: 'row' }}>
-        <TextWidget text={mid} style={{ fontSize: 13.5, color: TEXT }} />
-        <TextWidget text={`  ${right}`} style={{ fontSize: 13, color }} />
+    <FlexWidget style={{ flexDirection: 'column', width: 'match_parent' }}>
+      <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 }}>
+        <TextWidget text={left} style={{ fontSize: 13.5, color: L.text, fontFamily: WF.heavy }} maxLines={1} />
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TextWidget text={mid} style={{ fontSize: 13, color: L.text, fontFamily: WF.mono }} />
+          <FlexWidget style={{ backgroundColor: softOf(L, change), borderRadius: 7, paddingHorizontal: 6, paddingVertical: 1, marginLeft: 8, width: 66, alignItems: 'flex-end' }}>
+            <TextWidget text={pct(change)} style={{ fontSize: 12, color: toneOf(L, change), fontFamily: WF.mono }} />
+          </FlexWidget>
+        </FlexWidget>
       </FlexWidget>
+      {last ? null : <FlexWidget style={{ height: 1, width: 'match_parent', backgroundColor: L.line }} />}
     </FlexWidget>
   );
 }
 
-
-export function WatchWidget({ data, rows = 5 }: { data: WatchData | null; rows?: number }) {
+export function WatchWidget({ data, rows = 5, look = LOOKS.dark }: { data: WatchData | null; rows?: number; look?: Look }) {
+  const L = look;
+  const shown = data?.rows.slice(0, rows) ?? [];
   return (
-    <Shell title="Sahm · Watchlist" at={data?.at ?? null} label="Sahm watchlist">
+    <Shell title="Watchlist" at={data?.at ?? null} label="Sahm watchlist" L={L}>
       {!data || !data.rows.length ? (
-        <TextWidget text={data ? 'Add stocks to your watchlist in Sahm' : 'Open Sahm once to show your watchlist here'} style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
+        <TextWidget text={data ? 'Add stocks to your watchlist in Sahm' : 'Open Sahm once to show your watchlist here'} style={{ fontSize: 13, color: L.text2, fontFamily: WF.semi }} maxLines={2} />
       ) : (
         <FlexWidget style={{ flexDirection: 'column', width: 'match_parent' }}>
-          {data.rows.slice(0, rows).map((r) => (
-            <Line key={r.symbol} left={r.symbol} mid={num(r.price)} right={pct(r.changePct)} color={tone(r.changePct)} />
+          {shown.map((r, i) => (
+            <Line key={r.symbol} left={r.symbol} mid={num(r.price)} change={r.changePct} L={L} last={i === shown.length - 1} />
           ))}
         </FlexWidget>
       )}
@@ -86,17 +87,34 @@ export function WatchWidget({ data, rows = 5 }: { data: WatchData | null; rows?:
   );
 }
 
-export function MarketWidget({ data }: { data: MarketData | null }) {
+export function MarketWidget({ data, look = LOOKS.dark }: { data: MarketData | null; look?: Look }) {
+  const L = look;
+  const up = data?.up ?? 0;
+  const down = data?.down ?? 0;
+  const total = up + down;
   return (
-    <Shell title="Sahm · Market" at={data?.at ?? null} label="Sahm market">
+    <Shell title="Market" at={data?.at ?? null} label="Sahm market" L={L}>
       {!data || !data.rows.length ? (
-        <TextWidget text="Open Sahm once to show the market here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
+        <TextWidget text="Open Sahm once to show the market here" style={{ fontSize: 13, color: L.text2, fontFamily: WF.semi }} maxLines={2} />
       ) : (
         <FlexWidget style={{ flexDirection: 'column', width: 'match_parent' }}>
-          {data.rows.map((r) => (
-            <Line key={r.code} left={r.label} mid={num(r.value, 0)} right={pct(r.changePct)} color={tone(r.changePct)} />
+          {data.rows.map((r, i) => (
+            <Line key={r.code} left={r.label} mid={num(r.value, 0)} change={r.changePct} L={L} last={i === data.rows.length - 1} />
           ))}
-          {data.up != null && data.down != null ? <TextWidget text={`${data.up} up · ${data.down} down`} style={{ fontSize: 11.5, color: MUTED, marginTop: 4 }} /> : null}
+          {total > 0 ? (
+            <FlexWidget style={{ flexDirection: 'column', width: 'match_parent', marginTop: 6 }}>
+              {/* breadth: how many shares rose against fell, as one split bar */}
+              <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', height: 4, borderRadius: 2 }}>
+                <FlexWidget style={{ flex: Math.max(1, up), height: 4, backgroundColor: L.up, borderRadius: 2 }} />
+                <FlexWidget style={{ width: 2, height: 4 }} />
+                <FlexWidget style={{ flex: Math.max(1, down), height: 4, backgroundColor: L.down, borderRadius: 2 }} />
+              </FlexWidget>
+              <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', justifyContent: 'space-between', marginTop: 3 }}>
+                <TextWidget text={`${up} up`} style={{ fontSize: 11, color: L.up, fontFamily: WF.semi }} />
+                <TextWidget text={`${down} down`} style={{ fontSize: 11, color: L.down, fontFamily: WF.semi }} />
+              </FlexWidget>
+            </FlexWidget>
+          ) : null}
         </FlexWidget>
       )}
     </Shell>

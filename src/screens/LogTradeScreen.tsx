@@ -5,19 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors, space, themed } from '../theme';
 import { TradeSheet } from '../ui/TradeSheet';
-import { IconButton, T } from '../ui/kit';
+import { IconButton, T, ScreenHeader } from '../ui/kit';
 
 export default function LogTradeScreen() {
   const nav = useNavigation();
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Record a trade
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Record a trade" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TradeSheet onDone={() => nav.goBack()} />
         <T v="caption" style={{ lineHeight: 18 }}>

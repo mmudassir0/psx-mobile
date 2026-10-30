@@ -3,7 +3,9 @@ import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text as RNText, Te
 import Svg, { Circle, Path } from 'react-native-svg';
 import { changeColor, changeSoft, colors, fonts, tabular, themed } from '../theme';
 import { arrowPct } from '../format';
-import { Press } from './motion';
+import { Press, Rise } from './motion';
+import { ToolIcon } from './ToolIcon';
+import { useNavigation } from '@react-navigation/native';
 
 type Variant = 'body' | 'caption' | 'label' | 'title' | 'h1' | 'display' | 'mono' | 'monoLg' | 'monoXl';
 
@@ -163,16 +165,50 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
-export function Empty({ title, body }: { title: string; body?: string }) {
+export function Empty({ title, body, glyph, action, onAction }: { title: string; body?: string; glyph?: string; action?: string; onAction?: () => void }) {
+  const nav = useNavigation();
+  // "no holdings" anywhere gets the way to add them
+  const noHoldings = /no holdings/i.test(title);
+  const act = action ?? (noHoldings ? 'Add my holdings' : undefined);
+  const go = onAction ?? (noHoldings ? () => nav.navigate('EditHoldings' as never) : undefined);
+  const g = glyph ?? (noHoldings ? 'briefcase' : 'search');
   return (
-    <View style={{ padding: 28, alignItems: 'center', gap: 6 }}>
-      <T v="title">{title}</T>
+    <Rise style={{ paddingVertical: 36, paddingHorizontal: 24, alignItems: 'center', gap: 8 }}>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+        <ToolIcon name={g} size={26} color={colors.gold} />
+      </View>
+      <T style={{ fontFamily: fonts.bold, fontSize: 18, textAlign: 'center' }}>{title}</T>
       {body ? (
-        <T v="caption" style={{ textAlign: 'center', lineHeight: 18 }}>
+        <T v="caption" style={{ textAlign: 'center', lineHeight: 19, fontSize: 13.5, maxWidth: 300 }}>
           {body}
         </T>
       ) : null}
-    </View>
+      {act && go ? <Button small label={act} onPress={go} style={{ marginTop: 10, alignSelf: 'center', paddingHorizontal: 22 }} /> : null}
+    </Rise>
+  );
+}
+
+/**
+ * The top of a screen opened from somewhere else: back button, the title on the left in the
+ * same weight as Home's greeting, and room for buttons on the right.
+ */
+export function ScreenHeader({ title, sub, right, onBack }: { title: string; sub?: string; right?: React.ReactNode; onBack?: () => void }) {
+  const nav = useNavigation();
+  return (
+    <Rise style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 6 }}>
+      <IconButton name="back" label="Back" onPress={onBack ?? (() => nav.goBack())} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <T accessibilityRole="header" style={{ fontFamily: fonts.bold, fontSize: 20, letterSpacing: -0.3 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+          {title}
+        </T>
+        {sub ? (
+          <T v="caption" numberOfLines={1}>
+            {sub}
+          </T>
+        ) : null}
+      </View>
+      {right}
+    </Rise>
   );
 }
 

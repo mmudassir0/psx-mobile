@@ -15,7 +15,7 @@ import { dividendTaxRate, payerKind } from '../analysis/dividends';
 import { Panel } from '../ui/bits';
 import { YieldOnCost } from '../ui/YieldOnCost';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const label = (m: string) => `${MONTH[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`;
@@ -48,13 +48,7 @@ export default function IncomeScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Dividend income
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Dividend income" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to see the dividends they should pay over the next year." />

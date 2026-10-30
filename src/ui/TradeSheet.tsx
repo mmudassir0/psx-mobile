@@ -17,6 +17,7 @@ import { breakEven, costsPref, tradeCost } from '../portfolio/costs';
 import { pkToday } from '../journal/store';
 import { Panel } from './bits';
 import { Button, Segmented, T } from './kit';
+import { IconLabel } from './ToolIcon';
 
 export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?: number | null; onDone: () => void }) {
   const { holdings } = useHoldings();
@@ -85,7 +86,7 @@ export function TradeSheet({ symbol, price, onDone }: { symbol?: string; price?:
         onChange={setSide}
       />
       <Pressable accessibilityRole="button" onPress={fromShot} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
-        <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>📷 Fill from a screenshot of the order</T>
+        <IconLabel name="camera">Fill from a screenshot of the order</IconLabel>
       </Pressable>
       {reading ? <T v="caption">{reading}</T> : null}
       {choices.length ? (

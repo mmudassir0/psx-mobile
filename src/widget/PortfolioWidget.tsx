@@ -1,6 +1,7 @@
-/** Home screen widget: your portfolio value, today's change and the market mood. Tap to open Sahm. */
+/** Home screen widget: your portfolio value, today's change, the next payout and any reminder. Tap to open Sahm. */
 import React from 'react';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
+import { LOOKS, softOf, stamp, toneOf, WF, type Look } from './look';
 
 export interface WidgetData {
   value: number;
@@ -25,39 +26,57 @@ export const WIDGET_NAME = 'Portfolio';
 const fmt = (v: number) => Math.round(v).toLocaleString('en-US');
 const signed = (v: number) => `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))}`;
 const pct = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(2)}%`;
-const time = (t: number) => {
-  const d = new Date(t + 5 * 3600_000);
-  return `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-};
 
-export function PortfolioWidget({ data }: { data: WidgetData | null }) {
-  const up = (data?.today ?? 0) >= 0;
+/** Small caps label, the app's section style */
+export function Label({ text, L }: { text: string; L: Look }) {
+  return <TextWidget text={text.toUpperCase()} style={{ fontSize: 10.5, letterSpacing: 1.2, color: L.muted, fontFamily: WF.semi }} />;
+}
+
+export function PortfolioWidget({ data, look = LOOKS.dark }: { data: WidgetData | null; look?: Look }) {
+  const L = look;
+  const moodTone = data?.mood == null ? L.muted : data.mood < 45 ? L.down : data.mood <= 55 ? L.gold : L.up;
   return (
     <FlexWidget
       clickAction="OPEN_APP"
       accessibilityLabel="Sahm portfolio"
-      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: '#16181B', borderRadius: 20, padding: 14, flexDirection: 'column', justifyContent: 'space-between' }}
+      style={{ height: 'match_parent', width: 'match_parent', backgroundColor: L.bg, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'column', justifyContent: 'space-between' }}
     >
-      <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', width: 'match_parent' }}>
-        <TextWidget text="Sahm · My portfolio" style={{ fontSize: 12, color: '#A3A39C' }} />
-        <TextWidget
-          text={data?.mood != null ? `Mood ${data.mood} ${data.moodLabel ?? ''}` : data ? time(data.at) : ''}
-          style={{ fontSize: 11.5, color: data?.mood == null ? '#8C8D86' : data.mood < 45 ? '#F08A79' : data.mood <= 55 ? '#D9B762' : '#4CC48A' }}
-        />
+      <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: 'match_parent' }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <FlexWidget style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: L.gold, marginRight: 6 }} />
+          <Label text="My portfolio" L={L} />
+        </FlexWidget>
+        <TextWidget text={data?.mood != null ? `Mood ${data.mood}` : data ? stamp(data.at) : ''} style={{ fontSize: 11, color: moodTone, fontFamily: WF.semi }} />
       </FlexWidget>
+
       {data ? (
         <FlexWidget style={{ flexDirection: 'column' }}>
-          <TextWidget text={data.hidden ? `Today ${pct(data.todayPct)}` : `Rs ${fmt(data.value)}`} style={{ fontSize: 24, fontWeight: 'bold', color: data.hidden ? (up ? '#4CC48A' : '#F08A79') : '#F2F0EA' }} />
           <TextWidget
-            text={data.hidden ? `All ${pct(data.pnlPct)} · amounts hidden (app lock on)` : `Today ${signed(data.today)} (${pct(data.todayPct)}) · All ${pct(data.pnlPct)}`}
-            style={{ fontSize: 12.5, color: data.hidden ? '#A3A39C' : up ? '#4CC48A' : '#F08A79' }}
+            text={data.hidden ? pct(data.todayPct) : `Rs ${fmt(data.value)}`}
+            style={{ fontSize: 26, color: data.hidden ? toneOf(L, data.today) : L.text, fontFamily: WF.mono, adjustsFontSizeToFit: true }}
+            maxLines={1}
           />
+          <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <FlexWidget style={{ backgroundColor: softOf(L, data.today), borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, marginRight: 8 }}>
+              <TextWidget text={data.hidden ? `Today ${pct(data.todayPct)}` : `${signed(data.today)}  ${pct(data.todayPct)}`} style={{ fontSize: 12, color: toneOf(L, data.today), fontFamily: WF.mono }} />
+            </FlexWidget>
+            <TextWidget text={`All ${pct(data.pnlPct)}`} style={{ fontSize: 12, color: L.muted, fontFamily: WF.mono }} />
+          </FlexWidget>
         </FlexWidget>
       ) : (
-        <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: '#C3CCD6' }} maxLines={2} />
+        <TextWidget text="Open Sahm once to show your portfolio here" style={{ fontSize: 13, color: L.text2, fontFamily: WF.semi }} maxLines={2} />
       )}
-      {data?.nextDividend ? <TextWidget text={`💸 ${data.nextDividend}`} style={{ fontSize: 12, color: '#C3CCD6' }} maxLines={1} /> : null}
-      <TextWidget text={data?.due ? `⏰ ${data.due}` : data ? `Updated ${time(data.at)}` : ' '} style={{ fontSize: 12, color: data?.due ? '#D9B762' : '#8C8D86' }} maxLines={1} />
+
+      <FlexWidget style={{ flexDirection: 'column', width: 'match_parent' }}>
+        <FlexWidget style={{ height: 1, width: 'match_parent', backgroundColor: L.line, marginBottom: 6 }} />
+        {data?.due ? (
+          <TextWidget text={data.due} style={{ fontSize: 12, color: L.gold, fontFamily: WF.semi }} maxLines={1} />
+        ) : data?.nextDividend ? (
+          <TextWidget text={`Next payout · ${data.nextDividend}`} style={{ fontSize: 12, color: L.text2, fontFamily: WF.semi }} maxLines={1} />
+        ) : (
+          <TextWidget text={data ? (data.hidden ? 'Amounts hidden: app lock is on' : `Updated ${stamp(data.at)}`) : ' '} style={{ fontSize: 11.5, color: L.muted, fontFamily: WF.semi }} maxLines={1} />
+        )}
+      </FlexWidget>
     </FlexWidget>
   );
 }

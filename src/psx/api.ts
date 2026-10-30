@@ -21,6 +21,7 @@ import {
 } from './parse';
 import { parsePayouts, Payout } from '../analysis/dividends';
 import type { BoardQuote, Candle, Constituent, CompanyInfo, IndexQuote, ScreenerRow, SeriesPoint, SymbolInfo } from './types';
+import { countDownload } from '../dataMeter';
 
 export const PSX_BASE = process.env.EXPO_PUBLIC_PSX_BASE || 'https://dps.psx.com.pk';
 const UA =
@@ -63,7 +64,9 @@ async function request(
     }
     const res = await fetch(PSX_BASE + path, { method: body ? 'POST' : 'GET', headers, body, signal: controller.signal });
     if (!res.ok) throw new PsxError(`PSX returned ${res.status} for ${path}`, res.status);
-    return await res.text();
+    const text = await res.text();
+    countDownload(text.length);
+    return text;
   } catch (e) {
     if (e instanceof PsxError) throw e;
     const aborted = (e as Error)?.name === 'AbortError';

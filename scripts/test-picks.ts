@@ -55,7 +55,7 @@ const st = statsOf(done, '2026-01-01');
 check('scorecard counts strong-market picks only', st.picks === 3 && st.bought === 2 && st.won === 1 && near(st.avgRet, ((sp.ret as number) - 0.06) / 2), st);
 check('weak-market picks are counted separately', statsOf(done, '2026-01-01', true).picks === 1);
 const txt = pickText(p);
-check('share text has zone, targets, stop and the tested record', /Buy zone: Rs 98.00 – 100.00/.test(txt) && /TP2: Rs 115.00/.test(txt) && /SL: Rs 94.00/.test(txt) && /Tested:/.test(txt), txt);
+check('share text has zone, targets, stop and the tested record', /Buy zone: Rs 98.00 – 100.00/.test(txt) && /TP2: Rs 115.00/.test(txt) && /Stop loss: Rs 94.00/.test(txt) && /Tested:/.test(txt), txt);
 const nd = [
   JSON.stringify({ event: 'open' }),
   JSON.stringify({ event: 'message', message: JSON.stringify({ v: 1, picks: [], generatedAt: '2026-01-05T12:00:00Z', day: '2026-01-05' }) }),

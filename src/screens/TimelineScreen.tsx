@@ -15,9 +15,10 @@ import { buildTimeline, type EventKind } from '../portfolio/timeline';
 import { monthName } from '../portfolio/monthly';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, T } from '../ui/kit';
+import { Empty, IconButton, T, ScreenHeader } from '../ui/kit';
+import { ToolIcon } from '../ui/ToolIcon';
 
-const ICON: Record<EventKind, string> = { buy: '🟢', sell: '🔴', dividend: '💸', bonus: '🎁', results: '📊', note: '📝', bigday: '⚡', start: '🚩' };
+const ICON: Record<EventKind, string> = { buy: 'dot', sell: 'dot', dividend: 'coins', bonus: 'gift', results: 'bars', note: 'pencil', bigday: 'bolt', start: 'flag' };
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TimelineScreen() {
@@ -53,13 +54,7 @@ export default function TimelineScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Timeline
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Timeline" />
       <ScrollView contentContainerStyle={styles.content}>
         {loaded && !holdings.length && !trades.length ? (
           <Empty title="Nothing yet" body="Your trades, dividends and notes appear here as they happen." />
@@ -83,7 +78,7 @@ export default function TimelineScreen() {
                       style={[styles.row, i < list.length - 1 && styles.border]}
                     >
                       <View style={{ width: 34, alignItems: 'center', gap: 2 }}>
-                        <T style={{ fontSize: 15 }}>{ICON[e.kind]}</T>
+                        <ToolIcon name={ICON[e.kind]} size={ICON[e.kind] === 'dot' ? 11 : 17} color={e.kind === 'buy' ? colors.up : e.kind === 'sell' ? colors.down : colors.gold} />
                         <T v="caption" style={{ fontSize: 10.5 }}>
                           {Number(e.day.slice(8, 10))} {MON[Number(e.day.slice(5, 7)) - 1]}
                         </T>

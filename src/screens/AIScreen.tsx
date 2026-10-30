@@ -28,6 +28,7 @@ import { ModelCard } from '../ui/ModelCard';
 import { shareToApp } from '../ai/share';
 import { Md } from '../ui/Md';
 import { Card, Icon, T } from '../ui/kit';
+import { IconLabel, ToolIcon } from '../ui/ToolIcon';
 
 const SUGGESTIONS = ['How is the market doing today?', 'Compare LUCK and DGKC', 'Shariah banks with the best dividend yield', 'Which cement stock looks cheapest?'];
 
@@ -225,7 +226,7 @@ export default function AIScreen() {
                       onPress={() => ask(sug, true)}
                       style={({ pressed }) => [styles.suggestion, { borderWidth: 1, borderColor: colors.goldSoft }, (!ready || pressed) && { opacity: 0.55 }]}
                     >
-                      <T style={{ fontSize: 15 }}>💼</T>
+                      <ToolIcon name="briefcase" size={17} color={colors.gold} />
                       <T v="body" style={{ fontSize: 14.5, flex: 1 }}>
                         {sug}
                       </T>
@@ -272,7 +273,7 @@ export default function AIScreen() {
                   ) : null}
                   {t.lab && t.status === 'done' ? (
                     <Pressable accessibilityRole="button" onPress={() => nav.navigate('LabResult', { id: t.lab! })} hitSlop={8}>
-                      <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🧪 Open this test in the lab ›</T>
+                      <IconLabel name="flask">Open this test in the lab ›</IconLabel>
                     </Pressable>
                   ) : null}
                   {t.prompt && (t.status === 'done' || t.status === 'error') ? (

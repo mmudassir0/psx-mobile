@@ -1,7 +1,8 @@
 /** One line icon per tool (replacing the emoji, whose styles never matched): 24-unit strokes, the colour of the text around them. */
 import React from 'react';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { colors } from '../theme';
+import { StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { colors, fonts } from '../theme';
 
 /** each glyph: path data, or "c cx cy r" for a circle */
 const G: Record<string, string[]> = {
@@ -55,13 +56,34 @@ const G: Record<string, string[]> = {
   calculator: ['M6 3h12v18H6z', 'M9 7h6', 'M9 12h.01', 'M12 12h.01', 'M15 12h.01', 'M9 16h.01', 'M12 16h.01', 'M15 16h.01'],
   download: ['M12 4v11', 'M8 11l4 4 4-4', 'M4 19h16'],
   cloudOff: ['M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.3 1.5A3.3 3.3 0 0 0 7 18z', 'M3 3l18 18'],
+  bank: ['M3 9l9-5 9 5', 'M5 9v9', 'M10 9v9', 'M14 9v9', 'M19 9v9', 'M3 20h18'],
+  warn: ['M12 3.5 2.5 20h19z', 'M12 10v4.5', 'M12 17.2h.01'],
+  clock: ['c 12 12 9', 'M12 7v5l3 2'],
+  mic: ['M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z', 'M5.5 11a6.5 6.5 0 0 0 13 0', 'M12 17.5V21'],
+  camera: ['M4 7h4l1.5-2h5L16 7h4v12H4z', 'c 12 13 3.5'],
+  pin: ['M9 3h6', 'M10 3v6l-3 4h10l-3-4V3', 'M12 13v8'],
+  image: ['M4 5h16v14H4z', 'c 9 10 1.6', 'M4 17l5-5 4 4 3-3 4 4'],
+  gift: ['M4 10h16v3H4z', 'M5 13h14v8H5z', 'M12 10v11', 'M12 10C9 10 7 8 8.5 6.5S12 7 12 10', 'M12 10c3 0 5-2 3.5-3.5S12 7 12 10'],
+  bolt: ['M13 2 4 14h7l-1 8 9-12h-7z'],
+  user: ['c 12 8 4', 'M4 21a8 8 0 0 1 16 0'],
+  check: ['M5 12.5l4.5 4.5L19 7'],
+  checkCircle: ['c 12 12 9', 'M8 12.5l3 3 5-6'],
+  calendarX: ['M4 5h16v15H4z', 'M4 10h16', 'M9 3v4', 'M15 3v4', 'M10 13l4 4', 'M14 13l-4 4'],
+  dot: ['c 12 12 4.2'],
+  menu: ['M4 7h16', 'M4 12h16', 'M4 17h16'],
+  sprout: ['M12 21v-9', 'M12 12C12 7 8.5 5 4 5c0 4.5 3 7 8 7z', 'M12 14c0-4 3-6.5 8-6.5 0 4-3 6.5-8 6.5z'],
+  pulse: ['M3 12h4l2.5-6 5 12 2.5-6h4'],
   gear: ['c 12 12 3', 'M12 2.5v3', 'M12 18.5v3', 'M2.5 12h3', 'M18.5 12h3', 'M5.3 5.3l2.1 2.1', 'M16.6 16.6l2.1 2.1', 'M5.3 18.7l2.1-2.1', 'M16.6 7.4l2.1-2.1'],
 };
 
 /** tool key → glyph; anything new falls back to its group's */
 const BY_KEY: Record<string, string> = {
   home: 'home',
-  starter: 'coins',
+  starter: 'sprout',
+  insights: 'pulse',
+  results: 'doc',
+  divpayments: 'checkCircle',
+  economy: 'bank',
   portfolio: 'briefcase',
   plan: 'target',
   timeline: 'list',
@@ -112,6 +134,9 @@ const BY_KEY: Record<string, string> = {
   settings: 'gear',
   find: 'search',
 };
+/** market event kind → glyph (Coming up, Today, the timeline) */
+export const EVENT_GLYPH: Record<string, string> = { rates: 'bank', results: 'bars', exdate: 'coins', bookclosure: 'book', rights: 'receipt', holiday: 'calendarX' };
+
 const BY_GROUP: Record<string, string> = { 'My money': 'briefcase', Market: 'line', Ideas: 'bulb', App: 'gear' };
 
 export function toolGlyph(key: string, group?: string): string {
@@ -126,10 +151,21 @@ export function ToolIcon({ name, size = 22, color }: { name: string; size?: numb
       {parts.map((d, i) => {
         if (d.startsWith('c ')) {
           const [cx, cy, r] = d.slice(2).split(' ').map(Number);
-          return <Circle key={i} cx={cx} cy={cy} r={r} stroke={c} strokeWidth={1.7} fill={r < 1.5 ? c : 'none'} />;
+          return <Circle key={i} cx={cx} cy={cy} r={r} stroke={c} strokeWidth={1.7} fill={r < 1.5 || name === 'dot' ? c : 'none'} />;
         }
         return <Path key={i} d={d} stroke={c} strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" />;
       })}
     </Svg>
+  );
+}
+
+/** A line icon in front of a short label: the replacement for "📷 Fill from…" style text links. */
+export function IconLabel({ name, children, color, size = 16, style, textStyle }: { name: string; children: React.ReactNode; color?: string; size?: number; style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle> }) {
+  const c = color ?? colors.gold;
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 6 }, style]}>
+      <ToolIcon name={name} size={size} color={c} />
+      <Text style={[{ fontFamily: fonts.semibold, fontSize: 13.5, color: c, flexShrink: 1 }, textStyle]}>{children}</Text>
+    </View>
   );
 }

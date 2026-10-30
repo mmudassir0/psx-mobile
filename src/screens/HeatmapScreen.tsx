@@ -10,7 +10,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { shortSector } from '../sectors';
 import { nested } from '../analysis/treemap';
 import type { Stock } from '../psx/types';
-import { IconButton, Segmented, T } from '../ui/kit';
+import { IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 import { Sunburst } from '../ui/Sunburst';
 import { makePref } from '../prefs';
 
@@ -86,13 +86,7 @@ export default function HeatmapScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Market map
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Market map" />
       <ScrollView contentContainerStyle={styles.content}>
         <MarketStatus />
         <Segmented

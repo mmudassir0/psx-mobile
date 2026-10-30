@@ -7,7 +7,7 @@ import { colors, fonts, space, themed } from '../theme';
 import { holdingsText, setHoldings, useHoldings } from '../portfolio/holdings';
 import { parseHoldings } from '../portfolio/review';
 import { useMarket } from '../store/market';
-import { Button, IconButton, T } from '../ui/kit';
+import { Button, IconButton, T, ScreenHeader } from '../ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { readScreenshots } from '../portfolio/screenshot';
 import { aiKeys } from '../store/ai';
@@ -65,13 +65,7 @@ export default function EditHoldingsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          My holdings
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="My holdings" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <T v="caption" style={{ lineHeight: 18 }}>
           One holding per line: symbol, number of shares, average buy price. For example "LUCK 200 419.11". Or pick screenshots of your broker's portfolio screen and the AI fills them in (the images go to Groq or Gemini

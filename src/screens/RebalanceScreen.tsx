@@ -13,7 +13,7 @@ import { normalise, rebalance, targetsPref } from '../portfolio/rebalance';
 import { boughtPref, taxStatusPref } from '../portfolio/prefs';
 import { heldSince2023, saleTax } from '../portfolio/tax';
 import { Panel } from '../ui/bits';
-import { Button, Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(Math.abs(v), 0)}`;
 const pc = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -88,13 +88,7 @@ export default function RebalanceScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Rebalance
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Rebalance" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings first, then set how much of your money each should be." />

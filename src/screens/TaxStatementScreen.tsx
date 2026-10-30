@@ -19,7 +19,7 @@ import { pkToday } from '../journal/store';
 import { snapshotLookup, statementHtml, taxStatement } from '../portfolio/taxStatement';
 import { logProblem } from '../log';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(v, 0)}`;
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
@@ -72,13 +72,7 @@ export default function TaxStatementScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Tax statement
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Tax statement" />
       <ScrollView contentContainerStyle={styles.content}>
         <Segmented
           options={[

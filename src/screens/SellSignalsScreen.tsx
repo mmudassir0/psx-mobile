@@ -12,7 +12,7 @@ import { targetsPref } from '../portfolio/targets';
 import { sellSignals, type Signal } from '../portfolio/sellSignals';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const DOT: Record<Signal['kind'], () => string> = {
   rethink: () => colors.down,
@@ -56,13 +56,7 @@ export default function SellSignalsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Warning signs
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Warning signs" />
       <ScrollView contentContainerStyle={styles.content}>
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to see which ones need a second look." />

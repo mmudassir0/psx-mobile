@@ -18,7 +18,7 @@ import { upcomingPayout } from '../analysis/dividends';
 import { BENCH_LABEL, benchmarkPref } from '../portfolio/prefs';
 import { Panel } from '../ui/bits';
 import { GoalCard } from '../ui/GoalCard';
-import { Button, Empty, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, Empty, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const pc = (v: number | null) => (v == null ? '–' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
@@ -59,13 +59,7 @@ export default function SummaryScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Monthly summary
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Monthly summary" />
       <ScrollView contentContainerStyle={styles.content}>
         {hasPrev ? (
           <Segmented

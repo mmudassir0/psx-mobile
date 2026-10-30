@@ -16,7 +16,7 @@ import { dividendTaxRate, payerKind } from '../analysis/dividends';
 import { LATE_DAYS, owedPayments, owedSummary, receivedPref, tick, untick, type Owed } from '../portfolio/divPayments';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Section, T } from '../ui/kit';
+import { Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 
 const rs = (v: number) => `Rs ${fmtNum(Math.round(v), 0)}`;
 const dayT = (d: string) => Date.parse(d + 'T12:00:00Z');
@@ -122,13 +122,7 @@ export default function DivPaymentsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Dividend payments
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Dividend payments" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loaded && !holdings.length ? (
           <Empty title="No holdings yet" body="Add your holdings to track the dividends paid to you." />

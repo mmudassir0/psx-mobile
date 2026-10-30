@@ -47,6 +47,7 @@ import { load as loadPref, save as savePref } from '../storage';
 import { analyze, computeSeries } from '../analysis/signals';
 import { Backtest, backtest } from '../analysis/backtest';
 import { valueStock } from '../analysis/valuation';
+import { IconLabel } from '../ui/ToolIcon';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -524,7 +525,7 @@ export default function StockScreen() {
                 onPress={() => setLinesOpen((v) => !v)}
                 style={[styles.extra, (linesOpen || !!myLines?.levels.length || !!myLines?.trends.length) && styles.extraOn]}
               >
-                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>✏️ My lines</T>
+                <T style={{ fontFamily: fonts.bold, fontSize: 12.5, color: linesOpen || myLines?.levels.length || myLines?.trends.length ? colors.text : colors.faint }}>My lines</T>
               </Pressable>
               {(() => {
                 const n = extras.filter((e) => MORE_EXTRAS.includes(e)).length;
@@ -715,7 +716,7 @@ export default function StockScreen() {
         <StockLabCard symbol={symbol} />
 
         <Pressable accessibilityRole="button" onPress={() => nav.navigate('StockCard', { symbol })} style={{ paddingHorizontal: space.gutter }}>
-          <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>🖼️ Share as a picture</T>
+          <IconLabel name="image">Share as a picture</IconLabel>
         </Pressable>
         {Platform.OS === 'android' ? (
           <Pressable
@@ -726,9 +727,7 @@ export default function StockScreen() {
             }}
             style={{ paddingHorizontal: space.gutter }}
           >
-            <T style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: colors.gold }}>
-              {pinned ? '📌 On the Sahm stock widget (long-press your home screen → Widgets → Sahm to add it)' : '📌 Show on the stock widget'}
-            </T>
+            <IconLabel name="pin">{pinned ? 'On the Sahm stock widget (long-press your home screen → Widgets → Sahm to add it)' : 'Show on the stock widget'}</IconLabel>
           </Pressable>
         ) : null}
 

@@ -10,7 +10,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, Segmented, T } from '../ui/kit';
+import { Empty, IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 
 type Period = 'r1w' | 'r1m' | 'r3m' | 'r6m';
 const LABEL: Record<Period, string> = { r1w: '1 week', r1m: '1 month', r3m: '3 months', r6m: '6 months' };
@@ -52,13 +52,7 @@ export default function SectorStrengthScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Sector strength
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Sector strength" />
       <ScrollView contentContainerStyle={styles.content}>
         {!market ? (
           loading ? (

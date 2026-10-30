@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { startPref } from '../startup';
 import { IntradayCard } from '../ui/IntradayCard';
+import { DataCard } from '../ui/DataCard';
 import { QuietCard } from '../ui/QuietCard';
 import { hideScreenPref } from '../screenGuard';
 import { OfflineCard } from '../ui/OfflineCard';
@@ -15,7 +16,7 @@ import { testKey } from '../ai/cloud';
 import { GEMINI_MODELS, testGeminiKey } from '../ai/gemini';
 import { useTheme } from '../store/theme';
 import { BUILD, updatesSupported, useUpdate, VERSION } from '../store/update';
-import { Button, IconButton, Section, Segmented, T } from '../ui/kit';
+import { Button, IconButton, Section, Segmented, T, ScreenHeader } from '../ui/kit';
 import { LAYOUTS, layoutPref } from '../nav/layout';
 import { FLAGS, flagsPref, isOn, type Flag } from '../flags';
 import { Panel } from '../ui/bits';
@@ -99,13 +100,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Settings
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Settings" />
       <ScrollView contentContainerStyle={styles.content}>
         <Section title="Layout">
           <Panel style={{ paddingVertical: 4 }}>
@@ -320,6 +315,10 @@ export default function SettingsScreen() {
 
         <Section title="Problem log">
           <ProblemLogCard />
+        </Section>
+
+        <Section title="Data">
+          <DataCard />
         </Section>
 
         <Section title="App">

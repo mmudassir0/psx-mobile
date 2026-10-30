@@ -59,6 +59,7 @@ import { NewsHomeCard } from '../ui/NewsHomeCard';
 import { WeeklyBriefCard } from '../ui/WeeklyBriefCard';
 import { AlertsHomeCard } from '../ui/AlertsHomeCard';
 import { useTrackSnapshot } from '../portfolio/track';
+import { autoIntraday } from '../portfolio/intraday';
 
 const HOME_INDICES = ['KSE100', 'KMI30', 'KSE30', 'ALLSHR'];
 /** Home cards that always draw something (the rest can come back empty) */
@@ -164,6 +165,10 @@ export default function HomeScreen() {
     ready,
   );
   const hasReal = holdingsLoaded && holdings.length > 0;
+  // background alerts switch on by themselves once there's something to watch and notifications are allowed
+  useEffect(() => {
+    if (holdingsLoaded) autoIntraday(holdings.length > 0).catch(() => {});
+  }, [holdingsLoaded, holdings.length]);
   const { data: mood } = useMood();
   const layout = layoutPref.use();
   const isTabs = layout === 'tabs';

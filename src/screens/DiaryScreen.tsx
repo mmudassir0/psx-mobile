@@ -19,7 +19,7 @@ import { fetchSeries } from '../psx/api';
 import type { SeriesPoint } from '../psx/types';
 import { Panel } from '../ui/bits';
 import { Skeleton } from '../ui/Skeleton';
-import { Empty, IconButton, T } from '../ui/kit';
+import { Empty, IconButton, T, ScreenHeader } from '../ui/kit';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pk = (t: number) => new Date(t + 5 * 3600_000).toISOString().slice(0, 10);
@@ -57,13 +57,7 @@ export default function DiaryScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Portfolio diary
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Portfolio diary" />
       <ScrollView contentContainerStyle={styles.content}>
         {!days ? (
           <Skeleton kind="rows" n={6} />

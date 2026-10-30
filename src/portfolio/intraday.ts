@@ -1,7 +1,9 @@
 /**
- * Alerts during market hours, in the background: about every 15 minutes while
- * PSX is open (Android decides the exact moment, and may wait longer to save
- * battery), Sahm checks the live prices against your lines and notifies you.
+ * Background alerts: about every 15 minutes while PSX is open (Android decides
+ * the exact moment, and may wait longer to save battery), Sahm checks live
+ * prices against your lines and for big moves in what you hold; once after the
+ * close it checks closes against your chart lines and sends the day's summary.
+ * Nothing is downloaded outside those times.
  */
 import { Platform } from 'react-native';
 import * as TaskManager from 'expo-task-manager';
@@ -9,16 +11,25 @@ import * as BackgroundTask from 'expo-background-task';
 import { makePref } from '../prefs';
 import { load, save } from '../storage';
 import { fetchBoard } from '../psx/api';
-import { isMarketOpen } from '../market-hours';
+import { isMarketOpen, lastSessionEnd } from '../market-hours';
 import { notifyNow } from '../notify';
 import { priceLine } from '../analysis/watch';
 import { chartLinesPref, watchRulesPref } from './prefs';
 import { targetsPref } from './targets';
-import { intradayHits, type PriceLine } from './intradayCore';
+import { bigMoveHits, daySummary, intradayHits, type PriceLine } from './intradayCore';
+import { getHoldings } from './holdings';
+import type { BoardQuote } from '../psx/types';
 import { logProblem } from '../log';
 
 export const INTRADAY_TASK = 'sahm-intraday-alerts';
 export const intradayPref = makePref<boolean>('ui.intradayAlerts', false);
+/** set once Sahm has switched background alerts on by itself (or you chose), so it never does again */
+export const intradayChosenPref = makePref<boolean>('ui.intradayChosen', false);
+/** a holding moving this much (percent) in a day is worth a notification; 0 turns it off */
+export const bigMovePref = makePref<number>('ui.bigMoveAlert', 5);
+/** after the close: one line on what your holdings did today */
+export const daySummaryPref = makePref<boolean>('ui.daySummary', true);
+const EVENING_KEY = 'intraday.evening';
 const LAST_KEY = 'intraday.last';
 const SENT_KEY = 'intraday.sent';
 const pkDay = () => new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
@@ -39,11 +50,11 @@ export async function linesToWatch(): Promise<PriceLine[]> {
 }
 
 /** One check; returns how many alerts went out. */
-export async function checkIntraday(force = false): Promise<number> {
+export async function checkIntraday(force = false, given?: BoardQuote[]): Promise<number> {
   if (!force && !isMarketOpen()) return 0;
   const lines = await linesToWatch();
   if (!lines.length) return 0;
-  const board = await fetchBoard();
+  const board = given ?? (await fetchBoard());
   const want = new Set(lines.map((l) => l.symbol));
   const now: Record<string, number> = {};
   for (const b of board) if (want.has(b.symbol) && b.price) now[b.symbol] = b.price;
@@ -61,12 +72,51 @@ export async function checkIntraday(force = false): Promise<number> {
   return hits.length;
 }
 
+/** Holdings moving more than your threshold today. */
+export async function checkBigMoves(board: BoardQuote[]): Promise<number> {
+  const threshold = await bigMovePref.get();
+  const held = (await getHoldings()).map((h) => h.symbol);
+  if (!(threshold > 0) || !held.length) return 0;
+  const day = pkDay();
+  const sent = new Set(await load<string[]>(SENT_KEY, []));
+  const hits = bigMoveHits(held, board, threshold, sent, day);
+  if (!hits.length) return 0;
+  for (const h of hits) sent.add(h.key);
+  await save(SENT_KEY, [...sent].filter((k) => k.startsWith(day)).slice(-200));
+  await notifyNow(hits.length === 1 ? `${hits[0].symbol}: a big move` : `${hits.length} of your holdings moved a lot`, hits.map((h) => h.text).join('\n'), hits.length === 1 ? `sahm://stock/${hits[0].symbol}` : 'sahm://portfolio');
+  return hits.length;
+}
+
+/** Once per session, after the close: closes across your chart lines, and the day's summary. */
+export async function checkEvening(now = Date.now()): Promise<void> {
+  const end = lastSessionEnd(now);
+  // only on the evening of the session (not days later), and once
+  if (now - end > 8 * 3600_000 || (await load<number>(EVENING_KEY, 0)) >= end) return;
+  await save(EVENING_KEY, end);
+  const { checkLineAlerts } = await import('./useLineAlerts');
+  await checkLineAlerts().catch((e) => logProblem('evening line alerts', e));
+  if (!(await daySummaryPref.get())) return;
+  const holdings = await getHoldings();
+  if (!holdings.length) return;
+  const s = daySummary(holdings, await fetchBoard());
+  if (s) await notifyNow(s.title, s.body, 'sahm://portfolio');
+}
+
+/** What the background task does each time Android wakes it. */
+export async function checkBackground(): Promise<void> {
+  if (isMarketOpen()) {
+    const board = await fetchBoard();
+    await checkIntraday(false, board);
+    await checkBigMoves(board);
+  } else await checkEvening();
+}
+
 /** Called from index.ts at startup, before anything else, so Android can wake the task. */
 export function defineIntradayTask() {
   if (Platform.OS !== 'android') return;
   TaskManager.defineTask(INTRADAY_TASK, async () => {
     try {
-      await checkIntraday();
+      await checkBackground();
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch (e) {
       logProblem('intraday alerts', e);
@@ -84,9 +134,23 @@ export async function setIntraday(on: boolean): Promise<string | null> {
       await BackgroundTask.registerTaskAsync(INTRADAY_TASK, { minimumInterval: 15 });
     } else if (await TaskManager.isTaskRegisteredAsync(INTRADAY_TASK)) await BackgroundTask.unregisterTaskAsync(INTRADAY_TASK);
     await intradayPref.set(on);
+    await intradayChosenPref.set(true);
     return null;
   } catch (e) {
     logProblem('intraday alerts', e);
     return (e as Error).message;
   }
+}
+
+/**
+ * Background alerts come on by themselves the first time there's something to watch (holdings or
+ * alert lines) and notifications are already allowed; after that it's your switch. Never asks for
+ * permission here: that happens when you set an alert.
+ */
+export async function autoIntraday(hasSomething: boolean): Promise<void> {
+  if (Platform.OS !== 'android' || !hasSomething) return;
+  if ((await intradayChosenPref.get()) || (await intradayPref.get())) return;
+  const { ensureReady } = await import('../notify');
+  if (!(await ensureReady(false))) return;
+  await setIntraday(true);
 }

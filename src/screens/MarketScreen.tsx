@@ -24,6 +24,7 @@ import { MarketStatus } from './HomeScreen';
 import { FILTERS, FilterId, passes, screenLine, SortId, SORTS, screen } from '../analysis/screener';
 import { balanceSheetFor } from '../analysis/ratios';
 import { deleteScreen, markSeen, newSince, sameSettings, savedScreensPref, saveScreen, suggestName, type SavedScreen, type ScreenSettings } from '../analysis/savedScreens';
+import { IconLabel } from '../ui/ToolIcon';
 
 type Mode = 'gainers' | 'losers' | 'active' | 'all' | 'watch';
 const MODES: { key: Mode; label: string }[] = [
@@ -31,7 +32,7 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'losers', label: 'Top losers' },
   { key: 'active', label: 'Most active' },
   { key: 'all', label: 'All stocks' },
-  { key: 'watch', label: '★ Watchlist' },
+  { key: 'watch', label: 'Watchlist' },
 ];
 
 interface SectorTile {
@@ -486,7 +487,7 @@ export default function MarketScreen() {
                 {mode === 'watch' && list.length >= 2 ? (
                   pickCmp == null ? (
                     <Pressable accessibilityRole="button" onPress={() => setPickCmp([])} style={{ alignSelf: 'flex-start' }}>
-                      <T style={{ fontFamily: fonts.semibold, fontSize: 13, color: colors.gold }}>⚖️ Compare some of these</T>
+                      <IconLabel name="scale">Compare some of these</IconLabel>
                     </Pressable>
                   ) : (
                     <View style={{ gap: 8 }}>
@@ -691,7 +692,7 @@ export default function MarketScreen() {
                         sub={
                           [
                             fresh.has(s.symbol) ? 'New here' : null,
-                            mode === 'watch' && notes[s.symbol]?.why ? `📝 ${notes[s.symbol].why.slice(0, 60)}${notes[s.symbol].why.length > 60 ? '…' : ''}` : null,
+                            mode === 'watch' && notes[s.symbol]?.why ? `Note: ${notes[s.symbol].why.slice(0, 60)}${notes[s.symbol].why.length > 60 ? '…' : ''}` : null,
                             mode === 'watch' && watchSort === 'yield' && s.divYield != null ? `yield ${s.divYield.toFixed(1)}%` : null,
                             mode === 'watch' && watchSort === 'pe' && s.pe ? `P/E ${s.pe.toFixed(1)}` : null,
                             mode === 'active' ? volumeLabel(s) : filters.length || (mode === 'all' && sort !== 'cap') ? screenLine(s, balanceSheetFor(s.symbol)) || null : null,

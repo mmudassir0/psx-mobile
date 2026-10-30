@@ -235,10 +235,10 @@ export function pickText(p: Pick): string {
   return [
     `*${p.symbol}* (${SETUP_NAMES[p.setup]})${p.weak ? ' — watch only, weak market' : ''}`,
     `Close: Rs ${f(p.close)}`,
-    `🟢 Buy zone: Rs ${f(L.entryLow)} – ${f(L.entryHigh)}`,
-    `🎯 TP1: Rs ${f(L.tp1)}`,
-    `🎯 TP2: Rs ${f(L.tp2)}`,
-    `🛑 SL: Rs ${f(L.stop)}`,
+    `Buy zone: Rs ${f(L.entryLow)} – ${f(L.entryHigh)}`,
+    `TP1: Rs ${f(L.tp1)}`,
+    `TP2: Rs ${f(L.tp2)}`,
+    `Stop loss: Rs ${f(L.stop)}`,
     `Swing, up to ${RULES.hold} trading days. Sahm score ${p.score.toFixed(1)}/10.`,
     t ? `Tested: won ${(t.p2.won * 100).toFixed(0)}% of trades in ${TESTED_PERIODS.p2} (avg ${(t.p2.avg * 100).toFixed(1)}%), ${(t.p1.won * 100).toFixed(0)}% in ${TESTED_PERIODS.p1} (avg ${(t.p1.avg * 100).toFixed(1)}%). Not advice.` : 'Not advice.',
   ].join('\n');

@@ -11,7 +11,7 @@ import { useMarket } from '../store/market';
 import { useReviews } from '../portfolio/useReviews';
 import { LESSONS, type LearnProgress, type LessonCtx } from '../learn/lessons';
 import { Panel } from '../ui/bits';
-import { Button, IconButton, T } from '../ui/kit';
+import { Button, IconButton, T, ScreenHeader } from '../ui/kit';
 
 export const learnPref = makePref<LearnProgress>('user.learn', { done: [], right: [] });
 
@@ -56,23 +56,15 @@ export default function LearnScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton
-          name="back"
-          label="Back"
-          filled={false}
-          onPress={() => {
-            if (open != null) {
-              setOpen(null);
-              setPicked(null);
-            } else nav.goBack();
-          }}
-        />
-        <T v="title" style={{ fontSize: 16 }}>
-          {lesson ? `Lesson ${open! + 1} of ${LESSONS.length}` : 'Learn PSX'}
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader
+        title={lesson ? `Lesson ${open! + 1} of ${LESSONS.length}` : 'Learn PSX'}
+        onBack={() => {
+          if (open != null) {
+            setOpen(null);
+            setPicked(null);
+          } else nav.goBack();
+        }}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         {!lesson ? (
           <>

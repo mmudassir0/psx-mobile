@@ -17,7 +17,7 @@ import { SectorsCard } from '../ui/SectorsCard';
 import { ticksToCandles } from '../psx/parse';
 import type { Candle, Constituent, SeriesPoint } from '../psx/types';
 import { useMarket } from '../store/market';
-import { Change, Empty, IconButton, Section, T } from '../ui/kit';
+import { Change, Empty, IconButton, Section, T, ScreenHeader } from '../ui/kit';
 import { SkiaChart, ChartMode, ChartUnit } from '../ui/SkiaChart';
 
 type Range = '1D' | '1M' | '3M' | '1Y' | '5Y';
@@ -231,13 +231,7 @@ export default function IndexScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          {INDEX_NAMES[code] ?? code}
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title={INDEX_NAMES[code] ?? code} />
       <ScrollView
         contentContainerStyle={styles.content}
         scrollEnabled={!scrubbing}

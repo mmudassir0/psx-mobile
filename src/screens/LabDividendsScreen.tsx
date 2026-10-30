@@ -9,7 +9,7 @@ import { divCalendar } from '../lab/divCalendar';
 import { useHoldings } from '../portfolio/holdings';
 import { useUser } from '../store/user';
 import { Panel } from '../ui/bits';
-import { Empty, IconButton, Loading, T } from '../ui/kit';
+import { Empty, IconButton, Loading, T, ScreenHeader } from '../ui/kit';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -26,13 +26,7 @@ export default function LabDividendsScreen() {
   const list = (cal?.[month] ?? []).filter((x) => !shariah || x.shariah);
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          Who pays when
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Who pays when" />
       <ScrollView contentContainerStyle={styles.content}>
         <T v="body" style={{ fontSize: 14, color: colors.text2, lineHeight: 20 }}>
           The stocks that usually go ex-dividend in each month, from ten years of PSX dividend notices. Buy before the ex-date to get the payment; the price usually drops by about the dividend that day.

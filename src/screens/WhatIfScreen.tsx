@@ -15,7 +15,7 @@ import { dividends, dividendTaxRate, payerKind } from '../analysis/dividends';
 import { whatIf, type WhatIfDividend } from '../analysis/whatif';
 import { taxStatusPref } from '../portfolio/prefs';
 import { Panel } from '../ui/bits';
-import { IconButton, Segmented, T } from '../ui/kit';
+import { IconButton, Segmented, T, ScreenHeader } from '../ui/kit';
 
 const INDEXES = ['KSE100', 'KMI30'];
 const LABEL: Record<string, string> = { KSE100: 'KSE-100', KMI30: 'KMI-30' };
@@ -93,13 +93,7 @@ export default function WhatIfScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          What if
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="What if" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {[...INDEXES, ...(INDEXES.includes(symbol) ? [] : [symbol])].map((s) => (

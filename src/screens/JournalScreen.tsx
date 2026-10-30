@@ -11,7 +11,8 @@ import { useHoldings } from '../portfolio/holdings';
 import { useMarket } from '../store/market';
 import { searchJournal, type Hit, type JournalNote } from '../portfolio/journal';
 import { Panel } from '../ui/bits';
-import { Empty, Icon, IconButton, T } from '../ui/kit';
+import { Empty, Icon, IconButton, T, ScreenHeader } from '../ui/kit';
+import { ToolIcon } from '../ui/ToolIcon';
 
 const day = (d: string) => fmtDay(Date.parse(d + 'T12:00:00Z'));
 
@@ -35,13 +36,7 @@ export default function JournalScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.topbar}>
-        <IconButton name="back" label="Back" filled={false} onPress={() => nav.goBack()} />
-        <T v="title" style={{ fontSize: 16 }}>
-          My journal
-        </T>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="My journal" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {empty ? (
           <Empty title="Nothing written yet" body="Write a note on a stock (on its page, or under a holding) and record trades with 'Bought or sold'. Then you can search them here." />
@@ -78,7 +73,9 @@ export default function JournalScreen() {
               <Panel style={{ paddingVertical: 4 }}>
                 {shown.slice(0, 80).map((h, i, all) => (
                   <Pressable key={`${h.kind}${h.symbol}${h.day}${i}`} accessibilityRole="button" onPress={() => nav.navigate('Stock', { symbol: h.symbol })} style={[styles.row, i < all.length - 1 && styles.border]}>
-                    <T style={{ fontSize: 15, width: 24 }}>{h.kind === 'note' ? '📝' : h.trade.side === 'buy' ? '🟢' : '🔴'}</T>
+                    <View style={{ width: 24, alignItems: 'center' }}>
+                      {h.kind === 'note' ? <ToolIcon name="pencil" size={17} color={colors.gold} /> : <ToolIcon name="dot" size={12} color={h.trade.side === 'buy' ? colors.up : colors.down} />}
+                    </View>
                     <View style={{ flex: 1, gap: 3 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
                         <T style={{ fontFamily: fonts.bold, fontSize: 14, flex: 1 }}>
