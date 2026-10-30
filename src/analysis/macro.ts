@@ -37,6 +37,8 @@ export interface MacroFeed {
   history: MacroRow[];
   /** PBS's monthly series: [YYYY-MM, year-on-year %, month-on-month %] */
   inflation?: [string, number, number | null][];
+  /** the SBP's rate decisions: [YYYY-MM-DD it took effect, %] */
+  policyHistory?: [string, number][];
 }
 
 export const isMacroFeed = (x: unknown): x is MacroFeed => {
@@ -155,4 +157,28 @@ export function parsePbsInflation(html: string): [string, number, number | null]
     if (m && Number.isFinite(yoy[k])) out.push([m, yoy[k], mom && Number.isFinite(mom[k]) ? mom[k] : null]);
   });
   return out;
+}
+
+const MON3 = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * The SBP's history of rate decisions (its "Reverse Repo, Repo and Policy (Target) Rates" PDF, as
+ * text): one [YYYY-MM-DD, rate] per decision. Since May 2015 that's the policy (target) rate, the
+ * third column; before it, the reverse repo rate (then the policy rate), the first.
+ */
+export function parsePolicyHistory(text: string): [string, number][] {
+  const out: [string, number][] = [];
+  for (const line of text.split('\n')) {
+    const m = line.match(/^\s*(\d{1,2})-([A-Za-z]{3})-(\d{2})\s+(.*)$/);
+    if (!m) continue;
+    const mi = MON3.indexOf(m[2].toLowerCase());
+    if (mi < 0) continue;
+    const rates = [...m[4].matchAll(/(\d+(?:\.\d+)?)%/g)].map((x) => Number(x[1]));
+    if (!rates.length) continue;
+    const yy = Number(m[3]);
+    const day = `${yy >= 90 ? 1900 + yy : 2000 + yy}-${String(mi + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    const rate = rates.length >= 3 ? rates[2] : rates[0];
+    if (rate > 0 && rate < 40) out.push([day, rate]);
+  }
+  return out.sort((a, b) => a[0].localeCompare(b[0]));
 }

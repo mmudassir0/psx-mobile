@@ -46,6 +46,7 @@ export function SavingsCard() {
   const scale = Math.max(0.01, ...rows.map((r) => Math.abs(r.v)));
   const beatBills = c.mine > c.tbill;
   const notes = [
+    c.policyUntil ? `Before ${nice(c.policyUntil)} the SBP policy rate stands in for the T-bill yield (12-month bills usually yield within about a point of it).` : null,
     c.tbillAssumedFrom ? `T-bill yields before ${nice(c.tbillAssumedFrom)} are taken as that day's.` : null,
     c.inflationAssumedFrom ? `Inflation from ${MON[Number(c.inflationAssumedFrom.slice(5, 7)) - 1]} on is taken at the latest month's rate until PBS publishes it.` : null,
   ].filter(Boolean);

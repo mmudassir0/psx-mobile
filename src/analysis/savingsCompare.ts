@@ -18,6 +18,8 @@ export interface SavingsCompare {
   usd: number | null;
   /** T-bill yields before the first saved one were taken as that first one */
   tbillAssumedFrom: string | null;
+  /** before the saved T-bill yields began (this day), the SBP policy rate stood in for them */
+  policyUntil: string | null;
   /** months past the latest inflation figure were taken at the latest month's rate */
   inflationAssumedFrom: string | null;
 }
@@ -26,20 +28,29 @@ const dayMs = 864e5;
 const t = (d: string) => Date.parse(d + 'T12:00:00Z');
 const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-export function compareSavings(from: string, to: string, mine: number, macro: Pick<MacroFeed, 'history' | 'inflation' | 'now'>): SavingsCompare | null {
+export function compareSavings(from: string, to: string, mine: number, macro: Pick<MacroFeed, 'history' | 'inflation' | 'now' | 'policyHistory'>): SavingsCompare | null {
   const days = Math.round((t(to) - t(from)) / dayMs);
   if (!(days >= 1)) return null;
   // T-bills: each day earns that day's 12-month yield, simple interest as a 12-month bill pays it
   const hist = macro.history.filter((r) => r[3] != null).sort((a, b) => a[0].localeCompare(b[0]));
   const fallback = hist[0]?.[3] ?? macro.now.tbills.m12;
   if (fallback == null) return null;
+  // before the first saved yield, the SBP's policy rate (12-month bills usually yield within about a point of it)
+  const pol = [...(macro.policyHistory ?? [])].sort((a, b) => a[0].localeCompare(b[0]));
+  const firstHist = hist[0]?.[0] ?? null;
   let k = 0;
+  let j = 0;
   let y = fallback;
+  let p: number | null = null;
+  let usedPolicy = false;
   let g = 1;
   for (let d = t(from) + dayMs; d <= t(to); d += dayMs) {
     const day = iso(d);
     while (k < hist.length && hist[k][0] <= day) y = hist[k++][3]!;
-    g += y / 100 / 365;
+    while (j < pol.length && pol[j][0] <= day) p = pol[j++][1];
+    const before = !firstHist || day < firstHist;
+    const rate = before && p != null ? ((usedPolicy = true), p) : y;
+    g += rate / 100 / 365;
   }
   const tbill = g - 1;
   // inflation: each month's month-on-month rise, spread evenly over its days
@@ -75,7 +86,8 @@ export function compareSavings(from: string, to: string, mine: number, macro: Pi
     inflation,
     real: (1 + mine) / (1 + inflation) - 1,
     usd: u0 && u1 ? u1 / u0 - 1 : null,
-    tbillAssumedFrom: hist.length && hist[0][0] > from ? hist[0][0] : hist.length ? null : from,
+    tbillAssumedFrom: usedPolicy ? null : hist.length && hist[0][0] > from ? hist[0][0] : hist.length ? null : from,
+    policyUntil: usedPolicy ? (firstHist ?? to) : null,
     inflationAssumedFrom: infAssumed,
   };
 }
