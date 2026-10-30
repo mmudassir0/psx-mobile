@@ -29,6 +29,9 @@ export const intradayChosenPref = makePref<boolean>('ui.intradayChosen', false);
 export const bigMovePref = makePref<number>('ui.bigMoveAlert', 5);
 /** after the close: one line on what your holdings did today */
 export const daySummaryPref = makePref<boolean>('ui.daySummary', true);
+/** after the close: new stocks matching your saved Market screens */
+export const screenAlertsPref = makePref<boolean>('ui.screenAlerts', true);
+const SCREEN_ALERTED_KEY = 'intraday.screenAlerted';
 const EVENING_KEY = 'intraday.evening';
 const LAST_KEY = 'intraday.last';
 const SENT_KEY = 'intraday.sent';
@@ -95,11 +98,38 @@ export async function checkEvening(now = Date.now()): Promise<void> {
   await save(EVENING_KEY, end);
   const { checkLineAlerts } = await import('./useLineAlerts');
   await checkLineAlerts().catch((e) => logProblem('evening line alerts', e));
-  if (!(await daySummaryPref.get())) return;
-  const holdings = await getHoldings();
-  if (!holdings.length) return;
-  const s = daySummary(holdings, await fetchBoard());
-  if (s) await notifyNow(s.title, s.body, 'sahm://portfolio');
+  let board: BoardQuote[] | null = null;
+  const boardNow = async () => (board ??= await fetchBoard());
+  if (await daySummaryPref.get()) {
+    const holdings = await getHoldings();
+    if (holdings.length) {
+      const s = daySummary(holdings, await boardNow());
+      if (s) await notifyNow(s.title, s.body, 'sahm://portfolio');
+    }
+  }
+  if (await screenAlertsPref.get()) await checkSavedScreens(boardNow).catch((e) => logProblem('evening screen alerts', e));
+}
+
+/** New stocks in your saved Market screens, with the closing prices. */
+async function checkSavedScreens(boardNow: () => Promise<BoardQuote[]>): Promise<void> {
+  const { savedScreensPref, screenAlertHits, screenMatches } = await import('../analysis/savedScreens');
+  const saved = await savedScreensPref.get();
+  if (!saved.some((x) => x.mode === 'all' && x.seenAt)) return;
+  const { fetchScreener } = await import('../psx/api');
+  const { mergeStocks } = await import('../psx/merge');
+  const { balanceSheetFor } = await import('../analysis/ratios');
+  const { loadCached, saveCached } = await import('../storage');
+  const [symbols, screener, brd] = await Promise.all([loadCached<import('../psx/types').SymbolInfo[]>('psx.symbols'), fetchScreener(), boardNow()]);
+  // keep them for the app too: it opens on the closing figures without downloading them again
+  await saveCached('psx.screener', screener);
+  await saveCached('psx.board', brd);
+  const stocks = mergeStocks(symbols?.data ?? [], screener, brd);
+  const { hits, alerted } = screenAlertHits(saved, (sc) => screenMatches(sc, stocks, balanceSheetFor), await load<Record<string, string[]>>(SCREEN_ALERTED_KEY, {}));
+  await save(SCREEN_ALERTED_KEY, alerted);
+  if (!hits.length) return;
+  const lines = hits.map((h) => `${h.name}: ${h.symbols.slice(0, 6).join(', ')}${h.symbols.length > 6 ? ` and ${h.symbols.length - 6} more` : ''}`);
+  const n = hits.reduce((a, h) => a + h.symbols.length, 0);
+  await notifyNow(n === 1 ? `New in "${hits[0].name}": ${hits[0].symbols[0]}` : `${n} new stocks in your saved screens`, lines.join('\n'), 'sahm://market');
 }
 
 /** What the background task does each time Android wakes it. */

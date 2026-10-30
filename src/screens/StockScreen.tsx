@@ -48,6 +48,7 @@ import { analyze, computeSeries } from '../analysis/signals';
 import { Backtest, backtest } from '../analysis/backtest';
 import { valueStock } from '../analysis/valuation';
 import { IconLabel } from '../ui/ToolIcon';
+import { WhyMovedCard } from '../ui/WhyMovedCard';
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'Max';
 const RANGES: Range[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'Max'];
@@ -712,6 +713,7 @@ export default function StockScreen() {
           </Section>
         ) : null}
 
+        <WhyMovedCard symbol={symbol} daily={daily} company={company} />
         <PeBandCard company={company} daily={daily} />
         <StockLabCard symbol={symbol} />
 

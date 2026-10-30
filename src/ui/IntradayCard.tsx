@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Platform, Switch, View } from 'react-native';
 import { colors, fonts } from '../theme';
 import { ensureReady } from '../notify';
-import { bigMovePref, daySummaryPref, intradayPref, setIntraday } from '../portfolio/intraday';
+import { bigMovePref, daySummaryPref, intradayPref, screenAlertsPref, setIntraday } from '../portfolio/intraday';
 import { Panel } from './bits';
 import { Segmented, T } from './kit';
 import { ToolIcon } from './ToolIcon';
@@ -19,6 +19,7 @@ export function IntradayCard() {
   const on = intradayPref.use();
   const move = bigMovePref.use();
   const summary = daySummaryPref.use();
+  const screens = screenAlertsPref.use();
   const [msg, setMsg] = useState<string | null>(null);
   if (Platform.OS !== 'android') return null;
   return (
@@ -59,6 +60,13 @@ export function IntradayCard() {
               <T v="caption">What your holdings did today, with the best and weakest.</T>
             </View>
             <Switch value={summary} onValueChange={(v) => daySummaryPref.set(v)} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="body">Saved screens</T>
+              <T v="caption">After the close, stocks that newly match a screen you saved in Market.</T>
+            </View>
+            <Switch value={screens} onValueChange={(v) => screenAlertsPref.set(v)} trackColor={{ true: colors.gold, false: colors.line }} thumbColor={colors.surface} />
           </View>
         </View>
       ) : null}

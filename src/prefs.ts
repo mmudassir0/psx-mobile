@@ -13,7 +13,11 @@ export function makePref<T>(key: string, fallback: T) {
   let current: T | null = null;
   const listeners = new Set<(v: T) => void>();
   const get = async (): Promise<T> => {
-    if (current == null) current = await load<T>(key, fallback);
+    if (current == null) {
+      const saved = await load<T>(key, fallback);
+      // a set() while the read was under way wins over what was on the phone before it
+      if (current == null) current = saved;
+    }
     return current;
   };
   const set = async (v: T) => {

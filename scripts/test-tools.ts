@@ -1,3 +1,6 @@
+import { screenAlertHits } from '../src/analysis/savedScreens';
+import { NO_CHALLENGE, stepChallenge, streak, resultOf } from '../src/paper/challenge';
+import { bigDays } from '../src/analysis/whyMoved';
 /** Tests for the tools: compare, dividend income plan, rebalance, what-if. Run with `npx tsx scripts/test-tools.ts`. */
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -1370,8 +1373,55 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   check('not final while open', !haveFinalPrices(at('2026-10-28T11:00:00'), at('2026-10-28T11:05:00')));
 }
 
+// why did it move
+{
+  const day = (d: number) => Date.UTC(2026, 9, d, 4);
+  const c = [1, 2, 5, 6, 7, 8, 9, 12, 13, 14].map((d, i) => ({ t: day(d), o: 100, h: 100, l: 100, c: 100, v: 1000 }));
+  c[5] = { ...c[5], c: 108, v: 5000 }; // 8 Oct +8%, heavy
+  c[6] = { ...c[6], c: 108 };
+  c[7] = { ...c[7], c: 108 };
+  c[8] = { ...c[8], c: 100 }; // 13 Oct −7.4%
+  c[9] = { ...c[9], c: 101 };
+  const idx = c.map((x, i) => ({ t: x.t, v: i === 8 ? 970 : 1000 }));
+  const out = bigDays(c, {
+    announcements: [{ date: '2026-10-07', title: 'Financial Results for the Year Ended June 30, 2026', url: null, category: 'Financial Results' }],
+    index: idx,
+    exDays: [{ day: '2026-10-13', what: 'Rs 5' }],
+  });
+  check('why moved: biggest days, newest first', out.length === 2 && out[0].day === '2026-10-13' && out[1].day === '2026-10-08', out);
+  check('why moved: results the day before, heavy volume', out[1].reasons.some((r) => r.kind === 'notice' && /^Results on 07\/10/.test(r.text)) && out[1].reasons.some((r) => r.kind === 'volume'), out[1].reasons);
+  check('why moved: ex-dividend and market-wide fall', out[0].reasons.some((r) => r.kind === 'exdate') && out[0].reasons.some((r) => r.kind === 'market'), out[0].reasons);
+}
+
+// practice challenge
+{
+  let st = stepChallenge(NO_CHALLENGE, { month: '2026-10', account: 1, value: 1_000_000, index: 100_000 });
+  st = stepChallenge(st, { month: '2026-10', account: 1, value: 1_050_000, index: 102_000 });
+  const r = resultOf(st.current!);
+  check('challenge: return against the index this month', Math.abs(r.ret - 0.05) < 1e-9 && Math.abs(r.indexRet - 0.02) < 1e-9);
+  st = stepChallenge(st, { month: '2026-11', account: 1, value: 1_060_000, index: 101_000 });
+  check('challenge: a new month scores the old one and starts from where it stood', st.history.length === 1 && st.history[0].month === '2026-10' && st.current!.startValue === 1_050_000 && st.current!.month === '2026-11');
+  check('challenge: streak of months beaten', streak(st.history) === 1 && streak([{ month: 'a', ret: 0.1, indexRet: 0 }, { month: 'b', ret: 0, indexRet: 0.01 }]) === 0);
+  const reset = stepChallenge(st, { month: '2026-11', account: 2, value: 1_000_000, index: 101_000 });
+  check('challenge: resetting the account starts the month again', reset.current!.startValue === 1_000_000 && reset.history.length === 1);
+}
+
+// saved screen alerts
+{
+  const sc = { id: 'a', name: 'Cheap', mode: 'all' as const, filters: ['cheap' as never], sort: 'cap' as never, sector: null, shariahOnly: false, seen: ['X'], seenAt: 1 };
+  const r1 = screenAlertHits([sc], () => ['X', 'Y'], {});
+  check('screen alerts: a new match is news once', r1.hits.length === 1 && r1.hits[0].symbols.join() === 'Y');
+  const r2 = screenAlertHits([sc], () => ['X', 'Y'], r1.alerted);
+  check('screen alerts: not again the next evening', r2.hits.length === 0);
+  const r3 = screenAlertHits([sc], () => ['X'], r2.alerted);
+  const r4 = screenAlertHits([sc], () => ['X', 'Y'], r3.alerted);
+  check('screen alerts: dropping out and coming back is news again', r4.hits.length === 1);
+  check('screen alerts: movers lists and unfiltered screens are skipped', screenAlertHits([{ ...sc, mode: 'gainers' }, { ...sc, id: 'b', filters: [] }], () => ['Z'], {}).hits.length === 0);
+}
+
 if (failed) {
   console.log(`\n${failed} failed`);
   process.exit(1);
 }
+
 console.log('\nall tool checks passed');

@@ -16,6 +16,7 @@ import { useHoldings } from '../portfolio/holdings';
 import { portfoliosPref } from '../portfolio/portfolios';
 import { MyHoldings } from './portfolio/MyHoldings';
 import { SectorMix } from '../ui/SectorMix';
+import { ChallengeCard } from '../ui/ChallengeCard';
 
 function PaperPortfolio() {
   const nav = useNavigation();
@@ -76,10 +77,17 @@ function PaperPortfolio() {
           <Metric label="Cash" value={fmtNum(account.cash, 0)} />
         </Card>
 
+        <ChallengeCard value={val.total} account={account.createdAt} />
+
         {holdings.length === 0 ? (
           <Card>
-            <Empty title="No holdings yet" body="You have PKR 1,000,000 of practice money. Find a stock in Market and tap Buy." />
-            <Button label="Browse the market" onPress={() => nav.navigate('Tabs', { screen: 'Market' })} />
+            <Empty
+              title="No practice shares yet"
+              glyph="wallet"
+              body="You have PKR 1,000,000 of practice money. Find a stock in Market and tap Buy."
+              action="Browse the market"
+              onAction={() => nav.navigate('Tabs', { screen: 'Market' })}
+            />
           </Card>
         ) : (
           <>
