@@ -1,0 +1,252 @@
+20 companies, 0 already done
+ABL: 99 notices, 44 understood, 36 dividends, fv 10, 65s
+BML: 12 notices, 4 understood, 0 dividends, fv 10, 20s
+FABL: 96 notices, 21 understood, 20 dividends, fv 10, 95s
+HBL: 97 notices, 46 understood, 38 dividends, fv 10, 97s
+JDWS: 4 notices, 2 understood, 6 dividends, fv 10, 10s
+MLCF: 102 notices, 39 understood, 6 dividends, fv 10, 112s
+PGLC: 96 notices, 20 understood, 6 dividends, fv 10, 173s
+SCBPL: 87 notices, 29 understood, 23 dividends, fv 10, 104s
+TRG: 106 notices, 37 understood, 2 dividends, fv 10, 69s
+EPCL: 109 notices, 38 understood, 20 dividends, fv 10, 78s
+NCL: 92 notices, 35 understood, 11 dividends, fv 10, 68s
+OCTOPUS: 43 notices, 13 understood, 0 dividends, fv 10, 16s
+FCL: 6 notices, 2 understood, 3 dividends, fv 10, 15s
+FNEL: 62 notices, 3 understood, 3 dividends, fv 1, 73s
+AGTL: 85 notices, 27 understood, 11 dividends, fv 5, 76s
+PTL: 34 notices, 6 understood, 5 dividends, fv 10, 46s
+LIVEN: 0 notices, 0 understood, 0 dividends, fv 10, 2s
+MACTER: 63 notices, 31 understood, 13 dividends, fv 10, 53s
+HINO: 82 notices, 27 understood, 3 dividends, fv 10, 72s
+MDTL: 76 notices, 32 understood, 0 dividends, fv 10, 69s
+done this run: 20, left: 0
+20 companies, 0 already done
+ABOT: 57 notices, 16 understood, 12 dividends, fv 10, 107s
+BNWM: 77 notices, 27 understood, 2 dividends, fv 10, 79s
+FATIMA: 59 notices, 42 understood, 13 dividends, fv 10, 50s
+HCAR: 64 notices, 29 understood, 13 dividends, fv 10, 52s
+JVDC: 79 notices, 27 understood, 8 dividends, fv 10, 85s
+MTL: 76 notices, 11 understood, 13 dividends, fv 10, 169s
+PIBTL: 63 notices, 28 understood, 0 dividends, fv 10, 135s
+SEARL: 98 notices, 21 understood, 7 dividends, fv 10, 87s
+UBL: 105 notices, 55 understood, 40 dividends, fv 10, 85s
+ASL: 46 notices, 32 understood, 1 dividends, fv 10, 48s
+HUMNL: 104 notices, 12 understood, 3 dividends, fv 10, 117s
+CSAP: 94 notices, 29 understood, 15 dividends, fv 10, 97s
+GCWL: 0 notices, 0 understood, 0 dividends, fv 10, 2s
+FECTC: 59 notices, 20 understood, 4 dividends, fv 10, 78s
+PICT: 72 notices, 46 understood, 26 dividends, fv 10, 83s
+CRTM: 88 notices, 33 understood, 3 dividends, fv 10, 88s
+ALTN: 99 notices, 27 understood, 9 dividends, fv 10, 89s
+IPAK: 5 notices, 2 understood, 2 dividends, fv 10, 10s
+ICIBL: 67 notices, 0 understood, 0 dividends, fv 10, 81s
+FDPL: 10 notices, 3 understood, 0 dividends, fv 10, 12s
+done this run: 20, left: 0
+19 companies, 0 already done
+BAFL: 109 notices, 39 understood, 21 dividends, fv 10, 113s
+EFERT: 99 notices, 40 understood, 35 dividends, fv 10, 76s
+GLAXO: 77 notices, 33 understood, 11 dividends, fv 10, 94s
+INIL: 19 notices, 7 understood, 8 dividends, fv 10, 18s
+MCB: 100 notices, 46 understood, 38 dividends, fv 10, 118s
+PAEL: 72 notices, 32 understood, 3 dividends, fv 10, 60s
+PTC: 61 notices, 38 understood, 7 dividends, fv 10, 54s
+THCCL: 86 notices, 29 understood, 7 dividends, fv 10, 94s
+TPLP: 94 notices, 5 understood, 4 dividends, fv 10, 55s
+PREMA: 29 notices, 1 understood, 1 dividends, fv 10, 26s
+KOSM: 101 notices, 0 understood, 0 dividends, fv 10, 114s
+WAVES: 67 notices, 22 understood, 1 dividends, fv 10, 67s
+ZAL: 0 notices, 0 understood, 2 dividends, fv 10, 1s
+SGF: 28 notices, 8 understood, 7 dividends, fv 10, 38s
+TSBL: 56 notices, 1 understood, 0 dividends, fv 10, 98s
+SPL: 53 notices, 0 understood, 0 dividends, fv 10, 118s
+QUICE: 44 notices, 6 understood, 0 dividends, fv 10, 49s
+GATI: 89 notices, 38 understood, 9 dividends, fv 10, 94s
+AGIL: 79 notices, 35 understood, 13 dividends, fv 5, 83s
+done this run: 19, left: 0
+19 companies, 0 already done
+BAHL: 65 notices, 46 understood, 21 dividends, fv 10, 87s
+ENGROH: 0 notices, 0 understood, 0 dividends, fv 10, 2s
+HALEON: 14 notices, 8 understood, 6 dividends, fv 10, 18s
+ISL: 35 notices, 15 understood, 10 dividends, fv 10, 24s
+MEBL: 70 notices, 49 understood, 29 dividends, fv 10, 70s
+PAKT: 70 notices, 30 understood, 31 dividends, fv 10, 77s
+SAZEW: 86 notices, 7 understood, 10 dividends, fv 10, 86s
+TPLRF1: 4 notices, 0 understood, 0 dividends, fv 10, 7s
+HASCOL: 95 notices, 37 understood, 4 dividends, fv 10, 90s
+AGL: 109 notices, 31 understood, 0 dividends, fv 10, 105s
+WTL: 83 notices, 12 understood, 0 dividends, fv 10, 81s
+AGHA: 62 notices, 14 understood, 2 dividends, fv 10, 68s
+ZUMA: 0 notices, 0 understood, 0 dividends, fv 10, 1s
+STCL: 84 notices, 30 understood, 5 dividends, fv 5, 84s
+BGL: 100 notices, 5 understood, 0 dividends, fv 10, 68s
+RPL: 62 notices, 12 understood, 4 dividends, fv 10, 88s
+WASL: 0 notices, 0 understood, 0 dividends, fv 10, 2s
+NICL: 85 notices, 37 understood, 24 dividends, fv 10, 60s
+FCSC: 96 notices, 31 understood, 0 dividends, fv 10, 194s
+done this run: 19, left: 0
+19 companies, 0 already done
+AGP: 93 notices, 31 understood, 12 dividends, fv 10, 65s
+BOP: 61 notices, 12 understood, 8 dividends, fv 10, 64s
+FCCL: 75 notices, 14 understood, 8 dividends, fv 10, 73s
+HGFA: 0 notices, 0 understood, 2 dividends, fv 10, 3s
+KAPCO: 73 notices, 10 understood, 13 dividends, fv 10, 51s
+MUREB: 93 notices, 46 understood, 36 dividends, fv 10, 93s
+PIOC: 75 notices, 32 understood, 6 dividends, fv 10, 67s
+SHFA: 99 notices, 42 understood, 11 dividends, fv 10, 70s
+UPFL: 52 notices, 40 understood, 45 dividends, fv 10, 111s
+TELE: 107 notices, 16 understood, 0 dividends, fv 10, 78s
+GATM: 72 notices, 27 understood, 4 dividends, fv 10, 56s
+WAFI: 0 notices, 0 understood, 3 dividends, fv 10, 2s
+SLGL: 5 notices, 1 understood, 0 dividends, fv 10, 10s
+QTECH: 0 notices, 0 understood, 0 dividends, fv 10, 2s
+IGIHL: 69 notices, 29 understood, 15 dividends, fv 10, 46s
+CPPL: 77 notices, 39 understood, 18 dividends, fv 10, 61s
+IMS: 3 notices, 0 understood, 1 dividends, fv 10, 11s
+JSML: 78 notices, 23 understood, 6 dividends, fv 10, 35s
+OTSU: 54 notices, 34 understood, 5 dividends, fv 10, 31s
+done this run: 19, left: 0
+19 companies, 0 already done
+AHCL: 42 notices, 33 understood, 6 dividends, fv 10, 43s
+BWCL: 80 notices, 38 understood, 31 dividends, fv 10, 75s
+FFC: 126 notices, 49 understood, 50 dividends, fv 10, 99s
+HINOON: 66 notices, 16 understood, 10 dividends, fv 10, 67s
+KEL: 73 notices, 13 understood, 0 dividends, fv 10, 72s
+NATF: 112 notices, 23 understood, 18 dividends, fv 5, 113s
+PKGS: 91 notices, 18 understood, 11 dividends, fv 10, 84s
+SNGP: 94 notices, 41 understood, 15 dividends, fv 10, 100s
+YOUW: 103 notices, 0 understood, 0 dividends, fv 10, 98s
+ANL: 92 notices, 34 understood, 0 dividends, fv 10, 122s
+DSL: 92 notices, 13 understood, 0 dividends, fv 10, 109s
+ACPL: 51 notices, 7 understood, 8 dividends, fv 10, 62s
+FLYNG: 65 notices, 18 understood, 1 dividends, fv 10, 43s
+PABC: 43 notices, 14 understood, 3 dividends, fv 10, 40s
+LPL: 101 notices, 40 understood, 13 dividends, fv 10, 78s
+TATM: 55 notices, 15 understood, 7 dividends, fv 10, 48s
+AKDSL: 5 notices, 2 understood, 2 dividends, fv 10, 7s
+BWHL: 79 notices, 27 understood, 18 dividends, fv 10, 64s
+786: 68 notices, 21 understood, 0 dividends, fv 10, 64s
+done this run: 19, left: 0
+19 companies, 0 already done
+AICL: 52 notices, 25 understood, 19 dividends, fv 10, 23s
+CHCC: 68 notices, 35 understood, 17 dividends, fv 10, 71s
+FFL: 106 notices, 29 understood, 0 dividends, fv 10, 95s
+HMB: 112 notices, 58 understood, 22 dividends, fv 10, 79s
+KOHC: 104 notices, 21 understood, 5 dividends, fv 10, 104s
+NBP: 82 notices, 4 understood, 4 dividends, fv 10, 28s
+POL: 84 notices, 47 understood, 24 dividends, fv 10, 94s
+SRVI: 72 notices, 16 understood, 11 dividends, fv 10, 86s
+NRL: 93 notices, 5 understood, 4 dividends, fv 10, 105s
+PIAHCLA: 0 notices, 0 understood, 0 dividends, fv 10, 3s
+GGGL: 54 notices, 28 understood, 0 dividends, fv 10, 65s
+SYM: 37 notices, 3 understood, 3 dividends, fv 1, 30s
+HTL: 90 notices, 26 understood, 11 dividends, fv 10, 103s
+STPL: 69 notices, 26 understood, 0 dividends, fv 10, 83s
+KSBP: 70 notices, 13 understood, 8 dividends, fv 10, 74s
+PAKRI: 38 notices, 13 understood, 12 dividends, fv 10, 53s
+ITTEFAQ: 65 notices, 23 understood, 1 dividends, fv 10, 29s
+ARPL: 88 notices, 19 understood, 11 dividends, fv 10, 114s
+ICL: 47 notices, 23 understood, 13 dividends, fv 10, 81s
+done this run: 19, left: 0
+19 companies, 2 already done
+FHAM: 49 notices, 19 understood, 5 dividends, fv 10, 80s
+HUBC: 127 notices, 35 understood, 27 dividends, fv 10, 79s
+KTML: 93 notices, 46 understood, 15 dividends, fv 10, 80s
+NCPL: 87 notices, 37 understood, 7 dividends, fv 10, 61s
+POWER: 82 notices, 33 understood, 0 dividends, fv 10, 56s
+SSGC: 82 notices, 18 understood, 1 dividends, fv 10, 36s
+PRL: 67 notices, 36 understood, 2 dividends, fv 10, 78s
+DFML: 86 notices, 24 understood, 0 dividends, fv 10, 77s
+FCEPL: 47 notices, 21 understood, 2 dividends, fv 10, 22s
+GWLC: 77 notices, 39 understood, 10 dividends, fv 10, 72s
+MFL: 76 notices, 13 understood, 7 dividends, fv 10, 61s
+GTYR: 97 notices, 11 understood, 5 dividends, fv 10, 80s
+NRSL: 51 notices, 5 understood, 3 dividends, fv 10, 34s
+AHL: 76 notices, 33 understood, 9 dividends, fv 10, 76s
+JGICL: 74 notices, 28 understood, 9 dividends, fv 10, 70s
+JSBL: 110 notices, 4 understood, 3 dividends, fv 10, 95s
+ITANZ: 0 notices, 0 understood, 2 dividends, fv 10, 3s
+done this run: 17, left: 0
+19 companies, 0 already done
+AKBL: 97 notices, 35 understood, 12 dividends, fv 10, 143s
+COLG: 84 notices, 30 understood, 18 dividends, fv 10, 97s
+GADT: 77 notices, 38 understood, 7 dividends, fv 10, 132s
+IBFL: 68 notices, 26 understood, 5 dividends, fv 10, 80s
+LCI: 51 notices, 12 understood, 8 dividends, fv 10, 51s
+NESTLE: 40 notices, 30 understood, 30 dividends, fv 10, 39s
+PPL: 71 notices, 42 understood, 25 dividends, fv 10, 66s
+SSOM: 44 notices, 0 understood, 2 dividends, fv 10, 84s
+TREET: 161 notices, 32 understood, 1 dividends, fv 10, 179s
+TOMCL: 73 notices, 3 understood, 1 dividends, fv 10, 88s
+GCIL: 21 notices, 7 understood, 1 dividends, fv 10, 29s
+SPEL: 98 notices, 44 understood, 16 dividends, fv 5, 106s
+PACE: 77 notices, 30 understood, 0 dividends, fv 10, 111s
+CEPB: 75 notices, 8 understood, 5 dividends, fv 10, 78s
+MFFL: 63 notices, 3 understood, 1 dividends, fv 10, 76s
+KOIL: 66 notices, 27 understood, 4 dividends, fv 10, 55s
+EPQL: 73 notices, 34 understood, 25 dividends, fv 10, 46s
+DSFL: 73 notices, 27 understood, 0 dividends, fv 10, 76s
+STL: 0 notices, 0 understood, 1 dividends, fv 10, 2s
+done this run: 19, left: 0
+19 companies, 0 already done
+APL: 85 notices, 33 understood, 19 dividends, fv 10, 71s
+CPHL: 32 notices, 17 understood, 4 dividends, fv 10, 34s
+GAL: 17 notices, 0 understood, 2 dividends, fv 10, 25s
+ILP: 58 notices, 31 understood, 15 dividends, fv 10, 64s
+LOTCHEM: 73 notices, 20 understood, 13 dividends, fv 10, 81s
+NML: 95 notices, 38 understood, 10 dividends, fv 10, 77s
+PSEL: 24 notices, 10 understood, 4 dividends, fv 10, 47s
+SYS: 73 notices, 34 understood, 10 dividends, fv 10, 47s
+UNITY: 112 notices, 26 understood, 2 dividends, fv 10, 116s
+BNL: 60 notices, 13 understood, 0 dividends, fv 10, 54s
+ASTL: 93 notices, 37 understood, 2 dividends, fv 10, 83s
+ASC: 61 notices, 0 understood, 0 dividends, fv 10, 46s
+LOADS: 84 notices, 32 understood, 2 dividends, fv 10, 80s
+WAVESAPP: 9 notices, 3 understood, 0 dividends, fv 10, 10s
+TRSM: 35 notices, 15 understood, 1 dividends, fv 10, 77s
+ATBA: 107 notices, 42 understood, 8 dividends, fv 10, 73s
+EXIDE: 72 notices, 31 understood, 8 dividends, fv 10, 49s
+TRIPF: 66 notices, 24 understood, 10 dividends, fv 10, 49s
+SPWL: 103 notices, 46 understood, 24 dividends, fv 10, 80s
+done this run: 19, left: 0
+19 companies, 0 already done
+ATLH: 83 notices, 24 understood, 16 dividends, fv 10, 98s
+DCR: 66 notices, 45 understood, 42 dividends, fv 10, 59s
+GHGL: 108 notices, 41 understood, 27 dividends, fv 10, 139s
+IMAGE: 24 notices, 3 understood, 5 dividends, fv 10, 38s
+LUCK: 95 notices, 39 understood, 8 dividends, fv 10, 103s
+NPL: 75 notices, 36 understood, 22 dividends, fv 10, 71s
+PSO: 91 notices, 44 understood, 13 dividends, fv 10, 89s
+TGL: 98 notices, 41 understood, 9 dividends, fv 10, 87s
+NETSOL: 106 notices, 40 understood, 6 dividends, fv 10, 82s
+DCL: 83 notices, 32 understood, 0 dividends, fv 10, 84s
+MUGHAL: 61 notices, 42 understood, 17 dividends, fv 10, 37s
+SGPL: 60 notices, 0 understood, 0 dividends, fv 10, 43s
+TPL: 108 notices, 5 understood, 3 dividends, fv 10, 77s
+IBLHL: 48 notices, 6 understood, 5 dividends, fv 10, 44s
+PNSC: 86 notices, 20 understood, 16 dividends, fv 10, 89s
+CLOV: 67 notices, 19 understood, 2 dividends, fv 10, 76s
+ALAC: 58 notices, 10 understood, 0 dividends, fv 10, 70s
+PASL: 44 notices, 8 understood, 0 dividends, fv 10, 41s
+SITC: 59 notices, 17 understood, 10 dividends, fv 10, 138s
+done this run: 19, left: 0
+19 companies, 0 already done
+ATRL: 73 notices, 38 understood, 10 dividends, fv 10, 77s
+DGKC: 88 notices, 35 understood, 7 dividends, fv 10, 79s
+GHNI: 97 notices, 29 understood, 5 dividends, fv 10, 102s
+INDU: 79 notices, 37 understood, 38 dividends, fv 10, 97s
+MARI: 89 notices, 31 understood, 22 dividends, fv 10, 42s
+OGDC: 93 notices, 39 understood, 35 dividends, fv 10, 97s
+PSX: 60 notices, 29 understood, 6 dividends, fv 10, 68s
+THALL: 72 notices, 38 understood, 22 dividends, fv 5, 87s
+GGL: 92 notices, 26 understood, 0 dividends, fv 10, 88s
+JSCL: 124 notices, 7 understood, 4 dividends, fv 10, 149s
+FEROZ: 55 notices, 11 understood, 8 dividends, fv 10, 53s
+SML: 71 notices, 6 understood, 2 dividends, fv 10, 62s
+DOL: 79 notices, 41 understood, 13 dividends, fv 10, 86s
+TBL: 15 notices, 4 understood, 0 dividends, fv 10, 16s
+MACFL: 46 notices, 12 understood, 5 dividends, fv 10, 58s
+ECOP: 55 notices, 26 understood, 4 dividends, fv 10, 85s
+LSEVL: 26 notices, 7 understood, 4 dividends, fv 10, 33s
+MERIT: 71 notices, 0 understood, 0 dividends, fv 10, 57s
+BCL: 60 notices, 3 understood, 2 dividends, fv 10, 56s
+done this run: 19, left: 0
