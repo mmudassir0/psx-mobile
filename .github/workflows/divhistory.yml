@@ -83,7 +83,7 @@ jobs:
         if: inputs.only == 'KMI'
         run: |
           sudo apt-get install -y -qq --no-install-recommends poppler-utils tesseract-ocr >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends poppler-utils tesseract-ocr >/dev/null)
-          mkdir -p /tmp/out && npx tsx scripts/kmi-history.ts /tmp/out/kmi.json 2>&1 | tee /tmp/out/kmi-log.txt
+          mkdir -p /tmp/out && DUMP_DIR=/tmp/out/texts npx tsx scripts/kmi-history.ts /tmp/out/kmi.json 2>&1 | tee /tmp/out/kmi-log.txt
       - name: Test output to the probe branch
         if: inputs.only != ''
         run: |

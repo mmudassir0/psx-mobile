@@ -69,6 +69,11 @@ async function main() {
         }
         if (text.replace(/\s/g, '').length < 200) continue;
       }
+      // the test run keeps each notice's text, to see why one isn't read
+      if (process.env.DUMP_DIR) {
+        mkdirSync(process.env.DUMP_DIR, { recursive: true });
+        writeFileSync(`${process.env.DUMP_DIR}/${which}-${n.day}.txt`, `${n.title}\n\n${text}`);
+      }
       const e = parseIndexNotice(text, n.day);
       if (e) {
         events[which].push(e);
