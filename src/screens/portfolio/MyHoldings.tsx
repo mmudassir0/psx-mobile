@@ -219,8 +219,16 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: R
               </View>
             ) : null}
           </View>
-          <T v="caption" style={{ fontFamily: fonts.mono }} numberOfLines={1}>
+          <T
+            v="caption"
+            style={{ fontFamily: fonts.mono }}
+            numberOfLines={1}
+            accessibilityLabel={`${fmtNum(r.holding.shares, 0)} shares at ${fmtPrice(r.price)} now, bought at an average of ${fmtPrice(r.holding.avgCost)}`}
+          >
             {fmtNum(r.holding.shares, 0)} × {fmtPrice(r.price)}
+          </T>
+          <T v="caption" style={{ fontFamily: fonts.mono, fontSize: 11.5 }} numberOfLines={1} importantForAccessibility="no">
+            avg {fmtPrice(r.holding.avgCost)}
           </T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 3 }}>
