@@ -1,0 +1,26 @@
+1 companies, 0 already done
+  KMI: 0 notices listed in 1s, 0 to read
+KMI: FAILED no price history from PSX
+done this run: 0, left: 1
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0
+0 companies, 0 already done
+done this run: 0, left: 0

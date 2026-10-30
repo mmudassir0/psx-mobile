@@ -1,0 +1,64 @@
+403 index notices listed
+kmi30 2016-12-30 → 2017-01-09: +6 −1 (says {"total":null,"added":null,"removed":null})
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+kmiall 2017-03-09 → 2017-03-13: +40 −0 (says {"total":246,"added":37,"removed":22})
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+kmi30 2017-06-16 → 2017-06-30: +93 −0 (says {"total":null,"added":null,"removed":null})
+kmiall 2017-11-14 → 2017-11-20: +86 −0 (says {"total":249,"added":23,"removed":14})
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+kmi30 2017-12-22 → 2018-01-02: +56 −0 (says {"total":null,"added":null,"removed":null})
+kmiall 2018-05-04 → 2018-05-11: +24 −10 (says {"total":241,"added":24,"removed":28})
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+kmiall 2019-06-28 → 2019-07-15: +20 −3 (says {"total":227,"added":12,"removed":29})
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+Image too small to scale!! (2x36 vs min width of 3)
+Line cannot be recognized!!
+kmiall 2020-01-06 → 2020-01-13: +19 −15 (says {"total":226,"added":24,"removed":24})
+kmi30 2020-07-03 → 2020-07-03: +0 −0, full list 32 (says {"total":null,"added":null,"removed":null})
+kmiall 2020-07-10 → 2020-07-20: +137 −0 (says {"total":217,"added":16,"removed":22})
+kmi30 2020-12-04 → 2020-12-21: +0 −0, full list 31 (says {"total":null,"added":null,"removed":null})
+kmiall 2020-12-22 → 2020-12-31: +266 −0 (says {"total":209,"added":19,"removed":26})
+kmi30 2021-06-18 → 2021-06-28: +0 −0, full list 247 (says {"total":null,"added":null,"removed":null})
+kmi30 2021-12-10 → 2021-12-20: +0 −0, full list 31 (says {"total":null,"added":null,"removed":null})
+kmiall 2021-12-24 → 2022-01-03: +250 −0 (says {"total":250,"added":37,"removed":13})
+kmi30 2022-07-01 → 2022-07-08: +0 −0, full list 31 (says {"total":null,"added":null,"removed":null})
+kmiall 2022-07-07 → 2022-07-15: +30 −26 (says {"total":252,"added":30,"removed":25})
+kmi30 2022-07-07 → 2022-07-13: +0 −0, full list 31 (says {"total":null,"added":null,"removed":null})
+kmi30 2022-12-23 → 2022-12-30: +0 −0, full list 30 (says {"total":null,"added":null,"removed":null})
+kmiall 2023-01-05 → 2023-01-12: +350 −0 (says {"total":261,"added":30,"removed":21})
+kmi30 2023-06-23 → 2023-07-07: +0 −0, full list 30 (says {"total":null,"added":null,"removed":null})
+kmiall 2023-06-26 → 2023-07-10: +26 −56 (says {"total":251,"added":26,"removed":33})
+kmi30 2023-12-15 → 2023-12-22: +0 −1, full list 30 (says {"total":null,"added":null,"removed":null})
+kmiall 2023-12-18 → 2023-12-26: +32 −24 (says {"total":258,"added":32,"removed":24})
+kmi30 2024-06-07 → 2024-06-14: +0 −0, full list 238 (says {"total":null,"added":null,"removed":null})
+kmiall 2024-06-14 → 2024-06-25: +315 −0 (says {"total":255,"added":28,"removed":29})
+kmi30 2024-12-20 → 2024-12-30: +0 −0, full list 254 (says {"total":null,"added":null,"removed":null})
+kmiall 2024-12-30 → 2025-01-03: +302 −0 (says {"total":264,"added":26,"removed":13})
+Syntax Error: Can't get Fields array
+kmi30 2025-05-23 → 2025-06-02: +0 −0, full list 177 (says {"total":null,"added":null,"removed":null})
+Syntax Error: Can't get Fields array
+kmiall 2025-06-02 → 2025-06-10: +22 −5 (says {"total":258,"added":15,"removed":22})
+kmi30 2025-11-14 → 2025-11-24: +0 −0, full list 100 (says {"total":null,"added":null,"removed":null})
+kmiall 2025-11-24 → 2025-12-02: +35 −12 (says {"total":281,"added":35,"removed":12})
+kmi30 2026-05-15 → 2026-05-15: +0 −0, full list 408 (says {"total":null,"added":null,"removed":null})
+kmiall 2026-05-29 → 2026-06-05: +42 −23 (says {"total":309,"added":42,"removed":19})
+read 34 notices (18 of them scanned); KMI All Share from 2022-01-03, KMI-30 from 2020-07-03

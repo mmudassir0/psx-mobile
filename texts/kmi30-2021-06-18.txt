@@ -1,0 +1,374 @@
+RE-COMPOSITION OF KSE-MEEZAN 30 INDEX (KMI-30)
+
+                 PAKISTAN STOCK EXCHANGE LIMITED
+                    STOCK EXCHANGE BUILDING, STOCK EXCHANGE ROAD, KARACHI
+                                   PHONE: (021) 111-001-122
+
+PSX/N-746                                NOTICE                               Dated: June 18, 2021
+
+
+                 RE-COMPOSITION OF KSE-MEEZAN 30 INDEX (KMI-30)
+
+It is hereby informed that the Pakistan Stock Exchange Limited has carried-out the exercise of
+re- composition of KSE-Meezan 30 Index for the review period from July 01, 2020 to December
+31, 2020.
+
+The re-composition has been carried out on the basis of the criteria of selection of companies
+as detailed in the Brochure of KSE-Meezan 30 Index, which can be downloaded from the
+website of the Exchange: www.psx.com.pk. As a result, 6 companies would be affected due
+to re composition process as given hereunder: -
+
+                                                                                                 Exclusion
+ Sr no.                 Incoming Companies                         Outgoing Companies
+                                                                                                  Reason
+    1       Hub Power Company Limited                         Abbott Laboratories Pak Ltd.       Rank#37*
+
+    2       Systems Limited                                   Kohat Cement Co. Ltd.              Rank#39*
+
+    3       Ghandhara Industries Limited                      ICI Pakistan Limited.              Rank#43*
+
+    4       Avanceon Limited                                  K-Electric Limited.                Rank#44*
+            Pakistan International Bulk Terminal
+    5                                                         Packages Ltd.                      Rank#45*
+            Limited
+    6       National Refinery Limited                         Glaxo SmithKline Pakistan Ltd.     Rank#47*
+ * Does not fall in list of top 30 Shariah Compliant stocks
+ ** Shariah Non-Compliant
+
+
+
+The recomposed index will be implemented w.e.f. Monday, 28 June, 2021, list of companies
+included in the recomposed Index and the list of sharia screen companies are also attached.
+
+
+   – sd –
+
+Mohammad Hussain
+Senior Manager
+Product Management & Research
+
+
+
+Copy to:
+PSX Website
+Notice Board
+LIST OF COMPANIES INCLUDED IN THE KMI-30 INDEX ON THE BASIS OF RECOMPOSITION
+         AS ON DECEMBER 30, 2020, EFFECTIVE FROM MONDAY, 28 th JUNE, 2021
+
+ Sr.no      Symbol      Name of Companies
+   1        LUCK        Lucky Cement Limited
+   2        ENGRO       Engro Corporation Limited
+   3        HUBC        Hub Power Company Limited
+   4        OGDC        Oil & Gas Development Company Limited
+   5        PPL         Pakistan Petroleum Limited
+   6        POL         Pakistan Oilfields Limited
+   7        PSO         Pakistan State Oil Company Limited
+   8        MARI        Mari Petroleum Company Limited
+   9        MEBL        Meezan Bank Limited
+   10       SYS         Systems Limited
+   11       EFERT       Engro Fertilizers Limited
+   12       MTL         Millat Tractors Limited
+   13       SEARL       The Searle Company Limited
+   14       DGKC        D.G. Khan Cement Co. Limited
+   15       MLCF        Maple Leaf Cement Factory
+   16       CHCC        Cherat Cement Company Limited
+   17       FCCL        Fauji Cement Company Limited
+   18       EPCL        Engro Polymer & Chemicals Limited
+   19       UNITY       Unity Foods Limited
+   20       NRL         National Refinery Limited
+   21       INIL        International Industries Limited
+   22       NML         Nishat Mills Limited
+   23       ISL         International Steels Limited
+   24       SNGP        Sui Northern Gas Pipelines Limited
+   25       ATRL        Attock Refinery Limited
+   26       PIBTL       Pakistan International Bulk Terminal Limited
+   27       PAEL        Pak Elektron Limited
+   28       HCAR        Honda Atlas Cars (Pakistan) Limited
+   29       AVN         Avanceon Limited
+   30       GHNI        Ghandhara Industries Limited
+FINAL RECOMPOSITION LIST-KMI 30 ISLAMIC INDEX FOR THE PERIOD ENDED DECEMBER
+2020
+F
+
+
+
+                                                                  Final Shariah
+    No.        Ticker                 Company Name
+                                                                     Status
+           1   AABS     Al-Abbas Sugar Mills Ltd                    Compliant1
+           2   ABOT     Abbott Lab (Pakistan) Ltd                   Compliant
+           3   ACPL     Attock Cement Pakistan Ltd *                Compliant
+           4   AGIL     Agriauto Industries Ltd *                   Compliant
+           5   AGP      AGP Limited                                 Compliant
+           6   AGSML    Abdullah Shah Ghazi Sugar Mills             Compliant1
+           7   APL      Attock Petroleum Ltd *                      Compliant
+           8   ASC      Al Shaheer Corporation Ltd *                Compliant
+           9   ASTM     Asim Textile Mills Ltd *                    Compliant
+          10   ATBA     Atlas Battery Ltd *                         Compliant
+          11   PREMA    At-Tahur Limited *                          Compliant
+          12   ATLH     Atlas Honda Ltd *                           Compliant1
+          13   ATRL     Attock Refinery Ltd *                       Compliant
+          14   BATA     Bata (Pakistan) Ltd                         Compliant
+          15   BGL      Balochistan Glass Ltd *                     Compliant
+          16   BIFO     Biafo Industries Ltd *                      Compliant
+          17   BWCL     Bestway Cement Ltd *                        Compliant
+          18   CEPB     Century Paper & Board Mills *               Compliant
+          19   CHCC     Cherat Cement Co. Ltd *                     Compliant
+          20   CLOV     Clover Pakistan Ltd *                       Compliant
+          21   CPPL     Cherat Packaging Ltd *                      Compliant
+          22   DCL      Dewan Cement Ltd *                          Compliant
+          23   DCR      Dolmen City REIT *                          Compliant
+          24   DGKC     D.G. Khan Cement Co. Ltd *                  Compliant
+          25   DOL      Descon Oxychem Ltd *                        Compliant
+          26   DSIL     DS Industries Ltd *                         Compliant
+          27   DYNO     Dynea Pakistan Ltd *                        Compliant
+          28   EFERT    Engro Fertilizers Ltd                       Compliant
+          29   FCEPL    Frieslandcampina Engro Pakistan Limited     Compliant
+          30   ENGRO    Engro Corporation Ltd                       Compliant
+          31   EPCL     Engro Polymer & Chemicals                   Compliant
+          32   EPQL     Engro Powergen Qadirpur Ltd ***             No Opinion
+          33   EXIDE    Exide Pakistan Ltd *                        Compliant1
+          34   FATIMA   Fatima Fertilizer Co. Ltd                   Compliant
+          35   FCCL     Fauji Cement Co. Ltd *                      Compliant
+          36   FECTC    Fecto Cement Ltd                            Compliant
+          37   FEROZ    Ferozsons Laboratories Ltd *                Compliant
+          38   FLYNG    Flying Cement Co. Ltd *                     Compliant
+          39   FML      Feroze1888 Mills Ltd *                      Compliant
+          40   GAIL     Ghani Automobile Industries Ltd *           Compliant
+          41   GGL      Ghani Global Holdings Limited *             Compliant
+          42   GHGL     Ghani Glass Ltd *                           Compliant
+          43   GHNI     Ghandhara Industries Ltd *                  Compliant
+          44   GHNL     Ghandhara Nissan Ltd *                      Compliant
+          45   GLAXO    GlaxoSmithKline Pakistan                    Compliant
+          46   GSKCH    Glaxo SmithKline Consumer Healthcare        Compliant
+47 GVGL        Ghani Value Glass Ltd *                      Compliant
+48 GWLC        Gharibwal Cement Ltd *                       Compliant
+49 HABSM       Habib Sugar Mills Ltd                        Compliant1
+50 HCAR        Honda Atlas Cars (Pakistan) Ltd *            Compliant1
+51 HINOON      Highnoon Laboratories Ltd                    Compliant
+52   HSM       Husein Sugar Mills Ltd                       Compliant1
+53   HTL       Hi-Tech Lubricants Ltd *                     Compliant
+54   IBLHL     IBL HealthCare Ltd *                         Compliant
+55   ICI       ICI Pakistan Ltd *                           Compliant
+56   ICL       Ittehad Chemicals Ltd *                      Compliant
+57   INIL      International Industries Ltd *               Compliant
+58   ISL       International Steels Ltd *                   Compliant
+59   ITTEFAQ   Ittefaq Iron Industries *                    Compliant
+60   KOHC      Kohat Cement Co. Ltd *                       Compliant
+61   KOIL      Kohinoor Industries Ltd *                    Compliant
+62   KTML      Kohinoor Textile Mills Ltd *                 Compliant
+63   LUCK      Lucky Cement Ltd *                           Compliant
+64   MLCF      Maple Leaf Cement Factory *                  Compliant
+65   MTL       Millat Tractors Ltd *                        Compliant
+66   MUGHAL    Mughal Iron & Steel Industries *             Compliant
+67   NATF      National Foods Ltd *                         Compliant
+68   NETSOL    NetSol Technologies Ltd *                    Compliant
+69   NML       Nishat Mills Ltd *                           Compliant
+70   NRL       National Refinery Ltd *                      Compliant
+71   PAEL      Pak Elektron Ltd                             Compliant
+72   PAKOXY    Pakistan Oxygen Limited                      Compliant
+73   PIBTL     Pakistan International Bulk Terminal Ltd *   Compliant
+74   PICT      Pakistan International Container Terminal    Compliant
+75   PKGS      Packages Limited                             Compliant
+76   PNSC      Pakistan National Shipping Corporation *     Compliant
+77   POL       Pakistan Oilfields Ltd *                     Compliant
+78   POWER     Power Cement Ltd *                           Compliant
+79   PPL       Pakistan Petroleum Limited *                 Compliant
+80   PSMC      Pak Suzuki Motor Co. Ltd                     Compliant
+81   PSO       Pakistan State Oil Co. Ltd *                 Compliant
+82   QUICE     Quice Food Industries Ltd *                  Compliant
+83   REDCO     Redco Textiles Ltd *                         Compliant
+84   RPL       Roshan Packages Ltd *                        Compliant
+85   SAZEW     Sazgar Engineering Works *                   Compliant
+86   SEARL     The Searle Company Ltd *                     Compliant
+87   TOMCL     The Organic Meat Company Ltd *               Compliant
+88   SEPL      Security Papers Ltd *                        Compliant
+89   SHEL      Shell (Pakistan) Ltd                         Compliant
+90 SHSML       Shahmurad Sugar Mills Ltd                    Compliant1
+91   SKRS      Sakrand Sugar Mills Ltd                      Compliant1
+92   SMCPL     Safe Mix Concrete Ltd *                      Compliant
+93   SPEL      Synthetic Products Ltd *                     Compliant
+94   SPL       Sitara Peroxide Ltd *                        Compliant
+95   SPWL      Saif Power Ltd ***                           No Opinion
+96   STCL      Shabbir Tiles & Ceramics Ltd *               Compliant
+ 97   TGL      Tariq Glass Industries Ltd *             Compliant
+ 98   THALL    Thal Limited *                           Compliant
+ 99   THCCL    Thatta Cement Company *                  Compliant
+100   TRIPF    Tri-Pack Films Ltd                       Compliant
+101   IMAGE    Tri-Star Polyester Ltd *                 Compliant
+102   UBDL     United Brands Limited *                  Compliant
+103   UNITY    Unity Foods Ltd *                        Compliant
+104   WAVES    WAVES Singer Pakistan Ltd                Compliant
+105   ADAMS    Adam Sugar Mills Ltd                     Compliant1
+106   ADMM     Artistic Denim Mills Ltd *               Compliant
+107   AEL      Arshad Energy Ltd *                      Compliant
+108   ASHT     Ashfaq Textile Mills Ltd *               Compliant
+109   BERG     Berger Paints Pakistan Ltd *             Compliant
+110   BNWM     Bannu Woollen Mills Ltd *                Compliant
+111   BUXL     Buxly Paints Ltd *                       Compliant
+112 CHAS       Chashma Sugar Mills Ltd                  Compliant1
+113 FRCL       Frontier Ceramics Ltd *                  Compliant
+114   FRSM     Faran Sugar Mills Ltd                    Compliant1
+115   HRPL     Habib Rice Products Ltd. *               Compliant
+116   ILP      Interloop Limited *                      Compliant
+117   JATM     J. A. Textile Mills Ltd. *               Compliant
+118   JSML     Jauharabad Sugar Mills Ltd.              Compliant1
+119   JVDC     Javedan Corporation Ltd *                Compliant
+120   KSBP     K.S.B.Pumps Company Ltd                  Compliant
+121   MACFL    MACPAC Films Ltd *                       Compliant
+122   MRNS     Mehran Sugar Mills Ltd                   Compliant1
+123   PCAL     Pakistan Cables Ltd *                    Compliant
+124   POML     Punjab Oil Mills Ltd. *                  Compliant
+125   PSYL     Pakistan Synthetics Ltd. *               Compliant
+126   RUBY     Ruby Textile Mills Ltd *                 Compliant
+127   RUPL     Rupali Polyester Ltd. *                  Compliant
+128   SAPL     Sanofi-aventis Pakistan Ltd              Compliant
+129   SHFA     Shifa International Hospitals *          Compliant
+130   SITC     Sitara Chemical Industries Ltd *         Compliant
+131   UDPL     United Distributors (Pakistan) Ltd *     Compliant
+132   ZIL      ZIL Limited                              Compliant
+133   BIPL     BankIslami Pakistan Ltd **               Compliant
+134   MEBL     Meezan Bank Ltd **                       Compliant
+135   AGTL     Al-Ghazi Tractors Ltd                    Compliant
+136   ARPL     Archroma Pakistan Ltd                    Compliant
+137   AVN      Avanceon Limited #                       Compliant
+138 CWSM       Chakwal Spinning Mills Ltd             Non-Compliant3
+139 FECM       First Elite Capital Modaraba **          Compliant
+140 GATM       Gul Ahmed Textile Mills Ltd *          Non-Compliant
+141   HASCOL   Hascol Petroleum Ltd *                 Non-Compliant3
+142   KAPCO    Kot Addu Power Company *               Non-Compliant
+143   KEL      K-Electric Ltd *                         Compliant
+144   KOHP     Kohinoor Power Company ***               No Opinion
+145   PMI      First Prudential Modaraba **           Non-Compliant
+146   SERF     Service Fabrics Ltd *                  Non-Compliant
+147 SNGP        Sui Northern Gas Pipelines Ltd *      Compliant3
+148 SRVI        Service Industries Ltd               Non-Compliant
+149 SSGC        Sui Southern Gas Co. Ltd               Compliant3
+150 WTL         WorldCall Telecom Ltd *                Compliant3
+151   BPL       Burshane LPG (Pakistan) Ltd           Compliant3
+152   BRR       B.R.R. Guardian Modaraba **            Compliant
+153   FHAM      First Habib Modaraba **                Compliant
+154   FUDLM     First UDL Modaraba **                  Compliant
+155   ORIXM     Orix Modaraba **                       Compliant
+156   PAKMI     First Pak Modaraba **                Non-Compliant
+157   SINDM     Sindh Modaraba **                      Compliant
+158   SSML      Saritow Spinning Mills Ltd.          Non-Compliant
+159   ZTL       Zephyr Textiles Ltd. *               Non-Compliant
+160   MSCL      Metropolitan Steel Corporation *       Compliant
+161   AGL       Agritech Limited                     Non-Compliant
+162   AHCL      Arif Habib Corporation Ltd *         Non-Compliant
+163   ANL       Azgard Nine Ltd *                    Non-Compliant
+164   ASL       Aisha Steel Ltd                        Compliant
+165   ASTL      Amreli Steels Ltd *                  Non-Compliant
+166   BAPL      Bawany Air Product Ltd *             Non-Compliant
+167   BCL       Bolan Castings Ltd *                 Non-Compliant
+168   BILF      Bilal Fibres Ltd *                   Non-Compliant
+169   BYCO      Byco Petroleum Pakistan Ltd *        Non-Compliant
+170   CRTM      Crescent Textile Mills Ltd *         Non-Compliant
+171   CSAP      Crescent Steel & Allied Products *   Non-Compliant
+172   CTM       Colony Textile Mills Ltd *           Non-Compliant
+173   DFML      Dewan Farooque Motors Ltd *          Non-Compliant
+174   DFSM      Dewan Farooq Spinning Mills Ltd *    Non-Compliant
+175   DSL       Dost Steel Ltd *                     Non-Compliant
+176   DWSM      Dewan Sugar Mills Ltd                Non-Compliant1
+177   ECOP      EcoPack Ltd *                        Non-Compliant
+178   FFBL      Fauji Fertilizer Bin Qasim Ltd       Non-Compliant
+179   FFC       Fauji Fertilizer Company Ltd         Non-Compliant
+180   FFL       Fauji Foods Ltd                      Non-Compliant
+181   GGGL      Ghani Global Glass Ltd *             Non-Compliant
+182   GTYR      General Tyre & Rubber Co. *          Non-Compliant
+183   HINO      Hinopak Motors Ltd *                 Non-Compliant1
+184   HIRAT     Hira Textile Mills Ltd *             Non-Compliant
+185   HUBC      Hub Power Company Ltd * ##             Compliant
+186   INDU      Indus Motor Company Ltd *            Non-Compliant
+187   KOSM      Kohinoor Spinning Mills Ltd *        Non-Compliant
+188   LOADS     Loads Limited *                      Non-Compliant
+189   LOTCHEM   Lotte Chemical Pakistan Ltd          Non-Compliant
+190   LPL       Lalpir Power Ltd                     Non-Compliant
+191   MARI      Mari Petroleum Co. Ltd *               Compliant
+192   MERIT     Merit Packaging Ltd *                Non-Compliant
+193   MFL       Matco Foods Ltd *                    Non-Compliant
+194   MTIL      Mian Textile Industries Ltd *        Non-Compliant
+195   NCL       Nishat (Chunian) Ltd *               Non-Compliant
+196   NCPL      Nishat Chunian Power Ltd *           Non-Compliant
+197   NPL      Nishat Power Limited                                  Non-Compliant
+198   NRSL     Nimir Resins Ltd *                                    Non-Compliant
+199   OGDC     Oil & Gas Development Co. Ltd ****                      Compliant
+200   PACE     Pace (Pakistan) Ltd *                                 Non-Compliant
+201   PIOC     Pioneer Cement Ltd *                                  Non-Compliant
+202   PKGP     Pakgen Power Ltd                                      Non-Compliant
+203   PRL      Pakistan Refinery Ltd *                               Non-Compliant
+204   PTC      Pakistan Telecommunication (PTCL)                     Non-Compliant
+205   RAVT     Ravi textile Mills Ltd. *                             Non-Compliant
+206   SAIF     Saif Textile Mills Ltd *                              Non-Compliant
+207   STPL     Siddiqsons Tin Plate Ltd *                            Non-Compliant
+208   SYS      Systems Limited #                                       Compliant
+209   TELE     Telecard Limited *                                    Non-Compliant
+210   TPL      TPL Corporation *                                     Non-Compliant
+211   TPLT     TPL Trakker Ltd. *                                    Non-Compliant
+212   TREET    Treet Corporation Ltd *                               Non-Compliant
+213   TRG      TRG Pakistan Ltd *                                    Non-Compliant
+214   TSPL     Tri-Star Power Ltd. *                                 Non-Compliant
+215   WYETH    Wyeth Pakistan Ltd                                    Non-Compliant2
+216   YOUW     Yousaf Weaving Mills Ltd *                            Non-Compliant
+217   ALTN     Altern Energy Ltd *                                   Non-Compliant
+218   FZCM     Fazal Cloth Mills Ltd *                               Non-Compliant
+219   GADT     Gadoon Textile Mills Ltd *                            Non-Compliant
+220   GFIL     Ghazi Fabrics International Ltd *                     Non-Compliant
+221   IDYM     Indus Dyeing & Mfg Co. Ltd. *                         Non-Compliant
+222   KML      Kohinoor Mills Ltd. *                                 Non-Compliant
+223   MFFL     Mitchell's Fruit Farms Ltd                            Non-Compliant1
+224   NESTLE   Nestle Pakistan Ltd                                   Non-Compliant
+225   NICL     Nimir Industrial Chemicals Ltd *                      Non-Compliant
+226   PAKD     Pak DataCom Ltd. *                                    Non-Compliant
+227   REWM     Reliance Weaving Mills *                              Non-Compliant
+228   SAPT     Sapphire Textile Mills *                              Non-Compliant
+229   SHDT     Shadab Textile Mills Ltd. *                           Non-Compliant
+230   SHEZ     Shezan International Ltd. *                           Non-Compliant
+231   SIEM     Siemens (Pakistan) Engineering                        Non-Compliant1
+232   SMTM     Samin Textiles Ltd. *                                 Non-Compliant
+233   SSOM     S.S. Oil Mills Ltd *                                  Non-Compliant
+234   TPLP     TPL Properties Ltd *                                  Non-Compliant
+               Pakistan International Airlines Corporation Limited
+235   PIAA     (PIACL)                                               Non-Compliant
+236   MDTL     Media Times Ltd                                        NC by Nature
+237   HUMNL    Hum Network Ltd                                        NC by Nature
+238   BOK      Bank of Khyber                                         NC by Nature
+239   FABL     Faysal Bank Ltd.                                       NC by Nature
+240   HGFA     HBL Growth Fund - (A)                                  NC by Nature
+241   HIFA     HBL Investment Fund (A)                                NC by Nature
+242   IML      Imperial Limited                                       NC by Nature
+NOTE: The above criteria of KMI Index is approved by Sharia’h Supervisory Board of
+KMI Index Partner, MBL Group.
+NC= Non – Compliant
+
+N/A = Not
+Applicable
+* These are provisional rates for dividend purification which are subject to final
+adjustment upon announcement of respective companies' annual accounts for the year
+2020/2021.
+
+** Only illiquid Assets to Total Assets and Net Liquid Asset ratios calculated of all Islamic
+Financial Institutions.
+*** Status of 'No Opinion' is ascertained due to non-disclosure of the required
+information as per last available financial statement i.e. breakup of sales revenue
+including interest element. Therefore, such companies will not be included in KMI
+Islamic Index.
+
+**** Total Assets of OGDC are adjusted with non-cash items arising due to the adoption
+of IFRS 16 'Leases' in respect of sale agreements with HUPL and UCH-II
+
+# As AVN and SYS are from IT sector, therefore their fixed assets are not significant in
+value therefore, these are considered as Compliant and relaxation provided over Illiquid
+assets to Total Assets ratio.
+## While calculating HUBC's Income ratio, China Power Hub Generation Company
+(CPHGC) which is an associated investee company of HUBC whose revenues are
+consolidated with HUBC's revenues up to the extent of HUBC's investment
+
+
+1 Based on September-2020 accounts
+
+2 Based on November-2020 accounts
+
+3 As per last available annual / half-yearly accounts
+

@@ -1,0 +1,730 @@
+RECOMPOSITION OF PSX-KMI ALL SHARE ISLAMIC INDEX
+
+                                                                                 NOTICE
+
+PSX/N-659                                                                                                  May 29, 2026
+
+                        RECOMPOSITION OF PSX-KMI ALL SHARE ISLAMIC INDEX
+It is hereby notified that Pakistan Stock Exchange Limited has completed the re-composition exercise of the PSX-KMI All Share Islamic
+Index, based on the Shariah status of listed companies as provided by the Exchange’s partner Shariah Advisor, using accounts as of
+December 31, 2025. The re-composition has been undertaken in accordance with the selection criteria detailed in the KMI All share
+Index brochure, available on the Exchange’s website : www.psx.com.pk.
+
+As a result of this exercise, the recomposed Index will consist of 309 companies in total. 42 companies have been added, while 19
+companies have been removed. The following are the incoming and outgoing companies.
+
+                           Incoming Companies                                          Outgoing Companies
+       AASM      Al-Abid Silk Mills Limited                       AABS         Al-Abbas Sugar Mills Limited^
+       ASC       Al Shaheer Corporation Limited                   AKDHL        AKD Hospitality Limited^
+       ASTM      Asim Textile Mills Limited                       APL          Attock Petroleum Limited^
+       BAFS      Baba Farid Sugar Mills Limited                   BRRG         B.R.R Guardian Limited^
+       CHAS      Chashma Sugar Mills Limited                      DIIL         Diamond Industries Limited^
+       COLG      Colgate-Palmolive (Pakistan) Limited             GEMNETS      Nets International Communication Limited^
+       DBSL      Dadabhoy Sack Limited                            HABSM        Habib Sugar Mills Limited^
+       DFSM      Dewan Farooque Spinning Mills Limited            JKSM         J.K. Spinning Mills Limited^
+       DSL       Dost Steels Limited                              KML          Kohinoor Mills Limited^
+       DWSM      Dewan Sugar Mills Limited                        NATF         National Foods Limited^
+       FASM      Faisal Spinning Mills Limited                    OBOY         Oilboy Energy Limited^
+       FIL       Fateh Industries Limited                         SAIF         Saif Textile Mills Limited^
+       GADT      Gadoon Textile Mills Limited                     SHEZ         Shezan International Limited^
+       HATM      Hamid Textile Mills Limited                      SPWL         Saif Power Limited^
+       INKL      International Knitwear Limited                   TBL          Treet Battery Limited.^
+       ITANZ     Itanz Technologies Limited                       TPLP         TPL Properties Limited^
+       JATM      J.A. Textile Mills Limited                       TPLT         TPL Trakker Limited^
+       JUBS      Jubilee Spinning & Weaving Mills Ltd.            UCAPM        Unicap Modaraba^^
+       KSTM      Khalid Siraj Textile Mills Limited               YOUW         Yousaf Weaving Mills Limited^
+       MIRKS     Mirpurkhas Sugar Mills Limited
+       MRNS      Mehran Sugar Mills Limited
+       MUBT      Mubarak Textile Mills Limited
+       NCML      Nazir Cotton Mills Limited
+       NONS      Noon Sugar Mills Limited
+       OTSU      Otsuka Pakistan Limited
+       PICT      Pakistan International Container
+       PMRS      The Premier Sugar Mills
+       QTECH     Quantum Data Technologies Limited
+       QUET      Quetta Textile Mills Limited
+       RUBY      Ruby Textile Mills Limited
+       SASML     Sindh Abadgars Sugar Mills Limited
+       SGABL     SG.Allied Businesses Limited
+       SKRS      Sakrand Sugar Mills Limited
+       SML       Shakarganj Limited
+       SPL       Sitara Peroxide Limited
+       SRVI      Service Industries Limited
+       SSML      Saritow Spinning Mills Limited
+       SUHJ      Suhail Jute Mills Limited
+       SWL       Standard Worldwide Limited
+       THCCL     Thatta Cement Company Limited
+       UNITY     Unity Foods Limited
+       FNBM      First National Bank Modaraba
+
+
+
+
+        Strategy, Products & Data Science | UAN: +9221 111-00-11-22 | E-mail: pd@psx.com.pk | Web: psx.com.pk
+                                                                               NOTICE
+Note: ^ Companies excluded due to Shariah non-compliance
+      ^^ Company excluded due to absence of Shariah certificate
+
+
+
+
+The recomposed PSX-KMI All Share Index will be implemented w.e.f Friday, June 05, 2026.
+
+
+
+
+Aamir Mushtaq Kanju, CFA, FCCA, ACA
+Head | Strategy, Products & Data Science
+Copy to:
+Chief Operating Officer-PSX
+PSX Website
+
+
+
+
+        Strategy, Products & Data Science | UAN: +9221 111-00-11-22 | E-mail: pd@psx.com.pk | Web: psx.com.pk
+           RECOMPOSITION OF PSX - KMI ALL SHARE ISLAMIC INDEX FOR THE PERIOD ENDED DECEMBER 2025
+                                             (COMPLETE RATIOS)
+No.      Ticker                            Company Name              Objective     Debt Ratio   Investment        Income Ratio    Illiquid Assets Ratio    Net Liquid    Share Price as of   Final Shariah
+                                                                                  (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)       (IA/TA => 25%)      Assets Ratio    December 31,          Status
+                                                                                                  < 33%)                                                   (NLA < P)          2025
+
+      1 AABS      Al-Abbas Sugar Mills Ltd                            Compliant     22.66%         53.64%            2.46%               30.53%              238.97           1040.47        Non-Compliant 1
+      2 AASM      Al-Abid Silk Mills Limited *                        Compliant     34.98%         0.00%             4.31%               92.36%              (159.13)           0.00            Compliant
+      3 AATM      Ali Asghar Textile Mills Limited *                  Compliant      7.71%         20.27%            44.06%              76.08%               4.59             43.00          Non-Compliant
+      4 ABOT      Abbott Lab (Pakistan) Ltd                           Compliant      1.04%         0.00%             0.63%               61.42%              29.33            1050.14           Compliant
+      5 ACPL      Attock Cement Pakistan Ltd *                        Compliant     25.04%         5.38%             0.06%               84.92%              (143.92)           0.00            Compliant
+      6 ADAMS     Adam Sugar Mills Ltd                                Compliant      8.65%         0.18%             0.01%               88.96%              (144.14)           0.00           Compliant 1
+      7 ADMM      Artistic Denim Mills Ltd *                          Compliant     42.96%         0.00%             0.07%               80.18%              (141.72)           0.00          Non-Compliant
+      8 AGHA      Agha Steel Ind *                                    Compliant     48.50%         0.00%             0.08%               90.96%              (48.39)            0.00          Non-Compliant
+      9 AGIL      Agriauto Industries Ltd *                           Compliant     10.01%         0.74%             0.05%               71.96%              (23.75)            0.00            Compliant
+  10 AGL          Agritech Limited                                    Compliant     61.38%         7.49%             6.80%               85.48%              (100.84)           0.00          Non-Compliant
+  11 AGP          AGP Limited                                         Compliant      7.27%         0.05%             0.19%               85.99%              (37.26)            0.00            Compliant
+  12 AGSML        Abdullah Shah Ghazi Sugar Mills                     Compliant     43.77%         0.00%             0.00%               99.68%              (53.51)            0.00         Non-Compliant 1
+  13 AGTL         Al-Ghazi Tractors Ltd                               Compliant      0.21%         0.00%             0.36%               45.92%              32.07            400.66            Compliant
+  14 AHCL         Arif Habib Corporation Ltd *                        Compliant      8.86%         4.14%             21.39%              76.22%              (17.83)            0.00          Non-Compliant
+  15 AHTM         Ahmed Hassan Textile Mills Ltd *                    Compliant     13.06%         0.00%             0.00%               81.67%              (145.89)           0.00            Compliant
+  16 AIRLINK      Air Link Communication Limited *                    Compliant     32.66%         6.44%             0.38%               53.65%              (40.00)            0.00            Compliant
+  17 AKDHL        AKD Hospitality Limited (AKD Capital) *             Compliant      0.00%         62.08%            28.27%               5.15%              19.59            178.59          Non-Compliant
+  18 AKGL         AL-Khair Gadoon Ltd *                               Compliant     23.18%         0.00%             0.04%               76.39%              (16.19)            0.00            Compliant
+  19 ALNRS        Al-Noor Sugar Mills Ltd                             Compliant      8.82%         0.02%             0.05%               91.46%              (379.13)           0.00           Compliant 1
+  20 ALTN         Altern Energy Ltd *                                 Compliant      0.00%         81.70%            0.46%                3.48%              26.16             11.76          Non-Compliant
+  21 AMTEX        Amtex Limited *                                     Compliant     249.02%        0.00%             0.07%               72.74%              (42.71)            0.00          Non-Compliant
+  22 ANL          Azgard Nine Ltd *                                   Compliant     27.24%         2.00%             0.00%               65.43%               (8.47)            0.00            Compliant
+  23 ANSM         Ansari Sugar Mills Ltd                              Compliant     64.99%         0.00%             0.00%               89.13%              (184.63)           0.00         Non-Compliant 1
+  24 ANTM         AN Textile Mills Ltd *                              Compliant     20.53%         0.00%             0.00%               83.28%              (96.62)            0.00            Compliant
+  25 APL          Attock Petroleum Ltd *                              Compliant      8.34%         35.90%            1.18%               49.74%              40.39            545.56          Non-Compliant
+  26 ARCTM        Arctic Textile Mills Limited *                      Compliant      0.00%         0.00%             0.03%               76.59%              (12.99)            0.00            Compliant
+  27 ARMG         ARM Green Industries Limited (Calcorp Limited) *    Compliant      0.00%         0.00%             95.22%              34.88%              10.95             59.28          Non-Compliant
+  28 ARPL         Archroma Pakistan Ltd                               Compliant      1.30%         0.00%             0.00%               49.06%              (96.91)            0.00           Compliant 1
+  29 ARUJ         Aruj Industries Ltd *                               Compliant     67.83%         0.00%             0.00%               46.39%               (5.27)            0.00          Non-Compliant
+  30 ASC          Al Shaheer Corporation Ltd *                        Compliant      0.00%         0.00%             0.00%               89.77%              (10.99)            0.00            Compliant
+  31 ASHT         Ashfaq Textile Mills Ltd *                          Compliant      0.00%         0.00%             0.18%               79.57%               (0.09)           0.00             Compliant
+  32 ASL          Aisha Steel Ltd *                                   Compliant     29.15%         0.00%             0.00%               72.13%               (4.82)           0.00             Compliant
+  33 ASTL         Amreli Steels Ltd *                                 Compliant     35.91%         0.07%             5.27%               71.51%              (61.69)           0.00           Non-Compliant
+  34 ASTM         Asim Textile Mills Ltd *                            Compliant      0.00%         0.00%             0.00%               74.38%              (32.84)            0.00            Compliant
+  35 ATBA         Atlas Battery Ltd *                                 Compliant     21.69%         2.97%             0.00%               70.06%              (211.56)          0.00             Compliant
+  36 ATLH         Atlas Honda Ltd *                                   Compliant      0.51%         33.66%            1.94%               27.23%              116.47           1342.30        Non-Compliant 1
+  37 ATRL         Attock Refinery Ltd *                               Compliant      0.12%         18.36%            1.92%               52.09%              367.07           683.43            Compliant
+  38 AVN          Avanceon Limited                                    Compliant      9.33%         0.00%             0.00%               25.60%              18.58             43.66           Compliant 4
+  39 AWTX         Allawasaya Textile Mills Ltd *                      Compliant     23.23%         0.42%             0.31%               67.88%             (1152.54)           0.00            Compliant
+  40 BAFS         Baba Farid Sugar Mills Ltd                          Compliant      8.17%         0.00%             0.14%               85.81%              (828.96)          0.00            Compliant 1
+  41 BAPL         Bawany Air Product Ltd *                            Compliant      2.34%         0.34%             0.00%                2.42%              406.32            44.61          Non-Compliant
+  42 BATA         Bata (Pakistan) Ltd                                 Compliant     32.97%         0.33%             0.09%               78.19%              (986.05)          0.00             Compliant
+  43 BBFL         Big Bird Foods Limited *                            Compliant     27.83%         0.00%             1.39%               82.81%               (9.04)           0.00             Compliant
+  44 BCL          Bolan Castings Ltd *                                Compliant      4.88%         0.00%             0.27%               67.62%              (16.63)           0.00             Compliant
+  45 BECO         Beco Steel Limited (Ravi Textile) *                 Compliant      0.07%         0.00%             0.00%               65.89%              (24.26)           0.00             Compliant
+  46 BELA         Bela Automotives Limited *                          Compliant     67.39%         0.00%             0.00%               88.83%              (24.15)            0.00          Non-Compliant
+  47 BERG         Berger Paints Pakistan Ltd *                        Compliant     20.27%         0.67%             0.10%               49.04%              (10.35)           0.00             Compliant
+  48 BFAGRO       Barkat Frisian Agro Limited *                       Compliant      0.21%         0.08%             0.00%               138.42%              (7.35)           0.00             Compliant
+  49 BFBIO        BF Biosciences Limited *                            Compliant     18.67%         13.26%            1.23%               70.83%              (23.71)           0.00             Compliant
+  50 BGL          Balochistan Glass Ltd *                             Compliant     39.39%         0.00%             0.00%               92.39%               (4.20)           0.00           Non-Compliant
+  51 BHAT         Bhanero Textile Mills Ltd *                         Compliant     34.14%         3.36%             0.29%               75.05%             (3344.83)          0.00             Compliant
+  52 BIFO         Biafo Industries Ltd *                              Compliant     12.79%         7.01%             0.11%               68.03%               7.27            160.54            Compliant
+  53 BLUEX        Blue-Ex Limited *                                   Compliant      4.88%         1.71%             0.50%               25.47%              28.00             64.86            Compliant
+  54 BNL          Bunnys Limited *                                    Compliant     17.67%         0.00%             0.00%               78.72%              (16.55)           0.00             Compliant
+  55 BNWM         Bannu Woollen Mills Ltd *                           Compliant      8.42%         0.00%             0.02%               83.35%              (16.02)           0.00             Compliant
+  56 BPL          Burshane LPG (Pakistan) Ltd *                       Compliant     30.15%         0.00%             4.17%               70.63%              (24.37)           0.00             Compliant
+  57 BRRG         B.R.R Guardian Limited *                            Compliant      0.00%         3.44%             6.41%               94.98%               (5.59)           0.00           Non-Compliant
+  58 BTL          Blessed Textiles Ltd *                              Compliant     29.16%         2.37%             0.05%               67.93%             (1488.13)          0.00             Compliant
+  59 BUXL         Buxly Paints Ltd *                                  Compliant      0.00%         0.00%             0.03%               39.88%              (61.62)           0.00             Compliant
+  60 BWCL         Bestway Cement Ltd *                                Compliant     13.66%         18.56%            6.94%               77.44%              (142.76)          0.00           Non-Compliant
+  61 BWHL         Baluchistan Wheels Ltd *                            Compliant      0.54%         22.25%            2.38%               59.94%              60.05            187.94            Compliant
+  62 CCM          Crescent Cotton Mills Ltd *                         Compliant      6.82%         7.22%             0.00%               75.35%              (12.43)           0.00             Compliant
+  63 CEPB         Century Paper & Board Mills *                       Compliant     18.28%         2.70%             0.33%               70.37%              (20.92)           0.00             Compliant
+  64 CFL          Crescent Fibres Ltd * ^                             Compliant     16.55%         0.68%             0.51%               45.04%              71.00             54.58            Compliant
+  65 CHAS         Chashma Sugar Mills Ltd                             Compliant     34.95%         1.07%             1.50%               85.51%              (663.92)          0.00            Compliant 1
+  66 CHBL         Chenab Limited *                                    Compliant     97.39%         0.00%             0.65%               91.18%              (85.78)           0.00           Non-Compliant
+  67 CHCC         Cherat Cement Co. Ltd *                             Compliant      7.00%         16.15%            1.79%               79.37%              (40.24)           0.00             Compliant
+  68 CJPL         Crescent Jute Products *                            Compliant     3003.20%       8.51%            100.00%              64.84%               (8.78)            0.00          Non-Compliant
+  69 CLOV         Clover Pakistan Ltd *                               Compliant      0.00%         0.00%             0.00%               69.01%               (2.77)           0.00             Compliant
+  70 CLVL         Cordoba Logistics *                                 Compliant     36.12%         27.86%            96.30%              71.51%               (7.71)           0.00           Non-Compliant
+  71 CNERGY       Cnergyico PK Limited *                              Compliant      7.36%         0.00%             0.02%               91.52%              (30.43)           0.00             Compliant
+  72 COLG         Colgate Palmolive (Pakistan) *                      Compliant      1.87%         31.22%            0.19%               57.11%              26.85            1268.91           Compliant
+  73 CPHL         Citi Pharma Limited *                               Compliant     27.85%         1.45%             0.70%               60.07%               (8.13)           0.00             Compliant
+  74 CPPL         Cherat Packaging Ltd *                              Compliant     16.30%         0.00%             0.00%               76.52%              (83.01)           0.00             Compliant
+  75 CRTM         Crescent Textile Mills Ltd *                        Compliant     36.27%         0.69%             0.12%               83.65%              (89.62)           0.00             Compliant
+  76 CSAP         Crescent Steel & Allied Products *                  Compliant      3.68%         18.98%            1.73%               55.53%              31.35            101.29            Compliant
+  77 CTM          Colony Textile Mills Ltd *                          Compliant     45.18%         1.32%             1.67%               89.22%              (39.37)           0.00           Non-Compliant
+  78 DAAG         Data Agro Limited *                                 Compliant     29.81%         0.00%             0.00%               61.85%              (29.78)           0.00             Compliant
+  79 DADX         Dadex Eternit Limited * ^                           Compliant      4.34%         0.00%             0.00%               21.58%              (29.96)           0.00             Compliant
+  80 DBCI         Dadabhoy Cement Industries Limited *                Compliant      0.00%         51.01%           100.00%               2.24%               2.23              7.91          Non-Compliant
+  81 DBSL         Dadabhoy Sack Limited *                             Compliant      0.00%         0.00%             0.00%               99.99%               (2.59)            0.00            Compliant
+  82 DCL          Dewan Cement Ltd *                                  Compliant     12.85%         0.00%             0.00%               97.00%              (44.22)           0.00             Compliant
+  83 DCR          Dolmen City REIT *                                  Compliant      0.00%         0.00%             0.00%               98.84%               (0.62)           0.00             Compliant
+  84 DCTL         Dadabhoy Construction Technology Limited *          Compliant     77.81%         0.00%             0.00%                0.00%               (6.94)            0.00         Non-Compliant 2
+  85 DFML         Dewan Farooque Motors Ltd *                         Compliant     121.69%        0.00%             0.07%               64.07%              (50.55)            0.00         Non-Compliant 2
+  86 DFSM         Dewan Farooq Spinning Mills Ltd *                   Compliant     10.62%         0.00%             0.00%               98.69%              (23.67)           0.00             Compliant
+  87 DGKC         D.G. Khan Cement Co. Ltd *                          Compliant      7.84%         26.79%            3.36%               68.49%               (8.92)           0.00             Compliant
+No.     Ticker                              Company Name                       Objective     Debt Ratio   Investment        Income Ratio    Illiquid Assets Ratio    Net Liquid    Share Price as of   Final Shariah
+                                                                                            (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)       (IA/TA => 25%)      Assets Ratio    December 31,          Status
+                                                                                                            < 33%)                                                   (NLA < P)          2025
+
+   88 DIIL        Diamond Industries *                                          Compliant      0.00%         64.68%            0.00%               29.03%              19.63             50.00          Non-Compliant
+   89 DINT        Din Textile Mills Ltd *                                       Compliant      3.51%         0.00%             0.00%               73.33%              (283.06)          0.00             Compliant
+   90 DLL         Dawood Lawrencepur Limited                                    Compliant      7.19%         17.27%            12.91%              70.89%              88.30            676.55          Non-Compliant
+   91 DMC         D.M. Corporation Limited.(D.M. Textile Mills Ltd)*            Compliant      0.00%         0.75%             0.00%               91.77%               (1.01)           0.00             Compliant
+   92 DNCC        Dandot Cement Co. Ltd *                                       Compliant     33.26%         0.00%             0.00%               94.01%              (30.17)           0.00             Compliant
+   93 DOL         Descon Oxychem Ltd *                                          Compliant     18.55%         15.95%            0.42%               69.36%               (2.24)           0.00             Compliant
+   94 DSFL        Dewan Salman Fiber Limited *                                  Compliant     454.17%        0.00%             0.00%               82.47%              (58.97)            0.00          Non-Compliant
+   95 DSIL        DS Industries Ltd *                                           Compliant      0.27%         31.31%            80.78%               8.38%               2.07             10.99          Non-Compliant
+   96 DSL         Dost Steel Ltd *                                              Compliant     19.89%         0.00%             0.00%               99.46%               (8.65)            0.00            Compliant
+   97 DWAE        Dewan Automomotive Engineering ltd *                          Compliant     494.15%        0.00%             0.35%               90.47%              (80.97)            0.00          Non-Compliant
+   98 DWSM        Dewan Sugar Mills Ltd                                         Compliant     35.59%         0.00%             0.06%               94.55%              (78.59)            0.00           Compliant1
+   99 DWTM        Dewan Textile Mills Ltd *                                     Compliant     182.09%        0.00%             0.00%               99.68%              (13.20)            0.00          Non-Compliant
+  100 DYNO        Dynea Pakistan Ltd *                                          Compliant      4.33%         9.51%             0.60%               41.54%              114.56           292.36            Compliant
+  101 ECOP        EcoPack Ltd *                                                 Compliant     34.89%         0.00%             0.00%               76.89%              (23.66)           0.00             Compliant
+  102 EFERT       Engro Fertilizers Ltd                                         Compliant     11.28%         6.91%             0.40%               69.60%              (70.30)           0.00             Compliant
+  103 ELCM        Elahi Cotton Mills Ltd *                                      Compliant      0.41%         0.23%             0.00%               70.26%              (100.64)          0.00             Compliant
+  104 ELSM        Ellcot Spinning Mills Ltd *                                   Compliant     34.61%         3.40%             0.27%               77.52%              (422.87)          0.00             Compliant
+  105 EMCO        EMCO Industries Ltd *                                         Compliant     24.62%         0.00%             0.00%               77.28%              (44.18)           0.00             Compliant
+  106 ENGROH      Engro Holdings Limited (Dawood Hercules Corporation)          Compliant     17.51%         8.35%             1.30%               73.63%              (410.82)          0.00             Compliant
+  107 EPCL        Engro Polymer & Chemicals                                     Compliant      5.19%         10.47%            0.13%               74.55%              (70.48)           0.00             Compliant
+  108 EPQL        Engro Powergen Qadirpur Ltd                                   Compliant     13.86%         0.32%             3.18%               72.04%               0.87             32.36            Compliant
+  109 EXIDE       Exide Pakistan Ltd *                                          Compliant     13.18%         0.00%             0.01%               56.46%              (231.61)          0.00            Compliant 1
+  110 FASM        Faisal Spinning Mills Ltd *                                   Compliant     35.51%         0.91%             0.22%               76.05%             (1942.27)          0.00             Compliant
+  111 FATIMA      Fatima Fertilizer Co. Ltd                                     Compliant      3.22%         5.88%             0.93%               75.89%              (49.53)           0.00             Compliant
+  112 FCCL        Fauji Cement Co. Ltd *                                        Compliant     21.50%         13.79%            0.57%               80.45%              (19.83)           0.00             Compliant
+  113 FCEL        First Capital Equities Ltd *                                  Compliant     48.96%         18.70%            0.00%               68.13%             (6591.13)           0.00          Non-Compliant
+  114 FCEPL       Frieslandcampins Engro Foods Limited                          Compliant      5.92%         0.37%             0.11%               78.10%              (16.08)           0.00             Compliant
+  115 FCL         Fast Cables Limited *                                         Compliant      1.18%         0.00%             0.00%               60.71%              (11.04)           0.00             Compliant
+  116 FDPL        First Dawood Properties Limited *                             Compliant     25.02%         51.98%            85.95%              30.19%               2.72             6.03           Non-Compliant
+  117 FECTC       Fecto Cement Ltd *                                            Compliant     17.98%         0.00%             0.03%               88.73%              (56.25)           0.00             Compliant
+  118 FEROZ       Ferozsons Laboratories Ltd *                                  Compliant     10.55%         6.91%             0.66%               72.86%              (104.36)          0.00             Compliant
+  119 FFC         Fauji Fertilizer Company Ltd                                  Compliant      4.35%         30.30%            4.97%               58.49%              (66.00)           0.00             Compliant
+  120 FFL         Fauji Foods Ltd                                               Compliant      2.02%         11.66%            1.44%               59.68%               (0.75)           0.00             Compliant
+  121 FIL         Fateh Industries Limited *                                    Compliant      0.00%         0.27%             0.00%               92.36%              (66.89)            0.00            Compliant
+  122 FLYNG       FlyIng Cement Co. Ltd *                                       Compliant     16.01%         0.00%             0.00%               92.96%              (20.84)           0.00             Compliant
+  123 FML         Feroze1888 Mills Ltd *                                        Compliant     24.87%         0.00%             1.32%               68.55%              (70.15)           0.00             Compliant
+  124 FRCL        Frontier Ceramics Ltd *                                       Compliant      0.62%         17.29%            0.80%               63.80%              (25.91)           0.00             Compliant
+  125 FRSM        Faran Sugar Mills Ltd                                         Compliant      0.00%         0.16%             0.00%               80.43%              (66.58)           0.00            Compliant 1
+  126 FSWL        Fateh Sports Wear Limited *                                   Compliant      0.00%         0.00%             0.00%                6.61%              262.43            102.82         Non-Compliant
+  127 FZCM        Fazal Cloth Mills Ltd *                                       Compliant     26.37%         4.43%             0.01%               82.19%             (1754.40)          0.00             Compliant
+  128 GADT        Gadoon Textile Mills Ltd *                                    Compliant     17.29%         3.17%             0.13%               85.37%             (1211.78)          0.00             Compliant
+  129 GAL         Ghandhara Automobiles Limited (Ghandhara Nissan Ltd) *        Compliant      1.96%         0.00%             0.10%               83.06%              (106.19)          0.00             Compliant
+  130 GAMON       Gammon Pakistan Ltd *                                         Compliant      0.00%         0.00%             12.80%              69.70%               3.31             22.01          Non-Compliant
+  131 GATI        Gatron (Industries) Ltd *                                     Compliant      0.66%         0.00%             0.00%               84.46%              (168.53)          0.00             Compliant
+  132 GATM        Gul Ahmed Textile Mills Ltd *                                 Compliant     30.71%         1.85%             0.22%               77.83%              (103.80)          0.00             Compliant
+  133 GCIL        Ghani Chemical Industries Ltd *                               Compliant      0.00%         11.64%            2.40%               60.54%               (1.26)           0.00             Compliant
+  134 GCWL        Ghani Chemworld Limited *                                     Compliant      0.00%         0.00%             0.00%               92.11%               (5.81)           0.00             Compliant
+  135 GDL         Ghani Dairies Limited *                                       Compliant      0.52%         0.00%             0.16%               81.82%              (13.11)            0.00           Compliant 2
+  136 GEMMEL      Mughal Energy Limited (GEM) *                                 Compliant      8.90%         0.00%             0.00%               88.61%              (22.00)            0.00            Compliant
+  137 GEMNETS     Nets International Communication Limited *                    Compliant     15.97%         1.45%             12.31%               9.15%               9.52             38.00          Non-Compliant
+  138 GEMPACRA The Pakistan Credit Rating Agency Ltd *##                        Compliant      5.22%         13.73%            1.83%               20.71%               1.90             38.68            Compliant
+  139 GEMPAPL     Pak Agro Packaging Limited *                                  Compliant      9.73%         0.00%             0.00%               86.22%               (8.18)            0.00            Compliant
+  140 GFIL        Ghazi Fabrics International Ltd * ^                           Compliant      0.00%         0.00%             0.00%               78.74%              25.40             14.91            Compliant
+  141 GGGL        Ghani Global Glass Ltd *                                      Compliant     26.13%         0.00%             0.00%               71.10%               (6.53)           0.00             Compliant
+  142 GGL         Ghani Global Holdings Limited *                               Compliant     16.30%         0.37%             0.01%               72.56%               (9.79)           0.00             Compliant
+  143 GHGL        Ghani Glass Ltd *                                             Compliant      0.11%         0.00%             0.00%               70.03%               2.57             35.85            Compliant
+  144 GHNI        Ghandhara Industries Ltd *                                    Compliant      0.05%         0.00%             0.01%               79.36%              (262.82)          0.00             Compliant
+  145 GIL         Goodluck Industries Ltd *                                     Compliant      0.00%         0.00%             0.02%               89.80%              (80.10)            0.00            Compliant
+  146 GLAXO       GlaxoSmithKline Pakistan                                      Compliant      0.73%         0.00%             0.76%               56.15%              16.38            389.78            Compliant
+  147 GLOT        Globe Textile Mills Limited *                                 Compliant      0.00%         0.00%             0.00%                0.00%               2.12             8.70           Non-Compliant
+  148 GOC         GOC (Pakistan) Limited *                                      Compliant      0.00%         3.65%             0.23%               72.24%              19.38            115.64            Compliant
+  149 GSPM        Gulshan Spinning Mills Limited *                              Compliant     1409.42%       3.35%            100.00%              37.79%              (137.32)           0.00          Non-Compliant
+  150 GTYR        Ghandhara Tyre & Rubber Co. *                                 Compliant     33.63%         0.00%             0.00%               77.56%              (84.57)           0.00             Compliant
+  151 GUSM        Gulistan Spinning Mills Limited *                             Compliant     2375.33%       6.97%             83.67%               0.00%              (114.69)           0.00          Non-Compliant
+  152 GUTM        Gulistan Textile Mills Limited *                              Compliant     2048.00%       5.25%             0.00%                0.00%              (443.79)           0.00          Non-Compliant
+  153 GVGL        Ghani Value Glass Ltd *                                       Compliant      0.00%         0.00%             0.00%               73.81%               (1.33)           0.00             Compliant
+  154 GWLC        Gharibwal Cement Ltd *                                        Compliant      1.86%         7.55%             1.25%               85.67%              (19.84)           0.00             Compliant
+  155 HABSM       Habib Sugar Mills Ltd                                         Compliant      2.69%         56.73%            2.34%               80.25%               (9.46)           0.00          Non-Compliant 1
+  156 HAEL        Hala Enterprises Ltd *                                        Compliant     20.90%         0.00%             0.00%               68.65%               (1.47)           0.00             Compliant
+  157 HAFL        Hafiz Limited *                                               Compliant      0.00%         1.11%             0.00%               95.39%              11.44             483.27           Compliant
+  158 HALEON      Haleon Pakistan Ltd (Glaxo SmithKline Consumer Healthcare)    Compliant      0.92%         12.25%            1.57%               62.82%              (19.36)           0.00             Compliant
+  159 HASCOL      Hascol Petroleum Ltd                                          Compliant     191.05%        0.25%             0.03%               85.87%              (127.45)           0.00          Non-Compliant
+  160 HATM        Hamid Textile Mills Limited *                                 Compliant     18.44%         0.00%             0.00%               78.86%              (24.84)            0.00            Compliant
+  161 HCAR        Honda Atlas Cars (Pakistan) Ltd *                             Compliant      4.78%         0.00%             0.38%               50.60%              (58.71)           0.00            Compliant 1
+  162 HINO        Hinopak Motors Ltd *                                          Compliant     13.45%         0.00%             0.07%               81.38%              (130.77)          0.00            Compliant 1
+  163 HINOON      Highnoon Laboratories Ltd                                     Compliant      2.72%         12.66%            0.53%               55.31%              56.65            1022.49           Compliant
+  164 HMIM        Haji Mohammad Ismail Mills Ltd *                              Compliant      0.00%         0.00%            100.00%              28.66%               (0.39)            0.00          Non-Compliant
+  165 HPL         Hoechst Pakistan Limited (Sanofi Aventis)                     Compliant      1.80%         9.06%             0.51%               69.87%              (202.01)          0.00             Compliant
+  166 HRPL        Habib Rice Products Ltd                                       Compliant     12.55%         0.01%             0.03%               84.20%              (13.16)           0.00            Compliant 1
+  167 HTL         Hi-Tech Lubricants Ltd *                                      Compliant     23.19%         1.51%             0.01%               73.79%              (35.28)           0.00             Compliant
+  168 HUBC        Hub Power Company Ltd * #                                     Compliant     18.84%         42.35%            7.16%               37.34%              71.91            221.38            Compliant
+  169 HUSI        Husein Industries Limited *                                   Compliant     57.89%         0.43%             0.06%               95.02%              (75.42)           0.00           Non-Compliant
+  170 HWQS        Haseeb Waqas Sugar Mills Ltd                                  Compliant     43.59%         0.00%             0.00%               100.00%             (174.04)           0.00         Non-Compliant 1
+  171 IBFL        Ibrahim Fibres Ltd                                            Compliant      4.19%         0.00%             0.00%               81.84%              (69.77)           0.00             Compliant
+  172 IBLHL       IBL HealthCare Ltd *                                          Compliant      0.49%         0.00%             0.00%               44.17%               5.19             63.95            Compliant
+  173 ICCI        ICC Industries Limited *                                      Compliant     12.84%         0.00%             0.00%               98.08%              (10.47)           0.00             Compliant
+  174 ICL         Ittehad Chemicals Ltd *                                       Compliant     14.23%         0.00%             0.36%               69.49%              (45.72)           0.00             Compliant
+  175 IDRT        Idrees Textile Mills Ltd *                                    Compliant     26.87%         1.81%             0.33%               64.91%              (160.63)          0.00             Compliant
+  176 IDSM        Ideal Spinning Mills Ltd *                                    Compliant     20.64%         0.00%             0.15%               61.90%              (131.20)          0.00             Compliant
+  177 IDYM        Indus Dyeing & Mfg Co. Ltd *                                  Compliant     51.74%         7.09%             0.04%               65.16%              (703.47)          0.00           Non-Compliant
+  178 ILP         Interloop Limited *                                           Compliant     27.50%         2.34%             0.73%               65.42%              (40.55)           0.00             Compliant
+No.     Ticker                               Company Name         Objective     Debt Ratio   Investment        Income Ratio    Illiquid Assets Ratio    Net Liquid    Share Price as of   Final Shariah
+                                                                               (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)       (IA/TA => 25%)      Assets Ratio    December 31,          Status
+                                                                                               < 33%)                                                   (NLA < P)          2025
+
+  179 IMAGE      Image Pakistan Limited *                          Compliant     15.14%         0.00%             0.00%               70.61%               (2.55)           0.00             Compliant
+  180 INDU       Indus Motor Company Ltd *                         Compliant      0.13%         53.36%            3.99%               36.18%              252.00           2003.43         Non-Compliant
+  181 INIL       International Industries Ltd *                    Compliant     12.37%         2.28%             0.09%               86.95%              (210.46)          0.00             Compliant
+  182 INKL       International Knitwear Ltd *                      Compliant     36.21%         1.25%             0.06%               52.07%              (10.13)           0.00             Compliant
+  183 IPAK       International Packaging Films Limited *           Compliant      1.56%         0.00%             0.00%               74.16%              (22.72)           0.00             Compliant
+  184 IREIT      Image Reit *                                      Compliant      0.00%         0.00%             0.00%               79.43%               2.59              9.27            Compliant
+  185 ISIL       Ismail Industries Ltd *                           Compliant     28.30%         13.95%            0.53%               57.60%              (769.75)          0.00             Compliant
+  186 ISL        International Steels Ltd *                        Compliant     10.61%         1.53%             0.06%               91.58%              (48.85)           0.00             Compliant
+  187 ITANZ      Itanz Technologies Limited * ##                   Compliant      0.38%         0.00%             0.19%                4.92%              75.45              0.06            Compliant
+  188 ITTEFAQ    Ittefaq Iron Industries *                         Compliant     26.19%         0.00%             0.08%               67.53%               (1.82)           0.00             Compliant
+  189 JATM       J. A. Textile Mills Ltd *                         Compliant      0.00%         0.00%             0.09%               71.47%              (16.28)            0.00            Compliant
+  190 JDMT       Janana De Malucho Textile *                       Compliant     19.19%         0.00%             0.11%               97.40%              (272.28)          0.00             Compliant
+  191 JDWS       JDW Sugar Mills Ltd                               Compliant     19.56%         1.12%             0.97%               82.02%              (593.98)          0.00            Compliant 1
+  192 JKSM       J.K. Spinning Mills Ltd *                         Compliant     37.44%         2.16%             0.14%               73.99%              (104.99)          0.00           Non-Compliant
+  193 JSML       Jauharabad Sugar Mills Ltd                        Compliant     12.19%         0.57%             0.17%               83.49%              (63.07)           0.00            Compliant 1
+  194 JUBS       Jubilee Spinning & Weaving Mills Ltd *            Compliant      0.00%         0.00%             0.91%               86.51%               (0.11)            0.00            Compliant
+  195 JVDC       Javedan Corporation Ltd *                         Compliant      7.80%         10.72%            0.88%               71.90%              (15.17)           0.00             Compliant
+  196 KAPCO      Kot Addu Power Company *                          Compliant      0.00%         37.17%            17.79%              36.16%              37.96             37.52          Non-Compliant
+  197 KCL        Karam Ceramics Ltd *                              Compliant      0.00%         0.00%             0.00%               93.40%              (36.09)           0.00             Compliant
+  198 KEL        K-Electric Ltd                                    Compliant     25.92%         2.30%             0.74%               58.58%              (12.50)            0.00           Compliant 2
+  199 KHYT       Khyber Textile Mills Ltd *                        Compliant      0.00%         0.00%             0.00%               99.16%              (30.27)            0.00            Compliant
+  200 KML        Kohinoor Mills Ltd *                              Compliant     39.47%         0.95%             0.11%               73.87%              (202.07)           0.00          Non-Compliant
+  201 KOHC       Kohat Cement Co. Ltd *                            Compliant      2.24%         26.47%            3.69%               67.95%               1.71            113.20            Compliant
+  202 KOHE       Kohinoor Energy Ltd *                             Compliant     14.04%         0.00%             3.13%               63.04%               5.27             17.44            Compliant
+  203 KOHP       Kohinoor Power Company *                          Compliant      0.00%         0.05%             15.78%              56.20%               4.14             43.07          Non-Compliant
+  204 KOHTM      Kohat Textile Mills Limited *                     Compliant     20.64%         0.09%             0.01%               76.38%              (140.92)          0.00             Compliant
+  205 KOIL       Kohinoor Industries Ltd *                         Compliant      0.00%         14.45%            36.20%              81.18%               5.04             32.00          Non-Compliant
+  206 KOSM       Kohinoor Spinning Mills Ltd *                     Compliant     82.69%         0.01%             0.01%               95.88%               (8.45)           0.00           Non-Compliant
+  207 KPUS       Khairpur Sugar Mills Ltd                          Compliant     20.61%         0.00%             0.01%               77.02%              (201.16)          0.00            Compliant 1
+  208 KSBP       K.S.B.Pumps Company Ltd                           Compliant      0.00%         0.00%             0.20%               53.39%              (26.25)           0.00             Compliant
+  209 KSTM       Khalid Siraj Textile Mills Ltd *                  Compliant     28.95%         0.00%             0.00%               97.63%              (34.82)            0.00            Compliant
+  210 KTML       Kohinoor Textile Mills Ltd *                      Compliant     17.71%         12.63%            2.37%               78.72%              (175.13)          0.00             Compliant
+  211 LCI        Lucky Core Industries Limited (ICI Pakistan) *    Compliant      2.80%         0.00%             0.24%               89.36%              (456.87)          0.00             Compliant
+  212 LEUL       Leather-Up Limited *                              Compliant      0.57%         0.00%             0.00%               40.86%               (0.05)           0.00             Compliant
+  213 LIVEN      Liven Pharma Limited *                            Compliant      3.92%         0.00%             0.00%               97.84%               (1.74)           0.00             Compliant
+  214 LOADS      Loads Limited *                                   Compliant     32.84%         0.20%             0.00%               72.90%               (9.51)           0.00             Compliant
+  215 LOTCHEM    Lotte Chemical Pakistan Ltd                       Compliant      3.23%         2.96%             0.58%               36.36%               4.06             29.18            Compliant
+  216 LPGL       Leiner Pak Gelatine Ltd *                         Compliant     17.77%         0.00%             0.00%               91.14%              (126.00)          0.00             Compliant
+  217 LPL        Lalpir Power Ltd                                  Compliant      0.00%         78.23%            57.14%              19.98%              32.87             24.29          Non-Compliant
+  218 LSECL      LSE Capital Limited *                             Compliant      2.05%         40.43%            68.60%              54.46%               6.80             5.19           Non-Compliant
+  219 LUCK       Lucky Cement Ltd *                                Compliant     26.26%         0.30%             0.27%               86.25%              (866.19)          0.00             Compliant
+  220 MACFL      MACPAC Films Ltd *                                Compliant      0.00%         0.00%             0.00%               68.01%              (24.78)           0.00             Compliant
+  221 MACTER     Macter International Ltd *                        Compliant      1.26%         0.00%             0.00%               78.55%              (40.55)           0.00             Compliant
+  222 MARI       Mari Energies Ltd *                               Compliant      2.75%         6.05%             0.00%               63.30%               (3.29)           0.00             Compliant
+  223 MEHT       Mehmood Textile Mills Ltd *                       Compliant     33.15%         0.00%             0.00%               76.05%              (948.14)          0.00             Compliant
+  224 MERIT      Merit Packaging Ltd *                             Compliant     11.07%         0.00%             0.74%               69.76%               (2.94)           0.00             Compliant
+  225 MFFL       Mitchell's Fruit Farms Ltd *                      Compliant     17.09%         0.00%             0.02%               62.07%              (18.88)           0.00            Compliant 1
+  226 MFL        Matco Foods Ltd *                                 Compliant     32.57%         0.19%             0.07%               84.20%              (145.01)          0.00             Compliant
+  227 MIRKS      Mirpurkhas Sugar Mills Ltd                        Compliant     21.02%         0.09%             0.05%               83.68%              (464.14)          0.00            Compliant 1
+  228 MLCF       Maple Leaf Cement Factory *                       Compliant      7.63%         11.79%            0.46%               81.07%              (23.16)           0.00             Compliant
+  229 MQTM       Maqbool Textile Mills Ltd *                       Compliant     35.14%         0.13%             0.13%               84.43%              (275.74)          0.00             Compliant
+  230 MRNS       Mehran Sugar Mills Ltd                            Compliant     12.45%         5.20%             0.00%               84.87%              (19.54)           0.00            Compliant 1
+  231 MSCL       Metropolitan Steel Corporation *                  Compliant      2.78%         0.00%             0.04%               91.44%               0.31             14.09            Compliant
+  232 MSOT       Masood Textile Mills *                            Compliant     41.67%         0.00%             0.02%               61.86%              (173.12)          0.00           Non-Compliant
+  233 MTL        Millat Tractors Ltd *                             Compliant      2.62%         0.24%             0.07%               65.83%              (56.77)           0.00             Compliant
+  234 MUBT       Mubarak Textile Mills Ltd *                       Compliant      0.00%         0.00%             0.00%               98.24%               (9.04)            0.00            Compliant
+  235 MUGHAL     Mughal Iron & Steel Industries *                  Compliant     16.75%         0.09%             0.01%               59.58%              (38.87)           0.00             Compliant
+  236 MWMP       Mandviwala Mauser Plastic Industries *            Compliant     24.41%         0.00%             0.25%               62.31%               (6.99)           0.00             Compliant
+  237 NAGC       Nagina Cotton Mills Ltd *                         Compliant     45.28%         4.87%             0.05%               71.50%              (303.62)          0.00           Non-Compliant
+  238 NATF       National Foods Ltd *                              Compliant     16.62%         46.98%            1.20%               41.30%              36.25            396.21          Non-Compliant
+  239 NATM       Nadeem Textile Mills Ltd *                        Compliant     34.50%         3.00%             0.54%               85.46%              (125.80)           0.00            Compliant
+  240 NCL        Nishat (Chunian) Ltd *                            Compliant     37.98%         0.39%             0.06%               74.61%              (190.26)          0.00           Non-Compliant
+  241 NCML       Nazir Cotton Mills Ltd *                          Compliant      3.97%         0.00%             0.27%               83.69%               (4.73)            0.00            Compliant
+  242 NCPL       Nishat Chunian Power Ltd *                        Compliant      2.55%         55.82%            5.48%               36.87%              38.05             50.41          Non-Compliant
+  243 NESTLE     Nestle Pakistan Ltd                               Compliant      3.45%         10.21%            0.19%               65.96%              (896.58)          0.00             Compliant
+  244 NETSOL     Netsol Technologies Ltd * ##                      Compliant      5.91%         1.31%             1.49%                8.73%              114.67           134.69            Compliant
+  245 NICL       Nimir Industrial Chemicals Ltd *                  Compliant     38.01%         0.21%             0.02%               74.52%              (127.43)          0.00           Non-Compliant
+  246 NML        Nishat Mills Ltd *                                Compliant     18.21%         19.60%            1.92%               67.98%              (103.49)          0.00             Compliant
+  247 NONS       Noon Sugar Mills Ltd                              Compliant     31.43%         0.00%             0.04%               81.16%              (608.81)          0.00            Compliant 1
+  248 NPL        Nishat Power Limited *                            Compliant      8.58%         63.11%            6.47%               31.75%              50.69             66.66          Non-Compliant
+  249 NRL        National Refinery Ltd *                           Compliant     26.75%         0.32%             0.03%               64.06%              (701.96)          0.00             Compliant
+  250 NRSL       Nimir Resins Ltd *                                Compliant     21.68%         0.00%             0.00%               45.50%               1.78             33.38            Compliant
+  251 NSRM       The National Silk & Rayon Mills *                 Compliant      3.54%         0.02%             0.01%               72.37%               (3.84)           0.00             Compliant
+  252 OBOY       Oilboy Energy Limited (Drekkar Kingsway Ltd) *    Compliant      0.00%         0.00%             0.00%                5.55%               4.90             10.36          Non-Compliant
+  253 OCTOPUS    Octopus Digital Limited                           Compliant      0.03%         0.02%             0.00%               32.64%              11.04             43.61           Compliant 4
+  254 OGDC       Oil & Gas Development Co. Ltd * ^^^               Compliant      0.15%         17.82%            6.62%               28.91%              208.33           281.09            Compliant
+  255 OML        Olympia Mills Ltd *                               Compliant      0.00%         0.00%             0.46%               90.26%              (29.55)           0.00             Compliant
+  256 OTSU       Otsuka Pakistan Ltd *                             Compliant     35.18%         12.98%            0.00%               67.09%              (71.06)           0.00             Compliant
+  257 PABC       Pakistan Aluminium Beverages                      Compliant     17.01%         52.84%            5.57%               37.42%              19.94            126.69          Non-Compliant
+  258 PACE       Pace (Pakistan) Ltd *                             Compliant     50.69%         0.00%             8.12%               89.25%              (35.07)           0.00           Non-Compliant
+  259 PAEL       Pak Elektron Ltd                                  Compliant     20.88%         0.12%             0.03%               62.18%               (5.32)           0.00             Compliant
+  260 PAKD       Pak DataCom Ltd *                                 Compliant      6.24%         15.34%            1.95%               25.30%              77.75            160.25            Compliant
+  261 PAKL       Pak Leather Crafts Ltd *                          Compliant     487.43%        0.00%             0.00%               80.15%              (113.33)          0.00           Non-Compliant
+  262 PAKOXY     Pakistan Oxygen Limited                           Compliant      8.31%         0.00%             0.00%               76.19%              (45.50)           0.00             Compliant
+  263 PASL       Pervez Ahmed Consultancy Services Ltd *           Compliant     102.51%        0.00%             0.00%               97.33%               (3.48)            0.00          Non-Compliant
+  264 PASM       Paramount Spinning Mills Ltd*                     Compliant     725.57%        13.13%            0.00%               11.17%              (33.53)            0.00          Non-Compliant
+  265 PCAL       Pakistan Cables Ltd *                             Compliant     45.74%         0.00%             0.13%               62.69%              (287.96)          0.00           Non-Compliant
+  266 PHDL       Pakistan Hotels Developers Ltd *                  Compliant      0.00%         0.00%             98.64%               0.02%              79.35             50.40          Non-Compliant
+  267 PIAHCLA    PIA Holding Company Limited *                     Compliant     128.96%        0.00%             0.16%               82.41%              (170.00)           0.00         Non-Compliant 2
+  268 PIBTL      Pakistan International Bulk Terminal Ltd *        Compliant     11.88%         0.00%             0.27%               70.27%               (2.25)           0.00             Compliant
+  269 PICT       Pakistan International Container Terminal         Compliant      0.00%         0.00%             0.00%               46.83%               (4.66)           0.00             Compliant
+No.     Ticker                              Company Name                      Objective     Debt Ratio   Investment        Income Ratio    Illiquid Assets Ratio    Net Liquid    Share Price as of   Final Shariah
+                                                                                           (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)       (IA/TA => 25%)      Assets Ratio    December 31,          Status
+                                                                                                           < 33%)                                                   (NLA < P)          2025
+
+  270 PIOC       Pioneer Cement Ltd *                                          Compliant      6.02%         6.85%             0.02%               89.92%              (141.44)          0.00             Compliant
+  271 PKGP       Pakgen Power Ltd                                              Compliant      0.00%         81.97%            54.13%              15.43%              34.68             60.96          Non-Compliant
+  272 PKGS       Packages Limited                                              Compliant     32.80%         3.03%             0.07%               79.65%             (1420.74)          0.00             Compliant
+  273 PMRS       The Premier Sugar Mills Ltd                                   Compliant     35.84%         0.04%             0.00%               88.21%             (5649.80)           0.00           Compliant1
+  274 PNSC       Pakistan National Shipping Corporation *                      Compliant      0.04%         43.98%            7.74%               36.70%              310.79           498.99          Non-Compliant
+  275 POL        Pakistan Oilfields Ltd *                                      Compliant      0.00%         18.40%            9.22%               24.60%              127.10           608.51          Non-Compliant
+  276 POML       Punjab Oil Mills Ltd *                                        Compliant     16.81%         0.03%             0.39%               51.22%              (17.65)           0.00             Compliant
+  277 POWER      Power Cement Ltd *                                            Compliant      2.60%         0.16%             0.00%               86.87%              (13.40)           0.00             Compliant
+  278 PPL        Pakistan Petroleum Limited * ^                                Compliant      0.07%         7.67%             2.81%               26.12%              236.63           235.55            Compliant
+  279 PPP        Pakistan paper products Ltd *                                 Compliant      7.95%         0.00%             0.00%               77.81%               2.76            141.51            Compliant
+  280 PPVC       Pakistan PVC Ltd *                                            Compliant     60.23%         0.42%             0.12%               94.17%              (18.70)            0.00          Non-Compliant
+  281 PREMA      At-Tahur Limited *                                            Compliant      4.28%         0.00%             0.00%               83.28%               (5.03)           0.00             Compliant
+  282 PRET       Premium Textile Mills Ltd *                                   Compliant     39.95%         0.15%             0.03%               77.00%             (2228.36)          0.00           Non-Compliant
+  283 PRL        Pakistan Refinery Ltd *                                       Compliant     28.81%         1.90%             0.36%               48.38%              (51.82)           0.00             Compliant
+  284 PRWM       Prosperity Weaving Mills Ltd *                                Compliant     44.51%         7.18%             0.06%               69.97%              (157.20)          0.00           Non-Compliant
+  285 PSEL       Pakistan Services Ltd                                         Compliant     10.50%         1.56%             1.24%               91.22%              (378.21)           0.00           Compliant 2
+  286 PSO        Pakistan State Oil Co. Ltd *                                  Compliant     25.16%         6.37%             0.37%               33.85%              (208.97)          0.00             Compliant
+  287 PSX        Pakistan Stock Exchange Ltd *                                 Compliant      0.00%         49.65%            40.39%              38.92%               7.33             46.98          Non-Compliant
+  288 PSYL       Pakistan Synthetics Ltd *                                     Compliant      2.21%         0.00%             0.58%               71.79%              (28.89)           0.00             Compliant
+  289 PTC        Pakistan Telecommunication Compnay Ltd                        Compliant     48.85%         4.06%             2.01%               58.12%              (137.16)          0.00           Non-Compliant
+  290 PTL        Panthar Tyres Limited *                                       Compliant     32.84%         0.89%             0.14%               74.12%              (60.78)           0.00             Compliant
+  291 QTECH      Quantum Data Technologies Ltd (Chakwal Spinning Mills Ltd)    Compliant     25.77%         0.00%             0.00%               96.97%               (8.73)            0.00            Compliant
+  292 QUET       Quetta Textile Mills Ltd *                                    Compliant     23.95%         0.41%             2.27%               92.08%              (860.07)           0.00            Compliant
+  293 QUICE      Quice Food Industries Ltd *                                   Compliant      0.00%         0.00%             0.00%               85.82%              (10.53)           0.00             Compliant
+  294 RCML       Reliance Cotton Spinning *                                    Compliant     20.23%         7.49%             0.10%               75.44%              (704.81)          0.00             Compliant
+  295 REDCO      Redco Textiles Ltd *                                          Compliant      0.00%         0.51%             0.04%               81.50%              (45.00)           0.00             Compliant
+  296 REWM       Reliance Weaving Mills *                                      Compliant     31.40%         4.38%             0.18%               76.87%              (736.89)          0.00             Compliant
+  297 RMPL       Rafhan Maize Products                                         Compliant      1.44%         14.19%            1.07%               71.81%             (1443.07)          0.00             Compliant
+  298 RPL        Roshan Packages Ltd *                                         Compliant      4.94%         2.48%             0.22%               73.50%               (7.60)           0.00             Compliant
+  299 RUBY       Ruby Textile Mills Ltd *                                      Compliant     13.35%         0.00%             0.00%               96.28%               (3.60)            0.00            Compliant
+  300 RUPL       Rupali Polyester Ltd *                                        Compliant     30.82%         0.00%             1.79%               85.61%              (129.79)          0.00             Compliant
+  301 SAIF       Saif Textile Mills Ltd *                                      Compliant     39.05%         0.03%             0.01%               77.49%              (287.51)          0.00           Non-Compliant
+  302 SANE       Salman Noman Enterprises Ltd *                                Compliant     104.77%        0.00%             0.00%               91.95%              (254.55)           0.00          Non-Compliant
+  303 SANSM      Sanghar Sugar Mills Ltd                                       Compliant      0.31%         0.00%             0.05%               93.10%              (207.72)          0.00            Compliant 1
+  304 SAPT       Sapphire Textile Mills *                                      Compliant     31.36%         7.70%             1.18%               71.91%             (1655.49)          0.00             Compliant
+  305 SARC       Sardar Chemical Industries *                                  Compliant     13.87%         0.00%             0.19%               43.80%              26.14             81.22            Compliant
+  306 SASML      Sindh Abadgar's Sugar Mills Ltd                               Compliant     14.09%         0.00%             0.21%               86.38%              (246.82)          0.00            Compliant 1
+  307 SAZEW      Sazgar Engineering Works *                                    Compliant      0.41%         0.00%             0.00%               56.07%              (125.25)          0.00             Compliant
+  308 SCL        Shield Corporation Ltd *                                      Compliant      0.00%         0.00%             0.00%               86.81%              (178.34)          0.00             Compliant
+  309 SEARL      Searle Company Ltd *                                          Compliant      3.43%         0.00%             0.89%               53.32%              11.56            119.97            Compliant
+  310 SEL        Sitara Energy Ltd *                                           Compliant     20.05%         0.00%             0.00%               73.42%              (38.50)           0.00             Compliant
+  311 SEPL       Security Papers Ltd *                                         Compliant      0.00%         47.52%            6.95%               31.27%              93.21            158.18          Non-Compliant
+  312 SERT       Service Industries Textiles Limited *                         Compliant      3.13%         0.00%             0.00%               93.85%              (44.16)           0.00             Compliant
+  313 SFL        Sapphire Fibres Ltd *                                         Compliant     15.14%         45.49%            12.14%              30.47%             45591.01          1187.29         Non-Compliant
+  314 SGABL      SG.Allied Businesses Limited *                                Compliant      5.99%         0.00%             0.00%               96.63%              (14.88)            0.00            Compliant
+  315 SGF        Service Global Footwear Limited *                             Compliant     26.30%         0.45%             0.43%               66.91%              (27.22)           0.00             Compliant
+  316 SGPL       SG Power Ltd *                                                Compliant      0.00%         0.00%             0.00%               34.77%               (0.35)           0.00             Compliant
+  317 SHCI       Shaffi Chemical Industries Ltd *                              Compliant     114.95%        62.24%            6.82%               23.42%               (5.62)            0.00          Non-Compliant
+  318 SHCM       Shadman Cotton Mills *                                        Compliant     17.40%         0.00%             0.00%               90.22%              (24.73)           0.00             Compliant
+  319 SHDT       Shadab Textile Mills Ltd *                                    Compliant     16.53%         0.00%             0.01%               76.30%              (29.77)           0.00             Compliant
+  320 SHEZ       Shezan International Ltd *                                    Compliant     39.05%         0.00%             0.00%               73.73%              (164.02)          0.00           Non-Compliant
+  321 SHFA       Shifa International Hospitals *                               Compliant      4.49%         3.97%             0.17%               74.58%              (30.43)           0.00             Compliant
+  322 SHJS       Shahtaj Sugar Mills Ltd                                       Compliant     47.49%         0.00%             0.14%               92.06%              (371.85)          0.00          Non-Compliant 1
+  323 SHSML      Shahmurad Sugar Mills Ltd                                     Compliant     13.45%         0.00%             0.09%               87.60%              (362.41)          0.00            Compliant 1
+  324 SIEM       Siemens (Pakistan) Engineering ^                              Compliant      4.70%         0.00%             1.95%               13.24%              522.10           1620.00          Compliant 1
+  325 SITC       Sitara Chemical Industries Ltd *                              Compliant      0.33%         0.00%             0.00%               86.41%             (1096.68)          0.00             Compliant
+  326 SKRS       Sakrand Sugar Mills Ltd                                       Compliant     32.19%         0.15%             0.01%               97.94%              (74.06)            0.00           Compliant1
+  327 SLGL       Secure Logistics Group Limited                                Compliant     11.02%         0.00%             0.35%               80.52%               (1.00)           0.00             Compliant
+  328 SLYT       Sally Textile Mills Ltd*                                      Compliant     97.70%         0.00%             0.00%               88.41%              (204.17)           0.00          Non-Compliant
+  329 SMCPL      Safe Mix Concrete Ltd *                                       Compliant      2.42%         0.00%             0.00%               36.74%               (4.24)           0.00             Compliant
+  330 SML        Shakarganj Limited                                            Compliant      2.00%         0.00%             0.00%               80.62%              (93.99)            0.00            Compliant
+  331 SNAI       Sana Industries Ltd *                                         Compliant     10.79%         0.25%             0.02%               47.86%              (22.10)           0.00             Compliant
+  332 SNGP       Sui Northern Gas Pipelines Ltd * ^                            Compliant     11.18%         0.07%             1.23%               21.46%              (464.49)          0.00             Compliant
+  333 SPAC1      LSE SPAC-I Limited *                                          Compliant      0.00%         0.00%             0.00%                0.00%               6.75             10.00          Non-Compliant
+  334 SPCL       Saudi Pak Consultancy Company Ltd *                           Compliant     161.63%        68.90%            49.87%              25.36%             (5709.56)           0.00          Non-Compliant
+  335 SPEL       SPEL Limited *                                                Compliant      6.72%         11.40%            0.79%               73.87%               1.22             54.78            Compliant
+  336 SPL        Sitara Peroxide Ltd *                                         Compliant      1.56%         0.00%             0.00%               90.35%              (21.39)            0.00            Compliant
+  337 SPWL       Saif Power Ltd *                                              Compliant     18.25%         18.67%            6.84%               59.95%               0.35             11.15          Non-Compliant
+  338 SPSL       Sitara Petroleum Service Limited *                            Compliant     27.98%         0.00%             0.00%               59.03%              (20.97)           0.00             Compliant
+  339 SRR        Signature Residency Reit *                                    Compliant      0.00%         0.00%             0.00%               60.94%              (20.15)            0.00            Compliant
+  340 SRVI       Service Industries Ltd                                        Compliant     36.30%         15.70%            0.17%               60.04%              (877.43)          0.00             Compliant
+  341 SSGC       Sui Southern Gas Co. Ltd * ^                                  Compliant     10.36%         0.01%             1.25%               22.17%              (273.35)          0.00             Compliant
+  342 SSML       Saritow Spinning Mills Ltd *                                  Compliant      0.00%         0.00%             0.00%               92.78%              (37.84)            0.00            Compliant
+  343 SSOM       S.S. Oil Mills Ltd *                                          Compliant     34.89%         0.00%             0.08%               52.82%              31.64            428.44            Compliant
+  344 STCL       Shabbir Tiles & Ceramics Ltd *                                Compliant     10.85%         0.61%             0.07%               78.66%              (21.63)           0.00             Compliant
+  345 STJT       Shahtaj Textile Ltd *                                         Compliant     20.65%         1.17%             0.10%               76.88%              (101.14)          0.00             Compliant
+  346 STL        Supernet Technologies Limited (Supernet Limited)*             Compliant      0.00%         0.00%             0.00%               99.88%             (1675.63)          0.00             Compliant
+  347 STML       Shams Textile Mills Ltd *                                     Compliant     35.96%         1.93%             0.09%               71.11%              (155.87)          0.00             Compliant
+  348 STPL       Siddiqsons Tin Plate Ltd *                                    Compliant     56.91%         4.61%             0.01%               75.92%              (11.33)           0.00           Non-Compliant
+  349 STYLERS    Stylers International Limited (AEL Textile Limited) *         Compliant      0.00%         0.00%             0.00%               76.95%               (3.47)           0.00             Compliant
+  350 SUHJ       Suhail Jute Mills Limited *                                   Compliant      6.04%         0.00%             0.00%               99.65%              (211.82)           0.00            Compliant
+  351 SURC       Suraj Cotton Mills Ltd *                                      Compliant     15.37%         3.86%             0.15%               75.37%              (100.72)          0.00             Compliant
+  352 SUTM       Sunrays Textile Mills Ltd *                                   Compliant     37.44%         0.59%             0.26%               65.20%              (179.48)          0.00           Non-Compliant
+No.     Ticker                            Company Name                    Objective        Debt Ratio   Investment        Income Ratio    Illiquid Assets Ratio    Net Liquid    Share Price as of   Final Shariah
+                                                                                          (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)       (IA/TA => 25%)      Assets Ratio    December 31,          Status
+                                                                                                          < 33%)                                                   (NLA < P)          2025
+
+  353 SWL        Standard Worldwide td (Standard Insurance Company Ltd)     Compliant        0.00%         0.00%             0.00%               97.77%              (56.72)            0.00            Compliant
+  354 SYM        Symmetry Group Limited *                                   Compliant        8.89%         2.70%             0.71%               56.08%               2.02             14.78            Compliant
+  355 SYS        Systems Limited                                           Compliant         8.50%         1.70%             0.09%               29.93%              88.55            170.88            Compliant
+  356 SZTM       Shahzad textile Mills Ltd *                                Compliant       18.03%         2.43%             0.19%               76.25%              (83.97)           0.00             Compliant
+  357 TATM       TATA Textile Mills Ltd *                                  Compliant        27.00%         19.35%            1.84%               66.67%              (228.45)          0.00             Compliant
+  358 TBL        Treet Battery Limited *                                    Compliant       43.15%         0.00%             0.85%               82.16%               (6.48)           0.00           Non-Compliant
+  359 TCORP      Tariq Corporation Ltd                                     Compliant         5.47%         0.00%             0.01%               67.07%              (28.96)           0.00            Compliant 1
+  360 TELE       Telecard Limited * #                                      Compliant        10.31%         0.64%             0.45%               18.90%               9.53             11.33            Compliant
+  361 TGL        Tariq Glass Industries Ltd *                              Compliant         2.75%         0.70%             0.27%               72.04%              21.71            213.31            Compliant
+  362 THALL      Thal Limited *                                            Compliant         6.60%         59.48%            2.65%               29.00%              486.05           541.96          Non-Compliant
+  363 THCCL      Thatta Cement Company *                                   Compliant         6.81%         0.00%             1.87%               31.49%              39.26             84.18            Compliant
+  364 TICL       Thal Industries Corp                                       Compliant        2.08%         5.04%             0.33%               61.07%              35.16             578.04           Compliant
+  365 TOMCL      The Organic Meat Company *                                Compliant         4.57%         0.00%             0.12%               54.65%              13.92             50.74            Compliant
+  366 TOWL       Towellers Limited *                                       Compliant         0.61%         0.00%             0.07%               71.85%               1.72            172.00            Compliant
+  367 TPL        TPL Corporation *                                         Compliant        51.72%         4.90%             27.42%              51.66%              (39.76)            0.00          Non-Compliant
+  368 TPLP       TPL Properties Ltd *                                      Compliant        25.98%         0.00%             5.97%               71.96%               (3.86)            0.00          Non-Compliant
+  369 TPLRF1     TPL REIT Fund 1 *                                         Compliant         0.00%         0.00%             2.12%               78.88%               1.74             10.41            Compliant
+  370 TPLT       TPL Trakker Ltd *                                         Compliant        38.41%         2.18%             0.34%               72.37%              (14.08)           0.00           Non-Compliant
+  371 TREET      Treet Corporation Ltd *                                   Compliant        34.64%         0.27%             0.17%               70.32%              (24.47)           0.00             Compliant
+  372 TRG        TRG Pakistan Ltd *                                        Compliant         2.58%         99.94%           100.00%               0.00%              76.39             72.86          Non-Compliant
+  373 TRIPF      Tri-Pack Films Ltd                                        Compliant        40.83%         0.67%             0.07%               74.82%              (522.20)          0.00           Non-Compliant
+  374 TSML       Tandlianwala Sugar Mills Ltd                               Compliant       46.62%         0.00%             0.01%               69.16%              144.50           192.09         Non-Compliant 1
+  375 TSPL       Tri-Star Power Ltd *                                      Compliant         0.00%         41.48%            12.22%               7.01%              10.72             14.76          Non-Compliant
+  376 UBDL       United Brands Limited *                                   Compliant         0.00%         0.00%             0.16%               38.45%               (3.71)           0.00             Compliant
+  377 UDLI       UDL International Limited *                               Compliant         0.00%         2.34%             0.00%               87.55%               1.32             11.10            Compliant
+  378 UDPL       United Distributors (Pakistan) Ltd *                      Compliant         0.40%         0.00%             1.27%               86.22%              (47.67)           0.00             Compliant
+  379 UNITY      Unity Foods Ltd *                                         Compliant        36.76%         0.89%             0.79%               46.08%              (22.00)           0.00            Compliant 3
+  380 UPFL       Unilever Pakistan Foods Ltd                                Compliant        4.35%         0.00%             1.00%               73.67%             (1148.14)          0.00             Compliant
+  381 WAFI       Wafi Energy Pakistan Limited (SHELL PAKISTAN LIMITED)     Compliant         9.51%         2.30%             0.28%               77.00%              (303.30)          0.00             Compliant
+  382 WAHDAT     Wahdat Poultry Farm Limited *                             Compliant        26.03%         0.00%             0.00%               72.63%               (5.44)           0.00             Compliant
+  383 WAHN       Wah-Noble Chemicals Ltd *                                 Compliant        11.71%         0.00%             0.00%               47.54%              107.41           331.55            Compliant
+  384 WAVES      Waves Corporation Limited                                 Compliant        29.57%         0.01%             0.00%               72.40%              (15.96)           0.00             Compliant
+  385 WAVESAPP Waves Home Appliances Limited                               Compliant        40.98%         0.02%             0.01%               66.49%              (18.33)           0.00           Non-Compliant
+  386 WTL        WorldCall Telecom Ltd                                     Compliant        44.20%         6.61%             0.88%               46.16%               (1.41)           0.00           Non-Compliant
+  387 YOUW       Yousaf Weaving Mills Ltd *                                Compliant        43.97%         0.00%             0.00%               86.85%               (7.89)           0.00           Non-Compliant
+  388 ZAHID      Zahidjee Textile Mills Ltd *                               Compliant       15.32%         11.69%            1.04%               72.93%              (32.66)            0.00            Compliant
+  389 ZAL        Zarea Limited *                                            Compliant        0.99%         13.87%            2.07%               72.15%               2.89             47.59            Compliant
+  390 ZIL        ZIL Limited                                                Compliant        5.44%         0.00%             0.00%               83.75%              (225.54)          0.00             Compliant
+  391 ZTL        Zephyr Textiles Ltd. *                                     Compliant       30.08%         0.13%             0.00%               77.13%              (43.99)           0.00             Compliant
+  392 Zuma       Zuma Resources Limited (Bilal Fibers Ltd) *                Compliant       32.93%         0.00%             0.00%                0.12%               0.26             83.61          Non-Compliant
+  393 BFMOD      B.F. Modaraba **                                          Compliant          N/A           N/A               N/A                51.86%              11.50             23.39            Compliant
+  394 BIPL       BankIslami Pakistan Ltd **                                Compliant          N/A           N/A               N/A                83.92%              (539.12)          0.00             Compliant
+  395 FABL       Faysal Bank Ltd **                                        Compliant          N/A           N/A               N/A                88.88%              (963.10)          0.00             Compliant
+  396 FANM       First Al-Noor Modaraba **                                  Compliant         N/A           N/A               N/A                90.98%               0.30             8.91             Compliant
+  397 FECM       First Elite Capital Modaraba **                           Compliant          N/A           N/A               N/A                88.71%               (6.30)           0.00             Compliant
+  398 FEM        First Equity Modaraba **                                  Compliant          N/A           N/A               N/A                80.38%               1.41             11.18            Compliant
+  399 FFLM       First Fidelity Leasing Modaraba **                         Compliant         N/A           N/A               N/A                96.95%               (0.64)            0.00            Compliant
+  400 FHAM       First Habib Modaraba **                                   Compliant          N/A           N/A               N/A                91.17%              (268.34)          0.00             Compliant
+  401 FIBLM      First IBL Modaraba **                                      Compliant         N/A           N/A               N/A                29.86%               7.60             10.23            Compliant
+  402 FIMM       First Imrooz Modaraba **                                   Compliant         N/A           N/A               N/A                60.31%              (52.21)           0.00             Compliant
+  403 FNBM       First National Bank Modaraba **                            Compliant         N/A           N/A               N/A                89.79%              (16.67)           0.00             Compliant
+  404 FPJM       First Punjab Modaraba ** ^                                Compliant          N/A           N/A               N/A                58.86%              22.07             4.60            Compliant 2
+  405 FPRM       First Paramount Modaraba **                                Compliant         N/A           N/A               N/A                34.85%               7.12             12.90            Compliant
+  406 FTMM       First Treet Manufacturing Modaraba ** ^                   Compliant          N/A           N/A               N/A                22.72%               9.63             20.14            Compliant
+  407 FTSM       First Tri-Star Modaraba **                                Compliant          N/A           N/A               N/A                94.42%               (3.59)           0.00             Compliant
+  408 GEMBCEM    Burj Clean Energy Modaraba(GEM) ** ^                       Compliant         N/A           N/A               N/A                23.79%               8.31             11.00            Compliant
+  409 MEBL       Meezan Bank Ltd **                                        Compliant          N/A           N/A               N/A                89.75%             (2242.40)          0.00             Compliant
+  410 OLPM       OLP Modaraba (Orix Modaraba) **                           Compliant          N/A           N/A               N/A                88.61%              (138.25)          0.00             Compliant
+  411 ORM        Orient Rental Modaraba **                                 Compliant          N/A           N/A               N/A                64.01%               (3.26)           0.00             Compliant
+  412 PAKQATAR   Pak Qatar Family Takaful Limited **                       Compliant          N/A           N/A               N/A                91.32%              (263.09)          0.00             Compliant
+  413 PIM        Popular Islamic Modaraba **                               Compliant          N/A           N/A               N/A                78.21%               0.17             21.55            Compliant
+  414 PQGTL      Pak Qatar General Takaful Limited **                      Compliant          N/A           N/A               N/A                47.25%               (2.18)           0.00             Compliant
+  415 SINDM      Sindh Modaraba **                                         Compliant          N/A           N/A               N/A                79.39%               8.17             35.62            Compliant
+  416 TRSM       Trust Modaraba **                                         Compliant          N/A           N/A               N/A                91.01%               (0.29)           0.00             Compliant
+  417 WASL       Wasl Mobility Modaraba (First Prudential Modaraba ** )    Compliant          N/A           N/A               N/A                81.98%               (1.51)           0.00             Compliant
+  418 786        786 Investments Ltd                                      Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  419 ABL        Allied Bank Ltd                                          Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  420 AGIC       Askari General Insurance Co.                             Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  421 AHL        Arif Habib Ltd                                           Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  422 AICL       Adamjee Insurance Co. Ltd                                Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  423 AKBL       Askari Bank Ltd                                          Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  424 AKDSL      AKD Securituies Limited                                  Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  425 ALAC       Askari Life Assurance Co.                                Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  426 ALIFE      Adamjee Life Assurance Company Limited                   Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  427 AMBL       Apna Microfinance Bank Ltd                               Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  428 AMSL       Al-Mal Sec. & Services Ltd                               Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  429 ARPAK      Arpak International Investments Ltd                      Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  430 ASIC       Asia Insurance Co. Ltd                                   Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  431 ATIL       Atlas insurance Ltd                                      Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  432 BAFL       Bank Alfalah Ltd                                         Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  433 BAHL       Bank Al Habib Ltd                                        Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  434 BIIC       Business & Industrial Insurance Company                  Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  435 BML        Bank Makramah Limited                                    Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  436 BOK        Bank of Khyber                                           Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  437 BOP        Bank of Punjab                                           Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  438 CENI       Century Insurance Co. Ltd                                Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  439 CSIL       Crescent Star Insurance Ltd                              Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  440 DEL        Dawood Equities Ltd                                      Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+  441 EFUG       EFU General Insurance Ltd                                Non-Compliant       N/A           N/A               N/A                  N/A                 N/A              N/A            NC by Nature
+No.     Ticker                            Company Name      Objective        Debt Ratio   Investment        Income Ratio          Illiquid Assets Ratio             Net Liquid           Share Price as of   Final Shariah
+                                                                            (D/A < 37%) Ratio (NCInv/TA   (NCInc/TR < 5%)             (IA/TA => 25%)               Assets Ratio           December 31,          Status
+                                                                                            < 33%)                                                                  (NLA < P)                 2025
+
+  442 EFUL       EFU Life Assurance Ltd                     Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  443 ENGL       English Leasing Ltd                        Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  444 ESBL       Escorts Investment Bank Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  445 EWIC       East West Insurance Co.                    Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  446 FCIBL      First Credit & investment Bank Ltd         Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  447 FCSC       First Capital Securities Corp. Ltd         Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  448 FNEL       First National Equities Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  449 GRR        Globe Residency Reit                       Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  450 GRYL       Grays Leasing Ltd                          Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  451 HBL        Habib Bank Ltd                             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  452 HGFA       HBL Growth Fund - (A)                      Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  453 HICL       Habib Insurance Co. Ltd                    Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  454 HIFA       HBL Investment Fund (A)                    Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  455 HMB        Habib Metropolitan Bank Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  456 HUMNL      Hum Network Ltd                            Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  457 ICIBL      Invest Capital Investment Bank             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  458 IGIHL      IGI Holdings Ltd                           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  459 IGIL       IGI Life Insurance Ltd                     Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  460 IML        Imperial Limited                           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  461 IMS        Intermarket Securities Limited             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  462 INMF       Investec Mutual Fund Limited               Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  463 JGICL      Jubilee General insurance Co.              Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  464 JLICL      Jubilee Life Insurance Co.                 Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  465 JSBL       JS Bank Ltd                                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  466 JSCL       Jahangir Siddiqui & Co. Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  467 JSGCL      JS Global Capital Ltd                      Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  468 JSRR       JS Rental REIT                             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by nature
+  469 JSIL       JS Investments Ltd                         Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  470 KHTC       Khyber Tobacco Company                     Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  471 LSEFSL     LSE Financial Service Limited              Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  472 LSEVL      LSE Ventures ltd                           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  473 MCB        MCB Bank Ltd                               Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  474 MCBIM      MCB Investment Management Limited          Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  475 MDTL       Media Times Limited                        Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  476 MUREB      Murree Brewery Company                     Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  477 NBP        National Bank of Pakistan                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  478 NEXT       Next Capital Limited                       Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  479 OLPL       OLP Financial Services private Limited     Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  480 PAKRI      Pakistan Reinsurance Co. Ltd               Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  481 PAKT       Pakistan Tobacco Company Limited           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  482 PGLC       Pak- Gulf Leasing Company                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  483 PICL       Pakistan Industrial & Commercial Leasing   Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  484 PIL        PICIC Insurance Ltd                        Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  485 PINL       Premier Insurance Ltd                      Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  486 PKGI       Pakistan General insurance Co.             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  487 PRIB       Prudential Investment Bank                 Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  488 PRIC       Progressive Insurance                      Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  489 PUDF       Prudential Stocks Fund Limited             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  490 RICL       Reliance Insurance Co Ltd                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  491 SBL        Samba Bank Ltd                             Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  492 SCBPL      Standard Chartered Bank Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  493 SHNI       Shaheen Insurance Co. Ltd                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  494 SIBL       Security Investment Bank Ltd               Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  495 SLCL       Security Leasing Corporation Ltd           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  496 SLL        SME Leasing Ltd                            Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  497 SNBL       Soneri Bank Ltd                            Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  498 SSIC       Silver Star Insurance Co.                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  499 TPLI       TPL Insurance Ltd                          Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  500 TPLL       TPL Life Insurance Limited                 Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  501 TRIBL      Trust Investment Bank Ltd                  Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  502 TSBL       Trust Securities & Brokerage               Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  503 TSMF       Tri-Star Mutual Fund                       Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  504 UBL        United Bank Ltd                            Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  505 UNIC       United Insurance Co. of Pakistan           Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  506 UVIC       Universal Insurance Co. Ltd                Non-Compliant       N/A           N/A               N/A                           N/A                          N/A                  N/A            NC by Nature
+  507 AAL        Agro Allianz Limited                         Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  508 ABSON      Abson Industries Limited                     Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  509 ANNT       Annoor Textile Mills Limited                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  510 APOT       Apollo Textile Mills Limited                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  511 AZMT       Azmat Textile Mills Limited                  Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  512 DKTM       Dewan Khalid Textile Mills Limited           Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  513 DMTM       Dewan Mushtaq Textile Mills                  Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  514 FAEL       Fatima Enterprises Limited                   Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  515 FTHM       Fateh Textile Mills Limited                  Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  516 HADC       Haydari Construction                         Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  517 HAJT       Hajra Textile Mills Limited                  Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  518 HIRAT      Hira Textile Mills Ltd                       Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  519 HKKT       Hakkim Textile Mills Limited                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  520 HSPI       Huffaz Seamless Pipe Ind                     Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  521 KAKL       Kaiser Arts & Krafts Limited                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  522 MFTM       Mohd. Farooq Textile Mills                   Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  523 MOHE       Mohib Exports Limited                        Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  524 NAFL       National Fibres Limited                      Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  525 NINA       Nina Industries Limited                      Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  526 NMFL       Nirala MSR Foods Limited                     Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  527 PECO       Pakistan Engineering Co. Ltd                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  528 PIAHCLB    PIA Holding Company LimitedB                 Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  529 REGAL      Regal Ceramics Limited                       Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  530 SDOT       Sadoon Textile Industries Limited            Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  531 SFAT       Safa Textiles Ltd                            Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  532 SURAJ      Suraj Ghee Industries Limited                Compliant                                         As no recent financial available therefore no shariah opinion is drawn
+  No.         Ticker                          Company Name                              Objective         Debt Ratio   Investment                      Income Ratio            Illiquid Assets Ratio              Net Liquid             Share Price as of   Final Shariah
+                                                                                                         (D/A < 37%) Ratio (NCInv/TA                 (NCInc/TR < 5%)               (IA/TA => 25%)                Assets Ratio             December 31,          Status
+                                                                                                                         < 33%)                                                                                   (NLA < P)                   2025
+
+        533 TAJT       Taj Textile Mills Limited                                         Compliant                                                           As no recent financial available therefore no shariah opinion is drawn
+        534 USMT       Usman Textile Mills Limited                                       Compliant                                                           As no recent financial available therefore no shariah opinion is drawn
+        535 ZELP       Zeal Pak Cement Factory Limited                                   Compliant                                                           As no recent financial available therefore no shariah opinion is drawn
+        536 FCONM      First Constellation Modaraba                                      Compliant                                                     As no recent Shariah certificate is available therefore no shariah opinion is drawn
+        537 FIM        First Investec Modaraba                                           Compliant                                                     As no recent Shariah certificate is available therefore no shariah opinion is drawn
+        538 UCAPM      Unicap Modaraba                                                   Compliant                                                     As no recent Shariah certificate is available therefore no shariah opinion is drawn
+
+
+
+                                                                                                REAL ESTATE INVESTMENT TRUSTS (REITS)
+                                                                                                                       Investment                                                                                 Net Liquid             Share Price as of
+                                                                                                          Debt Ratio                                   Income Ratio            Illiquid Assets Ratio                                                         Final Shariah
+  No.         Ticker                          Company Name                              Objective                    Ratio (NCInv/TA                                                                             Assets Ratio             December 31,
+                                                                                                         (D/A < 37%)                                 (NCInc/TR < 5%)               (IA/TA => 25%)                                                               Status
+                                                                                                                         < 33%)                                                                                   (NLA < P)                   2025
+    1       DCR        Dolmen City REIT *                                                Compliant            0.00%                0.00%                   0.00%                          98.84%                       (0.62)                   0.00            Compliant
+    2       TPLRF1     TPL REIT Fund 1 *                                                 Compliant            0.00%                0.00%                   2.12%                          78.88%                        1.74                   10.41            Compliant
+    3       IREIT      Image Reit *                                                      Compliant            0.00%                0.00%                    0.00%                         79.43%                        2.59                    9.27            Compliant
+    4       SRR        Signature Residency Reit *                                        Compliant            0.00%                0.00%                    0.00%                         60.94%                       (20.15)                  0.00            Compliant
+    5       GRR        Globe Residency Reit                                            Non-Compliant           N/A                  N/A                      N/A                            N/A                          N/A                    N/A            NC by nature
+    6       JSRR       JS Rental REIT                                                  Non-Compliant           N/A                  N/A                      N/A                            N/A                          N/A                    N/A            NC by nature
+
+
+
+                                                                                                       EXCHANGE TRADED FUNDS (ETFs)
+    1       ACIETF     Alfalah Consumer Index (ETF)                                   Non-Compliant
+    2       JSGBETF    JS Global Banking Tradeable ETF                                Non-Compliant
+    3       JSMFETF    JS Momentum Factor Exchange Traded Fund                        Non-Compliant
+    4       MIIETF     Mahaana Islamic Index ETF                                         Compliant
+    5       MZNPETF    Meezan Pakistan ETF                                               Compliant
+    6       NBPGETF    NBP Pakistan Growth ETF                                        Non-Compliant
+    7       NITGETF    NIT Pakistan Gateway ETF                                       Non-Compliant
+    8       UBLPETF    UBL Pakistan Enterprise ETF                                    Non-Compliant
+NOTE: The above criteria of KMI Index is approved by Sharia’h Supervisory Board of KMI Index Partner, MBL.
+NC = Non - Compliant
+
+N/A = Not Applicable
+* These are provisional rates for dividend purification, which are subject to final adjustment upon announcement of respective
+companies' annual accounts for the year 2025/2026
+
+** Only illiquid Assets to Total Assets and Net Liquid Asset ratios calculated of all Islamic Financial Institutions
+
+^ These are considered as Compliant and relaxation is provided over illiquid assets to Total Assets ratio and/or Net Liquid Asset per
+share as per the guidance available in AAOIFI's Shariah standard no. 59, Sale of Debt.
+
+^^^ In view of the prevailing circular debt situation affecting the oil and gas sector, along with the improvement in the income
+ratio since the last screening and the Government of Pakistan’s ongoing initiatives to address the circular debt issue, it is expected
+that the income ratio of these companies may improve going forward.
+
+Accordingly, considering the above factors and the company’s demonstrated commitment towards improving the ratio, an
+exception has been granted to Oil & Gas Development Company Limited (OGDC) with respect to the income ratio for the current
+review period.
+
+
+# Due to circular debt non-compliant investment and non-compliant income ratio is exceeding the approved threshold of ratio,
+therefore exception is given over non-compliant investment and non-compliant income ratio. Further due to circular debt the share
+of profit from associates (CPHGC & TNPTL) has been adjusted upto the extent of non-compliant income ratio of these associated
+companies and late payment interest (LPI) earned has also been adjusted with LPI paid by HUBC.
+
+## As these are from service based sector and their fixed assets are not significant in value therefore, these are considered as
+Compliant and relaxation provided over Illiquid assets to Total Assets ratio and / or Net Liquid Asset per share.
+
+1 Based on September-2025 accounts
+
+2 As per last available annual / half-yearly accounts
+
+
+3 Due to non-availability of December 2025 accounts, September 2025 accounts has been used for Shariah screening purpose.
+
+
+4 Shariah screening is based on the latest available financial statements (December 2025) in the KMI All Share List,                      while in
+the KMI-30 List screening was carried out using last available financial statements that was June 2025.
+
+
+
+Disclaimer
+The above PSX KMI Shariah screening ratios are calculated based on the available information in the companies' annual / half year accounts. These
+ratios may be impacted in the absence of the required disclosures as per the amended Fourth Schedule Part I of the Companies Act, 2017, issued
+through S.R.O. 1278(I)/2024. Consequently, the final Shariah status of certain companies may also have impacted.
+
+The KMI Index Committee shall not be held responsible for any changes in the final Shariah status of the companies due to above mentioned
+reason
+
