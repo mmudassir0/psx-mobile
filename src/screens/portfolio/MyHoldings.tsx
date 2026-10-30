@@ -5,7 +5,7 @@ import { undoBonus } from '../../portfolio/useAutoBonus';
 import { rightsChoice } from '../../portfolio/rights';
 import { useFlags } from '../../flags';
 import { Skeleton } from '../../ui/Skeleton';
-import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { changeColor, colors, fonts, seriesColor, themed } from '../../theme';
 import { fmtDay, fmtNum, fmtPkr, fmtPrice, fmtSigned } from '../../format';
@@ -184,11 +184,27 @@ function RightsBox({ r, holdingsAll }: { r: Row; holdingsAll: Row['holding'][] }
   );
 }
 
+/** A small label and a figure on one line: "Avg  643.58" */
+function Fig({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+      <T v="caption" style={{ fontSize: 11, width: 30 }}>
+        {label}
+      </T>
+      <T v="mono" style={{ fontSize: 12.5 }} numberOfLines={1}>
+        {value}
+      </T>
+    </View>
+  );
+}
+
 function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: Row; onOpen: () => void; taxRate: number; applied: string[]; holdingsAll: Row['holding'][]; color: string }) {
   const flags = useFlags();
   const nav = useNavigation();
   const [open, setOpen] = useState(false);
   const [trading, setTrading] = useState(false);
+  // three columns need about 420px (a four-digit price included); narrower phones keep the compact form
+  const wide = useWindowDimensions().width >= 420;
   const bonusLog = bonusLogPref.use();
   const rv = r.review;
   const [fg, bg] = rv ? actionTone(rv.action, rv.watch) : [colors.muted, colors.surface2];
@@ -202,14 +218,16 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: R
         accessibilityHint="Shows its review and actions"
         onPress={() => setOpen((o) => !o)}
         scaleTo={0.985}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }}
       >
         <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: color }} />
+        {/* left: what it is */}
         <View style={{ flex: 1, gap: 3, minWidth: 0 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <T style={{ fontFamily: fonts.heavy, fontSize: 16, flexShrink: 0 }} numberOfLines={1}>
               {r.holding.symbol}
             </T>
+            {r.stock?.shariah ? <ToolIcon name="moon" size={13} color={colors.shariah} /> : null}
             {rv ? (
               <View style={[styles.tag, { backgroundColor: bg }]} accessibilityLabel={`${rv.action}${rv.watch ? ', watch' : ''}`}>
                 <T style={[styles.tagText, { color: fg }]} numberOfLines={1}>
@@ -219,24 +237,46 @@ function HoldingCard({ r, onOpen, taxRate, applied, holdingsAll, color }: { r: R
               </View>
             ) : null}
           </View>
-          <T
-            v="caption"
-            style={{ fontFamily: fonts.mono }}
-            numberOfLines={1}
-            accessibilityLabel={`${fmtNum(r.holding.shares, 0)} shares at ${fmtPrice(r.price)} now, bought at an average of ${fmtPrice(r.holding.avgCost)}`}
-          >
-            {fmtNum(r.holding.shares, 0)} × {fmtPrice(r.price)}
-          </T>
-          <T v="caption" style={{ fontFamily: fonts.mono, fontSize: 11.5 }} numberOfLines={1} importantForAccessibility="no">
-            avg {fmtPrice(r.holding.avgCost)}
-          </T>
+          {wide ? (
+            <>
+              {r.stock?.sector ? (
+                <T v="caption" style={{ fontSize: 11.5 }} numberOfLines={1}>
+                  {shortSector(r.stock.sector)}
+                </T>
+              ) : null}
+              <T v="caption" style={{ fontSize: 11.5 }} numberOfLines={1}>
+                {fmtNum(r.holding.shares, 0)} shares
+              </T>
+            </>
+          ) : (
+            <>
+              <T v="caption" style={{ fontFamily: fonts.mono }} numberOfLines={1}>
+                {fmtNum(r.holding.shares, 0)} × {fmtPrice(r.price)}
+              </T>
+              <T v="caption" style={{ fontFamily: fonts.mono, fontSize: 11.5 }} numberOfLines={1}>
+                avg {fmtPrice(r.holding.avgCost)}
+              </T>
+            </>
+          )}
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 3 }}>
+        {/* middle (wide phones): today's price, what you paid, what you put in */}
+        {wide ? (
+          <View style={{ gap: 3 }} accessible accessibilityLabel={`now ${fmtPrice(r.price)}, average ${fmtPrice(r.holding.avgCost)}, cost ${fmtNum(r.holding.shares * r.holding.avgCost, 0)}`}>
+            <Fig label="Now" value={fmtPrice(r.price)} />
+            <Fig label="Avg" value={fmtPrice(r.holding.avgCost)} />
+            <Fig label="Cost" value={fmtNum(r.holding.shares * r.holding.avgCost, 0)} />
+          </View>
+        ) : null}
+        {/* right: worth now and the gain */}
+        <View style={{ alignItems: 'flex-end', gap: 3, minWidth: 74 }}>
           <T v="mono" style={{ fontSize: 15 }}>
             {fmtNum(r.value, 0)}
           </T>
           <T v="mono" style={{ fontSize: 12.5, color: changeColor(pnl) }}>
-            {fmtSigned(pnl, 0)} ({pct(pnlPct)})
+            {fmtSigned(pnl, 0)}
+          </T>
+          <T v="mono" style={{ fontSize: 12, color: changeColor(pnl) }}>
+            ({pct(pnlPct)})
           </T>
         </View>
       </Press>
