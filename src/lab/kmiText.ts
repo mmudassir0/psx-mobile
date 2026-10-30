@@ -21,7 +21,8 @@ export interface IndexEvent {
 export function trustworthy(e: IndexEvent, size: number): { inOut: boolean; full: boolean } {
   const st = e.stated;
   const near = (a: number, b: number | null | undefined) => b == null || Math.abs(a - b) <= Math.max(4, b * 0.15);
-  const inOut = (e.in.length > 0 || e.out.length > 0) && near(e.in.length, st?.added) && near(e.out.length, st?.removed) && e.in.length < size * 0.6;
+  // the lists are only trusted against what the notice says in words: a notice whose counts couldn't be read proves nothing
+  const inOut = (e.in.length > 0 || e.out.length > 0) && (st?.added != null || st?.removed != null) && near(e.in.length, st?.added) && near(e.out.length, st?.removed) && e.in.length < size * 0.6;
   const full = !!e.full && (st?.total != null ? near(e.full.length, st.total) : Math.abs(e.full.length - size) <= Math.max(3, size * 0.25));
   return { inOut, full };
 }
@@ -89,16 +90,22 @@ export function parseIndexNotice(text: string, noticeDay: string): IndexEvent | 
     }
   }
   if (!ins.length && !outs.length && !full) return null;
+  const stated = statedCounts(text);
+  return { date, in: [...new Set(ins)], out: [...new Set(outs)], ...(full ? { full: [...new Set(full)] } : {}), stated };
+}
+
+/** What a notice says in words: companies in the index after the change, added, removed. */
+export function statedCounts(text: string): { total: number | null; added: number | null; removed: number | null } {
+  const t = text.replace(/\s+/g, ' ');
   const n = (re: RegExp) => {
-    const m = text.match(re);
+    const m = t.match(re);
     return m ? Number(m[1]) : null;
   };
-  const stated = {
+  return {
     total: n(/(?:consist of|comprise of|comprising of|comprises of)\s+(\d+)\s+companies/i),
-    added: n(/(\d+)\s+(?:new\s+)?companies\s+(?:have been|are|were|will be)\s+(?:added|included)/i),
+    added: n(/(\d+)\s+(?:new\s+)?companies\s+(?:have been|are|were|will be)\s+(?:added|included)/i) ?? n(/(\d+)\s+(?:new\s+)?companies\s+(?:have\s+|has\s+)?entered/i),
     removed: n(/(\d+)\s+companies\s+(?:have been|are|were|will be)\s+(?:removed|excluded)/i),
   };
-  return { date, in: [...new Set(ins)], out: [...new Set(outs)], ...(full ? { full: [...new Set(full)] } : {}), stated };
 }
 
 /**

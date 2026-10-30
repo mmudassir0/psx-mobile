@@ -342,12 +342,14 @@ check('dates', firstDate('Monday, 16th September, 2024') === '2024-09-16' && fir
   const h = membershipHistory(
     ['A', 'B', 'C'],
     [
-      { date: '2022-07-15', in: ['C'], out: ['D'] },
-      { date: '2021-01-01', in: ['B'], out: ['E'] },
+      { date: '2022-07-15', in: ['C'], out: ['D'], stated: { total: null, added: 1, removed: 1 } },
+      { date: '2021-01-01', in: ['B'], out: ['E'], stated: { total: null, added: 1, removed: 1 } },
+      // counts the notice's words don't confirm are not used
+      { date: '2019-01-01', in: ['A'], out: ['F'] },
     ],
   );
   const sp = spansOf(h);
-  check('membership walks back', h[0].members.join() === 'A,D,E' && sp.get('C')![0][0] === '2022-07-15' && sp.get('D')![0][1] === '2022-07-15');
+  check('membership walks back', h.length === 3 && h[0].members.join() === 'A,D,E' && sp.get('C')![0][0] === '2022-07-15' && sp.get('D')![0][1] === '2022-07-15');
   const whole = Array.from({ length: 100 }, (_, i) => 'S' + i);
   check('attached whole list read as incoming', asFull({ date: '2022-01-03', in: whole, out: [], stated: { total: 100, added: null, removed: 13 } }).full?.length === 100);
   check('a real incoming list stays', !asFull({ date: '2022-07-15', in: whole.slice(0, 30), out: [], stated: { total: 252, added: 30, removed: 25 } }).full);

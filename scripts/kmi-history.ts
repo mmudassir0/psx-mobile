@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { fetchIndexConstituents, fetchRaw, fetchSymbols } from '../src/psx/api';
-import { fixSymbols, membershipHistory, parseIndexNotice, spansOf, tsvToLayout, type IndexEvent } from '../src/lab/kmiText';
+import { fixSymbols, membershipHistory, parseIndexNotice, spansOf, statedCounts, tsvToLayout, type IndexEvent } from '../src/lab/kmiText';
 
 const out = process.argv[2] ?? '/tmp/out/kmi.json';
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -53,11 +53,13 @@ async function main() {
     try {
       const res = await fetch(`https://dps.psx.com.pk${link}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Sahm lab data)' }, signal: AbortSignal.timeout(60_000) });
       writeFileSync('/tmp/kmi/n.pdf', Buffer.from(await res.arrayBuffer()));
+      let plain = '';
       let text = execFileSync('pdftotext', ['-layout', '/tmp/kmi/n.pdf', '-'], { encoding: 'utf8', maxBuffer: 2e7 });
       if (text.replace(/\s/g, '').length < 200) {
         // scanned: OCR the first pages, keeping the columns (the counts the notice states still have to agree before it's used)
         scanned++;
         text = '';
+        plain = '';
         try {
           // 300 dpi, and words placed back at their columns (TSV positions), so the incoming and outgoing columns stay apart
           execFileSync('pdftoppm', ['-r', '300', '-gray', '-png', '-f', '1', '-l', '6', '/tmp/kmi/n.pdf', '/tmp/kmi/p'], { timeout: 180_000 });
@@ -66,6 +68,8 @@ async function main() {
             .sort()) {
             const tsv = execFileSync('tesseract', [`/tmp/kmi/${f}`, '-', '--psm', '6', 'tsv'], { encoding: 'utf8', maxBuffer: 5e7, timeout: 180_000 });
             text += tsvToLayout(tsv) + '\n';
+            // the covering letter as plain text too: its sentences ("will comprise of 226 companies ... 14 companies have been removed") give the counts the lists are checked against
+            if (f === 'p-1.png' || f === 'p-01.png') plain = execFileSync('tesseract', [`/tmp/kmi/${f}`, '-', '--psm', '6'], { encoding: 'utf8', maxBuffer: 2e7, timeout: 120_000 });
             rmSync(`/tmp/kmi/${f}`, { force: true });
           }
         } catch {
@@ -78,7 +82,9 @@ async function main() {
         mkdirSync(process.env.DUMP_DIR, { recursive: true });
         writeFileSync(`${process.env.DUMP_DIR}/${which}-${n.day}.txt`, `${n.title}\n\n${text}`);
       }
-      const e0 = parseIndexNotice(text, n.day);
+      const r0 = parseIndexNotice(text, n.day);
+      // counts from the plain reading of the letter where the column-kept one lost them
+      const e0 = r0 && plain ? { ...r0, stated: { ...statedCounts(plain), ...Object.fromEntries(Object.entries(r0.stated ?? {}).filter(([, v]) => v != null)) } as IndexEvent['stated'] } : r0;
       const e = e0 && listed.size ? { ...e0, in: [...new Set(fixSymbols(e0.in, listed))], out: [...new Set(fixSymbols(e0.out, listed))], ...(e0.full ? { full: [...new Set(fixSymbols(e0.full, listed))] } : {}) } : e0;
       if (e) {
         events[which].push(e);
