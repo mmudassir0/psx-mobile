@@ -54,7 +54,7 @@ export interface DivRow {
   approx?: 1;
 }
 /** bumped when the reading improves: companies read with an older version are read again (their old dividends stay until then) */
-const READER = 2;
+const READER = 3;
 interface SymState {
   done: boolean;
   /** READER version this company was read with */
@@ -121,6 +121,8 @@ async function notices(sym: string): Promise<Notice[]> {
 const WANT = /financial results|dividend|material information|results of (the )?board|outcome of (the )?board|book closure|closure of (the )?(share )?transfer|entitlement|^\s*board meeting\b/i;
 /** "other than financial results" intimations only give the meeting date; their "results of the board meeting" follow-ups carry interim dividends */
 const PRE_MEETING = /other th[ae]n financial/i;
+/** the notice calling the annual meeting: it asks shareholders to approve the final dividend and gives the book closure (some companies post nothing else about it) */
+const AGM_NOTICE = /notice of (the )?(\d+\w*\s+)?annual general meeting|notice of agm/i;
 const SKIP =
   /credit of|dispatch|payment of|publication|unclaimed|withh|mandate|e-dividend|zakat|revoked|sukuk|tfc|term finance|profit payment|principal|transmission|cdc|iban|closed period|annual report|agm|general meeting|unpaid/i;
 
@@ -267,14 +269,16 @@ async function main() {
     const t0 = Date.now();
     try {
       const all = await notices(sym);
-      const want = all.filter((n) => WANT.test(n.title) && !SKIP.test(n.title) && !(PRE_MEETING.test(n.title) && !/material information|results of|outcome/i.test(n.title)));
+      const want = all.filter(
+        (n) => (AGM_NOTICE.test(n.title) && !/revoked|extra/i.test(n.title)) || (WANT.test(n.title) && !SKIP.test(n.title) && !(PRE_MEETING.test(n.title) && !/material information|results of|outcome/i.test(n.title))),
+      );
       if (process.env.ONLY) console.log(`  ${sym}: ${all.length} notices listed in ${Math.round((Date.now() - t0) / 1000)}s, ${want.length} to read`);
       // the test run lists every notice in the window, read or not, to see where a missed dividend was announced
       if (VALIDATE) for (const n of all.filter((x) => x.day >= FROM)) console.log(`    ${want.includes(n) ? 'READ' : 'skip'} ${n.day} ${n.title.slice(0, 90)}`);
       const read = await pool(want, Number(process.env.OCR_POOL ?? 4), async (n) => {
         try {
           const t1 = Date.now();
-          const text = await readPdf(n.pdf, tmp, /financial results|board meeting/i.test(n.title) ? 5 : 2);
+          const text = await readPdf(n.pdf, tmp);
           const d = parseDivNotice(text);
           if (process.env.DUMP_DIR) {
             mkdirSync(process.env.DUMP_DIR, { recursive: true });

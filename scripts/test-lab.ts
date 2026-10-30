@@ -187,6 +187,20 @@ for (const [t, want] of cases) check(`notice: ${want}`, notice(t) === want, { go
 check('notice: final', parseDivNotice('We are pleased to inform you that the Final Cash Dividend @ Rs.15/- per share').kind === 'final');
 check('notice: interim', parseDivNotice('An Interim cash dividend for the quarter ended September 30, 2024 @ Rs 3.00 per share').kind === 'interim');
 check(
+  'notice: dividends of earlier years in the equity statement are not this one',
+  (() => {
+    const d = parseDivNotice('Total comprehensive income for the period 826,818 Transactions with Owners: Final dividend for the year ended June 30, 2025 - Rs 2.50 per share - (2,200,633) Balance as at December 31, 2025');
+    return d.dps == null && d.pct == null;
+  })(),
+);
+check(
+  'notice: AGM notice with the final dividend and book closure',
+  (() => {
+    const d = parseDivNotice('NOTICE OF 43rd ANNUAL GENERAL MEETING ... To approve final cash dividend @ Rs. 50/- per share i.e. 500% for the year ended December 31, 2025 as recommended by the Board. The share transfer books of the Company will remain closed from April 22, 2026 to April 29, 2026 (both days inclusive).');
+    return d.dps === 50 && d.closeFrom === '2026-04-22' && d.kind === 'final';
+  })(),
+);
+check(
   'notice: NIL final that mentions the interim already paid',
   (() => {
     const d = parseDivNotice('(i) CASH DIVIDEND A final Cash Dividend for the year ended June 30, 2026 at Rs. NIL per share i.e. NIL %. This is in addition to Interim Dividend(s) already paid at Rs. 0.50 per share i.e. 5%. (ii) BONUS SHARES Nil');

@@ -51,6 +51,8 @@ export function parseDivNotice(raw: string): DivNotice {
   while ((m = re.exec(text)) && dps == null) {
     const before = text.slice(Math.max(0, m.index - 40), m.index).toLowerCase();
     if (/unclaimed|unpaid|payable|income|withh|mandate|e-|register|regulation/.test(before)) continue;
+    // a statement of changes in equity lists dividends of earlier years ("Transactions with owners: Final dividend for the year ended ... Rs 4.00 per share")
+    if (/transactions with (the )?owners|distributions? to owners|changes in equity/.test(text.slice(Math.max(0, m.index - 200), m.index).toLowerCase())) continue;
     const win = text.slice(m.index, m.index + 240);
     // "NIL", or "at Rs. NIL per share" / "NIL %" even with the year's dates in between
     if ((/nil\b/i.test(win.slice(0, 64)) && !/\d/.test(win.slice(0, 64))) || /\bnil\W{0,3}\s*(?:cash\s+)?$/i.test(before) || /^[^.]{0,120}?(?:rs\.?|pkr|rupees)\s*nil\b|^[^.]{0,120}?\bnil\s*(?:per\s+share|%)/i.test(win)) {
