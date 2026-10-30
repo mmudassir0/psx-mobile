@@ -40,6 +40,7 @@ import { TargetBox } from '../../ui/TargetBox';
 import { HealthCard } from '../../ui/HealthCard';
 import { TaxYearCard } from '../../ui/TaxYearCard';
 import { useTrackSnapshot } from '../../portfolio/track';
+import { SavingsCard } from '../../ui/SavingsCard';
 
 const ORDER: Action[] = ['Review', 'Trim', 'Add more', 'Hold'];
 const pct = (v: number, d = 1) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(d)}%`;
@@ -700,6 +701,7 @@ export function MyHoldings({ view: viewProp, onView }: { view?: 'holdings' | 'in
                 <Section title="Health check">{loading ? <T v="caption">Checking every holding…</T> : <HealthCard rows={rows} />}</Section>
                 <Section title="How you're doing">
                   <PerformanceCard rows={rows} candles={candles} loading={loading} />
+                  <SavingsCard />
                 </Section>
               </>
             ) : null}

@@ -100,6 +100,8 @@ export async function checkEvening(now = Date.now()): Promise<void> {
   await checkLineAlerts().catch((e) => logProblem('evening line alerts', e));
   let board: BoardQuote[] | null = null;
   const boardNow = async () => (board ??= await fetchBoard());
+  // the day's value for your history, even on days you don't open Sahm
+  await eveningSnapshot(await boardNow()).catch((e) => logProblem('evening snapshot', e));
   if (await daySummaryPref.get()) {
     const holdings = await getHoldings();
     if (holdings.length) {
@@ -108,6 +110,28 @@ export async function checkEvening(now = Date.now()): Promise<void> {
     }
   }
   if (await screenAlertsPref.get()) await checkSavedScreens(boardNow).catch((e) => logProblem('evening screen alerts', e));
+}
+
+/** Today's closing value of your holdings, saved like the snapshot the app keeps when it's open. */
+async function eveningSnapshot(board: BoardQuote[]): Promise<void> {
+  const holdings = await getHoldings();
+  if (!holdings.length) return;
+  const { recordSnapshot } = await import('./track');
+  const { readEntry, setStorage } = await import('../psx/cache');
+  const { diskStore } = await import('../psx/diskStore');
+  const { dividends, cashDividends } = await import('../analysis/dividends');
+  setStorage(diskStore);
+  const by = new Map(board.map((b) => [b.symbol, b]));
+  const rows = await Promise.all(
+    holdings.map(async (h) => {
+      const price = by.get(h.symbol)?.price ?? 0;
+      // dividends from the copy the app keeps (no download); a missing one is filled in when the app next opens
+      const p = await readEntry<import('../analysis/dividends').Payout[]>(`payouts:${h.symbol}`, true).catch(() => null);
+      const cash = p?.data?.length ? cashDividends(dividends(p.data, { price, divYield: null, fiscalEndMonth: 6 })) : [];
+      return { symbol: h.symbol, shares: h.shares, avgCost: h.avgCost, price, cash };
+    }),
+  );
+  await recordSnapshot(rows);
 }
 
 /** New stocks in your saved Market screens, with the closing prices. */

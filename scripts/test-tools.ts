@@ -1,3 +1,4 @@
+import { compareSavings } from '../src/analysis/savingsCompare';
 import { screenAlertHits } from '../src/analysis/savedScreens';
 import { NO_CHALLENGE, stepChallenge, streak, resultOf } from '../src/paper/challenge';
 import { bigDays } from '../src/analysis/whyMoved';
@@ -1417,6 +1418,22 @@ check('widget rows fit the height', rowsFor(110) === 2 && rowsFor(250) === 7 && 
   const r4 = screenAlertHits([sc], () => ['X', 'Y'], r3.alerted);
   check('screen alerts: dropping out and coming back is news again', r4.hits.length === 1);
   check('screen alerts: movers lists and unfiltered screens are skipped', screenAlertHits([{ ...sc, mode: 'gainers' }, { ...sc, id: 'b', filters: [] }], () => ['Z'], {}).hits.length === 0);
+}
+
+// stocks vs savings
+{
+  const macro = {
+    now: { tbills: { m12: 12 } } as never,
+    history: [['2026-01-01', 12, 280, 12, 10, 370], ['2026-07-01', 12, 290, 12, 10, 370]] as never,
+    inflation: [['2026-01', 10, 1], ['2026-02', 10, 1]] as never,
+  };
+  const c = compareSavings('2026-01-01', '2027-01-01', 0.2, macro)!;
+  check('savings: a year of T-bills at 12% earns 12%', Math.abs(c.tbill - 0.12) < 1e-6, c.tbill);
+  check('savings: 1% a month inflation is about 12.7% a year', Math.abs(c.inflation - (Math.pow(1.01, 12) - 1)) < 0.002, c.inflation);
+  check('savings: after-inflation return and dollar', Math.abs(c.real - (1.2 / (1 + c.inflation) - 1)) < 1e-9 && c.usd != null && Math.abs(c.usd - (290 / 280 - 1)) < 1e-9);
+  check('savings: notes months past the latest inflation figure', c.inflationAssumedFrom === '2026-03' && c.tbillAssumedFrom === null);
+  const early = compareSavings('2025-06-01', '2025-07-01', 0, macro)!;
+  check('savings: before the saved history, the first yield and no dollar', early.tbillAssumedFrom === '2026-01-01' && early.usd === null && early.tbill > 0);
 }
 
 if (failed) {
