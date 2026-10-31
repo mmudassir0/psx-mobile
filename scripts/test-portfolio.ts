@@ -7,7 +7,7 @@ import { checkHoldings, retryWait } from '../src/portfolio/screenshot';
 import { addEntry, scoreEntry, statsByCall } from '../src/journal/journal';
 import type { Candle } from '../src/psx/types';
 import { planMoney, PlanRow } from '../src/portfolio/plan';
-import { expectedLabel, resultsLine, resultsStatus } from '../src/analysis/results';
+import { expectedLabel, periodEndFromDate, periodEndOf, resultsLine, resultsStatus } from '../src/analysis/results';
 import { liveRecord, liveVerdict } from '../src/picks/build';
 import { readFileSync } from 'fs';
 import { eachLimit } from '../src/limit';
@@ -228,6 +228,18 @@ check('results: a board meeting after the last results means results are due', r
 const newQ = { ...luck, announcements: [{ date: '2026-10-16', title: 'Financial Results for the Quarter Ended September 30, 2026', url: null, category: 'Financial Results' }, ...luck.announcements] };
 const nq = resultsStatus(newQ, Date.parse('2026-10-17')).latest!;
 check("results: PSX's table not updated yet is flagged, not read as the new quarter", nq.tableBehind && /hasn't updated/.test(resultsLine(nq)), nq);
+check(
+  'results: period end from numeric dates in the title',
+  periodEndOf('Financial Results for the Quarter Ended 30.09.2026') === '2026-09' && periodEndOf('Financial Results for the Quarter Ended 30-09-2026') === '2026-09' && periodEndOf('Quarter Ended 2026-09-30') === '2026-09' && periodEndOf('Half Year Ended 31st December 2025') === '2025-12',
+);
+check(
+  'results: a title with no date reports the last quarter that closed weeks before',
+  periodEndFromDate('2026-10-29', 5, false) === '2026-09' && periodEndFromDate('2026-08-12', 5, true) === '2026-06' && periodEndFromDate('2026-10-05', 5, false) === '2026-06' && periodEndFromDate('2026-04-27', 11, false) === '2026-03',
+);
+// 29 Oct 2026: LUCK's results notice without a date in its title, and PSX's table still on the March quarter
+const noDate = { ...luck, announcements: [{ date: '2026-10-29', title: 'Financial Results for the Quarter Ended', url: null, category: 'Financial Results' }, ...luck.announcements] };
+const nd = resultsStatus(noDate, Date.parse('2026-10-29')).latest!;
+check('results: undated title with an old table is flagged, not shown as the new quarter', nd.tableBehind && /hasn't updated/.test(resultsLine(nd)), nd);
 
 const oddLabels = {
   ...luck,

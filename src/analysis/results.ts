@@ -50,12 +50,49 @@ export function isResults(a: Announcement): boolean {
 const row = (t: FinTable | null | undefined, re: RegExp) => t?.rows.find((r) => re.test(r.label))?.values ?? [];
 const change = (now: number | null | undefined, then: number | null | undefined) => (now != null && then != null && then > 0 ? now / then - 1 : null);
 
-/** Month and year of the period end in a results title, e.g. "Quarter Ended - September 30, 2026" → 2026-09. */
+/**
+ * Month and year of the period end in a results title: "Quarter Ended - September 30, 2026",
+ * "30 September 2026", "30.09.2026", "30-09-2026" or "2026-09-30" → 2026-09.
+ */
 export function periodEndOf(title: string): string | null {
-  const m = title.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+(\d{4})/i);
-  if (!m) return null;
-  const mi = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(m[1].toLowerCase());
-  return `${m[2]}-${String(mi + 1).padStart(2, '0')}`;
+  const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const ym = (y: string | number, m: number) => (m >= 1 && m <= 12 && +y > 1990 && +y < 2100 ? `${y}-${String(m).padStart(2, '0')}` : null);
+  const a = title.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+(\d{4})/i);
+  if (a) return ym(a[2], MON.indexOf(a[1].toLowerCase()) + 1);
+  const b = title.match(/\b\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})/i);
+  if (b) return ym(b[2], MON.indexOf(b[1].toLowerCase()) + 1);
+  const c = title.match(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b/);
+  if (c) return ym(c[3], +c[2]);
+  const d = title.match(/\b(\d{4})[./-](\d{1,2})[./-](\d{1,2})\b/);
+  if (d) return ym(d[1], +d[2]);
+  return null;
+}
+
+/**
+ * When the title gives no date ("Financial Results for the Quarter Ended"): the latest quarter end
+ * (or, for annual results, fiscal year end) at least two weeks before the announcement. Companies
+ * have to publish within weeks of a period closing, so that's the period being reported.
+ */
+export function periodEndFromDate(announced: string, fyEndMonth: number, annual: boolean): string {
+  const t = new Date(Date.parse(announced + 'T12:00:00Z') - 14 * DAY);
+  // the last month that had fully ended by then (0-based)
+  let y = t.getUTCFullYear();
+  let m = t.getUTCMonth() - 1;
+  if (m < 0) {
+    m = 11;
+    y--;
+  }
+  // step back to a quarter end of this company's fiscal year (or its year end)
+  for (let k = 0; k < 13; k++) {
+    const isQuarterEnd = (m - fyEndMonth + 12) % 3 === 0;
+    if (annual ? m === fyEndMonth : isQuarterEnd) break;
+    m--;
+    if (m < 0) {
+      m = 11;
+      y--;
+    }
+  }
+  return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 
 /**
@@ -111,8 +148,9 @@ export function resultsStatus(c: CompanyInfo | null, now = Date.now()): ResultsS
     }
   }
   // PSX updates its tables a little after the announcement; until then the numbers are the previous period's.
-  const end = periodEndOf(res.title);
-  const want = end ? expectedLabel(end, fiscalEndMonth(c.fiscalYearEnd), annual) : null;
+  const fyEnd = fiscalEndMonth(c.fiscalYearEnd);
+  const end = periodEndOf(res.title) ?? periodEndFromDate(res.date, fyEnd, annual);
+  const want = expectedLabel(end, fyEnd, annual);
   const tableBehind = !!(want && period && want.toUpperCase() !== period.toUpperCase() && !(annual && !t));
   return {
     latest: {
