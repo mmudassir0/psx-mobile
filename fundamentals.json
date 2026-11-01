@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-31T07:37:46+00:00",
+ "generatedAt": "2026-11-01T08:00:53+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -303,7 +303,7 @@
    "liabilities": 287277274000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 11592215000.0,
+   "borrowings": 1636030000.0,
    "cash": 12411772000,
    "warnings": [
     "ignored non-borrowing line 'Bills payable'"
@@ -1547,11 +1547,9 @@
    "liabilities": 29915588000,
    "currentAssets": null,
    "currentLiabilities": 11121184000,
-   "borrowings": 0.0,
+   "borrowings": 38045000.0,
    "cash": null,
-   "warnings": [
-    "ignored non-borrowing line 'Long-term deposits'"
-   ],
+   "warnings": [],
    "source": {
     "title": "Transmission of Annual Report for the year ended 30 June 2026",
     "url": "https://dps.psx.com.pk/download/document/281695.pdf",
@@ -1911,7 +1909,7 @@
    "liabilities": 4390045000,
    "currentAssets": 14844098000,
    "currentLiabilities": 3432539000,
-   "borrowings": 204209000.0,
+   "borrowings": 452903000.0,
    "cash": 2210875000,
    "warnings": [],
    "source": {
@@ -2158,10 +2156,6 @@
      {
       "label": "Long term loan",
       "amount": "233,937,365"
-     },
-     {
-      "label": "Long term loan (current portion)",
-      "amount": "6,319,789"
      }
     ],
     "cash": "448,643,385"
@@ -2242,7 +2236,7 @@
    "reason": "no full report listed on PSX"
   },
   "SSGC": {
-   "reason": "total_assets 1,137,530,664 not found in the statement; missing equity or total assets",
+   "reason": "missing equity or total assets",
    "report": {
     "kind": "quarterly",
     "date": "2026-03-02",
@@ -2258,7 +2252,7 @@
     "unit": 1000,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "1,137,530,664",
+    "total_assets": "1,137,520,664",
     "total_liabilities": null,
     "current_assets": "879,972,713",
     "current_liabilities": null,
