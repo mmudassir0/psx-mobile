@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-02T08:07:18+00:00",
+ "generatedAt": "2026-11-03T08:20:02+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -69,23 +69,25 @@
    }
   },
   "AICL": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 51995188000,
-   "assets": 144675311000,
-   "liabilities": 92648777000,
+   "equity": 51528592000,
+   "assets": 151592285000,
+   "liabilities": 100063693000,
    "currentAssets": null,
    "currentLiabilities": null,
    "borrowings": null,
-   "cash": 3294448000,
-   "warnings": [],
+   "cash": 5251105000,
+   "warnings": [
+    "total_liabilities 100,032,465 not found in the statement"
+   ],
    "source": {
-    "title": "Transmission of Quarterly Report for the Period Ended 30 June 2026",
-    "url": "https://dps.psx.com.pk/download/document/281949.pdf",
-    "date": "2026-08-28",
+    "title": "Transmission of Quarterly Report for the Period Ended 30 September 2026",
+    "url": "https://dps.psx.com.pk/download/document/288118.pdf",
+    "date": "2026-10-30",
     "pages": [
-     17
+     15
     ],
     "method": "text"
    }
@@ -885,23 +887,26 @@
    }
   },
   "IMAGE": {
-   "periodEnd": "2026-06-30",
+   "periodEnd": "2026-09-30",
    "statement": "standalone",
    "isBank": false,
-   "equity": 4165825203,
-   "assets": 7078891979,
-   "liabilities": 2913066776,
-   "currentAssets": 4067092648,
+   "equity": 4302599878,
+   "assets": 4272403414,
+   "liabilities": -30196464,
+   "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 862578395.0,
-   "cash": 231505545,
-   "warnings": [],
+   "borrowings": null,
+   "cash": 413144377,
+   "warnings": [
+    "current liabilities larger than total liabilities",
+    "borrowings larger than total liabilities"
+   ],
    "source": {
-    "title": "Transmission of Annual Report for the Year Ended 2026-06-30",
-    "url": "https://dps.psx.com.pk/download/document/285216.pdf",
-    "date": "2026-10-07",
+    "title": "Transmission of Quarterly Financial Statements for the Period Ended 30/09/2026",
+    "url": "https://dps.psx.com.pk/download/document/288414.pdf",
+    "date": "2026-11-02",
     "pages": [
-     30
+     6
     ],
     "method": "text"
    }
@@ -1023,8 +1028,8 @@
    "equity": 56233913000,
    "assets": 83423108000,
    "liabilities": 27189195000,
-   "currentAssets": null,
-   "currentLiabilities": null,
+   "currentAssets": 49575713000,
+   "currentLiabilities": 18199920000,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
    "warnings": [],
@@ -1525,7 +1530,7 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": null,
+   "currentAssets": 10103795000,
    "currentLiabilities": 9598437000,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
@@ -2096,7 +2101,7 @@
     71
    ],
    "model": {
-    "statement": "standalone",
+    "statement": "consolidated",
     "period_end": "2023-06-30",
     "unit": 1000000,
     "is_bank": false,
@@ -2233,12 +2238,7 @@
     "total_liabilities": null,
     "current_assets": "879,972,713",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "450,895"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "2,057,463"
    }
   },
