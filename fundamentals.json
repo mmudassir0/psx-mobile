@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-05T08:18:20+00:00",
+ "generatedAt": "2026-11-06T08:18:11+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -298,7 +298,7 @@
   },
   "BOP": {
    "periodEnd": "2026-06-30",
-   "statement": "consolidated",
+   "statement": "standalone",
    "isBank": true,
    "equity": 26342047000,
    "assets": 313619321000,
@@ -1026,7 +1026,7 @@
    "equity": 56233913000,
    "assets": 83423108000,
    "liabilities": 27189195000,
-   "currentAssets": 49575713000,
+   "currentAssets": null,
    "currentLiabilities": 18199920000,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
@@ -1528,8 +1528,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": 10103795000,
-   "currentLiabilities": 9598437000,
+   "currentAssets": null,
+   "currentLiabilities": null,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -2153,14 +2153,14 @@
     "unit": 1,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "5,236,016,787",
+    "total_assets": "7,346,636,687",
     "total_liabilities": "3,205,076,200",
     "current_assets": null,
     "current_liabilities": null,
     "borrowing_lines": [
      {
       "label": "Long term loan",
-      "amount": "6,319,789"
+      "amount": "233,937,365"
      }
     ],
     "cash": "448,643,385"
@@ -2219,25 +2219,25 @@
    "reason": "missing equity or total assets",
    "report": {
     "kind": "quarterly",
-    "date": "2026-03-02",
-    "title": "Transmission of Quarterly Report for the Period Ended 31 December 2025",
-    "url": "https://dps.psx.com.pk/download/document/271693.pdf"
+    "date": "2026-04-30",
+    "title": "Transmission of Quarterly Report for the Period Ended 31 March 2026",
+    "url": "https://dps.psx.com.pk/download/document/276136.pdf"
    },
    "pages": [
-    8
+    7
    ],
    "model": {
     "statement": "standalone",
-    "period_end": "2025-12-31",
+    "period_end": "2026-03-31",
     "unit": 1000,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "1,137,520,664",
+    "total_assets": "1,172,508,341",
     "total_liabilities": null,
-    "current_assets": "879,972,713",
+    "current_assets": "908,995,481",
     "current_liabilities": null,
     "borrowing_lines": [],
-    "cash": "2,057,463"
+    "cash": "1,000,466"
    }
   },
   "THCCL": {
