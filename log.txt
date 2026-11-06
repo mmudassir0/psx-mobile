@@ -1,0 +1,20 @@
+561 stocks saved
+KSE100: 100 members
+KMI30: 30 members
+refreshing 255 stocks
+latest trading day 2026-11-06; 0 failed, 0 from saved copies
+breadth 39% (weak: watch only)
+published All shares to ntfy: 200
+published KSE-100 to ntfy: 200
+published KMI-30 to ntfy: 200
+KSE100: Sideways for 49 days
+KMI30: Sideways for 48 days
+ALLSHR: Sideways for 48 days
+mood 34 (Fear) from 972 days
+dividend calendar: 16 upcoming from 255 stocks
+results season: 205 rows from 103 companies
+long-term list 2026-11: 10 stocks; today 10 pass of 136 valued, 25 only below trend
+news: 64 kept of 159, 3 name a company
+economy: policy 12, 12m T-bill 12.89, USD 276.6609, CPI 9.6 (2026-10), petrol 346
+sectors: TEXTILE SPINNING 35.9%, MODARABAS 6.9%, GLASS & CERAMICS 6.8% … PAPER, BOARD & PACKAGING -16.1%, APPAREL -16.5%
+published market report to ntfy: 200
