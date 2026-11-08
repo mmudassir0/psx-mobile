@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-07T07:36:40+00:00",
+ "generatedAt": "2026-11-08T07:46:28+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -305,7 +305,7 @@
    "liabilities": 287277274000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 1636030000.0,
+   "borrowings": 11592215000.0,
    "cash": 12411772000,
    "warnings": [
     "ignored non-borrowing line 'Bills payable'"
@@ -1026,7 +1026,7 @@
    "equity": 56233913000,
    "assets": 83423108000,
    "liabilities": 27189195000,
-   "currentAssets": 49575713000,
+   "currentAssets": null,
    "currentLiabilities": 18199920000,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
