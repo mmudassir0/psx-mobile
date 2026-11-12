@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-11T08:06:15+00:00",
+ "generatedAt": "2026-11-12T08:43:07+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -166,13 +166,15 @@
    "statement": "standalone",
    "isBank": false,
    "equity": 45581521000,
-   "assets": 105605846000,
-   "liabilities": 60024325000,
-   "currentAssets": 90545615000,
-   "currentLiabilities": 56691006000,
+   "assets": 90545615000,
+   "liabilities": 44964094000,
+   "currentAssets": null,
+   "currentLiabilities": null,
    "borrowings": null,
    "cash": 32385676000,
-   "warnings": [],
+   "warnings": [
+    "current liabilities larger than total liabilities"
+   ],
    "source": {
     "title": "Transmission of Quarterly Report for the Period Ended June 30, 2026",
     "url": "https://dps.psx.com.pk/download/document/280558.pdf",
@@ -1026,8 +1028,8 @@
    "equity": 56233913000,
    "assets": 83423108000,
    "liabilities": 27189195000,
-   "currentAssets": 49575713000,
-   "currentLiabilities": 18199920000,
+   "currentAssets": null,
+   "currentLiabilities": null,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
    "warnings": [],
@@ -1528,8 +1530,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": null,
-   "currentLiabilities": null,
+   "currentAssets": 10103795000,
+   "currentLiabilities": 9598437000,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -1554,7 +1556,11 @@
    "currentLiabilities": 11121184000,
    "borrowings": null,
    "cash": null,
-   "warnings": [],
+   "warnings": [
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement"
+   ],
    "source": {
     "title": "Transmission of Annual Report for the year ended 30 June 2026",
     "url": "https://dps.psx.com.pk/download/document/281695.pdf",
@@ -2154,7 +2160,7 @@
     "is_bank": false,
     "total_equity": null,
     "total_assets": "7,346,636,687",
-    "total_liabilities": "3,205,076,200",
+    "total_liabilities": "3,203,375,236",
     "current_assets": null,
     "current_liabilities": null,
     "borrowing_lines": [
@@ -2199,7 +2205,7 @@
     166
    ],
    "model": {
-    "statement": "consolidated",
+    "statement": "standalone",
     "period_end": "2026-06-30",
     "unit": 1000,
     "is_bank": false,
