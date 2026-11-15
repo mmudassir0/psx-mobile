@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T07:59:09+00:00",
+ "generatedAt": "2026-11-15T08:14:23+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -305,11 +305,9 @@
    "liabilities": 287277274000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 1636030000.0,
+   "borrowings": 11592215000.0,
    "cash": 12411772000,
-   "warnings": [
-    "ignored non-borrowing line 'Bills payable'"
-   ],
+   "warnings": [],
    "source": {
     "title": "Transmission of Quarterly Financial Statements for the Period Ended 2026-06-30",
     "url": "https://dps.psx.com.pk/download/document/281937.pdf",
@@ -1554,7 +1552,11 @@
    "currentLiabilities": 11121184000,
    "borrowings": null,
    "cash": null,
-   "warnings": [],
+   "warnings": [
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement"
+   ],
    "source": {
     "title": "Transmission of Annual Report for the year ended 30 June 2026",
     "url": "https://dps.psx.com.pk/download/document/281695.pdf",
@@ -1914,7 +1916,7 @@
    "liabilities": 4390045000,
    "currentAssets": 14844098000,
    "currentLiabilities": 3432539000,
-   "borrowings": 452903000.0,
+   "borrowings": 204209000.0,
    "cash": 2210875000,
    "warnings": [],
    "source": {
@@ -2100,7 +2102,7 @@
    ],
    "model": {
     "statement": "standalone",
-    "period_end": "2023-12-31",
+    "period_end": "2023-06-30",
     "unit": 1000000,
     "is_bank": false,
     "total_equity": "20,469.17",
@@ -2154,13 +2156,13 @@
     "is_bank": false,
     "total_equity": null,
     "total_assets": "5,236,016,787",
-    "total_liabilities": "3,205,076,200",
+    "total_liabilities": "3,203,375,236",
     "current_assets": null,
     "current_liabilities": null,
     "borrowing_lines": [
      {
       "label": "Long term loan",
-      "amount": "233,937,365"
+      "amount": "6,319,789"
      }
     ],
     "cash": "448,643,385"
@@ -2236,12 +2238,7 @@
     "total_liabilities": null,
     "current_assets": "908,995,481",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "468,052"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "1,000,466"
    }
   },
