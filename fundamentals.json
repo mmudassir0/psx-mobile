@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-16T08:22:38+00:00",
+ "generatedAt": "2026-11-17T09:36:33+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -305,11 +305,9 @@
    "liabilities": 287277274000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 1636030000.0,
+   "borrowings": 11592215000.0,
    "cash": 12411772000,
-   "warnings": [
-    "ignored non-borrowing line 'Bills payable'"
-   ],
+   "warnings": [],
    "source": {
     "title": "Transmission of Quarterly Financial Statements for the Period Ended 2026-06-30",
     "url": "https://dps.psx.com.pk/download/document/281937.pdf",
@@ -1528,7 +1526,7 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": null,
+   "currentAssets": 10103795000,
    "currentLiabilities": 9598437000,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
@@ -2153,7 +2151,7 @@
     "unit": 1,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "7,346,636,687",
+    "total_assets": "5,236,016,787",
     "total_liabilities": "3,205,076,200",
     "current_assets": null,
     "current_liabilities": null,
@@ -2236,7 +2234,12 @@
     "total_liabilities": null,
     "current_assets": "908,995,481",
     "current_liabilities": null,
-    "borrowing_lines": [],
+    "borrowing_lines": [
+     {
+      "label": "Long term loans",
+      "amount": "468,052"
+     }
+    ],
     "cash": "1,000,466"
    }
   },
