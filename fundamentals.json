@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-17T09:36:33+00:00",
+ "generatedAt": "2026-11-18T08:57:36+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -168,7 +168,7 @@
    "equity": 45581521000,
    "assets": 105605846000,
    "liabilities": 60024325000,
-   "currentAssets": 90545615000,
+   "currentAssets": null,
    "currentLiabilities": 56691006000,
    "borrowings": null,
    "cash": 32385676000,
@@ -298,7 +298,7 @@
   },
   "BOP": {
    "periodEnd": "2026-06-30",
-   "statement": "consolidated",
+   "statement": "standalone",
    "isBank": true,
    "equity": 26342047000,
    "assets": 313619321000,
@@ -307,7 +307,9 @@
    "currentLiabilities": null,
    "borrowings": 11592215000.0,
    "cash": 12411772000,
-   "warnings": [],
+   "warnings": [
+    "ignored non-borrowing line 'Bills payable'"
+   ],
    "source": {
     "title": "Transmission of Quarterly Financial Statements for the Period Ended 2026-06-30",
     "url": "https://dps.psx.com.pk/download/document/281937.pdf",
@@ -1526,8 +1528,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": 10103795000,
-   "currentLiabilities": 9598437000,
+   "currentAssets": null,
+   "currentLiabilities": null,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -2151,14 +2153,14 @@
     "unit": 1,
     "is_bank": false,
     "total_equity": null,
-    "total_assets": "5,236,016,787",
-    "total_liabilities": "3,205,076,200",
+    "total_assets": null,
+    "total_liabilities": "3,203,375,236",
     "current_assets": null,
     "current_liabilities": null,
     "borrowing_lines": [
      {
       "label": "Long term loan",
-      "amount": "233,937,365"
+      "amount": "6,319,789"
      }
     ],
     "cash": "448,643,385"
@@ -2234,12 +2236,7 @@
     "total_liabilities": null,
     "current_assets": "908,995,481",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "468,052"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "1,000,466"
    }
   },
