@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-19T09:09:57+00:00",
+ "generatedAt": "2026-11-20T08:56:51+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -170,9 +170,11 @@
    "liabilities": 60024325000,
    "currentAssets": 90545615000,
    "currentLiabilities": 56691006000,
-   "borrowings": null,
+   "borrowings": 0.0,
    "cash": 32385676000,
-   "warnings": [],
+   "warnings": [
+    "ignored non-borrowing line 'Long term loans and advances'"
+   ],
    "source": {
     "title": "Transmission of Quarterly Report for the Period Ended June 30, 2026",
     "url": "https://dps.psx.com.pk/download/document/280558.pdf",
@@ -1027,7 +1029,7 @@
    "assets": 83423108000,
    "liabilities": 27189195000,
    "currentAssets": null,
-   "currentLiabilities": null,
+   "currentLiabilities": 18199920000,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
    "warnings": [],
@@ -1528,8 +1530,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": 10103795000,
-   "currentLiabilities": 9598437000,
+   "currentAssets": null,
+   "currentLiabilities": null,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -2137,7 +2139,34 @@
    "reason": "no full report listed on PSX"
   },
   "HINOON": {
-   "reason": "error: model HTTP 400: '{\"error\":{\"message\":\"Failed to validate JSON. Please adjust your prompt. See \\'failed_generation\\' for more details.\",\"type\":\"invalid_request_error\",\"code\":\"json_validate_failed\",\"failed_generation\":\"\"}}\\n'"
+   "reason": "missing equity or total assets",
+   "report": {
+    "kind": "quarterly",
+    "date": "2026-08-28",
+    "title": "Transmission of Quarterly Report for the Period Ended 30.06.2026",
+    "url": "https://dps.psx.com.pk/download/document/281888.pdf"
+   },
+   "pages": [
+    41
+   ],
+   "model": {
+    "statement": "standalone",
+    "period_end": "2026-06-30",
+    "unit": 1,
+    "is_bank": false,
+    "total_equity": null,
+    "total_assets": "7,346,636,687",
+    "total_liabilities": "3,205,076,200",
+    "current_assets": null,
+    "current_liabilities": null,
+    "borrowing_lines": [
+     {
+      "label": "Long term loan",
+      "amount": "6,319,789"
+     }
+    ],
+    "cash": "448,643,385"
+   }
   },
   "IBFL": {
    "reason": "balance sheet page not found",
@@ -2209,12 +2238,7 @@
     "total_liabilities": null,
     "current_assets": "908,995,481",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "468,052"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "1,000,466"
    }
   },
