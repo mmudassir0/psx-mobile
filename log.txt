@@ -1,0 +1,20 @@
+561 stocks saved
+KSE100: 100 members
+KMI30: 30 members
+refreshing 261 stocks
+latest trading day 2026-11-20; 0 failed, 2 from saved copies
+breadth 49% (weak: watch only)
+published All shares to ntfy: 200
+published KSE-100 to ntfy: 200
+published KMI-30 to ntfy: 200
+KSE100: Sideways for 58 days
+KMI30: Sideways for 57 days
+ALLSHR: Sideways for 57 days
+mood 28 (Fear) from 971 days
+dividend calendar: 2 upcoming from 260 stocks
+results season: 123 rows from 103 companies
+long-term list 2026-11: 10 stocks; today 10 pass of 131 valued, 25 only below trend
+news: 67 kept of 162, 10 name a company
+economy: policy 12, 12m T-bill 12.41, USD 276.5132, CPI 9.6 (2026-10), petrol 322
+sectors: INV. BANKS / INV. COS. / SECURITIES COS. 37.7%, MODARABAS 33.7%, TEXTILE SPINNING 13.5% … PAPER, BOARD & PACKAGING -2.5%, REFINERY -16.8%
+published market report to ntfy: 200
