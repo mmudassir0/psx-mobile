@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-21T08:39:46+00:00",
+ "generatedAt": "2026-11-22T08:23:37+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -307,7 +307,9 @@
    "currentLiabilities": null,
    "borrowings": 11592215000.0,
    "cash": 12411772000,
-   "warnings": [],
+   "warnings": [
+    "ignored non-borrowing line 'Bills payable'"
+   ],
    "source": {
     "title": "Transmission of Quarterly Financial Statements for the Period Ended 2026-06-30",
     "url": "https://dps.psx.com.pk/download/document/281937.pdf",
@@ -1024,8 +1026,8 @@
    "equity": 56233913000,
    "assets": 83423108000,
    "liabilities": 27189195000,
-   "currentAssets": null,
-   "currentLiabilities": null,
+   "currentAssets": 49575713000,
+   "currentLiabilities": 18199920000,
    "borrowings": 21216162000.0,
    "cash": 12386587000,
    "warnings": [],
@@ -1526,8 +1528,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": null,
-   "currentLiabilities": null,
+   "currentAssets": 10103795000,
+   "currentLiabilities": 9598437000,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -1552,7 +1554,11 @@
    "currentLiabilities": 11121184000,
    "borrowings": null,
    "cash": null,
-   "warnings": [],
+   "warnings": [
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement",
+    "borrowing line - not found in the statement"
+   ],
    "source": {
     "title": "Transmission of Annual Report for the year ended 30 June 2026",
     "url": "https://dps.psx.com.pk/download/document/281695.pdf",
@@ -1912,7 +1918,7 @@
    "liabilities": 4390045000,
    "currentAssets": 14844098000,
    "currentLiabilities": 3432539000,
-   "borrowings": 204209000.0,
+   "borrowings": 452903000.0,
    "cash": 2210875000,
    "warnings": [],
    "source": {
@@ -2185,31 +2191,6 @@
     "url": "https://dps.psx.com.pk/download/document/284177.pdf"
    }
   },
-  "PIOC": {
-   "reason": "missing equity or total assets",
-   "report": {
-    "kind": "annual",
-    "date": "2026-08-25",
-    "title": "Transmission of Annual Report for the year ended 30 June 2026",
-    "url": "https://dps.psx.com.pk/download/document/281695.pdf"
-   },
-   "pages": [
-    148
-   ],
-   "model": {
-    "statement": "standalone",
-    "period_end": "2026-06-30",
-    "unit": 1000,
-    "is_bank": false,
-    "total_equity": "49,522,014",
-    "total_assets": null,
-    "total_liabilities": "29,915,588",
-    "current_assets": null,
-    "current_liabilities": "11,121,184",
-    "borrowing_lines": [],
-    "cash": null
-   }
-  },
   "POWER": {
    "reason": "missing equity or total assets",
    "report": {
@@ -2259,12 +2240,7 @@
     "total_liabilities": null,
     "current_assets": "908,995,481",
     "current_liabilities": null,
-    "borrowing_lines": [
-     {
-      "label": "Long term loans",
-      "amount": "468,052"
-     }
-    ],
+    "borrowing_lines": [],
     "cash": "1,000,466"
    }
   },
