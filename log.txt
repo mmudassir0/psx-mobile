@@ -1,0 +1,22 @@
+561 stocks saved
+KSE100: 100 members
+KMI30: 30 members
+refreshing 262 stocks
+latest trading day 2026-11-27; 0 failed, 1 from saved copies
+KSE-100: none
+KMI-30: none
+breadth 46% (weak: watch only)
+published All shares to ntfy: 200
+published KSE-100 to ntfy: 200
+published KMI-30 to ntfy: 200
+KSE100: Sideways for 63 days
+KMI30: Sideways for 62 days
+ALLSHR: Sideways for 62 days
+mood 31 (Fear) from 971 days
+dividend calendar: 1 upcoming from 261 stocks
+results season: 133 rows from 103 companies
+long-term list 2026-11: 10 stocks; today 10 pass of 128 valued, 25 only below trend
+news: 64 kept of 159, 6 name a company
+economy: policy 12, 12m T-bill 12.524, USD 276.4228, CPI 9.6 (2026-10), petrol 312
+sectors: MODARABAS 34.9%, INV. BANKS / INV. COS. / SECURITIES COS. 21.3%, CEMENT 13.7% … AUTOMOBILE PARTS & ACCESSORIES -0.5%, REFINERY -14.1%
+published market report to ntfy: 200
