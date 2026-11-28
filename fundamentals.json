@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-27T10:01:32+00:00",
+ "generatedAt": "2026-11-28T09:17:33+00:00",
  "model": "openai/gpt-oss-120b",
  "companies": {
   "ABL": {
@@ -298,18 +298,16 @@
   },
   "BOP": {
    "periodEnd": "2026-06-30",
-   "statement": "standalone",
+   "statement": "consolidated",
    "isBank": true,
    "equity": 26342047000,
    "assets": 313619321000,
    "liabilities": 287277274000,
    "currentAssets": null,
    "currentLiabilities": null,
-   "borrowings": 11592215000.0,
+   "borrowings": null,
    "cash": 12411772000,
-   "warnings": [
-    "ignored non-borrowing line 'Bills payable'"
-   ],
+   "warnings": [],
    "source": {
     "title": "Transmission of Quarterly Financial Statements for the Period Ended 2026-06-30",
     "url": "https://dps.psx.com.pk/download/document/281937.pdf",
@@ -576,7 +574,7 @@
    "liabilities": 78114887000,
    "currentAssets": 36824306000,
    "currentLiabilities": 41241965000,
-   "borrowings": 35436976000.0,
+   "borrowings": 20109501000.0,
    "cash": 3682443000,
    "warnings": [],
    "source": {
@@ -1528,8 +1526,8 @@
    "equity": 18837126000,
    "assets": 30816719000,
    "liabilities": 11979593000,
-   "currentAssets": null,
-   "currentLiabilities": null,
+   "currentAssets": 10103795000,
+   "currentLiabilities": 9598437000,
    "borrowings": 3496378000.0,
    "cash": 1282231000,
    "warnings": [],
@@ -2137,7 +2135,7 @@
    "reason": "no full report listed on PSX"
   },
   "HINOON": {
-   "reason": "missing equity or total assets",
+   "reason": "total_equity 4,141,560,487 not found in the statement; missing equity or total assets",
    "report": {
     "kind": "quarterly",
     "date": "2026-08-28",
@@ -2152,8 +2150,8 @@
     "period_end": "2026-06-30",
     "unit": 1,
     "is_bank": false,
-    "total_equity": null,
-    "total_assets": "5,236,016,787",
+    "total_equity": "4,141,560,487",
+    "total_assets": "7,346,636,687",
     "total_liabilities": "3,205,076,200",
     "current_assets": null,
     "current_liabilities": null,
@@ -2187,6 +2185,31 @@
     "url": "https://dps.psx.com.pk/download/document/284177.pdf"
    }
   },
+  "PIOC": {
+   "reason": "missing equity or total assets",
+   "report": {
+    "kind": "annual",
+    "date": "2026-08-25",
+    "title": "Transmission of Annual Report for the year ended 30 June 2026",
+    "url": "https://dps.psx.com.pk/download/document/281695.pdf"
+   },
+   "pages": [
+    148
+   ],
+   "model": {
+    "statement": "standalone",
+    "period_end": "2026-06-30",
+    "unit": 1000,
+    "is_bank": false,
+    "total_equity": "49,522,014",
+    "total_assets": null,
+    "total_liabilities": "29,915,588",
+    "current_assets": null,
+    "current_liabilities": "11,121,184",
+    "borrowing_lines": [],
+    "cash": null
+   }
+  },
   "POWER": {
    "reason": "missing equity or total assets",
    "report": {
@@ -2213,7 +2236,54 @@
    }
   },
   "SNGP": {
-   "reason": "no full report listed on PSX"
+   "reason": "assets 1331993100000 != equity 82531720000 + liabilities 1265519657000",
+   "report": {
+    "kind": "quarterly",
+    "date": "2026-11-27",
+    "title": "Transmission of Quarterly Financial Statements for the Period Ended September 30, 2026",
+    "url": "https://dps.psx.com.pk/download/document/290267.pdf"
+   },
+   "pages": [
+    6
+   ],
+   "model": {
+    "statement": "standalone",
+    "period_end": "2026-09-30",
+    "unit": 1000,
+    "is_bank": false,
+    "total_equity": "82,531,720",
+    "total_assets": "1,331,993,100",
+    "total_liabilities": "1,265,519,657",
+    "current_assets": null,
+    "current_liabilities": null,
+    "borrowing_lines": [
+     {
+      "label": "Long term loans",
+      "amount": "1,300,346"
+     },
+     {
+      "label": "Long term financing from financial institutions - secured",
+      "amount": "23,955,604"
+     },
+     {
+      "label": "Long term financing - unsecured",
+      "amount": "30,912"
+     },
+     {
+      "label": "Short term borrowings from financial institutions - secured",
+      "amount": "107,752,495"
+     },
+     {
+      "label": "Current portion of long term financing from financial institutions - secured",
+      "amount": "2,908,750"
+     },
+     {
+      "label": "Current portion of long term financing - unsecured",
+      "amount": "68,668"
+     }
+    ],
+    "cash": "11,274,833"
+   }
   },
   "SSGC": {
    "reason": "missing equity or total assets",
